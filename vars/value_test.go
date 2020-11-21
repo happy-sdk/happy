@@ -53,3 +53,11 @@ func TestValueParseInt64(t *testing.T) {
 		t.Errorf("Value(11).AsInt() = %d, err(%v) want 0 and err", iout2, erri2)
 	}
 }
+
+func TestValueTypeFromString(t *testing.T) {
+	val := NewValue("string var")
+	val2 := Value("string var")
+	if val != val2 {
+		t.Errorf("want: ValueFromString == Value got: ValueFromString = %q, val2 = %q", val, val2)
+	}
+}
