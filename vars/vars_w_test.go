@@ -36,3 +36,12 @@ func TestParseFromString(t *testing.T) {
 		t.Errorf("Collection.Get(\"X\") = %q, want \"\"", actual.String())
 	}
 }
+
+func TestParseFromBytes(t *testing.T) {
+	collection := ParseFromBytes(genStringTestBytes())
+	for _, test := range stringTests {
+		if actual := collection.Get(test.key); actual.String() != test.want {
+			t.Errorf("Collection.Get(%q) = %q, want %q", test.key, actual.String(), test.want)
+		}
+	}
+}
