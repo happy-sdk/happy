@@ -33,6 +33,21 @@ type atoui64Test struct {
 	wantErr error
 }
 
+type btoi64Test struct {
+	key     string
+	in      string
+	base    int
+	want    int64
+	wantErr error
+}
+
+type atoi64Test struct {
+	key     string
+	in      string
+	want    int64
+	wantErr error
+}
+
 var stringTests = []stringTest{
 	{"GOARCH", "amd64", "amd64"},
 	{"GOHOSTARCH", "amd", "amd"},
@@ -291,6 +306,52 @@ var atoi64Tests = []atoi64Test{
 	{"INT64_17", "-9223372036854775809", -1 << 63, strconv.ErrRange},
 }
 
+var btoi64Tests = []btoi64Test{
+	{"INT64_1", "", 0, 0, strconv.ErrSyntax},
+	{"INT64_2", "0", 0, 0, nil},
+	{"INT64_3", "-0", 0, 0, nil},
+	{"INT64_4", "1", 0, 1, nil},
+	{"INT64_5", "-1", 0, -1, nil},
+	{"INT64_6", "12345", 0, 12345, nil},
+	{"INT64_7", "-12345", 0, -12345, nil},
+	{"INT64_8", "012345", 0, 012345, nil},
+	{"INT64_9", "-012345", 0, -012345, nil},
+	{"INT64_10", "0x12345", 0, 0x12345, nil},
+	{"INT64_11", "-0X12345", 0, -0x12345, nil},
+	{"INT64_12", "12345x", 0, 0, strconv.ErrSyntax},
+	{"INT64_13", "-12345x", 0, 0, strconv.ErrSyntax},
+	{"INT64_14", "98765432100", 0, 98765432100, nil},
+	{"INT64_15", "-98765432100", 0, -98765432100, nil},
+	{"INT64_16", "9223372036854775807", 0, 1<<63 - 1, nil},
+	{"INT64_17", "-9223372036854775807", 0, -(1<<63 - 1), nil},
+	{"INT64_18", "9223372036854775808", 0, 1<<63 - 1, strconv.ErrRange},
+	{"INT64_19", "-9223372036854775808", 0, -1 << 63, nil},
+	{"INT64_20", "9223372036854775809", 0, 1<<63 - 1, strconv.ErrRange},
+	{"INT64_21", "-9223372036854775809", 0, -1 << 63, strconv.ErrRange},
+
+	{"INT64_22", "g", 17, 16, nil},
+	{"INT64_24", "10", 25, 25, nil},
+	{"INT64_25", "holycow", 35, (((((17*35+24)*35+21)*35+34)*35+12)*35+24)*35 + 32, nil},
+	{"INT64_26", "holycow", 36, (((((17*36+24)*36+21)*36+34)*36+12)*36+24)*36 + 32, nil},
+
+	{"INT64_27", "0", 2, 0, nil},
+	{"INT64_28", "-1", 2, -1, nil},
+	{"INT64_29", "1010", 2, 10, nil},
+	{"INT64_30", "1000000000000000", 2, 1 << 15, nil},
+	{"INT64_31", "111111111111111111111111111111111111111111111111111111111111111", 2, 1<<63 - 1, nil},
+	{"INT64_32", "1000000000000000000000000000000000000000000000000000000000000000", 2, 1<<63 - 1, strconv.ErrRange},
+	{"INT64_33", "-1000000000000000000000000000000000000000000000000000000000000000", 2, -1 << 63, nil},
+	{"INT64_34", "-1000000000000000000000000000000000000000000000000000000000000001", 2, -1 << 63, strconv.ErrRange},
+
+	{"INT64_35", "-10", 8, -8, nil},
+	{"INT64_36", "57635436545", 8, 057635436545, nil},
+	{"INT64_37", "100000000", 8, 1 << 24, nil},
+
+	{"INT64_38", "10", 16, 16, nil},
+	{"INT64_39", "-123456789abcdef", 16, -0x123456789abcdef, nil},
+	{"INT64_40", "7fffffffffffffff", 16, 1<<63 - 1, nil},
+}
+
 func genAtof32TestBytes() []byte {
 	var out []byte
 	for _, data := range atof32Tests {
@@ -348,6 +409,15 @@ func genBtoui64TestBytes() []byte {
 func genAtoi64TestBytes() []byte {
 	var out []byte
 	for _, data := range atoi64Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genBtoi64TestBytes() []byte {
+	var out []byte
+	for _, data := range btoi64Tests {
 		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
 		out = append(out, []byte(line)...)
 	}
