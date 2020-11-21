@@ -109,3 +109,20 @@ func TestValueTypeAsUint(t *testing.T) {
 		}
 	}
 }
+
+func TestValueTypeAsUint8(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want uint8
+	}{
+		{NewValue("1"), 1},
+		{NewValue("2"), 2},
+		{NewValue("200"), 200},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Uint(10, 0)
+		if got != uint64(tt.want) {
+			t.Errorf("want: %d got %d", got, tt.want)
+		}
+	}
+}
