@@ -61,3 +61,18 @@ func TestValueTypeFromString(t *testing.T) {
 		t.Errorf("want: ValueFromString == Value got: ValueFromString = %q, val2 = %q", val, val2)
 	}
 }
+
+func TestValueTypeAsBool(t *testing.T) {
+  tests := []struct {
+    val  Value
+    want bool
+  }{
+    {NewValue("true"), true},
+    {NewValue("false"), false},
+  }
+  for _, tt := range tests {
+    got, _ := tt.val.Bool()
+    if got != tt.want {
+      t.Errorf("want: %t got %t", got, tt.want)
+    }
+}
