@@ -14,7 +14,7 @@ func (c Collection) Get(k string) (v Value) {
 	if len(k) == 0 {
 		return ""
 	}
-	v, _ = c[k]
+	v = c[k]
 	return
 }
 
