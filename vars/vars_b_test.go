@@ -1,6 +1,10 @@
-package vars
+package vars_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/howi-lib/vars/v2"
+)
 
 func TestNewValue(t *testing.T) {
 	var tests = []struct {
@@ -12,7 +16,7 @@ func TestNewValue(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := NewValue(tt.val).String()
+		got := vars.NewValue(tt.val).String()
 		if got != tt.want {
 			t.Errorf("want: %s got %s", tt.want, got)
 		}
