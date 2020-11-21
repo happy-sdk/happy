@@ -188,6 +188,53 @@ var atofTests = []atofTest{
 	{"FLOAT_99", "1.00000000000000011102230246251565404236316680908203125" + strings.Repeat("0", 10000) + "1", "1.0000000000000002", nil},
 }
 
+var atof32Tests = []atofTest{
+
+	{"FLOAT_1", "1.000000059604644775390625", "1", nil},
+
+	{"FLOAT_2", "1.000000059604644775390624", "1", nil},
+
+	{"FLOAT_3", "1.000000059604644775390626", "1.0000001", nil},
+
+	{"FLOAT_4", "1.000000059604644775390625" + strings.Repeat("0", 10000) + "1", "1.0000001", nil},
+
+	{"FLOAT_5", "340282346638528859811704183484516925440", "3.4028235e+38", nil},
+	{"FLOAT_6", "-340282346638528859811704183484516925440", "-3.4028235e+38", nil},
+
+	{"FLOAT_7", "3.4028236e38", "+Inf", strconv.ErrRange},
+	{"FLOAT_8", "-3.4028236e38", "-Inf", strconv.ErrRange},
+
+	{"FLOAT_9", "3.402823567e38", "3.4028235e+38", nil},
+	{"FLOAT_10", "-3.402823567e38", "-3.4028235e+38", nil},
+
+	{"FLOAT_11", "3.4028235678e38", "+Inf", strconv.ErrRange},
+	{"FLOAT_12", "-3.4028235678e38", "-Inf", strconv.ErrRange},
+
+	{"FLOAT_13", "1e-38", "1e-38", nil},
+	{"FLOAT_14", "1e-39", "1e-39", nil},
+	{"FLOAT_15", "1e-40", "1e-40", nil},
+	{"FLOAT_16", "1e-41", "1e-41", nil},
+	{"FLOAT_17", "1e-42", "1e-42", nil},
+	{"FLOAT_18", "1e-43", "1e-43", nil},
+	{"FLOAT_20", "1e-44", "1e-44", nil},
+	{"FLOAT_21", "6e-45", "6e-45", nil},
+	{"FLOAT_22", "5e-45", "6e-45", nil},
+
+	{"FLOAT_23", "1e-45", "1e-45", nil},
+	{"FLOAT_24", "2e-45", "1e-45", nil},
+
+	{"FLOAT_25", "4951760157141521099596496896", "4.9517602e+27", nil},
+}
+
+func genAtof32TestBytes() []byte {
+	var out []byte
+	for _, data := range atof32Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
 func genAtobTestBytes() []byte {
 	var out []byte
 	for _, data := range atobTests {

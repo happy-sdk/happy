@@ -120,3 +120,33 @@ func TestCollectionParseFloat(t *testing.T) {
 	}
 
 }
+
+func TestCollectionParseFloat32(t *testing.T) {
+	collection := ParseFromBytes(genAtof32TestBytes())
+	for _, test := range atof32Tests {
+		val := collection.Get(test.key)
+		out, err := val.Float(32)
+		out32 := float32(out)
+		if float64(out32) != out {
+			t.Errorf("Value(%s).ParseFloat(32) = %v, not a float32 (closest is %v)",
+				test.key, out, float64(out32))
+			continue
+		}
+		outs := strconv.FormatFloat(float64(out32), 'g', -1, 32)
+		if test.wantErr != nil {
+			if err == nil {
+				t.Errorf("Value(%s).ParseFloat(32) = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			} else {
+				if test.wantErr != err.(*strconv.NumError).Err {
+					t.Errorf("Value(%s).ParseFloat(32) = %v, err(%s) want %v, err(%s)",
+						test.key, out, err, test.want, test.wantErr)
+				}
+			}
+		}
+		if outs != test.want {
+			t.Errorf("Value(%s).ParseFloat(32) = %v, err(%s) want %v, err(%s)",
+				test.key, out, err, test.want, test.wantErr)
+		}
+	}
+}
