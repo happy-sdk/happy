@@ -81,3 +81,42 @@ func TestCollectionParseBool(t *testing.T) {
 		}
 	}
 }
+
+func TestCollectionParseFloat(t *testing.T) {
+	collection := ParseFromBytes(genAtofTestBytes())
+	for _, test := range atofTests {
+		val := collection.Get(test.key)
+		out, err := val.Float(64)
+		outs := strconv.FormatFloat(out, 'g', -1, 64)
+		if test.wantErr != nil {
+			if err == nil {
+				t.Errorf("Value(%s).ParseFloat(64) = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			} else {
+				if test.wantErr != err.(*strconv.NumError).Err {
+					t.Errorf("Value(%s).ParseFloat(64) = %v, err(%s) want %v, err(%s)",
+						test.key, out, err, test.want, test.wantErr)
+				}
+			}
+		}
+		if outs != test.want {
+			t.Errorf("Value(%s).ParseFloat(64) = %v, err(%s) want %v, err(%s)",
+				test.key, out, err, test.want, test.wantErr)
+		}
+
+		if float64(float32(out)) == out {
+			out, err := val.Float(32)
+			out32 := float32(out)
+			if float64(out32) != out {
+				t.Errorf("Value(%s).ParseFloat(32) = %v, not a float32 (closest is %v)", test.key, out, float64(out32))
+				continue
+			}
+			outs := strconv.FormatFloat(float64(out32), 'g', -1, 32)
+			if outs != test.want {
+				t.Errorf("Value(%s).ParseFloat(32) = %v, %s want %v, %s  # %v",
+					test.key, out32, err, test.want, test.wantErr, out)
+			}
+		}
+	}
+
+}
