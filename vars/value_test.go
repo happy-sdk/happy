@@ -63,16 +63,32 @@ func TestValueTypeFromString(t *testing.T) {
 }
 
 func TestValueTypeAsBool(t *testing.T) {
-  tests := []struct {
-    val  Value
-    want bool
-  }{
-    {NewValue("true"), true},
-    {NewValue("false"), false},
-  }
-  for _, tt := range tests {
-    got, _ := tt.val.Bool()
-    if got != tt.want {
-      t.Errorf("want: %t got %t", got, tt.want)
-    }
+	tests := []struct {
+		val  Value
+		want bool
+	}{
+		{NewValue("true"), true},
+		{NewValue("false"), false},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Bool()
+		if got != tt.want {
+			t.Errorf("want: %t got %t", got, tt.want)
+		}
+	}
+}
+
+func TestValueTypeFromBool(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want string
+	}{
+		{ValueFromBool(true), "true"},
+		{ValueFromBool(false), "false"},
+	}
+	for _, tt := range tests {
+		if tt.val.String() != tt.want {
+			t.Errorf("want: %q got %q", tt.val.String(), tt.want)
+		}
+	}
 }
