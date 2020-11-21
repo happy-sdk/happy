@@ -246,6 +246,31 @@ var atoui64Tests = []atoui64Test{
 	{"UINT64_10", "18446744073709551620", 1<<64 - 1, strconv.ErrRange},
 }
 
+var btoui64Tests = []atoui64Test{
+	{"UINT64_1", "", 0, strconv.ErrSyntax},
+	{"UINT64_2", "0", 0, nil},
+	{"UINT64_3", "0x", 0, strconv.ErrSyntax},
+	{"UINT64_4", "0X", 0, strconv.ErrSyntax},
+	{"UINT64_5", "1", 1, nil},
+	{"UINT64_6", "12345", 12345, nil},
+	{"UINT64_7", "012345", 012345, nil},
+	{"UINT64_8", "0x12345", 0x12345, nil},
+	{"UINT64_9", "0X12345", 0x12345, nil},
+	{"UINT64_10", "12345x", 0, strconv.ErrSyntax},
+	{"UINT64_11", "0xabcdefg123", 0, strconv.ErrSyntax},
+	{"UINT64_12", "123456789abc", 0, strconv.ErrSyntax},
+	{"UINT64_13", "98765432100", 98765432100, nil},
+	{"UINT64_14", "18446744073709551615", 1<<64 - 1, nil},
+	{"UINT64_15", "18446744073709551616", 1<<64 - 1, strconv.ErrRange},
+	{"UINT64_16", "18446744073709551620", 1<<64 - 1, strconv.ErrRange},
+	{"UINT64_17", "0xFFFFFFFFFFFFFFFF", 1<<64 - 1, nil},
+	{"UINT64_18", "0x10000000000000000", 1<<64 - 1, strconv.ErrRange},
+	{"UINT64_19", "01777777777777777777777", 1<<64 - 1, nil},
+	{"UINT64_20", "01777777777777777777778", 0, strconv.ErrSyntax},
+	{"UINT64_21", "02000000000000000000000", 1<<64 - 1, strconv.ErrRange},
+	{"UINT64_22", "0200000000000000000000", 1 << 61, nil},
+}
+
 func genAtof32TestBytes() []byte {
 	var out []byte
 	for _, data := range atof32Tests {
@@ -285,6 +310,15 @@ func genAtofTestBytes() []byte {
 func genAtoui64TestBytes() []byte {
 	var out []byte
 	for _, data := range atoui64Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genBtoui64TestBytes() []byte {
+	var out []byte
+	for _, data := range btoui64Tests {
 		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
 		out = append(out, []byte(line)...)
 	}

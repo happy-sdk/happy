@@ -173,3 +173,26 @@ func TestCollectionParseUint64(t *testing.T) {
 		}
 	}
 }
+
+func TestCollectionParseUint64Base(t *testing.T) {
+	collection := ParseFromBytes(genBtoui64TestBytes())
+	for _, test := range btoui64Tests {
+		val := collection.Get(test.key)
+		out, err := val.Uint(0, 64)
+		if test.wantErr != nil {
+			if err == nil {
+				t.Errorf("Value(%s).ParseUint(0, 64) = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			} else {
+				if test.wantErr != err.(*strconv.NumError).Err {
+					t.Errorf("Value(%s).ParseUint(0, 64) = %v, err(%s) want %v, err(%s)",
+						test.key, out, err, test.want, test.wantErr)
+				}
+			}
+		}
+		if out != test.want {
+			t.Errorf("Value(%s).ParseUint(0, 64) = %v, err(%s) want %v, err(%s)",
+				test.key, out, err, test.want, test.wantErr)
+		}
+	}
+}
