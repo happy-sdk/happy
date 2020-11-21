@@ -66,3 +66,23 @@ func TestValueFromString(t *testing.T) {
 		}
 	}
 }
+
+func TestCollectionGetOrDefaultTo(t *testing.T) {
+	collection := ParseFromBytes([]byte{})
+	tests := []struct {
+		k      string
+		defVal string
+		want   string
+	}{
+		{"STRING", "some-string", "some-string"},
+		{"STRING", "some-string with space ", "some-string with space"},
+		{"STRING", " some-string with space", "some-string with space"},
+		{"STRING", "1234567", "1234567"},
+		{"", "1234567", "1234567"},
+	}
+	for _, tt := range tests {
+		if actual := collection.GetOrDefaultTo(tt.k, tt.defVal); actual.String() != tt.want {
+			t.Errorf("Collection.GetOrDefaultTo(%q, %q) = %q, want %q", tt.k, tt.defVal, actual, tt.want)
+		}
+	}
+}
