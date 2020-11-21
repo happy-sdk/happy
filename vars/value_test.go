@@ -193,3 +193,21 @@ func TestValueTypeAsInt(t *testing.T) {
 		}
 	}
 }
+
+func TestValueParseAsComplex64(t *testing.T) {
+	collection := ParseFromBytes(genComplex64TestBytes())
+	for _, test := range complex64Tests {
+		val := collection.Get(test.key)
+		out, err := val.Complex64()
+		if test.wantErr != nil {
+			if err == nil {
+				t.Errorf("Value(%s).ParseComplex64() = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			}
+		}
+		if out != test.want {
+			t.Errorf("Value(%s).ParseComplex64() = %v, err(%s) want %v, err(%s)",
+				test.key, out, err, test.want, test.wantErr)
+		}
+	}
+}

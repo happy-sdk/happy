@@ -61,6 +61,12 @@ type atoui32Test struct {
 	want    uint32
 	wantErr error
 }
+type complex64Test struct {
+	key     string
+	in      string
+	want    complex64
+	wantErr error
+}
 
 var stringTests = []stringTest{
 	{"GOARCH", "amd64", "amd64"},
@@ -397,6 +403,16 @@ var atoui32Tests = []atoui32Test{
 	{"UINT32_8", "4294967295", 1<<32 - 1, nil},
 	{"UINT32_9", "4294967296", 1<<32 - 1, strconv.ErrRange},
 }
+var complex64Tests = []complex64Test{
+
+	{"COMPLEX64_1", "1.000000059604644775390625 1.000000059604644775390624", complex64(complex(1.000000059604644775390625, 1.000000059604644775390624)), nil},
+
+	{"COMPLEX64_2", "1", complex64(0), strconv.ErrSyntax},
+
+	{"COMPLEX64_3", "1.000000059604644775390626 2", complex64(complex(1.0000001, 2)), nil},
+	{"COMPLEX64_4", "1x -0", complex64(0), strconv.ErrSyntax},
+	{"COMPLEX64_5", "-0 1x", complex64(0), strconv.ErrSyntax},
+}
 
 func genAtof32TestBytes() []byte {
 	var out []byte
@@ -482,6 +498,15 @@ func genAtoi32TestBytes() []byte {
 func genAtoui32TestBytes() []byte {
 	var out []byte
 	for _, data := range atoui32Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genComplex64TestBytes() []byte {
+	var out []byte
+	for _, data := range complex64Tests {
 		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
 		out = append(out, []byte(line)...)
 	}
