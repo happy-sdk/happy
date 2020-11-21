@@ -86,3 +86,11 @@ func TestCollectionGetOrDefaultTo(t *testing.T) {
 		}
 	}
 }
+
+func TestCollectionGetWithPrefix(t *testing.T) {
+	collection := ParseFromBytes(genStringTestBytes())
+	p := collection.GetWithPrefix("CGO")
+	if len(p) != 6 {
+		t.Errorf("Collection.GetsWithPrefix(\"CGO\") = %d, want (6)", len(p))
+	}
+}
