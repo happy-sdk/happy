@@ -10,11 +10,11 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.13.x, 1.14.x, 1.15.x]
+        version: [1.13.x, 1.14.x, 1.15.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Install Go
+      - name: Set up Go
         uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go-version }}
@@ -25,11 +25,14 @@ jobs:
         if: runner.os == 'Linux'
         with:
           version: v1.32
-      - name: Test
+      - name: Run Unit tests
+        run: |
+          go test -race -covermode atomic -coverprofile=covprofile ./...
+      - name: Install goveralls
         env:
-          GO111MODULE: on
-        run: go test -cover .
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=covprofile -service=github
