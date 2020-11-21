@@ -55,6 +55,11 @@ type atoi32Test struct {
 	wantErr error
 }
 
+func init() {
+	// BUG
+	var _ = atoi32Test{}.in
+}
+
 type atoui32Test struct {
 	key     string
 	in      string
