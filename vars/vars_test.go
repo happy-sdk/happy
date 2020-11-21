@@ -271,6 +271,26 @@ var btoui64Tests = []atoui64Test{
 	{"UINT64_22", "0200000000000000000000", 1 << 61, nil},
 }
 
+var atoi64Tests = []atoi64Test{
+	{"INT64_1", "", 0, strconv.ErrSyntax},
+	{"INT64_2", "0", 0, nil},
+	{"INT64_3", "-0", 0, nil},
+	{"INT64_4", "1", 1, nil},
+	{"INT64_5", "-1", -1, nil},
+	{"INT64_6", "12345", 12345, nil},
+	{"INT64_7", "-12345", -12345, nil},
+	{"INT64_8", "012345", 12345, nil},
+	{"INT64_9", "-012345", -12345, nil},
+	{"INT64_10", "98765432100", 98765432100, nil},
+	{"INT64_11", "-98765432100", -98765432100, nil},
+	{"INT64_12", "9223372036854775807", 1<<63 - 1, nil},
+	{"INT64_13", "-9223372036854775807", -(1<<63 - 1), nil},
+	{"INT64_14", "9223372036854775808", 1<<63 - 1, strconv.ErrRange},
+	{"INT64_15", "-9223372036854775808", -1 << 63, nil},
+	{"INT64_16", "9223372036854775809", 1<<63 - 1, strconv.ErrRange},
+	{"INT64_17", "-9223372036854775809", -1 << 63, strconv.ErrRange},
+}
+
 func genAtof32TestBytes() []byte {
 	var out []byte
 	for _, data := range atof32Tests {
@@ -319,6 +339,15 @@ func genAtoui64TestBytes() []byte {
 func genBtoui64TestBytes() []byte {
 	var out []byte
 	for _, data := range btoui64Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genAtoi64TestBytes() []byte {
+	var out []byte
+	for _, data := range atoi64Tests {
 		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
 		out = append(out, []byte(line)...)
 	}
