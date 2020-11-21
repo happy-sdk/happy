@@ -92,3 +92,20 @@ func TestValueTypeFromBool(t *testing.T) {
 		}
 	}
 }
+
+func TestValueTypeAsUint(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want uint
+	}{
+		{NewValue("1"), 1},
+		{NewValue("2"), 2},
+		{NewValue("2000000000000"), 2000000000000},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Uint(10, 0)
+		if got != uint64(tt.want) {
+			t.Errorf("want: %d got %d", got, tt.want)
+		}
+	}
+}
