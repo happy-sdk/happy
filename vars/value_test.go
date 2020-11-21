@@ -39,3 +39,17 @@ func TestValueFromString(t *testing.T) {
 		}
 	}
 }
+
+func TestValueParseInt64(t *testing.T) {
+	val := Value("200")
+	iout, erri1 := val.AsInt()
+	if iout != 200 {
+		t.Errorf("Value(11).AsInt() = %d, err(%v) want 200", iout, erri1)
+	}
+
+	val2 := Value("x")
+	iout2, erri2 := val2.AsInt()
+	if iout2 != 0 || erri2 == nil {
+		t.Errorf("Value(11).AsInt() = %d, err(%v) want 0 and err", iout2, erri2)
+	}
+}
