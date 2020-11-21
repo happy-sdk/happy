@@ -1,15 +1,34 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
+################################################################################
+# GITIGNORE
+# repository is place for source code not for binaries if you need to include
+# binaries in repository then consider appropriate values .gitattributes
+################################################################################
 
-# Test binary, built with `go test -c`
-*.test
+################################################################################
+# DIRECTORIES to ignore
+################################################################################
+**/[Tt]mp/*
+**/[Bb]in/*
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
+################################################################################
+# FILES to ignore
+################################################################################
+*~
+**/.DS_Store
+**/*.sw[mnop]
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+################################################################################
+# Editor directories and files
+################################################################################
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+################################################################################
+# exception rules and final override
+################################################################################
+
+################################################################################
+!**/*.gitkeep
