@@ -243,3 +243,50 @@ func TestCollectionParseInt64Base(t *testing.T) {
 		}
 	}
 }
+
+func TestCollectionParseUint(t *testing.T) {
+	switch strconv.IntSize {
+	case 32:
+		collection := ParseFromBytes(genAtoui32TestBytes())
+		for _, test := range atoui32Tests {
+			val := collection.Get(test.key)
+			out, err := val.Uint(10, 0)
+			if test.wantErr != nil {
+				if err == nil {
+					t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
+						test.key, out, err, test.want, test.wantErr)
+				} else {
+					if test.wantErr != err.(*strconv.NumError).Err {
+						t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
+							test.key, out, err, test.want, test.wantErr)
+					}
+				}
+			}
+			if uint32(out) != test.want {
+				t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			}
+		}
+	case 64:
+		collection := ParseFromBytes(genAtoui64TestBytes())
+		for _, test := range atoui64Tests {
+			val := collection.Get(test.key)
+			out, err := val.Uint(10, 0)
+			if test.wantErr != nil {
+				if err == nil {
+					t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
+						test.key, out, err, test.want, test.wantErr)
+				} else {
+					if test.wantErr != err.(*strconv.NumError).Err {
+						t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
+							test.key, out, err, test.want, test.wantErr)
+					}
+				}
+			}
+			if uint64(out) != test.want {
+				t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			}
+		}
+	}
+}

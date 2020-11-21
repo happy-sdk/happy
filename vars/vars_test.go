@@ -48,6 +48,20 @@ type atoi64Test struct {
 	wantErr error
 }
 
+type atoi32Test struct {
+	key     string
+	in      string
+	want    int32
+	wantErr error
+}
+
+type atoui32Test struct {
+	key     string
+	in      string
+	want    uint32
+	wantErr error
+}
+
 var stringTests = []stringTest{
 	{"GOARCH", "amd64", "amd64"},
 	{"GOHOSTARCH", "amd", "amd"},
@@ -351,6 +365,38 @@ var btoi64Tests = []btoi64Test{
 	{"INT64_39", "-123456789abcdef", 16, -0x123456789abcdef, nil},
 	{"INT64_40", "7fffffffffffffff", 16, 1<<63 - 1, nil},
 }
+var atoi32tests = []atoi32Test{
+	{"INT32_1", "", 0, strconv.ErrSyntax},
+	{"INT32_2", "0", 0, nil},
+	{"INT32_3", "-0", 0, nil},
+	{"INT32_4", "1", 1, nil},
+	{"INT32_5", "-1", -1, nil},
+	{"INT32_6", "12345", 12345, nil},
+	{"INT32_7", "-12345", -12345, nil},
+	{"INT32_8", "012345", 12345, nil},
+	{"INT32_9", "-012345", -12345, nil},
+	{"INT32_10", "12345x", 0, strconv.ErrSyntax},
+	{"INT32_11", "-12345x", 0, strconv.ErrSyntax},
+	{"INT32_12", "987654321", 987654321, nil},
+	{"INT32_13", "-987654321", -987654321, nil},
+	{"INT32_14", "2147483647", 1<<31 - 1, nil},
+	{"INT32_15", "-2147483647", -(1<<31 - 1), nil},
+	{"INT32_16", "2147483648", 1<<31 - 1, strconv.ErrRange},
+	{"INT32_17", "-2147483648", -1 << 31, nil},
+	{"INT32_18", "2147483649", 1<<31 - 1, strconv.ErrRange},
+	{"INT32_19", "-2147483649", -1 << 31, strconv.ErrRange},
+}
+var atoui32Tests = []atoui32Test{
+	{"UINT32_1", "", 0, strconv.ErrSyntax},
+	{"UINT32_2", "0", 0, nil},
+	{"UINT32_3", "1", 1, nil},
+	{"UINT32_4", "12345", 12345, nil},
+	{"UINT32_5", "012345", 12345, nil},
+	{"UINT32_6", "12345x", 0, strconv.ErrSyntax},
+	{"UINT32_7", "987654321", 987654321, nil},
+	{"UINT32_8", "4294967295", 1<<32 - 1, nil},
+	{"UINT32_9", "4294967296", 1<<32 - 1, strconv.ErrRange},
+}
 
 func genAtof32TestBytes() []byte {
 	var out []byte
@@ -418,6 +464,24 @@ func genAtoi64TestBytes() []byte {
 func genBtoi64TestBytes() []byte {
 	var out []byte
 	for _, data := range btoi64Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genAtoi32TestBytes() []byte {
+	var out []byte
+	for _, data := range atoui32Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genAtoui32TestBytes() []byte {
+	var out []byte
+	for _, data := range atoui32Tests {
 		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
 		out = append(out, []byte(line)...)
 	}
