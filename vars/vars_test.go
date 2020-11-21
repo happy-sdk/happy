@@ -2,6 +2,7 @@ package vars
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 )
 
@@ -30,6 +31,39 @@ var stringTests = []stringTest{
 	{"CGO_CXXFLAGS", "-g -O2", "-g -O2"},
 	{"CGO_FFLAGS", "-g -O2", "-g -O2"},
 	{"CGO_LDFLAGS", "-g -O2", "-g -O2"},
+}
+
+type atobTest struct {
+	key     string
+	in      string
+	want    bool
+	wantErr error
+}
+
+var atobTests = []atobTest{
+	{"ATOB_1", "", false, strconv.ErrSyntax},
+	{"ATOB_2", "asdf", false, strconv.ErrSyntax},
+	{"ATOB_3", "0", false, nil},
+	{"ATOB_4", "f", false, nil},
+	{"ATOB_5", "F", false, nil},
+	{"ATOB_6", "FALSE", false, nil},
+	{"ATOB_7", "false", false, nil},
+	{"ATOB_8", "False", false, nil},
+	{"ATOB_9", "1", true, nil},
+	{"ATOB_10", "t", true, nil},
+	{"ATOB_11", "T", true, nil},
+	{"ATOB_12", "TRUE", true, nil},
+	{"ATOB_13", "true", true, nil},
+	{"ATOB_14", "True", true, nil},
+}
+
+func genAtobTestBytes() []byte {
+	var out []byte
+	for _, data := range atobTests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
 }
 
 func genStringTestBytes() []byte {

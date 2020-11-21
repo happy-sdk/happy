@@ -1,6 +1,7 @@
 package vars
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -54,5 +55,29 @@ func TestCollectionGetWithPrefix(t *testing.T) {
 	p := collection.GetWithPrefix("CGO")
 	if len(p) != 6 {
 		t.Errorf("Collection.GetsWithPrefix(\"CGO\") = %d, want (6)", len(p))
+	}
+}
+
+func TestCollectionParseBool(t *testing.T) {
+	collection := ParseFromBytes(genAtobTestBytes())
+	for _, test := range atobTests {
+		val := collection.Get(test.key)
+		b, err := val.Bool()
+		if test.wantErr != nil {
+			if err == nil {
+				t.Errorf("Value(%s).ParseBool(): expected %s but got nil", test.key, test.wantErr)
+			} else {
+				if test.wantErr != err.(*strconv.NumError).Err {
+					t.Errorf("Value(%s).ParseBool(): expected %s but got %s", test.key, test.wantErr, err)
+				}
+			}
+		} else {
+			if err != nil {
+				t.Errorf("Value(%s).ParseBool(): expected no error but got %s", test.key, err)
+			}
+			if b != test.want {
+				t.Errorf("Value(%s).ParseBool(): = %t, want %t", test.key, b, test.want)
+			}
+		}
 	}
 }
