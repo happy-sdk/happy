@@ -57,7 +57,7 @@ func ParseKeyVal(kv string) (key string, val Value) {
 // ParseKeyValSlice parses variables from any []"key=val" slice and
 // returns Collection
 func ParseKeyValSlice(kv []string) Collection {
-	vars := make(Collection)
+	vars := NewCollection()
 	if len(kv) == 0 {
 		return vars
 	}
