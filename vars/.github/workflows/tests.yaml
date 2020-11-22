@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        version: [1.13.x, 1.14.x, 1.15.x]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        if: runner.os == 'Linux'
+        with:
+          version: v1.32
+      - name: Run Unit tests
+        run: |
+          go test -race -covermode atomic -coverprofile=covprofile ./...
+      - name: Install goveralls
+        if: runner.os == 'Linux'
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        if: runner.os == 'Linux'
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=covprofile -service=github

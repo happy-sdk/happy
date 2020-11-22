@@ -12,6 +12,9 @@ import (
 
 // NewValue trims spaces from provided string and returns new Value
 func NewValue(val interface{}) Value {
+	if val == nil {
+		return Value("")
+	}
 	return Value(strings.TrimSpace(fmt.Sprintf("%v", val)))
 }
 
@@ -53,7 +56,7 @@ func ParseKeyVal(kv string) (key string, val Value) {
 // ParseKeyValSlice parses variables from any []"key=val" slice and
 // returns Collection
 func ParseKeyValSlice(kv []string) Collection {
-	vars := make(Collection)
+	vars := NewCollection()
 	if len(kv) == 0 {
 		return vars
 	}
