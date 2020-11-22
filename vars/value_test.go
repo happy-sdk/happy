@@ -245,3 +245,20 @@ func TestValueAsUint32(t *testing.T) {
 		}
 	}
 }
+
+func TestValueAsUint64(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want uint16
+	}{
+		{NewValue("1"), 1},
+		{NewValue("2"), 2},
+		{NewValue("20000"), 20000},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Uint(10, 16)
+		if got != uint64(tt.want) {
+			t.Errorf("want: %d got %d", got, tt.want)
+		}
+	}
+}
