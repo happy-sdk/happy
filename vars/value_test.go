@@ -262,3 +262,20 @@ func TestValueAsUint64(t *testing.T) {
 		}
 	}
 }
+
+func TestValueAsUintptr(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want uintptr
+	}{
+		{NewValue("1"), 1},
+		{NewValue("2"), 2},
+		{NewValue("9000000000000000000"), 9000000000000000000},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Uintptr()
+		if uintptr(got) != uintptr(tt.want) {
+			t.Errorf("want: %d got %d", got, tt.want)
+		}
+	}
+}
