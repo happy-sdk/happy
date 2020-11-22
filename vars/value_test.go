@@ -462,3 +462,50 @@ func TestValueAsInt64(t *testing.T) {
 		t.Errorf("Value(11).AsInt() = %d, err(%v) want 0 and err", iout2, erri2)
 	}
 }
+
+func TestValueAsIntMulti(t *testing.T) {
+	switch strconv.IntSize {
+	case 32:
+		collection := ParseFromBytes(genAtoi32TestBytes())
+		for _, test := range atoi32tests {
+			val := collection.Get(test.key)
+			out, err := val.Int(10, 0)
+			if test.wantErr != nil {
+				if err == nil {
+					t.Errorf("Value(%s).ParseInt(10, 0) = %v, err(%s) want %v, err(%s)",
+						test.key, out, err, test.want, test.wantErr)
+				} else {
+					if test.wantErr != err.(*strconv.NumError).Err {
+						t.Errorf("Value(%s).ParseInt(10, 0)= %v, err(%s) want %v, err(%s)",
+							test.key, out, err, test.want, test.wantErr)
+					}
+				}
+			}
+			if int32(out) != test.want {
+				t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			}
+		}
+	case 64:
+		collection := ParseFromBytes(genAtoi64TestBytes())
+		for _, test := range atoi64Tests {
+			val := collection.Get(test.key)
+			out, err := val.Int(10, 64)
+			if test.wantErr != nil {
+				if err == nil {
+					t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
+						test.key, out, err, test.want, test.wantErr)
+				} else {
+					if test.wantErr != err.(*strconv.NumError).Err {
+						t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
+							test.key, out, err, test.want, test.wantErr)
+					}
+				}
+			}
+			if int64(out) != test.want {
+				t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			}
+		}
+	}
+}
