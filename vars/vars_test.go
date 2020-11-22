@@ -548,30 +548,3 @@ func genComplex128TestBytes() []byte {
 	}
 	return out
 }
-
-func TesParseFromString(t *testing.T) {
-	key, val := ParseKeyVal("X=1")
-	if key != "X" {
-		t.Errorf("Key should be X got %q", key)
-	}
-	if val.Empty() {
-		t.Error("Val should be 1")
-	}
-	if i, err := val.Int(0, 10); i != 1 || err != nil {
-		t.Error("ParseInt should be 1")
-	}
-}
-
-func TesParseFromEmpty(t *testing.T) {
-	ek, ev := ParseKeyVal("")
-	if ek != "" || ev != "" {
-		t.Errorf("TestParseKeyValEmpty(\"\") = %q=%q, want ", ek, ev)
-	}
-	key, val := ParseKeyVal("X")
-	if key != "X" {
-		t.Errorf("Key should be X got %q", key)
-	}
-	if !val.Empty() {
-		t.Error("Val should be empty")
-	}
-}
