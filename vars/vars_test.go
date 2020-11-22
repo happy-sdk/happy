@@ -567,4 +567,11 @@ func TesParseFromEmpty(t *testing.T) {
 	if ek != "" || ev != "" {
 		t.Errorf("TestParseKeyValEmpty(\"\") = %q=%q, want ", ek, ev)
 	}
+	key, val := ParseKeyVal("X")
+	if key != "X" {
+		t.Errorf("Key should be X got %q", key)
+	}
+	if !val.Empty() {
+		t.Error("Val should be empty")
+	}
 }
