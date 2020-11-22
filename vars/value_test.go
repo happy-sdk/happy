@@ -180,6 +180,22 @@ func TestValueTypeAsFloat32(t *testing.T) {
 		}
 	}
 }
+func TestValueTypeAsFloat64(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want float64
+	}{
+		{NewValue("1"), 1},
+		{NewValue("2"), 2},
+		{NewValue("443444777777834555"), 443444777777834555},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Float(64)
+		if got != tt.want {
+			t.Errorf("want: %f got %f", got, tt.want)
+		}
+	}
+}
 
 func TestValueTypeAsByte(t *testing.T) {
 	tests := []struct {
