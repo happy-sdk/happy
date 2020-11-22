@@ -549,3 +549,31 @@ func TestValueParseAsComplex128(t *testing.T) {
 		}
 	}
 }
+
+func TestValueLen(t *testing.T) {
+	collection := ParseKeyValSlice([]string{})
+	tests := []struct {
+		k       string
+		defVal  string
+		wantLen int
+	}{
+		{"STRING", "one two", 2},
+		{"STRING", "one two three four ", 4},
+		{"STRING", " one two three four ", 4},
+		{"STRING", "1 2 3 4 5 6 7 8.1", 8},
+		{"STRING", "", 0},
+	}
+	for _, tt := range tests {
+		val := collection.GetOrDefaultTo(tt.k, tt.defVal)
+		actual := len(val.String())
+		if actual != val.Len() {
+			t.Errorf("Value.(%q).Len() len = %d, want %d", tt.k, actual, tt.wantLen)
+		}
+		if tt.defVal == "" && !val.Empty() {
+			t.Errorf("Value.(%q).Empty() = %t for value(%q), want true", tt.k, val.Empty(), val.String())
+		}
+		if tt.defVal != "" && val.Empty() {
+			t.Errorf("Value.(%q).Empty() = %t for value(%q), want true", tt.k, val.Empty(), val.String())
+		}
+	}
+}
