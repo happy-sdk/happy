@@ -213,6 +213,23 @@ func TestValueTypeAsComplex64(t *testing.T) {
 		}
 	}
 }
+func TestValueTypeAsComplex128(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want complex128
+	}{
+		{NewValue("123456700 1e-100"), complex(1.234567e+08, 1e-100)},
+		{NewValue("99999999999999974834176 100000000000000000000001"), complex128(complex(9.999999999999997e+22, 1.0000000000000001e+23))},
+		{NewValue("100000000000000008388608 100000000000000016777215"), complex128(complex(1.0000000000000001e+23, 1.0000000000000001e+23))},
+		{NewValue("1e-20 625e-3"), complex128(complex(1e-20, 0.625))},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Complex128()
+		if got != tt.want {
+			t.Errorf("want: %f got %f", got, tt.want)
+		}
+	}
+}
 
 func TestValueTypeAsByte(t *testing.T) {
 	tests := []struct {
