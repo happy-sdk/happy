@@ -604,5 +604,3 @@ func TestParseFromEmpty(t *testing.T) {
 		t.Error("Val should be empty")
 	}
 }
-
-vars

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestParseFromString(t *testing.T) {
+func TestCollectionParseFromString(t *testing.T) {
 	slice := strings.Split(string(genStringTestBytes()), "\n")
 	collection := ParseKeyValSlice(slice)
 	for _, test := range stringTests {
@@ -21,7 +21,7 @@ func TestParseFromString(t *testing.T) {
 	}
 }
 
-func TestParseFromBytes(t *testing.T) {
+func TestCollectionParseFromBytes(t *testing.T) {
 	collection := ParseFromBytes(genStringTestBytes())
 	for _, test := range stringTests {
 		if actual := collection.Get(test.key); actual.String() != test.want {
