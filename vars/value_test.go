@@ -180,6 +180,7 @@ func TestValueTypeAsFloat32(t *testing.T) {
 		}
 	}
 }
+
 func TestValueTypeAsFloat64(t *testing.T) {
 	tests := []struct {
 		val  Value
@@ -191,6 +192,22 @@ func TestValueTypeAsFloat64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		got, _ := tt.val.Float(64)
+		if got != tt.want {
+			t.Errorf("want: %f got %f", got, tt.want)
+		}
+	}
+}
+
+func TestValueTypeAsComplex64(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want complex64
+	}{
+		{NewValue("1.000000059604644775390626 2"), complex64(complex(1.0000001, 2))},
+		{NewValue("1x -0"), complex64(0)},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Complex64()
 		if got != tt.want {
 			t.Errorf("want: %f got %f", got, tt.want)
 		}
