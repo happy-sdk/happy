@@ -16,6 +16,7 @@
 *~
 **/.DS_Store
 **/*.sw[mnop]
+covprofile
 
 ################################################################################
 # Editor directories and files
