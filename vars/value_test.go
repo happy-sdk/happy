@@ -509,3 +509,24 @@ func TestValueAsIntMulti(t *testing.T) {
 		}
 	}
 }
+
+func TestValueParseAsFields(t *testing.T) {
+	collection := ParseFromBytes([]byte{})
+	tests := []struct {
+		k       string
+		defVal  string
+		wantLen int
+	}{
+		{"STRING", "one two", 2},
+		{"STRING", "one two three four ", 4},
+		{"STRING", " one two three four ", 4},
+		{"STRING", "1 2 3 4 5 6 7 8.1", 8},
+	}
+	for _, tt := range tests {
+		val := collection.GetOrDefaultTo(tt.k, tt.defVal)
+		actual := len(val.ParseFields())
+		if actual != tt.wantLen {
+			t.Errorf("Value.(%q).ParseFields() len = %d, want %d", tt.k, actual, tt.wantLen)
+		}
+	}
+}
