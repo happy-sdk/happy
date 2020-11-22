@@ -133,16 +133,16 @@ func TestValueTypeAsUint8(t *testing.T) {
 func TestValueTypeAsRune(t *testing.T) {
 	tests := []struct {
 		val  Value
-		want rune
+		want []rune
 	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("444434555"), 444434555},
+		{NewValue("1"), []rune{49}},
+		{NewValue("2"), []rune{50}},
+		{NewValue("444434555"), []rune{52, 52, 52, 52, 51, 52, 53, 53, 53}},
 	}
 	for _, tt := range tests {
-		got, _ := tt.val.Int(10, 0)
-		if got != int64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
+		got := tt.val.Rune()
+		if string(got) != string(tt.want) {
+			t.Errorf("want: %d got %d", tt.want, got)
 		}
 	}
 }

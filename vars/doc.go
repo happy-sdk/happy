@@ -2,9 +2,8 @@
 // Source code is provider under MIT License.
 
 /*
-Package vars provides the API to parse variables from various input formats
-to common key value pair or sets to vars.Collection or single vars.Value
+Package vars provides the API to parse variables from various input
+formats/types to common key value pair vars.Value or variable sets
+to vars.Collection
 */
 package vars
-
-// TODO(mkungla): Complete the docs
