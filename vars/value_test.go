@@ -313,3 +313,20 @@ func TestValueAsInt8(t *testing.T) {
 		}
 	}
 }
+
+func TestValueAsInt16(t *testing.T) {
+	tests := []struct {
+		val  Value
+		want int16
+	}{
+		{NewValue("1"), 1},
+		{NewValue("2"), 2},
+		{NewValue("4444"), 4444},
+	}
+	for _, tt := range tests {
+		got, _ := tt.val.Int(10, 0)
+		if got != int64(tt.want) {
+			t.Errorf("want: %d got %d", got, tt.want)
+		}
+	}
+}
