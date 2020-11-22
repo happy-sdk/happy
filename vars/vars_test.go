@@ -561,3 +561,10 @@ func TesParseFromString(t *testing.T) {
 		t.Error("ParseInt should be 1")
 	}
 }
+
+func TesParseFromEmpty(t *testing.T) {
+	ek, ev := ParseKeyVal("")
+	if ek != "" || ev != "" {
+		t.Errorf("TestParseKeyValEmpty(\"\") = %q=%q, want ", ek, ev)
+	}
+}
