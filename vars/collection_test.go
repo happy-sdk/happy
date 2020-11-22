@@ -311,3 +311,11 @@ func TestCollectionParseFields(t *testing.T) {
 		}
 	}
 }
+
+func TestCollectionSet(t *testing.T) {
+	collection := NewCollection()
+	collection.Set("STRING", "collection")
+	if val := collection.Get("collection"); val != "collection" {
+		t.Errorf("expected collection.Set(\"collection\") but got %s", val)
+	}
+}
