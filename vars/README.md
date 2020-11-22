@@ -97,6 +97,25 @@ func main() {
 }
 ```
 
+**read collection from file**
+```go
+package main
+
+import "github.com/howi-lib/vars/v2"
+
+func main() {
+  content, err := ioutil.ReadFile("testdata/dot_env")
+  if err != nil {
+    t.Error(err)
+    return
+  }
+  collection := vars.ParseFromBytes(content)
+  if val := collection.Get("GOARCH"); val != "amd64" {
+    fmt.Println(fmt.Sprintf("expected GOARCH to equal amd64 got %s", val))
+  }
+}
+```
+
 ## License
 
 Package vars is licensed under the [MIT LICENSE](./LICENSE).

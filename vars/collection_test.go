@@ -1,6 +1,7 @@
 package vars
 
 import (
+	"io/ioutil"
 	"strconv"
 	"strings"
 	"testing"
@@ -317,5 +318,16 @@ func TestCollectionSet(t *testing.T) {
 	collection.Set("STRING", "collection")
 	if val := collection.Get("STRING"); val != "collection" {
 		t.Errorf("expected collection but got %s", val)
+	}
+}
+
+func TestCollectionEnvFile(t *testing.T) {
+	content, err := ioutil.ReadFile("testdata/dot_env")
+	if err != nil {
+		t.Error(err)
+	}
+	collection := ParseFromBytes(content)
+	if val := collection.Get("GOARCH"); val != "amd64" {
+		t.Errorf("expected GOARCH to equal amd64 got %s", val)
 	}
 }
