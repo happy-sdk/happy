@@ -73,6 +73,13 @@ type complex64Test struct {
 	wantErr error
 }
 
+type complex128Test struct {
+	key     string
+	in      string
+	want    complex128
+	wantErr error
+}
+
 var stringTests = []stringTest{
 	{"GOARCH", "amd64", "amd64"},
 	{"GOHOSTARCH", "amd", "amd"},
@@ -419,6 +426,20 @@ var complex64Tests = []complex64Test{
 	{"COMPLEX64_5", "-0 1x", complex64(0), strconv.ErrSyntax},
 }
 
+var complex128Tests = []complex128Test{
+	{"COMPLEX128_1", " 1", complex128(0), strconv.ErrSyntax},
+	{"COMPLEX128_2", "+1 -1", complex128(complex(1, -1)), nil},
+	{"COMPLEX128_3", "1x -0", complex128(0), strconv.ErrSyntax},
+	{"COMPLEX128_3", "-0 1x", complex128(0), strconv.ErrSyntax},
+	{"COMPLEX128_4", "1.1. 0", complex128(0), strconv.ErrSyntax},
+	{"COMPLEX128_5", "1e23 1E23", complex128(complex(1e+23, 1e+23)), nil},
+	{"COMPLEX128_6", "100000000000000000000000 1e-100", complex128(complex(1e+23, 1e-100)), nil},
+	{"COMPLEX128_7", "123456700 1e-100", complex128(complex(1.234567e+08, 1e-100)), nil},
+	{"COMPLEX128_8", "99999999999999974834176 100000000000000000000001", complex128(complex(9.999999999999997e+22, 1.0000000000000001e+23)), nil},
+	{"COMPLEX128_9", "100000000000000008388608 100000000000000016777215", complex128(complex(1.0000000000000001e+23, 1.0000000000000001e+23)), nil},
+	{"COMPLEX128_10", "1e-20 625e-3", complex128(complex(1e-20, 0.625)), nil},
+}
+
 func genAtof32TestBytes() []byte {
 	var out []byte
 	for _, data := range atof32Tests {
@@ -512,6 +533,15 @@ func genAtoui32TestBytes() []byte {
 func genComplex64TestBytes() []byte {
 	var out []byte
 	for _, data := range complex64Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genComplex128TestBytes() []byte {
+	var out []byte
+	for _, data := range complex128Tests {
 		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
 		out = append(out, []byte(line)...)
 	}

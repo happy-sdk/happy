@@ -530,3 +530,22 @@ func TestValueParseAsFields(t *testing.T) {
 		}
 	}
 }
+
+func TestValueParseAsComplex128(t *testing.T) {
+	collection := ParseFromBytes(genComplex128TestBytes())
+	for _, test := range complex128Tests {
+		val := collection.Get(test.key)
+		out, err := val.Complex128()
+		if test.wantErr != nil {
+			if err == nil {
+				t.Errorf("Value(%s).ParseComplex128() = %v, err(%s) want %v, err(%s)",
+					test.key, out, err, test.want, test.wantErr)
+			}
+		}
+
+		if out != test.want {
+			t.Errorf("Value(%s).ParseComplex128() = %v, err(%s) want %v, err(%s)",
+				test.key, out, err, test.want, test.wantErr)
+		}
+	}
+}
