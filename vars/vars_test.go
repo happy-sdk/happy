@@ -383,6 +383,7 @@ var btoi64Tests = []btoi64Test{
 	{"INT64_39", "-123456789abcdef", 16, -0x123456789abcdef, nil},
 	{"INT64_40", "7fffffffffffffff", 16, 1<<63 - 1, nil},
 }
+
 var atoi32tests = []atoi32Test{
 	{"INT32_1", "", 0, strconv.ErrSyntax},
 	{"INT32_2", "0", 0, nil},
@@ -404,6 +405,7 @@ var atoi32tests = []atoi32Test{
 	{"INT32_18", "2147483649", 1<<31 - 1, strconv.ErrRange},
 	{"INT32_19", "-2147483649", -1 << 31, strconv.ErrRange},
 }
+
 var atoui32Tests = []atoui32Test{
 	{"UINT32_1", "", 0, strconv.ErrSyntax},
 	{"UINT32_2", "0", 0, nil},
@@ -415,12 +417,10 @@ var atoui32Tests = []atoui32Test{
 	{"UINT32_8", "4294967295", 1<<32 - 1, nil},
 	{"UINT32_9", "4294967296", 1<<32 - 1, strconv.ErrRange},
 }
+
 var complex64Tests = []complex64Test{
-
 	{"COMPLEX64_1", "1.000000059604644775390625 1.000000059604644775390624", complex64(complex(1.000000059604644775390625, 1.000000059604644775390624)), nil},
-
 	{"COMPLEX64_2", "1", complex64(0), strconv.ErrSyntax},
-
 	{"COMPLEX64_3", "1.000000059604644775390626 2", complex64(complex(1.0000001, 2)), nil},
 	{"COMPLEX64_4", "1x -0", complex64(0), strconv.ErrSyntax},
 	{"COMPLEX64_5", "-0 1x", complex64(0), strconv.ErrSyntax},
