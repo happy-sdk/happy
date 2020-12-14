@@ -3,7 +3,7 @@ name: tests
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
 
 jobs:
@@ -38,3 +38,8 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=covprofile -service=github
+      - name: Benchmark
+        if: runner.os == 'Linux'
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: go test -bench=. -benchmem
