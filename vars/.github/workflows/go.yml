@@ -1,4 +1,4 @@
-name: Go Example
+name: benchmarks
 on:
   push:
     branches:
