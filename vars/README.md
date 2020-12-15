@@ -1,6 +1,6 @@
 # VARS
 
-![license](https://img.shields.io/github/license/mkungla/vars) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v3)](https://pkg.go.dev/github.com/mkungla/vars/v3) ![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars) [![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg)](https://coveralls.io/github/mkungla/vars)![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/vars)
+![license](https://img.shields.io/github/license/mkungla/vars) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v3)](https://pkg.go.dev/github.com/mkungla/vars/v3) ![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars) [![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg?branch=main)](https://coveralls.io/github/mkungla/vars?branch=main)![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/vars)
 
 ## About
 Package vars provides the API to parse variables from various input formats/types to common key value pair vars.Value or variable sets to vars.Collection
