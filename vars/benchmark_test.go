@@ -98,7 +98,7 @@ func randString(n int) string {
 // go test -bench BenchmarkNew -benchmem
 func BenchmarkNew(b *testing.B) {
 	// cached var
-	b.Run("string_repeat", func(b *testing.B) {
+	b.Run("string:repeat", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v := New("bm", "benchmark")
 			if v.String() != "benchmark" {
@@ -107,7 +107,7 @@ func BenchmarkNew(b *testing.B) {
 		}
 	})
 
-	b.Run("string_unique", func(b *testing.B) {
+	b.Run("string:unique", func(b *testing.B) {
 		// fixed := 100000
 		vals := make([]string, b.N)
 		for i := 0; i < b.N; i++ {
@@ -128,7 +128,7 @@ func BenchmarkNew(b *testing.B) {
 // go test -bench BenchmarkParse -benchmem
 func BenchmarkParse(b *testing.B) {
 	// cached var
-	b.Run("string_cached_pkg", func(b *testing.B) {
+	b.Run("string:cached:pkg", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v, _ := Parse("bm", "benchmark")
 			if v.String() != "benchmark" {
@@ -136,7 +136,7 @@ func BenchmarkParse(b *testing.B) {
 			}
 		}
 	})
-	b.Run("string_cached_fmt", func(b *testing.B) {
+	b.Run("string:cached:fmt", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v := parseFmt("bm", "benchmark")
 			if v.String() != "benchmark" {
@@ -145,7 +145,7 @@ func BenchmarkParse(b *testing.B) {
 		}
 	})
 
-	b.Run("string_pkg", func(b *testing.B) {
+	b.Run("string:pkg", func(b *testing.B) {
 		// fixed := 100000
 		vals := make([]string, b.N)
 		for i := 0; i < b.N; i++ {
@@ -161,7 +161,7 @@ func BenchmarkParse(b *testing.B) {
 		}
 	})
 
-	b.Run("string_fmt", func(b *testing.B) {
+	b.Run("string:fmt", func(b *testing.B) {
 		// fixed := 100000
 		vals := make([]string, b.N)
 		for i := 0; i < b.N; i++ {
@@ -177,7 +177,7 @@ func BenchmarkParse(b *testing.B) {
 		}
 	})
 
-	b.Run("int_pkg", func(b *testing.B) {
+	b.Run("int:pkg", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v, _ := Parse("bm", b.N)
 			if v.Int() != b.N {
@@ -186,7 +186,7 @@ func BenchmarkParse(b *testing.B) {
 		}
 	})
 	// cached var with fmt package
-	b.Run("int_fmt", func(b *testing.B) {
+	b.Run("int:fmt", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v := parseFmt("bm", b.N)
 			if v.Int() != b.N {
@@ -207,7 +207,7 @@ func BenchmarkBool(b *testing.B) {
 			}
 		}
 	})
-	b.Run("variable_new", func(b *testing.B) {
+	b.Run("variable:new", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v := New("key", "true")
 			if v.Bool() != true {
@@ -215,7 +215,7 @@ func BenchmarkBool(b *testing.B) {
 			}
 		}
 	})
-	b.Run("variable_new_typed", func(b *testing.B) {
+	b.Run("variable:new:typed", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v, _ := NewTyped("key", "true", TypeBool)
 			if v.Bool() != true {
@@ -223,7 +223,7 @@ func BenchmarkBool(b *testing.B) {
 			}
 		}
 	})
-	b.Run("variable_parse", func(b *testing.B) {
+	b.Run("variable:parse", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v, _ := Parse("key", true)
 			if v.Bool() != true {
@@ -231,7 +231,7 @@ func BenchmarkBool(b *testing.B) {
 			}
 		}
 	})
-	b.Run("value_new", func(b *testing.B) {
+	b.Run("value:new", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v := Value("true")
 			if v.Bool() != true {
