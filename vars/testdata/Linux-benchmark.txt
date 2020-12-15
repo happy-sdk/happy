@@ -1,0 +1,10 @@
+goos: linux
+goarch: amd64
+pkg: github.com/mkungla/vars/v3
+BenchmarkBool/strconv-8         	348543286	         3.31 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBool/vartiable:new-8   	78445953	        14.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBool/vartiable:new:typed-8         	62465702	        18.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBool/vartiable:parse-8             	15376917	        78.0 ns/op	       4 B/op	       1 allocs/op
+BenchmarkBool/value:new-8                   	346278727	         3.34 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/mkungla/vars/v3	6.685s
