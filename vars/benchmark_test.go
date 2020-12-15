@@ -98,7 +98,7 @@ func randString(n int) string {
 // go test -bench BenchmarkNew -benchmem
 func BenchmarkNew(b *testing.B) {
 	// cached var
-	b.Run("string:repeat", func(b *testing.B) {
+	b.Run("string_repeat", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v := New("bm", "benchmark")
 			if v.String() != "benchmark" {
@@ -107,7 +107,7 @@ func BenchmarkNew(b *testing.B) {
 		}
 	})
 
-	b.Run("string:unique", func(b *testing.B) {
+	b.Run("string_unique", func(b *testing.B) {
 		// fixed := 100000
 		vals := make([]string, b.N)
 		for i := 0; i < b.N; i++ {
