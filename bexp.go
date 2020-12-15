@@ -21,7 +21,13 @@ var (
 	escPeriod = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
 )
 
-func Parse(str string) []string {
+type BraceExpansion []string
+
+func (b BraceExpansion) String() string {
+	return strings.Join(b, " ")
+}
+
+func Parse(str string) BraceExpansion {
 	if str == "" {
 		return []string{}
 	}
@@ -29,7 +35,7 @@ func Parse(str string) []string {
 	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
 }
 
-func parseCommaParts(str string) []string {
+func parseCommaParts(str string) BraceExpansion {
 	if str == "" {
 		return []string{""}
 	}
