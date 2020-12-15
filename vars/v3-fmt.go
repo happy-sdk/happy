@@ -372,8 +372,6 @@ func (p *ppV3) printValue(value reflect.Value, depth int) {
 				p.printValue(f.Index(i), depth+1)
 			}
 			p.buf.writeByte('}')
-		} else {
-
 		}
 	case reflect.Ptr:
 		// pointer to array or slice or struct? ok at top level
@@ -537,23 +535,6 @@ func (p *ppV3) fmt0x64(v uint64, leading0x bool) {
 	p.fmt.sharp = leading0x
 	p.fmt.fmtInteger(v, 16, unsigned, 'v', ldigits)
 	p.fmt.sharp = sharp
-}
-
-// flags placed in a separate struct for easy clearing.
-type fmtFlags struct {
-	widPresent  bool
-	precPresent bool
-	minus       bool
-	plus        bool
-	sharp       bool
-	space       bool
-	zero        bool
-
-	// For the formats %+v %#v, we set the plusV/sharpV flags
-	// and clear the plus/sharp flags since %+v and %#v are in effect
-	// different, flagless formats set at the top level.
-	plusV  bool
-	sharpV bool
 }
 
 // A fmt is the raw formatter used by Printf etc.

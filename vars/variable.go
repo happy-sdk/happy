@@ -8,7 +8,6 @@ import "strings"
 
 // Variable is universl representation of key val pair
 type Variable struct {
-	err   error
 	key   string
 	str   string
 	raw   interface{}
