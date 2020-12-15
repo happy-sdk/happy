@@ -21,7 +21,7 @@ jobs:
           key: ${{ runner.os }}-benchmark
         # Run `github-action-benchmark` action
       - name: Store benchmark result
-        uses: mkungla/github-action-benchmark@master
+        uses: mkungla/github-action-benchmark@v1
         with:
           # What benchmark tool the output.txt came from
           tool: 'go'
