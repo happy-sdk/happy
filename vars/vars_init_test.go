@@ -41,11 +41,11 @@ type boolTest struct {
 	err  error
 }
 
-type testVtype struct {
-	key   string
-	vtype uint
-	err   uint
-}
+// type testVtype struct {
+// 	key   string
+// 	vtype uint
+// 	err   uint
+// }
 
 type testInt struct {
 	key   string

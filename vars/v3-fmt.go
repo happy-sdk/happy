@@ -16,20 +16,20 @@ const (
 // Strings for use with buffer.WriteString.
 // This is less overhead than using buffer.Write with byte arrays.
 const (
-	commaSpaceString  = ", "
-	nilAngleString    = "<nil>"
-	nilParenString    = "(nil)"
-	nilString         = "nil"
+	commaSpaceString = ", "
+	nilAngleString   = "<nil>"
+	nilParenString   = "(nil)"
+	// nilString         = "nil"
 	mapString         = "map["
 	percentBangString = "%!"
-	missingString     = "(MISSING)"
-	badIndexString    = "(BADINDEX)"
-	panicString       = "(PANIC="
-	extraString       = "%!(EXTRA "
-	badWidthString    = "%!(BADWIDTH)"
-	badPrecString     = "%!(BADPREC)"
-	noVerbString      = "%!(NOVERB)"
-	invReflectString  = "<invalid reflect.Value>"
+	// missingString     = "(MISSING)"
+	// badIndexString   = "(BADINDEX)"
+	panicString = "(PANIC="
+	// extraString      = "%!(EXTRA "
+	// badWidthString   = "%!(BADWIDTH)"
+	// badPrecString    = "%!(BADPREC)"
+	// noVerbString     = "%!(NOVERB)"
+	invReflectString = "<invalid reflect.Value>"
 )
 
 const (
@@ -95,9 +95,9 @@ type ppV3 struct {
 	fmt sfmt
 
 	// reordered records whether the format string used argument reordering.
-	reordered bool
+	// reordered bool
 	// goodArgNum records whether the most recent reordering directive was valid.
-	goodArgNum bool
+	// goodArgNum bool
 	// panicking is set by catchPanic to avoid infinite panic, recover, panic, ... recursion.
 	panicking bool
 	// erroring is set when printing an error string to guard against calling handleMethods.
