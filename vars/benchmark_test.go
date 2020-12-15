@@ -207,7 +207,7 @@ func BenchmarkBool(b *testing.B) {
 			}
 		}
 	})
-	b.Run("vartiable:new", func(b *testing.B) {
+	b.Run("variable:new", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v := New("key", "true")
 			if v.Bool() != true {
@@ -215,7 +215,7 @@ func BenchmarkBool(b *testing.B) {
 			}
 		}
 	})
-	b.Run("vartiable:new:typed", func(b *testing.B) {
+	b.Run("variable:new:typed", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v, _ := NewTyped("key", "true", TypeBool)
 			if v.Bool() != true {
@@ -223,7 +223,7 @@ func BenchmarkBool(b *testing.B) {
 			}
 		}
 	})
-	b.Run("vartiable:parse", func(b *testing.B) {
+	b.Run("variable:parse", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			v, _ := Parse("key", true)
 			if v.Bool() != true {

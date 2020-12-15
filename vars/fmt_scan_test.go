@@ -1092,41 +1092,41 @@ func testScanInts(t *testing.T, scan func(*RecursiveInt, *bytes.Buffer) error) {
 	}
 }
 
-func BenchmarkScanInts(b *testing.B) {
-	b.ResetTimer()
-	ints := makeInts(intCount)
-	var r RecursiveInt
-	for i := b.N - 1; i >= 0; i-- {
-		buf := bytes.NewBuffer(ints)
-		b.StartTimer()
-		_ = scanInts(&r, buf)
-		b.StopTimer()
-	}
-}
-
-func BenchmarkScanRecursiveInt(b *testing.B) {
-	b.ResetTimer()
-	ints := makeInts(intCount)
-	var r RecursiveInt
-	for i := b.N - 1; i >= 0; i-- {
-		buf := bytes.NewBuffer(ints)
-		b.StartTimer()
-		Fscan(buf, &r)
-		b.StopTimer()
-	}
-}
-
-func BenchmarkScanRecursiveIntReaderWrapper(b *testing.B) {
-	b.ResetTimer()
-	ints := makeInts(intCount)
-	var r RecursiveInt
-	for i := b.N - 1; i >= 0; i-- {
-		buf := struct{ io.Reader }{strings.NewReader(string(ints))}
-		b.StartTimer()
-		Fscan(buf, &r)
-		b.StopTimer()
-	}
-}
+// func BenchmarkScanInts(b *testing.B) {
+// 	b.ResetTimer()
+// 	ints := makeInts(intCount)
+// 	var r RecursiveInt
+// 	for i := b.N - 1; i >= 0; i-- {
+// 		buf := bytes.NewBuffer(ints)
+// 		b.StartTimer()
+// 		_ = scanInts(&r, buf)
+// 		b.StopTimer()
+// 	}
+// }
+//
+// func BenchmarkScanRecursiveInt(b *testing.B) {
+// 	b.ResetTimer()
+// 	ints := makeInts(intCount)
+// 	var r RecursiveInt
+// 	for i := b.N - 1; i >= 0; i-- {
+// 		buf := bytes.NewBuffer(ints)
+// 		b.StartTimer()
+// 		Fscan(buf, &r)
+// 		b.StopTimer()
+// 	}
+// }
+//
+// func BenchmarkScanRecursiveIntReaderWrapper(b *testing.B) {
+// 	b.ResetTimer()
+// 	ints := makeInts(intCount)
+// 	var r RecursiveInt
+// 	for i := b.N - 1; i >= 0; i-- {
+// 		buf := struct{ io.Reader }{strings.NewReader(string(ints))}
+// 		b.StartTimer()
+// 		Fscan(buf, &r)
+// 		b.StopTimer()
+// 	}
+// }
 
 // Issue 9124.
 // %x on bytes couldn't handle non-space bytes terminating the scan.
