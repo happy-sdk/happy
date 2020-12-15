@@ -1,5 +1,6 @@
-// Copyright 2012 Marko Kungla.
-// Source code is provider under MIT License.
+// Copyright 2012 Marko Kungla. All rights reserved.
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
 
 /*
 Package vars provides the API to parse variables from various input
