@@ -1099,7 +1099,7 @@ func BenchmarkScanInts(b *testing.B) {
 	for i := b.N - 1; i >= 0; i-- {
 		buf := bytes.NewBuffer(ints)
 		b.StartTimer()
-		scanInts(&r, buf)
+		_ = scanInts(&r, buf)
 		b.StopTimer()
 	}
 }

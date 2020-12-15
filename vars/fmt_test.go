@@ -142,7 +142,7 @@ type writeStringFormatter string
 
 func (sf writeStringFormatter) Format(f fmt.State, c rune) {
 	if sw, ok := f.(io.StringWriter); ok {
-		sw.WriteString("***" + string(sf) + "***")
+		_, _ = sw.WriteString("***" + string(sf) + "***")
 	}
 }
 
@@ -1404,7 +1404,7 @@ func (flagPrinter) Format(f fmt.State, c rune) {
 		s += fmt.Sprintf(".%d", p)
 	}
 	s += string(c)
-	io.WriteString(f, "["+s+"]")
+	_, _ = io.WriteString(f, "["+s+"]")
 }
 
 var flagtests = []struct {
