@@ -39,38 +39,21 @@ jobs:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=covprofile -service=github
   benchmark:
-    strategy:
-      matrix:
-        version: [1.15.x]
-        platform: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.platform }}
+    name: Run Go benchmark example
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v1
       - name: Run benchmark
-        run: go test -bench . -benchmem | tee ./${{ runner.os }}-benchmark.txt
-      # Download previous benchmark result from cache (if exists)
-      - name: Download previous benchmark data
-        uses: actions/cache@v1
-        with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmark
-      # Run `github-action-benchmark` action
+        run: cd examples/go && go test -bench 'BenchmarkBool' | tee output.txt
       - name: Store benchmark result
         uses: rhysd/github-action-benchmark@v1
         with:
-          # What benchmark tool the output.txt came from
+          name: Go Benchmark
           tool: 'go'
-          # Where the output from the benchmark tool is stored
-          output-file-path: ./testdata/benchmark-${{ runner.os }}.txt
-          # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
-          # Workflow will fail when an alert happens
-          fail-on-alert: true
-          # GitHub API token to make a commit comment
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Enable alert commit comment
+          output-file-path: examples/go/output.txt
+          # Show alert with commit comment on detecting possible performance regression
+          alert-threshold: '200%'
           comment-on-alert: true
-          # Mention @rhysd in the commit comment
+          fail-on-alert: true
           alert-comment-cc-users: '@mkungla'
-      # Upload the updated cache file for the next job by actions/cache
