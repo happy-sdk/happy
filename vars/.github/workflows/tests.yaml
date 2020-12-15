@@ -41,7 +41,7 @@ jobs:
   benchmark:
     strategy:
       matrix:
-        version: [1.13.x, 1.14.x, 1.15.x]
+        version: [1.15.x]
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -62,7 +62,7 @@ jobs:
           # What benchmark tool the output.txt came from
           tool: 'go'
           # Where the output from the benchmark tool is stored
-          output-file-path: ./testdata/benchmark.txt
+          output-file-path: ./testdata/benchmark-${{ runner.os }}.txt
           # Where the previous data file is stored
           external-data-json-path: ./cache/benchmark-data.json
           # Workflow will fail when an alert happens
