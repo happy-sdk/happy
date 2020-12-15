@@ -13,4 +13,31 @@ jobs:
           go-version: 1.15.x
       - uses: actions/checkout@v2
       - name: Run benchmark
-        run: go test -bench 'BenchmarkNew' | tee output.txt
+        run: go test -bench . | tee bench.out
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+        # Run `github-action-benchmark` action
+      - name: Store benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          # What benchmark tool the output.txt came from
+          tool: 'go'
+          # Where the output from the benchmark tool is stored
+          output-file-path: bench.out
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/benchmark-data.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
+          alert-comment-cc-users: '@mkungla'
+          gh-pages-branch: "main"
+          benchmark-data-dir-path: "docs/dev/bench"
+          auto-push: true
+          alert-threshold: 150%
+          fail-threshold: 200%
