@@ -13,7 +13,7 @@ jobs:
           go-version: 1.15.x
       - uses: actions/checkout@v2
       - name: Run benchmark
-        run: go test -bench . | tee bench.out
+        run: go test -bench 'BenchmarkNew' | tee output.txt
       - name: Download previous benchmark data
         uses: actions/cache@v1
         with:
@@ -26,7 +26,7 @@ jobs:
           # What benchmark tool the output.txt came from
           tool: 'go'
           # Where the output from the benchmark tool is stored
-          output-file-path: bench.out
+          output-file-path: output.txt
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # GitHub API token to make a commit comment
