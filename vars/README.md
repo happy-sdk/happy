@@ -1,6 +1,6 @@
 # VARS
 
-![license](https://img.shields.io/github/license/howi-lib/vars) [![PkgGoDev](https://pkg.go.dev/badge/github.com/howi-lib/vars/v2)](https://pkg.go.dev/github.com/howi-lib/vars/v2) ![tests](https://github.com/howi-lib/vars/workflows/tests/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/howi-lib/vars)](https://goreportcard.com/report/github.com/howi-lib/vars) [![Coverage Status](https://coveralls.io/repos/github/howi-lib/vars/badge.svg)](https://coveralls.io/github/howi-lib/vars)![GitHub last commit](https://img.shields.io/github/last-commit/howi-lib/vars)
+![license](https://img.shields.io/github/license/mkungla/vars) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v3)](https://pkg.go.dev/github.com/mkungla/vars/v3) ![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars) [![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg)](https://coveralls.io/github/mkungla/vars)![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/vars)
 
 ## About
 Package vars provides the API to parse variables from various input formats/types to common key value pair vars.Value or variable sets to vars.Collection
@@ -11,16 +11,16 @@ Package vars provides the API to parse variables from various input formats/type
 ## Install
 
 ```
-go get github.com/howi-lib/vars/v2
+go get github.com/mkungla/vars/v3
 ```
 
 ## Usage
 
-**working with [vars.Value](https://pkg.go.dev/github.com/howi-lib/vars/v2#Value)**
+**working with [vars.Value](https://pkg.go.dev/github.com/mkungla/vars/v3#Value)**
 ```go
 package main
 
-import "github.com/howi-lib/vars/v2"
+import "github.com/mkungla/vars/v3"
 
 func main() {
   empty1 := vars.NewValue(nil)
@@ -72,11 +72,11 @@ func main() {
 }
 ```
 
-**working with [vars.Collection](https://pkg.go.dev/github.com/howi-lib/vars/v2#Value)**
+**working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v3#Value)**
 ```go
 package main
 
-import "github.com/howi-lib/vars/v2"
+import "github.com/mkungla/vars/v3"
 
 func main() {
   collection := vars.ParseKeyValSlice([]string{
@@ -101,7 +101,7 @@ func main() {
 ```go
 package main
 
-import "github.com/howi-lib/vars/v2"
+import "github.com/mkungla/vars/v3"
 
 func main() {
   content, err := ioutil.ReadFile("testdata/dot_env")
