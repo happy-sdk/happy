@@ -14,14 +14,14 @@ import (
 
 // SortedMap represents a map's keys and values. The keys and values are
 // aligned in index order: Value[i] is the value in the map corresponding to Key[i].
-type SortedMap struct {
+type sortedMap struct {
 	Key   []reflect.Value
 	Value []reflect.Value
 }
 
-func (o *SortedMap) Len() int           { return len(o.Key) }
-func (o *SortedMap) Less(i, j int) bool { return compare(o.Key[i], o.Key[j]) < 0 }
-func (o *SortedMap) Swap(i, j int) {
+func (o *sortedMap) Len() int           { return len(o.Key) }
+func (o *sortedMap) Less(i, j int) bool { return compare(o.Key[i], o.Key[j]) < 0 }
+func (o *sortedMap) Swap(i, j int) {
 	o.Key[i], o.Key[j] = o.Key[j], o.Key[i]
 	o.Value[i], o.Value[j] = o.Value[j], o.Value[i]
 }
@@ -45,7 +45,7 @@ func (o *SortedMap) Swap(i, j int) {
 //  - interface values compare first by reflect.Type describing the concrete type
 //    and then by concrete value as described in the previous rules.
 //
-func Sort(mapValue reflect.Value) *SortedMap {
+func fmtsort(mapValue reflect.Value) *sortedMap {
 	if mapValue.Type().Kind() != reflect.Map {
 		return nil
 	}
@@ -60,7 +60,7 @@ func Sort(mapValue reflect.Value) *SortedMap {
 		key = append(key, iter.Key())
 		value = append(value, iter.Value())
 	}
-	sorted := &SortedMap{
+	sorted := &sortedMap{
 		Key:   key,
 		Value: value,
 	}

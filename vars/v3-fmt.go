@@ -305,7 +305,7 @@ func (p *ppV3) printValue(value reflect.Value, depth int) {
 		} else {
 			p.buf.writeString(mapString)
 		}
-		sorted := Sort(f)
+		sorted := fmtsort(f)
 		for i, key := range sorted.Key {
 			if i > 0 {
 				if p.fmt.sharpV {
