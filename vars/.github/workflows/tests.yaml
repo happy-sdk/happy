@@ -43,3 +43,39 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: go test -bench=. -benchmem
+  benchmark:
+    strategy:
+      matrix:
+        version: [1.13.x, 1.14.x, 1.15.x]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v1
+      - name: Run benchmark
+        run: go test -bench . -benchmem | tee output.txt
+      # Download previous benchmark result from cache (if exists)
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+      # Run `github-action-benchmark` action
+      - name: Store benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          # What benchmark tool the output.txt came from
+          tool: 'go'
+          # Where the output from the benchmark tool is stored
+          output-file-path: benchmark.txt
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/benchmark-data.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
+          # Mention @rhysd in the commit comment
+          alert-comment-cc-users: '@mkungla'
+      # Upload the updated cache file for the next job by actions/cache
