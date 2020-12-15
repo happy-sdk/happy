@@ -9,29 +9,21 @@ type Collection map[string]Value
 // Get retrieves the value of the variable named by the key.
 // It returns the value, which will be empty string if the variable is not set
 // or value was empty.
-func (c Collection) Get(k string) (v Value) {
-	if len(k) == 0 {
-		return ""
+func (c Collection) Get(k string, defval ...interface{}) (val Value) {
+	val, ok := c[k]
+	if len(k) == 0 || !ok || len(val) == 0 {
+		if len(defval) > 0 {
+			s, _ := ParseValue(defval[0])
+			return s
+		}
 	}
-	v = c[k]
-	return
+	return val
 }
 
 // Set updates key value pair in collection. If key does not exist then appends
 // key wth given value
 func (c Collection) Set(k string, v interface{}) {
-	c[k] = NewValue(v)
-}
-
-// GetOrDefaultTo is same as Getvar but returns default value if
-// value of variable [key] is empty or does not exist.
-// It only returns this case default it neither sets or exports that default
-func (c Collection) GetOrDefaultTo(k string, defVal string) (v Value) {
-	v = c.Get(k)
-	if v == "" {
-		v = NewValue(defVal)
-	}
-	return
+	c[k], _ = ParseValue(v)
 }
 
 // GetWithPrefix return all variables with prefix if any as map[]

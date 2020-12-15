@@ -1,8 +1,12 @@
+// Copyright 2012 Marko Kungla. All rights reserved.
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package vars
 
 import (
 	"io/ioutil"
-	"strconv"
+	"math"
 	"strings"
 	"testing"
 )
@@ -11,8 +15,8 @@ func TestCollectionParseFromString(t *testing.T) {
 	slice := strings.Split(string(genStringTestBytes()), "\n")
 	collection := ParseKeyValSlice(slice)
 	for _, test := range stringTests {
-		if actual := collection.Get(test.key); actual.String() != test.want {
-			t.Errorf("Collection.Get(%q) = %q, want %q", test.key, actual.String(), test.want)
+		if actual := collection.Get(test.key); actual.String() != test.val {
+			t.Errorf("Collection.Get(%q) = %q, want %q", test.key, actual.String(), test.val)
 		}
 	}
 
@@ -25,8 +29,8 @@ func TestCollectionParseFromString(t *testing.T) {
 func TestCollectionParseFromBytes(t *testing.T) {
 	collection := ParseFromBytes(genStringTestBytes())
 	for _, test := range stringTests {
-		if actual := collection.Get(test.key); actual.String() != test.want {
-			t.Errorf("Collection.Get(%q) = %q, want %q", test.key, actual.String(), test.want)
+		if actual := collection.Get(test.key); actual.String() != test.val {
+			t.Errorf("Collection.Get(%q) = %q, want %q", test.key, actual.String(), test.val)
 		}
 	}
 }
@@ -38,14 +42,14 @@ func TestCollectionGetOrDefaultTo(t *testing.T) {
 		defVal string
 		want   string
 	}{
-		{"STRING", "some-string", "some-string"},
-		{"STRING", "some-string with space ", "some-string with space"},
-		{"STRING", " some-string with space", "some-string with space"},
-		{"STRING", "1234567", "1234567"},
+		{"STRING_1", "some-string", "some-string"},
+		{"STRING_2", "some-string with space ", "some-string with space "},
+		{"STRING_3", " some-string with space", " some-string with space"},
+		{"STRING_4", "1234567", "1234567"},
 		{"", "1234567", "1234567"},
 	}
 	for _, tt := range tests {
-		if actual := collection.GetOrDefaultTo(tt.k, tt.defVal); actual.String() != tt.want {
+		if actual := collection.Get(tt.k, tt.defVal); actual.String() != tt.want {
 			t.Errorf("Collection.GetOrDefaultTo(%q, %q) = %q, want %q", tt.k, tt.defVal, actual, tt.want)
 		}
 	}
@@ -61,16 +65,13 @@ func TestCollectionGetWithPrefix(t *testing.T) {
 
 func TestCollectionParseBool(t *testing.T) {
 	collection := ParseFromBytes(genAtobTestBytes())
-	for _, test := range atobTests {
+	for _, test := range boolTests {
 		val := collection.Get(test.key)
-		b, err := val.Bool()
-		if test.wantErr != nil {
+		b := val.Bool()
+		_, err := NewTyped(test.key, val.String(), TypeBool)
+		if test.err != nil {
 			if err == nil {
-				t.Errorf("Value(%s).ParseBool(): expected %s but got nil", test.key, test.wantErr)
-			} else {
-				if test.wantErr != err.(*strconv.NumError).Err {
-					t.Errorf("Value(%s).ParseBool(): expected %s but got %s", test.key, test.wantErr, err)
-				}
+				t.Errorf("Value(%s).ParseBool(): expected %s but got nil", test.key, test.err)
 			}
 		} else {
 			if err != nil {
@@ -85,209 +86,60 @@ func TestCollectionParseBool(t *testing.T) {
 
 func TestCollectionParseFloat(t *testing.T) {
 	collection := ParseFromBytes(genAtofTestBytes())
-	for _, test := range atofTests {
+	for _, test := range float64Tests {
 		val := collection.Get(test.key)
-		out, err := val.Float(64)
-		outs := strconv.FormatFloat(out, 'g', -1, 64)
-		if test.wantErr != nil {
-			if err == nil {
-				t.Errorf("Value(%s).ParseFloat(64) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			} else {
-				if test.wantErr != err.(*strconv.NumError).Err {
-					t.Errorf("Value(%s).ParseFloat(64) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				}
-			}
-		}
-		if outs != test.want {
-			t.Errorf("Value(%s).ParseFloat(64) = %v, err(%s) want %v, err(%s)",
-				test.key, out, err, test.want, test.wantErr)
+		out := val.Float64()
+
+		if val.String() != test.in {
+			t.Errorf("1. Value(%s).Float64() = %q) want %q",
+				test.key, val.String(), test.in)
 		}
 
-		if float64(float32(out)) == out {
-			out, err := val.Float(32)
-			out32 := float32(out)
-			if float64(out32) != out {
-				t.Errorf("Value(%s).ParseFloat(32) = %v, not a float32 (closest is %v)", test.key, out, float64(out32))
+		if out != test.wantFloat64 {
+			if math.IsNaN(out) && math.IsNaN(test.wantFloat64) {
 				continue
 			}
-			outs := strconv.FormatFloat(float64(out32), 'g', -1, 32)
-			if outs != test.want {
-				t.Errorf("Value(%s).ParseFloat(32) = %v, %s want %v, %s  # %v",
-					test.key, out32, err, test.want, test.wantErr, out)
-			}
+			t.Errorf("2. Value(%s).Float64() = %v) want %v",
+				test.key, out, test.wantFloat64)
 		}
 	}
-
 }
 
 func TestCollectionParseFloat32(t *testing.T) {
 	collection := ParseFromBytes(genAtof32TestBytes())
-	for _, test := range atof32Tests {
+	for _, test := range float32Tests {
 		val := collection.Get(test.key)
-		out, err := val.Float(32)
-		out32 := float32(out)
-		if float64(out32) != out {
-			t.Errorf("Value(%s).ParseFloat(32) = %v, not a float32 (closest is %v)",
-				test.key, out, float64(out32))
-			continue
-		}
-		outs := strconv.FormatFloat(float64(out32), 'g', -1, 32)
-		if test.wantErr != nil {
-			if err == nil {
-				t.Errorf("Value(%s).ParseFloat(32) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			} else {
-				if test.wantErr != err.(*strconv.NumError).Err {
-					t.Errorf("Value(%s).ParseFloat(32) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				}
+		out := val.Float32()
+		if out != test.wantFloat32 {
+			if math.IsNaN(float64(out)) && math.IsNaN(float64(test.wantFloat32)) {
+				continue
 			}
-		}
-		if outs != test.want {
-			t.Errorf("Value(%s).ParseFloat(32) = %v, err(%s) want %v, err(%s)",
-				test.key, out, err, test.want, test.wantErr)
+			t.Errorf("2. Value(%s).Float64() = %v) want %v",
+				test.key, out, test.wantFloat32)
 		}
 	}
 }
 
 func TestCollectionParseUint64(t *testing.T) {
 	collection := ParseFromBytes(genAtoui64TestBytes())
-	for _, test := range atoui64Tests {
+	for _, test := range uintTests {
 		val := collection.Get(test.key)
-		out, err := val.Uint(10, 64)
-		if test.wantErr != nil {
-			if err == nil {
-				t.Errorf("Value(%s).ParseUint(10, 64) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			} else {
-				if test.wantErr != err.(*strconv.NumError).Err {
-					t.Errorf("Value(%s).ParseUint(10, 64) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				}
-			}
-		}
-		if out != test.want {
-			t.Errorf("Value(%s).ParseUint(10, 64) = %v, err(%s) want %v, err(%s)",
-				test.key, out, err, test.want, test.wantErr)
-		}
-	}
-}
-
-func TestCollectionParseUint64Base(t *testing.T) {
-	collection := ParseFromBytes(genBtoui64TestBytes())
-	for _, test := range btoui64Tests {
-		val := collection.Get(test.key)
-		out, err := val.Uint(0, 64)
-		if test.wantErr != nil {
-			if err == nil {
-				t.Errorf("Value(%s).ParseUint(0, 64) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			} else {
-				if test.wantErr != err.(*strconv.NumError).Err {
-					t.Errorf("Value(%s).ParseUint(0, 64) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				}
-			}
-		}
-		if out != test.want {
-			t.Errorf("Value(%s).ParseUint(0, 64) = %v, err(%s) want %v, err(%s)",
-				test.key, out, err, test.want, test.wantErr)
+		out := val.Uint64()
+		if out != test.uint64 {
+			t.Errorf("2. Value(%s).Uint64() = %v) want %v",
+				test.key, out, test.uint64)
 		}
 	}
 }
 
 func TestCollectionParseInt64(t *testing.T) {
 	collection := ParseFromBytes(genAtoi64TestBytes())
-	for _, test := range atoi64Tests {
+	for _, test := range intTests {
 		val := collection.Get(test.key)
-		out, err := val.Int(10, 64)
-		if test.wantErr != nil {
-			if err == nil {
-				t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			} else {
-				if test.wantErr != err.(*strconv.NumError).Err {
-					t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				}
-			}
-		}
-		if out != test.want {
-			t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-				test.key, out, err, test.want, test.wantErr)
-		}
-	}
-}
-
-func TestCollectionParseInt64Base(t *testing.T) {
-	collection := ParseFromBytes(genBtoi64TestBytes())
-	for _, test := range btoi64Tests {
-		val := collection.Get(test.key)
-		out, err := val.Int(test.base, 64)
-		if test.wantErr != nil {
-			if err == nil {
-				t.Errorf("Value(%s).ParseInt(%d, 64) = %v, err(%v) want %v, err(%v)",
-					test.key, test.base, out, err, test.want, test.wantErr)
-			} else {
-				if test.wantErr != err.(*strconv.NumError).Err {
-					t.Errorf("Value(%s).ParseInt(%d, 64) = %v, err(%v) want %v, err(%v)",
-						test.key, test.base, out, err, test.want, test.wantErr)
-				}
-			}
-		}
-
-		if out != test.want {
-			t.Errorf("Value(%s).ParseInt(%d, 64) = %v, err(%v) want %v, err(%v)",
-				test.key, test.base, out, err, test.want, test.wantErr)
-		}
-	}
-}
-
-func TestCollectionParseUint(t *testing.T) {
-	switch strconv.IntSize {
-	case 32:
-		collection := ParseFromBytes(genAtoui32TestBytes())
-		for _, test := range atoui32Tests {
-			val := collection.Get(test.key)
-			out, err := val.Uint(10, 0)
-			if test.wantErr != nil {
-				if err == nil {
-					t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				} else {
-					if test.wantErr != err.(*strconv.NumError).Err {
-						t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
-							test.key, out, err, test.want, test.wantErr)
-					}
-				}
-			}
-			if uint32(out) != test.want {
-				t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			}
-		}
-	case 64:
-		collection := ParseFromBytes(genAtoui64TestBytes())
-		for _, test := range atoui64Tests {
-			val := collection.Get(test.key)
-			out, err := val.Uint(10, 0)
-			if test.wantErr != nil {
-				if err == nil {
-					t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				} else {
-					if test.wantErr != err.(*strconv.NumError).Err {
-						t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
-							test.key, out, err, test.want, test.wantErr)
-					}
-				}
-			}
-			if uint64(out) != test.want {
-				t.Errorf("Value(%s).ParseUint(10, 0) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			}
+		out := val.Int64()
+		if out != test.int64 {
+			t.Errorf("2. Value(%s).Int64() = %v) want %v",
+				test.key, out, test.int64)
 		}
 	}
 }
@@ -305,7 +157,7 @@ func TestCollectionParseFields(t *testing.T) {
 		{"STRING", "1 2 3 4 5 6 7 8.1", 8},
 	}
 	for _, tt := range tests {
-		val := collection.GetOrDefaultTo(tt.k, tt.defVal)
+		val := collection.Get(tt.k, tt.defVal)
 		actual := len(val.ParseFields())
 		if actual != tt.wantLen {
 			t.Errorf("Value.(%q).ParseFields() len = %d, want %d", tt.k, actual, tt.wantLen)
