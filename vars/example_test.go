@@ -6,45 +6,28 @@ package vars_test
 import (
 	"fmt"
 
-	"github.com/howi-lib/vars/v3"
+	"github.com/mkungla/vars/v3"
 )
 
 func ExampleValue() {
-	empty1 := vars.NewValue(nil)
+	empty1, _ := vars.ParseValue(nil)
 	empty2 := vars.NewValue("")
 	if empty1.String() == empty2.String() {
 		// both produce empty var
 	}
-	v := vars.NewValue(123456)
+	v, _ := vars.ParseValue(123456)
 	fmt.Println(v.String())
 
-	if out, err := v.AsInt(); err == nil {
-		fmt.Println(out)
-	}
-	if out := v.Empty(); !out {
-		fmt.Println(out)
-	}
-	if out, err := v.Int(10, 64); err == nil {
-		fmt.Println(out)
-	}
-	if out, err := v.Float(32); err == nil {
-		fmt.Println(out)
-	}
-	if out, err := v.Float(64); err == nil {
-		fmt.Println(out)
-	}
-	if out := v.Len(); out > 0 {
-		fmt.Println(out)
-	}
-	if out := v.Rune(); out != nil {
-		fmt.Println(out)
-	}
-	if out, err := v.Uint(10, 64); err == nil {
-		fmt.Println(out)
-	}
-	if out, err := v.Uintptr(); err == nil {
-		fmt.Println(out)
-	}
+	fmt.Println(v.Int())
+	fmt.Println(v.Empty())
+	fmt.Println(v.Int64())
+	fmt.Println(v.Float32())
+	fmt.Println(v.Float64())
+	fmt.Println(v.Len())
+	fmt.Println(v.Runes())
+	fmt.Println(v.Uint64())
+	fmt.Println(v.Uintptr())
+
 	// Output:
 	// 123456
 	// 123456
@@ -70,9 +53,9 @@ func ExampleCollection() {
 	for key, val := range set {
 		fmt.Println(key, val)
 	}
-	fmt.Println(collection.Get("other4").Float(64))
+	fmt.Println(collection.Get("other4").Float64())
 
 	// Output:
 	// _key3 true
-	// 1.001 <nil>
+	// 1.001
 }

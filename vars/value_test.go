@@ -1,551 +1,543 @@
+// Copyright 2020 Marko Kungla. All rights reserved.
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package vars
 
 import (
-	"strconv"
+	"errors"
+	"fmt"
+	"math"
 	"testing"
 )
 
-func TestNewValue(t *testing.T) {
-	var tests = []struct {
-		val  interface{}
-		want string
-	}{
-		{nil, ""},
-		{"", ""},
-	}
-
-	for _, tt := range tests {
-		got := NewValue(tt.val).String()
-		if got != tt.want {
-			t.Errorf("want: %s got %s", tt.want, got)
+func TestValueNew(t *testing.T) {
+	for _, test := range newTests {
+		v, _ := ParseValue(test.val)
+		want := fmt.Sprintf("%v", test.val)
+		if v.String() != want {
+			t.Errorf("New %q, %v: expected value.String to return %q got %q", test.key, test.val, want, v.String())
+			continue
 		}
 	}
 }
 
-func TestValueFromString(t *testing.T) {
-	tests := []struct {
-		name string
-		val  string
-		want string
-	}{
-		{"STRING", "some-string", "some-string"},
-		{"STRING", "some-string with space ", "some-string with space"},
-		{"STRING", " some-string with space", "some-string with space"},
-		{"STRING", "1234567", "1234567"},
-	}
-	for _, tt := range tests {
-		if got := NewValue(tt.val); got.String() != tt.want {
-			t.Errorf("ValueFromString() = %q, want %q", got.String(), tt.want)
+// func (v Value) Bool() bool
+func TestValueBool(t *testing.T) {
+	for _, test := range boolTests {
+		v := NewValue(test.in)
+		if v.Bool() != test.want {
+			t.Errorf("TestBool(%s): expected %t got %t", test.in, test.want, v.Bool())
+			continue
 		}
-		if rv := NewValue(tt.val); string(rv.Rune()) != tt.want {
-			t.Errorf("Value.Rune() = %q, want %q", string(rv.Rune()), tt.want)
+
+		vt, err := NewTypedValue(test.in, TypeBool)
+		if v.Bool() != vt.Bool() {
+			t.Errorf("TestBool(%s): expected New and NewTyped to return same values got: %t %t", test.in, v.Bool(), vt.Bool())
+			continue
 		}
-	}
-}
 
-func TestValueParseInt64(t *testing.T) {
-	val := Value("200")
-	iout, erri1 := val.AsInt()
-	if iout != 200 {
-		t.Errorf("Value(11).AsInt() = %d, err(%v) want 200", iout, erri1)
-	}
+		if !errors.Is(err, test.err) {
+			t.Errorf("TestBool(%s): expected err to equal %#v got %#v", test.in, test.err, err)
+			continue
+		}
 
-	val2 := Value("x")
-	iout2, erri2 := val2.AsInt()
-	if iout2 != 0 || erri2 == nil {
-		t.Errorf("Value(11).AsInt() = %d, err(%v) want 0 and err", iout2, erri2)
-	}
-}
-
-func TestValueTypeFromString(t *testing.T) {
-	val := NewValue("string var")
-	val2 := Value("string var")
-	if val != val2 {
-		t.Errorf("want: ValueFromString == Value got: ValueFromString = %q, val2 = %q", val, val2)
-	}
-}
-
-func TestValueTypeAsBool(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want bool
-	}{
-		{NewValue("true"), true},
-		{NewValue("false"), false},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Bool()
-		if got != tt.want {
-			t.Errorf("want: %t got %t", got, tt.want)
+		vp, _ := ParseValue(test.in)
+		if vp.Bool() != test.want {
+			t.Errorf("TestBool(%s, %s): expected %t got %t", test.key, test.in, test.want, vp.Bool())
+			continue
 		}
 	}
 }
 
-func TestValueTypeFromBool(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want string
-	}{
-		{ValueFromBool(true), "true"},
-		{ValueFromBool(false), "false"},
-	}
-	for _, tt := range tests {
-		if tt.val.String() != tt.want {
-			t.Errorf("want: %q got %q", tt.val.String(), tt.want)
+// func (v Value) Float32() float32
+func TestValueFloat32(t *testing.T) {
+	for _, test := range float32Tests {
+		v := NewValue(test.in)
+		if v.Float32() != test.wantFloat32 {
+			t.Errorf("TestFloat32(%s, %s): expected %v got %v", test.key, test.in, test.wantFloat32, v.Float32())
+			continue
+		}
+		vt, err := NewTypedValue(test.in, TypeFloat32)
+		if vt.String() != test.wantStr {
+			t.Errorf("TestFloat32(%s, %s): expected %q got %q", test.key, test.in, test.wantStr, vt.String())
+			continue
+		}
+		if vt.Float32() != test.wantFloat32 {
+			t.Errorf("TestFloat32(%s, %s): expected %q got %q", test.key, test.in, test.wantStr, vt.String())
+			continue
+		}
+		if !errors.Is(err, test.wantErr) {
+			t.Errorf("TestFloat32(%s, %s): expected err to equal %#v got %#v", test.key, test.in, test.wantErr, err)
+			continue
+		}
+
+		vp, _ := ParseValue(test.in)
+		if vp.Float32() != test.wantFloat32 {
+			t.Errorf("TestFloat32(%s, %s): expected %q got %f", test.key, test.in, test.wantStr, vp.Float32())
+			continue
 		}
 	}
 }
 
-func TestValueTypeAsUint(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want uint
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("2000000000000"), 2000000000000},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Uint(10, 0)
-		if got != uint64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueTypeAsUint8(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want uint8
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("200"), 200},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Uint(10, 0)
-		if got != uint64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueTypeAsRune(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want []rune
-	}{
-		{NewValue("1"), []rune{49}},
-		{NewValue("2"), []rune{50}},
-		{NewValue("444434555"), []rune{52, 52, 52, 52, 51, 52, 53, 53, 53}},
-	}
-	for _, tt := range tests {
-		got := tt.val.Rune()
-		if string(got) != string(tt.want) {
-			t.Errorf("want: %d got %d", tt.want, got)
-		}
-	}
-}
-
-func TestValueTypeAsInt64(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want int64
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("4444447777777834555"), 4444447777777834555},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Int(10, 0)
-		if got != int64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueTypeAsFloat32(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want float32
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("4444447777777834555"), 4444447777777834555},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Float(32)
-		if float32(got) != tt.want {
-			t.Errorf("want: %f got %f", got, tt.want)
-		}
-	}
-}
-
-func TestValueTypeAsFloat64(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want float64
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("443444777777834555"), 443444777777834555},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Float(64)
-		if got != tt.want {
-			t.Errorf("want: %f got %f", got, tt.want)
-		}
-	}
-}
-
-func TestValueTypeAsComplex64(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want complex64
-	}{
-		{NewValue("1.000000059604644775390626 2"), complex64(complex(1.0000001, 2))},
-		{NewValue("1x -0"), complex64(0)},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Complex64()
-		if got != tt.want {
-			t.Errorf("want: %f got %f", got, tt.want)
-		}
-	}
-}
-func TestValueTypeAsComplex128(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want complex128
-	}{
-		{NewValue("123456700 1e-100"), complex(1.234567e+08, 1e-100)},
-		{NewValue("99999999999999974834176 100000000000000000000001"), complex128(complex(9.999999999999997e+22, 1.0000000000000001e+23))},
-		{NewValue("100000000000000008388608 100000000000000016777215"), complex128(complex(1.0000000000000001e+23, 1.0000000000000001e+23))},
-		{NewValue("1e-20 625e-3"), complex128(complex(1e-20, 0.625))},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Complex128()
-		if got != tt.want {
-			t.Errorf("want: %f got %f", got, tt.want)
-		}
-	}
-}
-
-func TestValueTypeAsByte(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want byte
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("200"), 200},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Uint(10, 0)
-		if got != uint64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueTypeAsInt(t *testing.T) {
-	switch strconv.IntSize {
-	case 32:
-		collection := ParseFromBytes(genAtoi32TestBytes())
-		for _, test := range atoi32tests {
-			val := collection.Get(test.key)
-			out, err := val.Int(10, 0)
-			if test.wantErr != nil {
-				if err == nil {
-					t.Errorf("Value(%s).ParseInt(10, 0) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				} else {
-					if test.wantErr != err.(*strconv.NumError).Err {
-						t.Errorf("Value(%s).ParseInt(10, 0)= %v, err(%s) want %v, err(%s)",
-							test.key, out, err, test.want, test.wantErr)
-					}
-				}
+// func (v Value) Float64() float64
+func TestValueFloat64(t *testing.T) {
+	for _, test := range float64Tests {
+		v := NewValue(test.in)
+		if v.Float64() != test.wantFloat64 {
+			if test.wantStr == "NaN" && math.IsNaN(v.Float64()) {
+				continue
 			}
-			if int32(out) != test.want {
-				t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			}
+			t.Errorf("TestFloat64(%s, %s): expected %v got %v", test.key, test.in, test.wantFloat64, v.Float64())
+			continue
 		}
-	case 64:
-		collection := ParseFromBytes(genAtoi64TestBytes())
-		for _, test := range atoi64Tests {
-			val := collection.Get(test.key)
-			out, err := val.Int(10, 64)
-			if test.wantErr != nil {
-				if err == nil {
-					t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				} else {
-					if test.wantErr != err.(*strconv.NumError).Err {
-						t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-							test.key, out, err, test.want, test.wantErr)
-					}
-				}
-			}
-			if int64(out) != test.want {
-				t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			}
+		vt, err := NewTypedValue(test.in, TypeFloat64)
+		if vt.String() != test.wantStr {
+			t.Errorf("TestFloat64(%s, %s): expected %q got %q", test.key, test.in, test.wantStr, vt.String())
+			continue
+		}
+		if vt.Float64() != test.wantFloat64 {
+			t.Errorf("TestFloat32(%s, %s): expected %q got %q", test.key, test.in, test.wantStr, vt.String())
+			continue
+		}
+		if !errors.Is(err, test.wantErr) {
+			t.Errorf("TestFloat64(%s, %s): expected err to equal %v got %v", test.key, test.in, test.wantErr, err)
+			continue
+		}
+
+		vp, _ := ParseValue(test.in)
+		if vp.Float64() != test.wantFloat64 {
+			t.Errorf("TestFloat64(%s, %s): expected %q got %f", test.key, test.in, test.wantStr, vp.Float64())
+			continue
 		}
 	}
 }
 
-func TestValueParseAsComplex64(t *testing.T) {
-	collection := ParseFromBytes(genComplex64TestBytes())
+// func (v Value) Complex64() complex64
+func TestValueComplex64(t *testing.T) {
 	for _, test := range complex64Tests {
-		val := collection.Get(test.key)
-		out, err := val.Complex64()
-		if test.wantErr != nil {
-			if err == nil {
-				t.Errorf("Value(%s).ParseComplex64() = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			}
+		v := NewValue(test.in)
+		if v.Complex64() != test.wantComplex64 {
+			t.Errorf("TestComplex64(%s, %s): expected %v got %v", test.key, test.in, test.wantComplex64, v.Complex64())
+			continue
 		}
-		if out != test.want {
-			t.Errorf("Value(%s).ParseComplex64() = %v, err(%s) want %v, err(%s)",
-				test.key, out, err, test.want, test.wantErr)
+		vt, err := NewTypedValue(test.in, TypeComplex64)
+		if vt.String() != test.wantStr {
+			t.Errorf("TestComplex64(%s, %s): expected %q got %q", test.key, test.in, test.wantStr, vt.String())
+			continue
 		}
-	}
-}
+		if vt.Complex64() != test.wantComplex64 {
+			t.Errorf("TestComplex64(%s, %s): expected %q got %q", test.key, test.in, test.wantStr, vt.String())
+			continue
+		}
 
-func TestValueAsUint16(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want uint16
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("20000"), 20000},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Uint(10, 16)
-		if got != uint64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
+		if !errors.Is(err, test.wantErr) {
+			t.Errorf("TestComplex64(%s, %s): expected err to equal %v got %v", test.key, test.in, test.wantErr, err)
+			continue
+		}
+
+		vp, _ := ParseValue(test.in)
+		if vp.Complex64() != test.wantComplex64 {
+			t.Errorf("TestComplex64(%s, %s): expected %q got %v", test.key, test.in, test.wantStr, vp.Complex64())
+			continue
 		}
 	}
 }
 
-func TestValueAsUint32(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want uint32
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("2000000000"), 2000000000},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Uint(10, 32)
-		if got != uint64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueAsUint64(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want uint16
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("20000"), 20000},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Uint(10, 16)
-		if got != uint64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueAsUintptr(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want uintptr
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("9000000000000000000"), 9000000000000000000},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Uintptr()
-		if uintptr(got) != uintptr(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueAsInt(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want int
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("444444444444"), 444444444444},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Int(10, 0)
-		if got != int64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueAsInt8(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want int8
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("44"), 44},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Int(10, 0)
-		if got != int64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueAsInt16(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want int16
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("4444"), 4444},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Int(10, 0)
-		if got != int64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueAsInt32(t *testing.T) {
-	tests := []struct {
-		val  Value
-		want int32
-	}{
-		{NewValue("1"), 1},
-		{NewValue("2"), 2},
-		{NewValue("444434555"), 444434555},
-	}
-	for _, tt := range tests {
-		got, _ := tt.val.Int(10, 0)
-		if got != int64(tt.want) {
-			t.Errorf("want: %d got %d", got, tt.want)
-		}
-	}
-}
-
-func TestValueAsInt64(t *testing.T) {
-	val := Value("200")
-	iout, erri1 := val.AsInt()
-	if iout != 200 {
-		t.Errorf("Value(11).AsInt() = %d, err(%v) want 200", iout, erri1)
-	}
-
-	val2 := Value("x")
-	iout2, erri2 := val2.AsInt()
-	if iout2 != 0 || erri2 == nil {
-		t.Errorf("Value(11).AsInt() = %d, err(%v) want 0 and err", iout2, erri2)
-	}
-}
-
-func TestValueAsIntMulti(t *testing.T) {
-	switch strconv.IntSize {
-	case 32:
-		collection := ParseFromBytes(genAtoi32TestBytes())
-		for _, test := range atoi32tests {
-			val := collection.Get(test.key)
-			out, err := val.Int(10, 0)
-			if test.wantErr != nil {
-				if err == nil {
-					t.Errorf("Value(%s).ParseInt(10, 0) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				} else {
-					if test.wantErr != err.(*strconv.NumError).Err {
-						t.Errorf("Value(%s).ParseInt(10, 0)= %v, err(%s) want %v, err(%s)",
-							test.key, out, err, test.want, test.wantErr)
-					}
-				}
-			}
-			if int32(out) != test.want {
-				t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			}
-		}
-	case 64:
-		collection := ParseFromBytes(genAtoi64TestBytes())
-		for _, test := range atoi64Tests {
-			val := collection.Get(test.key)
-			out, err := val.Int(10, 64)
-			if test.wantErr != nil {
-				if err == nil {
-					t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-						test.key, out, err, test.want, test.wantErr)
-				} else {
-					if test.wantErr != err.(*strconv.NumError).Err {
-						t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-							test.key, out, err, test.want, test.wantErr)
-					}
-				}
-			}
-			if int64(out) != test.want {
-				t.Errorf("Value(%s).ParseInt(10, 64) = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			}
-		}
-	}
-}
-
-func TestValueParseAsFields(t *testing.T) {
-	collection := ParseFromBytes([]byte{})
-	tests := []struct {
-		k       string
-		defVal  string
-		wantLen int
-	}{
-		{"STRING", "one two", 2},
-		{"STRING", "one two three four ", 4},
-		{"STRING", " one two three four ", 4},
-		{"STRING", "1 2 3 4 5 6 7 8.1", 8},
-	}
-	for _, tt := range tests {
-		val := collection.GetOrDefaultTo(tt.k, tt.defVal)
-		actual := len(val.ParseFields())
-		if actual != tt.wantLen {
-			t.Errorf("Value.(%q).ParseFields() len = %d, want %d", tt.k, actual, tt.wantLen)
-		}
-	}
-}
-
-func TestValueParseAsComplex128(t *testing.T) {
-	collection := ParseFromBytes(genComplex128TestBytes())
+// func (v Value) Complex128() complex128
+func TestValueComplex128(t *testing.T) {
 	for _, test := range complex128Tests {
-		val := collection.Get(test.key)
-		out, err := val.Complex128()
-		if test.wantErr != nil {
-			if err == nil {
-				t.Errorf("Value(%s).ParseComplex128() = %v, err(%s) want %v, err(%s)",
-					test.key, out, err, test.want, test.wantErr)
-			}
+		v := NewValue(test.in)
+		if v.Complex128() != test.wantComplex128 {
+			t.Errorf("TestComplex128(%s, %s): expected %v got %v", test.key, test.in, test.wantComplex128, v.Complex128())
+			continue
+		}
+		vt, err := NewTypedValue(test.in, TypeComplex128)
+		if vt.String() != test.wantStr {
+			t.Errorf("TestComplex128(%s, %s): expected %q got %q", test.key, test.in, test.wantStr, vt.String())
+			continue
+		}
+		if vt.Complex128() != test.wantComplex128 {
+			t.Errorf("TestComplex128(%s, %s): expected %q got %q", test.key, test.in, test.wantStr, vt.String())
+			continue
 		}
 
-		if out != test.want {
-			t.Errorf("Value(%s).ParseComplex128() = %v, err(%s) want %v, err(%s)",
-				test.key, out, err, test.want, test.wantErr)
+		if !errors.Is(err, test.wantErr) {
+			t.Errorf("TestComplex128(%s, %s): expected err to equal %v got %v", test.key, test.in, test.wantErr, err)
+			continue
+		}
+
+		vp, _ := ParseValue(test.in)
+		if vp.Complex128() != test.wantComplex128 {
+			t.Errorf("TestComplex128(%s, %s): expected %q got %v", test.key, test.in, test.wantStr, vp.Complex128())
+			continue
+		}
+	}
+}
+
+// func (v Value) Int?n() int?n
+func TestValueInt(t *testing.T) {
+	for _, test := range intTests {
+		t.Run(fmt.Sprintf("%s(int): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeInt)
+			checkIntString(t, int64(test.int), v.String())
+			if v.Int() != test.int {
+				t.Errorf("expected %d got %d", test.int, v.Int())
+			}
+			checkErrors(t, test.val, test.errs, errInt, err)
+
+			vu := NewValue(test.val)
+			if vu.Int() != test.int {
+				t.Errorf("untyped expected %d got %d", test.int, vu.Int())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Int() != test.int {
+				t.Errorf("untyped expected %d got %d", test.int, vp.Int())
+			}
+		})
+
+		t.Run(fmt.Sprintf("%s(int8): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeInt8)
+			checkIntString(t, int64(test.int8), v.String())
+			if v.Int8() != test.int8 {
+				t.Errorf("expected %d got %d", test.int8, v.Int8())
+			}
+			checkErrors(t, test.val, test.errs, errInt8, err)
+
+			vu := NewValue(test.val)
+			if vu.Int8() != test.int8 {
+				t.Errorf("untyped expected %d got %d", test.int8, vu.Int8())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Int8() != test.int8 {
+				t.Errorf("untyped expected %d got %d", test.int8, vp.Int8())
+			}
+		})
+
+		t.Run(fmt.Sprintf("%s(int16): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeInt16)
+			checkIntString(t, int64(test.int16), v.String())
+			if v.Int16() != test.int16 {
+				t.Errorf("expected %d got %d", test.int16, v.Int16())
+			}
+			checkErrors(t, test.val, test.errs, errInt16, err)
+
+			vu := NewValue(test.val)
+			if vu.Int16() != test.int16 {
+				t.Errorf("untyped expected %d got %d", test.int16, vu.Int16())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Int16() != test.int16 {
+				t.Errorf("untyped expected %d got %d", test.int16, vp.Int16())
+			}
+		})
+
+		t.Run(fmt.Sprintf("%s(int32): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeInt32)
+			checkIntString(t, int64(test.int32), v.String())
+			if v.Int32() != test.int32 {
+				t.Errorf("expected %d got %d", test.int32, v.Int32())
+			}
+			checkErrors(t, test.val, test.errs, errInt32, err)
+
+			vu := NewValue(test.val)
+			if vu.Int32() != test.int32 {
+				t.Errorf("untyped expected %d got %d", test.int32, vu.Int32())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Int32() != test.int32 {
+				t.Errorf("untyped expected %d got %d", test.int32, vp.Int32())
+			}
+		})
+		t.Run(fmt.Sprintf("%s(int64): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeInt64)
+			checkIntString(t, test.int64, v.String())
+			if v.Int64() != test.int64 {
+				t.Errorf("expected %d got %d", test.int64, v.Int64())
+			}
+			checkErrors(t, test.val, test.errs, errInt64, err)
+
+			vu := NewValue(test.val)
+			if vu.Int64() != test.int64 {
+				t.Errorf("untyped expected %d got %d", test.int64, vu.Int64())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Int64() != test.int64 {
+				t.Errorf("untyped expected %d got %d", test.int64, vp.Int64())
+			}
+
+			t2 := &testInt{
+				key:   test.key,
+				val:   test.val,
+				int:   test.int,
+				int8:  test.int8,
+				int16: test.int16,
+				int32: test.int32,
+				int64: test.int64,
+				errs:  test.errs,
+			}
+			vp1, _ := ParseValue(t2.val)
+			if vp1.Int64() != t2.int64 {
+				t.Errorf("untyped expected %d got %d", t2.int64, vp1.Int64())
+			}
+		})
+	}
+}
+
+// func (v Value) UInt?n() uint?n
+func TestValueUint(t *testing.T) {
+	for _, test := range uintTests {
+		t.Run(fmt.Sprintf("%s(uint): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeUint)
+			checkUintString(t, uint64(test.uint), v.String())
+			if v.Uint() != test.uint {
+				t.Errorf("expected %d got %d", test.uint, v.Uint())
+			}
+			checkErrors(t, test.val, test.errs, errUint, err)
+
+			vu := NewValue(test.val)
+			if vu.Uint() != test.uint {
+				t.Errorf("untyped expected %d got %d", test.uint, vu.Uint())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Uint() != test.uint {
+				t.Errorf("untyped expected %d got %d", test.uint, vp.Uint())
+			}
+		})
+
+		t.Run(fmt.Sprintf("%s(uint8): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeUint8)
+			checkUintString(t, uint64(test.uint8), v.String())
+			if v.Uint8() != test.uint8 {
+				t.Errorf("expected %d got %d", test.uint8, v.Uint8())
+			}
+			checkErrors(t, test.val, test.errs, errUint8, err)
+
+			vu := NewValue(test.val)
+			if vu.Uint8() != test.uint8 {
+				t.Errorf("untyped expected %d got %d", test.uint8, vu.Uint8())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Uint8() != test.uint8 {
+				t.Errorf("untyped expected %d got %d", test.uint8, vp.Uint8())
+			}
+		})
+
+		t.Run(fmt.Sprintf("%s(uint16): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeUint16)
+			checkUintString(t, uint64(test.uint16), v.String())
+			if v.Uint16() != test.uint16 {
+				t.Errorf("expected %d got %d", test.uint16, v.Uint16())
+			}
+			checkErrors(t, test.val, test.errs, errUint16, err)
+
+			vu := NewValue(test.val)
+			if vu.Uint16() != test.uint16 {
+				t.Errorf("untyped expected %d got %d", test.uint16, vu.Uint16())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Uint16() != test.uint16 {
+				t.Errorf("untyped expected %d got %d", test.uint16, vp.Uint16())
+			}
+		})
+
+		t.Run(fmt.Sprintf("%s(uint32): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeUint32)
+			checkUintString(t, uint64(test.uint32), v.String())
+			if v.Uint32() != test.uint32 {
+				t.Errorf("expected %d got %d", test.uint32, v.Uint32())
+			}
+			checkErrors(t, test.val, test.errs, errUint32, err)
+
+			vu := NewValue(test.val)
+			if vu.Uint32() != test.uint32 {
+				t.Errorf("untyped expected %d got %d", test.uint32, vu.Uint32())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Uint32() != test.uint32 {
+				t.Errorf("untyped expected %d got %d", test.uint32, vp.Uint32())
+			}
+		})
+
+		t.Run(fmt.Sprintf("%s(uint64): %q", test.key, test.val), func(t *testing.T) {
+			v, err := NewTypedValue(test.val, TypeUint64)
+			checkUintString(t, test.uint64, v.String())
+			if v.Uint64() != test.uint64 {
+				t.Errorf("expected %d got %d", test.uint64, v.Uint64())
+			}
+			checkErrors(t, test.val, test.errs, errUint64, err)
+
+			vu := NewValue(test.val)
+			if vu.Uint64() != test.uint64 {
+				t.Errorf("untyped expected %d got %d", test.uint64, vu.Uint64())
+			}
+
+			vp, _ := ParseValue(test.val)
+			if vp.Uint64() != test.uint64 {
+				t.Errorf("untyped expected %d got %d", test.uint64, vp.Uint64())
+			}
+		})
+	}
+}
+
+// func (v Value) Uintptr() uintptr
+func TestValueUintptr(t *testing.T) {
+	tests := []struct {
+		key  string
+		val  string
+		want uintptr
+		errs uint
+	}{
+		{"UINTPTR_1", "1", 1, 0},
+		{"UINTPTR_2", "2", 2, 0},
+		{"UINTPTR_3", "9000000000000000000", 9000000000000000000, 0},
+	}
+	for _, test := range tests {
+		v, err := NewTypedValue(test.val, TypeUintptr)
+		checkUintString(t, uint64(test.want), v.String())
+		if v.Uintptr() != test.want {
+			t.Errorf("expected %d got %d", test.want, v.Uintptr())
+		}
+		checkErrors(t, test.val, test.errs, errUintptr, err)
+
+		vu := NewValue(test.val)
+		if vu.Uintptr() != test.want {
+			t.Errorf("untyped expected %d got %d", test.want, vu.Uintptr())
+		}
+
+		vp, _ := ParseValue(test.val)
+		if vp.Uintptr() != test.want {
+			t.Errorf("untyped expected %d got %d", test.want, vp.Uintptr())
+		}
+	}
+}
+
+// func (v Value) String() string {
+func TestValueStringParse(t *testing.T) {
+	for _, test := range stringTests {
+		v, _ := ParseValue(test.val)
+		if v.String() != test.val {
+			t.Errorf("Parse %q, %q: expected value.String to return %q got %q", test.key, test.val, test.val, v.String())
+			continue
+		}
+	}
+}
+
+func TestValueStringNew(t *testing.T) {
+	for _, test := range stringTests {
+		v := NewValue(test.val)
+		if v.String() != test.val {
+			t.Errorf("New %q, %q: expected value.String to return %q got %q", test.key, test.val, test.val, v.String())
+			continue
+		}
+	}
+}
+
+func TestValueStringType(t *testing.T) {
+	for _, test := range stringTests {
+		v, _ := NewTypedValue(test.val, TypeString)
+		if v.String() != test.val {
+			t.Errorf("New %q, %q: expected value.String to return %q got %q", test.key, test.val, test.val, v.String())
+			continue
+		}
+	}
+}
+
+// func (v Variable) Bytes() []byte {
+// 	return []byte{0}
+// }
+//
+// func (v Variable) Reflect() reflect.Value {
+// 	return reflect.ValueOf(v.raw)
+// }
+
+func TestValueTypes(t *testing.T) {
+	for _, test := range typeTests {
+		v, _ := ParseValue(test.in)
+		if v.Bool() != test.bool {
+			t.Errorf("(%s).Bool: expected %v got %v", test.key, test.bool, v.Bool())
+			continue
+		}
+		if v.Float32() != test.float32 {
+			t.Errorf("(%s).Float32: expected %v got %v", test.key, test.float32, v.Float32())
+			continue
+		}
+		if v.Float64() != test.float64 {
+			t.Errorf("(%s).Float64: expected %v got %v", test.key, test.float64, v.Float64())
+			continue
+		}
+		if v.Complex64() != test.complex64 {
+			t.Errorf("(%s).Complex64: expected %v got %v", test.key, test.complex64, v.Complex64())
+			continue
+		}
+		if v.Complex128() != test.complex128 {
+			t.Errorf("(%s).Complex128: expected %v got %v", test.key, test.complex128, v.Complex128())
+			continue
+		}
+		if v.Int() != test.int {
+			t.Errorf("(%s).Int: expected %v got %v", test.key, test.int, v.Int())
+			continue
+		}
+		if v.Int8() != test.int8 {
+			t.Errorf("(%s).Int8: expected %v got %v", test.key, test.int8, v.Int8())
+			continue
+		}
+		if v.Int16() != test.int16 {
+			t.Errorf("(%s).Int16: expected %v got %v", test.key, test.int16, v.Int16())
+			continue
+		}
+		if v.Int32() != test.int32 {
+			t.Errorf("(%s).Int32: expected %v got %v", test.key, test.int32, v.Int32())
+			continue
+		}
+		if v.Int64() != test.int64 {
+			t.Errorf("(%s).Int64: expected %v got %v", test.key, test.int64, v.Int64())
+			continue
+		}
+		if v.Uint() != test.uint {
+			t.Errorf("(%s).Uint: expected %v got %v", test.key, test.uint, v.Uint())
+			continue
+		}
+		if v.Uint8() != test.uint8 {
+			t.Errorf("(%s).Uint8: expected %v got %v", test.key, test.uint8, v.Uint8())
+			continue
+		}
+		if v.Uint16() != test.uint16 {
+			t.Errorf("(%s).Uint16: expected %v got %v", test.key, test.uint16, v.Uint16())
+			continue
+		}
+		if v.Uint32() != test.uint32 {
+			t.Errorf("(%s).Uint32: expected %v got %v", test.key, test.uint32, v.Uint32())
+			continue
+		}
+		if v.Uint64() != test.uint64 {
+			t.Errorf("(%s).Uint64: expected %v got %v", test.key, test.uint64, v.Uint64())
+			continue
+		}
+		if v.Uintptr() != test.uintptr {
+			t.Errorf("(%s).Uintptr: expected %v got %v", test.key, test.uintptr, v.Uintptr())
+			continue
+		}
+		if v.String() != test.string {
+			t.Errorf("(%s).String: expected %v got %v", test.key, test.string, v.String())
+			continue
+		}
+		if !eqBytes(v.Bytes(), test.bytes) {
+			t.Errorf("(%s).Bytes: expected %v got %v", test.key, test.bytes, v.Bytes())
+			continue
+		}
+		if !eqRunes(v.Runes(), test.runes) {
+			t.Errorf("(%s).Runes: expected %v got %v", test.key, test.runes, v.Runes())
+			continue
 		}
 	}
 }
@@ -564,7 +556,7 @@ func TestValueLen(t *testing.T) {
 		{"STRING", "", 0},
 	}
 	for _, tt := range tests {
-		val := collection.GetOrDefaultTo(tt.k, tt.defVal)
+		val := collection.Get(tt.k, tt.defVal)
 		actual := len(val.String())
 		if actual != val.Len() {
 			t.Errorf("Value.(%q).Len() len = %d, want %d", tt.k, actual, tt.wantLen)
@@ -575,32 +567,5 @@ func TestValueLen(t *testing.T) {
 		if tt.defVal != "" && val.Empty() {
 			t.Errorf("Value.(%q).Empty() = %t for value(%q), want true", tt.k, val.Empty(), val.String())
 		}
-	}
-}
-
-func TestParseFromString(t *testing.T) {
-	key, val := ParseKeyVal("X=1")
-	if key != "X" {
-		t.Errorf("Key should be X got %q", key)
-	}
-	if val.Empty() {
-		t.Error("Val should be 1")
-	}
-	if i, err := val.Int(0, 10); i != 1 || err != nil {
-		t.Error("ParseInt should be 1")
-	}
-}
-
-func TestParseFromEmpty(t *testing.T) {
-
-	if ek, ev := ParseKeyVal(""); ek != "" || ev != "" {
-		t.Errorf("TestParseKeyValEmpty(\"\") = %q=%q, want ", ek, ev)
-	}
-	key, val := ParseKeyVal("X")
-	if key != "X" {
-		t.Errorf("Key should be X got %q", key)
-	}
-	if !val.Empty() {
-		t.Error("Val should be empty")
 	}
 }

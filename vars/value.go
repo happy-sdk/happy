@@ -1,110 +1,139 @@
-// Copyright 2012 Marko Kungla.
-// Source code is provider under MIT License.
+// Copyright 2012 Marko Kungla. All rights reserved.
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
 
 package vars
 
-import (
-	"strconv"
-	"strings"
-)
+import "strings"
 
 // Value describes the variable value
 type Value string
 
+// Bool returns boolean representation of the var Value
+func (v Value) Bool() bool {
+	switch v {
+	case "1", "t", "T", "true", "TRUE", "True":
+		return true
+	}
+	return false
+}
+
+// Float32 returns Float32 representation of the Value
+func (v Value) Float32() float32 {
+	val, _, _ := parseFloat(string(v), 32)
+	return float32(val)
+}
+
+// Float64 returns float64 representation of Value
+func (v Value) Float64() float64 {
+	val, _, _ := parseFloat(string(v), 64)
+	return val
+}
+
+// Complex64 returns complex64 representation of the Value
+func (v Value) Complex64() complex64 {
+	val, _, _ := parseComplex64(string(v))
+	return val
+}
+
+// Complex128 returns complex128 representation of the Value
+func (v Value) Complex128() complex128 {
+	val, _, _ := parseComplex128(string(v))
+	return val
+}
+
+// Int returns int representation of the Value
+func (v Value) Int() int {
+	val, _, _ := parseInt(string(v), 10, 0)
+	return int(val)
+}
+
+// Int8 returns int8 representation of the Value
+func (v Value) Int8() int8 {
+	val, _, _ := parseInt(string(v), 10, 8)
+	return int8(val)
+}
+
+// Int16 returns int16 representation of the Value
+func (v Value) Int16() int16 {
+	val, _, _ := parseInt(string(v), 10, 16)
+	return int16(val)
+}
+
+// Int32 returns int32 representation of the Value
+func (v Value) Int32() int32 {
+	val, _, _ := parseInt(string(v), 10, 32)
+	return int32(val)
+}
+
+// Int64 returns int64 representation of the Value
+func (v Value) Int64() int64 {
+	val, _, _ := parseInt(string(v), 10, 64)
+	return int64(val)
+}
+
+// Uint returns uint representation of the Value
+func (v Value) Uint() uint {
+	val, _, _ := parseUint(string(v), 10, 0)
+	return uint(val)
+}
+
+// Uint8 returns uint8 representation of the Value
+func (v Value) Uint8() uint8 {
+	val, _, _ := parseUint(string(v), 10, 8)
+	return uint8(val)
+}
+
+// Uint16 returns uint16 representation of the Value
+func (v Value) Uint16() uint16 {
+	val, _, _ := parseUint(string(v), 10, 16)
+	return uint16(val)
+}
+
+// Uint32 returns uint32 representation of the Value
+func (v Value) Uint32() uint32 {
+	val, _, _ := parseUint(string(v), 10, 32)
+	return uint32(val)
+}
+
+// Uint64 returns uint64 representation of the Value
+func (v Value) Uint64() uint64 {
+	val, _, _ := parseUint(string(v), 10, 64)
+	return uint64(val)
+}
+
+// Uintptr returns uintptr representation of the Value
+func (v Value) Uintptr() uintptr {
+	val, _, _ := parseUint(string(v), 10, 64)
+	return uintptr(val)
+}
+
+// String returns string representation of the Value
 func (v Value) String() string {
 	return string(v)
 }
 
-// Bool returns vars.Value as bool and error if vars.Value does not represent bool value
-func (v Value) Bool() (bool, error) {
-	return strconv.ParseBool(v.String())
+// Bytes returns []bytes representation of the Value
+func (v Value) Bytes() []byte {
+	return []byte(v)
 }
 
-// Float returns vars.Value as float64 and error if vars.Value does not float Float value
-func (v Value) Float(bitSize int) (float64, error) {
-	return strconv.ParseFloat(v.String(), bitSize)
-}
-
-// Int returns vars.Value as int64 and error if vars.Value does not represent int value
-func (v Value) Int(base int, bitSize int) (int64, error) {
-	return strconv.ParseInt(v.String(), base, bitSize)
-}
-
-// AsInt returns vars.Value as int and error if vars.Value does not represent int value
-func (v Value) AsInt() (int, error) {
-	if _, err := strconv.Atoi(v.String()); err != nil {
-		return 0, err
-	}
-	i64, err := strconv.ParseInt(v.String(), 10, 64)
-	return int(i64), err
-}
-
-// Uint returns vars.Value as uint64 and error if vars.Value does not represent uint value
-func (v Value) Uint(base int, bitSize int) (uint64, error) {
-	return strconv.ParseUint(v.String(), base, bitSize)
-}
-
-// Uintptr returns vars.Value as uintptr and error if vars.Value does not represent uint value
-func (v Value) Uintptr() (uintptr, error) {
-	ptrInt, err := strconv.ParseUint(v.String(), 10, 64)
-	return uintptr(ptrInt), err
-}
-
-// Rune returns rune slice
-func (v Value) Rune() []rune {
-	return []rune(string(v))
-}
-
-// Complex64 tries to split Value to strings.Fields and
-// use 2 first fields to return complex64
-func (v Value) Complex64() (complex64, error) {
-	var err error
-	fields := v.ParseFields()
-	if len(fields) != 2 {
-		return complex64(0), strconv.ErrSyntax
-	}
-
-	var f1 float64
-	var f2 float64
-	if f1, err = strconv.ParseFloat(fields[0], 32); err != nil {
-		return complex64(0), err
-	}
-	if f2, err = strconv.ParseFloat(fields[1], 32); err != nil {
-		return complex64(0), err
-	}
-	return complex64(complex(f1, f2)), nil
-}
-
-// Complex128 tries to split Value to strings.Fields and
-// use 2 first fields to return complex128
-func (v Value) Complex128() (complex128, error) {
-	var err error
-	fields := v.ParseFields()
-	if len(fields) != 2 {
-		return complex128(0), strconv.ErrSyntax
-	}
-	var f1 float64
-	var f2 float64
-	if f1, err = strconv.ParseFloat(fields[0], 64); err != nil {
-		return complex128(0), err
-	}
-	if f2, err = strconv.ParseFloat(fields[1], 64); err != nil {
-		return complex128(0), err
-	}
-	return complex128(complex(f1, f2)), nil
-}
-
-// ParseFields calls strings.Fields on Value string
-func (v Value) ParseFields() []string {
-	return strings.Fields(v.String())
+// Runes returns []rune representation of the var value
+func (v Value) Runes() []rune {
+	return []rune(v)
 }
 
 // Len returns the length of the string representation of the Value
 func (v Value) Len() int {
-	return len(v.String())
+	return len(string(v))
 }
 
 // Empty returns true if this Value is empty
 func (v Value) Empty() bool {
 	return v.Len() == 0
+}
+
+// ParseFields calls strings.Fields on Value string
+func (v Value) ParseFields() []string {
+	return strings.Fields(string(v))
 }
