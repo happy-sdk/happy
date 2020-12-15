@@ -38,22 +38,3 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=covprofile -service=github
-  benchmark:
-    name: Run Go benchmark example
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v1
-      - name: Run benchmark
-        run: cd examples/go && go test -bench 'BenchmarkBool' | tee output.txt
-      - name: Store benchmark result
-        uses: rhysd/github-action-benchmark@v1
-        with:
-          name: Go Benchmark
-          tool: 'go'
-          output-file-path: examples/go/output.txt
-          # Show alert with commit comment on detecting possible performance regression
-          alert-threshold: '200%'
-          comment-on-alert: true
-          fail-on-alert: true
-          alert-comment-cc-users: '@mkungla'
