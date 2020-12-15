@@ -21,6 +21,14 @@ var (
 	escPeriod = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
 )
 
+func Parse(str string) []string {
+	if str == "" {
+		return []string{}
+	}
+
+	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
+}
+
 func parseCommaParts(str string) []string {
 	if str == "" {
 		return []string{""}
@@ -163,13 +171,7 @@ func some(arr []string, fn func(el string) bool) bool {
 	}
 	return false
 }
-func Expand(str string) []string {
-	if str == "" {
-		return []string{}
-	}
 
-	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
-}
 func mapArray(arr []string, call func(str string) string) []string {
 	ret := []string{}
 	for _, v := range arr {

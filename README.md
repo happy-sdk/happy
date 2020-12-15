@@ -7,10 +7,11 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 ![tests](https://github.com/mkungla/bexp/workflows/tests/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/bexp)](https://goreportcard.com/report/github.com/mkungla/bexp)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
-![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg) 
+![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
 ## Usage
 
+**get string slice**
 ```go
 package bexp_test
 

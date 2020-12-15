@@ -5,36 +5,36 @@ import (
 	"fmt"
 )
 
-func ExampleExpand() {
+func ExampleParse() {
 	var v []string
-	v = bexp.Expand("file-{a,b,c}.jpg")
+	v = bexp.Parse("file-{a,b,c}.jpg")
 	fmt.Println(v)
 
-	v = bexp.Expand("-v{,,}")
+	v = bexp.Parse("-v{,,}")
 	fmt.Println(v)
 
-	v = bexp.Expand("file{0..2}.jpg")
+	v = bexp.Parse("file{0..2}.jpg")
 	fmt.Println(v)
 
-	v = bexp.Expand("file{2..0}.jpg")
+	v = bexp.Parse("file{2..0}.jpg")
 	fmt.Println(v)
 
-	v = bexp.Expand("file{0..4..2}.jpg")
+	v = bexp.Parse("file{0..4..2}.jpg")
 	fmt.Println(v)
 
-	v = bexp.Expand("file-{a..e..2}.jpg")
+	v = bexp.Parse("file-{a..e..2}.jpg")
 	fmt.Println(v)
 
-	v = bexp.Expand("file{00..10..5}.jpg")
+	v = bexp.Parse("file{00..10..5}.jpg")
 	fmt.Println(v)
 
-	v = bexp.Expand("{{A..C},{a..c}}")
+	v = bexp.Parse("{{A..C},{a..c}}")
 	fmt.Println(v)
 
-	v = bexp.Expand("ppp{,config,oe{,conf}}")
+	v = bexp.Parse("ppp{,config,oe{,conf}}")
 	fmt.Println(v)
 
-	v = bexp.Expand("data/{P1/{10..19},P2/{20..29},P3/{30..39}}")
+	v = bexp.Parse("data/{P1/{10..19},P2/{20..29},P3/{30..39}}")
 	fmt.Println(v)
 
 	// Output:
