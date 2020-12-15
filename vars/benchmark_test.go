@@ -98,30 +98,30 @@ func randString(n int) string {
 // go test -bench BenchmarkNew -benchmem
 func BenchmarkNew(b *testing.B) {
 	// cached var
-	b.Run("string_repeat", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			v := New("bm", "benchmark")
-			if v.String() != "benchmark" {
-				b.Error("Unexpected result: " + v.String())
-			}
+	// b.Run("string_repeat", func(b *testing.B) {
+	// })
+	for i := 0; i < b.N; i++ {
+		v := New("bm", "benchmark")
+		if v.String() != "benchmark" {
+			b.Error("Unexpected result: " + v.String())
 		}
-	})
+	}
 
-	b.Run("string_unique", func(b *testing.B) {
-		// fixed := 100000
-		vals := make([]string, b.N)
-		for i := 0; i < b.N; i++ {
-			vals[i] = randString(9)
-		}
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			val := vals[i]
-			v := New("bm", val)
-			if v.String() != val {
-				b.Error("Unexpected result: " + v.String())
-			}
-		}
-	})
+	// b.Run("string_unique", func(b *testing.B) {
+	// 	// fixed := 100000
+	// 	vals := make([]string, b.N)
+	// 	for i := 0; i < b.N; i++ {
+	// 		vals[i] = randString(9)
+	// 	}
+	// 	b.ResetTimer()
+	// 	for i := 0; i < b.N; i++ {
+	// 		val := vals[i]
+	// 		v := New("bm", val)
+	// 		if v.String() != val {
+	// 			b.Error("Unexpected result: " + v.String())
+	// 		}
+	// 	}
+	// })
 }
 
 // Benchmark
