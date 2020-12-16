@@ -32,12 +32,14 @@ func Balanced(a interface{}, b interface{}, str string) *BalancedResult {
 	}
 	return Range(aVal, bVal, str)
 }
+
 func maybeMatch(reg *regexp.Regexp, str []byte) []byte {
 	if v := reg.FindAll(str, 1); v != nil {
 		return v[0]
 	}
 	return nil
 }
+
 func Range(a []byte, b []byte, str string) *BalancedResult {
 	var result []int
 	ai := -1
@@ -103,16 +105,14 @@ func Range(a []byte, b []byte, str string) *BalancedResult {
 				Body:  str[result[0]+len(a) : result[1]],
 				Post:  str[result[1]+len(b):],
 			}
-		} else {
-			return &BalancedResult{
-				Start: result[0],
-				End:   result[1],
-				Pre:   str[0:result[0]],
-				Body:  "",
-				Post:  str[result[1]+len(b):],
-			}
+		}
+		return &BalancedResult{
+			Start: result[0],
+			End:   result[1],
+			Pre:   str[0:result[0]],
+			Body:  "",
+			Post:  str[result[1]+len(b):],
 		}
 	}
 	return nil
-	//var begs , beg, left, right, result;
 }

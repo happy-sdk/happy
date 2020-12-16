@@ -31,7 +31,6 @@ func Parse(str string) BraceExpansion {
 	if str == "" {
 		return []string{}
 	}
-
 	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
 }
 
@@ -58,6 +57,7 @@ func parseCommaParts(str string) BraceExpansion {
 	parts = append(parts, p...)
 	return parts
 }
+
 func expand(str string, isTop bool) []string {
 	expansions := []string{}
 	m := Balanced("{", "}", str)
@@ -216,10 +216,12 @@ func escapeBraces(str string) string {
 	return sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(str, escSlash, "\\\\"), escOpen, "\\{"), escClose, "\\}"), escComma, "\\,"), escPeriod, "\\.")
 
 }
+
 func unescapeBraces(str string) string {
 	return sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(str, "\\", escSlash), "{", escOpen), "}", escClose), ",", escComma), ".", escPeriod)
 
 }
+
 func sliceAndJoin(str string, join string, slice string) string {
 	return strings.Join(strings.Split(str, slice), join)
 }

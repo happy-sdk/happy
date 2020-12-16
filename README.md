@@ -22,56 +22,64 @@ import (
 
 func main() {
 	var v []string
-	v = bexp.Expand("file-{a,b,c}.jpg")
+	v = bexp.Parse("file-{a,b,c}.jpg")
 	fmt.Println(v)
 	// [file-a.jpg file-b.jpg file-c.jpg]
 
-	v = bexp.Expand("-v{,,}")
+	v = bexp.Parse("-v{,,}")
 	fmt.Println(v)
 	// [-v -v -v]
 
-	v = bexp.Expand("file{0..2}.jpg")
+	v = bexp.Parse("file{0..2}.jpg")
 	fmt.Println(v)
 	// [file0.jpg file1.jpg file2.jpg]
 
-	v = bexp.Expand("file{2..0}.jpg")
+	v = bexp.Parse("file{2..0}.jpg")
 	fmt.Println(v)
 	// [file2.jpg file1.jpg file0.jpg]
 
-	v = bexp.Expand("file{0..4..2}.jpg")
+	v = bexp.Parse("file{0..4..2}.jpg")
 	fmt.Println(v)
 	// [file0.jpg file2.jpg file4.jpg]
 
-	v = bexp.Expand("file-{a..e..2}.jpg")
+	v = bexp.Parse("file-{a..e..2}.jpg")
 	fmt.Println(v)
 	// [file-a.jpg file-c.jpg file-e.jpg]
 
-	v = bexp.Expand("file{00..10..5}.jpg")
+	v = bexp.Parse("file{00..10..5}.jpg")
 	fmt.Println(v)
 	// [file00.jpg file05.jpg file10.jpg]
 
-	v = bexp.Expand("{{A..C},{a..c}}")
+	v = bexp.Parse("{{A..C},{a..c}}")
 	fmt.Println(v)
 	// [A B C a b c]
 
-	v = bexp.Expand("ppp{,config,oe{,conf}}")
+	v = bexp.Parse("ppp{,config,oe{,conf}}")
 	fmt.Println(v)
 	// [ppp pppconfig pppoe pppoeconf]
 
-	v = bexp.Expand("data/{P1/{10..19},P2/{20..29},P3/{30..39}}")
+	v = bexp.Parse("data/{P1/{10..19},P2/{20..29},P3/{30..39}}")
 	fmt.Println(v)
 	// [data/P1/10 data/P1/11 data/P1/12 data/P1/13 data/P1/14 data/P1/15 data/P1/16 data/P1/17 data/P1/18 data/P1/19 data/P2/20 data/P2/21 data/P2/22 data/P2/23 data/P2/24 data/P2/25 data/P2/26 data/P2/27 data/P2/28 data/P2/29 data/P3/30 data/P3/31 data/P3/32 data/P3/33 data/P3/34 data/P3/35 data/P3/36 data/P3/37 data/P3/38 data/P3/39]
 }
 ```
 
-## This package is inspired by
-- [go-brace-expansion]
-- [thomasheller/braceexpansion]
-- [kujtimiihoxha/go-brace-expansion]
-- [juliangruber/brace-expansion]
+## Inspired by and other similar libraries
+
+> following package were inspiration to create this package,
+> Some of the code is from these packages. The motivation of this package is
+> to improve performance and reduce mem alloc compared to packages listed here.
+> also to add some commonly used API's when working with brace expansion strings
+
+- @kujtimiihoxha [go-brace-expansion] Go bash style brace expansion
+- @thomasheller [braceexpansion] Shell brace expansion implemented in Go (golang).
+- @pittfit [ortho] Go brace expansion library
 
 <!-- LINKS -->
 [bash-be]: https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html
-[kujtimiihoxha/go-brace-expansion]: https://github.com/kujtimiihoxha/go-brace-expansion
+[go-brace-expansion]: https://github.com/kujtimiihoxha/go-brace-expansion
 [braceexpansion]: https://github.com/thomasheller/braceexpansion
-[juliangruber/brace-expansion]: https://github.com/kujtimiihoxha/go-balanced-match
+[ortho]: https://github.com/pittfit/ortho
+
+
+[brace-expansion]: https://github.com/kujtimiihoxha/go-balanced-match

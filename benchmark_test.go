@@ -11,7 +11,7 @@ import "testing"
 func BenchmarkParse(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		v := Parse("file-{a,b,c}.jpg")
-		if v.String() != "benchmark" {
+		if v.String() != "file-a.jpg file-b.jpg file-c.jpg" {
 			b.Error("Unexpected result: " + v.String())
 		}
 	}
