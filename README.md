@@ -13,14 +13,14 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 
 **get string slice**
 ```go
-package bexp_test
+package main
 
 import (
 	"bexp/v1"
 	"fmt"
 )
 
-func ExampleExpand() {
+func main() {
 	var v []string
 	v = bexp.Expand("file-{a,b,c}.jpg")
 	fmt.Println(v)

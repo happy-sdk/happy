@@ -18,8 +18,8 @@ type BalancedResult struct {
 }
 
 func Balanced(a interface{}, b interface{}, str string) *BalancedResult {
-	aVal := make([]byte, 0)
-	bVal := make([]byte, 0)
+	var aVal []byte
+	var bVal []byte
 	if reg, ok := a.(*regexp.Regexp); ok {
 		aVal = maybeMatch(reg, []byte(str))
 	} else {

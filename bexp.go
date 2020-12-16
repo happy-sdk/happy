@@ -77,6 +77,7 @@ func expand(str string, isTop bool) []string {
 		return []string{str}
 	}
 	var n []string
+	var post []string
 	if isSequence {
 		n = strings.Split(m.Body, `..`)
 	} else {
@@ -85,7 +86,6 @@ func expand(str string, isTop bool) []string {
 			//// x{{a,b}}y ==> x{a}y x{b}y
 			n = mapArray(expand(n[0], false), embrace)
 			if len(n) == 1 {
-				post := []string{}
 				if len(m.Post) > 0 {
 					post = expand(m.Post, false)
 				} else {
@@ -98,13 +98,12 @@ func expand(str string, isTop bool) []string {
 		}
 	}
 	pre := m.Pre
-	post := []string{}
 	if len(m.Post) > 0 {
 		post = expand(m.Post, false)
 	} else {
 		post = []string{""}
 	}
-	N := []string{}
+	var N []string
 	if isSequence {
 		x := numeric(n[0])
 		y := numeric(n[1])
