@@ -74,12 +74,14 @@ func main() {
 - @kujtimiihoxha [go-brace-expansion] Go bash style brace expansion
 - @thomasheller [braceexpansion] Shell brace expansion implemented in Go (golang).
 - @pittfit [ortho] Go brace expansion library
+- @kujtimiihoxha [go-balanced-match] Go balanced match
 
 <!-- LINKS -->
 [bash-be]: https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html
 [go-brace-expansion]: https://github.com/kujtimiihoxha/go-brace-expansion
 [braceexpansion]: https://github.com/thomasheller/braceexpansion
 [ortho]: https://github.com/pittfit/ortho
+[go-balanced-match]: https://github.com/kujtimiihoxha/go-balanced-match
 
 
 [brace-expansion]: https://github.com/kujtimiihoxha/go-balanced-match
