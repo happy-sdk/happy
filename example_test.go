@@ -5,8 +5,9 @@
 package bexp_test
 
 import (
-	"bexp/v1"
 	"fmt"
+
+	"github.com/mkungla/bexp"
 )
 
 func ExampleParse() {

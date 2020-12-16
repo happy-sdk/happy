@@ -3,7 +3,7 @@
 Implementing: [3.5.1 Brace Expansion][bash-be]
 
 ![license](https://img.shields.io/github/license/mkungla/bexp)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp/v1)](https://pkg.go.dev/github.com/mkungla/bexp/v1)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp)](https://pkg.go.dev/github.com/mkungla/bexp)
 ![tests](https://github.com/mkungla/bexp/workflows/tests/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/bexp)](https://goreportcard.com/report/github.com/mkungla/bexp)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
@@ -11,12 +11,15 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
 ## Usage
 
-**get string slice**
+`go get github.com/mkungla/bexp`
+
+### Get string slice
+
 ```go
 package main
 
 import (
-	"bexp/v1"
+	"github.com/mkungla/bexp"
 	"fmt"
 )
 
