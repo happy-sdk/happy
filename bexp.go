@@ -125,7 +125,7 @@ func expand(str string, isTop bool) []string {
 		for i := x; test(i, y); i += incr {
 			var c string
 			if isAlphaSequence {
-				c = string(i)
+				c = string(rune(i))
 				if c == "\\" {
 					c = ""
 				}
