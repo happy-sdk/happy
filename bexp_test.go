@@ -12,6 +12,74 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	braceexpansion = "braceexpansion"
+)
+
+type testResource struct {
+	Pattern string
+	Res0    string
+	Res1    string
+	Res2    string
+}
+
+var testData = []testResource{
+	// // PATHS
+	{"data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
+	{"/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
+	{"/usr/local/src/bash/{old,new,dist,bugs}", "/usr/local/src/bash/old", "/usr/local/src/bash/new", "/usr/local/src/bash/dist"},
+	{"{abc{def}}ghi", "{abc{def}}ghi", "", ""},
+	{"{,}", "", "", ""},
+	{"{,,}", "", "", ""},
+	{"{,,,}", "", "", ""},
+	{braceexpansion, braceexpansion, "", ""},
+	{"{a,b}{1,2}", "a1", "a2", "b1"},
+	{"a{d,c,b}e", "ade", "ace", "abe"},
+	{"a", "a", "", ""},
+	{"a,b", "a,b", "", ""},
+	{"a,,b", "a,,b", "", ""},
+	{"a,", "a,", "", ""},
+	{",a", ",a", "", ""},
+	{",", ",", "", ""},
+	{",,", ",,", "", ""},
+	{"abc,def", "abc,def", "", ""},
+	{"{abc,def}", "abc", "def", ""},
+	{"{}", "{}", "", ""},
+	{"a{}", "a{}", "", ""},
+	{"{a{}}", "{a{}}", "", ""},
+	{"a{,}", "a", "a", ""},
+	// working
+	{"a{b,c}", "ab", "ac", ""},
+	{"a{,b,c}", "a", "ab", "ac"},
+	{"a{b,c,}", "ab", "ac", "a"},
+	{"a{b,d{e,f}}", "ab", "ade", "adf"},
+	{"a{b,{c,d}}", "ab", "ac", "ad"},
+	{"{a,b}{1,2}", "a1", "a2", "b1"},
+	{"{a,b}x{1,2}", "ax1", "ax2", "bx1"},
+	{"{abc}", "{abc}", "", ""},
+	{"{abc}def", "{abc}def", "", ""},
+
+	{"{a,{{{b}}}}", "a", "{{{b}}}", ""},
+	{"{a{1,2}b}", "{a1b}", "{a2b}", ""},
+}
+
+func TestPatterns(t *testing.T) {
+	for _, test := range testData {
+		t.Run(test.Pattern, func(t *testing.T) {
+			v := Parse(test.Pattern)
+			if len(v) > 0 && v[0] != test.Res0 {
+				t.Errorf("Unexpected expected: %q  got: %q from: %v", test.Res0, v[0], v)
+			}
+			if len(v) > 1 && v[1] != test.Res1 {
+				t.Error("Unexpected result: " + v[1])
+			}
+			if len(v) > 2 && v[2] != test.Res2 {
+				t.Error("Unexpected result: " + v[2])
+			}
+		})
+	}
+}
+
 func TestBashExpansion(t *testing.T) {
 	dat, _ := ioutil.ReadFile("testdata/bash-results.txt")
 	cases := strings.Split(string(dat), "><><><><")
