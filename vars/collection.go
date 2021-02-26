@@ -3,6 +3,12 @@
 
 package vars
 
+import (
+	"bytes"
+	"fmt"
+	"strings"
+)
+
 // Collection holds collection of variables
 type Collection map[string]Value
 
@@ -23,6 +29,8 @@ func (c Collection) Get(k string, defval ...interface{}) (val Value) {
 // Set updates key value pair in collection. If key does not exist then appends
 // key wth given value
 func (c Collection) Set(k string, v interface{}) {
+	k = strings.TrimSpace(k)
+	v = strings.TrimSpace(fmt.Sprint(v))
 	c[k], _ = ParseValue(v)
 }
 
@@ -35,4 +43,25 @@ func (c Collection) GetWithPrefix(prfx string) (vars Collection) {
 		}
 	}
 	return
+}
+
+// ToKeyValSlice produces []string slice of strings in format key = "value"
+func (c Collection) ToKeyValSlice() []string {
+	r := []string{}
+	for k, v := range c {
+		r = append(r, fmt.Sprintf("%s = %q", k, v))
+		fmt.Println(fmt.Sprintf("%s = %q", k, v))
+	}
+	return r
+}
+
+// ToBytes returns []byte containing
+// key = "value"\n
+func (c Collection) ToBytes() []byte {
+	s := c.ToKeyValSlice()
+	b := bytes.Buffer{}
+	for _, line := range s {
+		b.WriteString(line + "\n")
+	}
+	return b.Bytes()
 }
