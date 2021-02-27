@@ -228,7 +228,7 @@ NextVar:
 		}
 		for i := 0; i < l; i++ {
 			if v[i] == '=' {
-				vars[v[:i]] = NewValue(v[i+1:])
+				vars[strings.TrimSpace(v[:i])] = NewValue(v[i+1:])
 				if i < l {
 					continue NextVar
 				}

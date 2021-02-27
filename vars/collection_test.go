@@ -183,3 +183,19 @@ func TestCollectionEnvFile(t *testing.T) {
 		t.Errorf("expected GOARCH to equal amd64 got %s", val)
 	}
 }
+
+func TestCollectionKeyNoSpaces(t *testing.T) {
+	collection := NewCollection()
+	collection.Set("valid", true)
+	collection.Set(" invalid", true)
+
+	invalid := collection.Get(" invalid")
+	valid := collection.Get("valid")
+
+	if invalid.Bool() {
+		t.Errorf("Collection key should not accept pfx/sfx  spaces ")
+	}
+	if !valid.Bool() {
+		t.Errorf("Collection key should be true")
+	}
+}
