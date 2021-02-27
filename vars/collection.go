@@ -50,7 +50,6 @@ func (c Collection) ToKeyValSlice() []string {
 	r := []string{}
 	for k, v := range c {
 		r = append(r, fmt.Sprintf("%s = %q", k, v))
-		fmt.Println(fmt.Sprintf("%s = %q", k, v))
 	}
 	return r
 }

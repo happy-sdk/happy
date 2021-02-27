@@ -102,7 +102,7 @@ func main() {
   }
   collection := vars.ParseFromBytes(content)
   if val := collection.Get("GOARCH"); val != "amd64" {
-    fmt.Println(fmt.Sprintf("expected GOARCH to equal amd64 got %s", val))
+    fmt.Printf("expected GOARCH to equal amd64 got %s\n", val)
   }
 }
 ```
