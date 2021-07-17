@@ -1,4 +1,6 @@
-# Bash Brace Expansion in go
+# Bash Brace Expansion in Go
+
+Go implementation of Brace Expansion mechanism to generate arbitrary strings.
 
 Implementing: [3.5.1 Brace Expansion][bash-be]
 
