@@ -16,13 +16,3 @@ trim_trailing_whitespace = true
 
 [*.md]
 trim_trailing_whitespace = false
-
-# YAML files YAML 1.2
-# https://yaml.org/
-[*.{yaml,yml}]
-indent_style = space
-indent_size = 2
-
-# Makefile
-[Makefile]
-indent_style = tab

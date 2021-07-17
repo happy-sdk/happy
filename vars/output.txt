@@ -1,7 +1,0 @@
-goos: linux
-goarch: amd64
-pkg: github.com/mkungla/vars/v3
-BenchmarkNew/string:repeat-8         	79706858	        14.7 ns/op
-BenchmarkNew/string:unique-8         	83199381	        14.7 ns/op
-PASS
-ok  	github.com/mkungla/vars/v3	11.808s

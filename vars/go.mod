@@ -1,3 +1,3 @@
-module github.com/mkungla/vars/v3
+module github.com/mkungla/vars/v4
 
 go 1.14
