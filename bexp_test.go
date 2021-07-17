@@ -26,15 +26,21 @@ type testResource struct {
 var testData = []testResource{
 	// // PATHS
 	{"data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
+  {"data/{-1..-3}", "data/-1", "data/-2", "data/-3"},
+  {"data/{-3..-1}", "data/-3", "data/-2", "data/-1"},
+  {"data/{-1..1}", "data/-1", "data/0", "data/1"},
 	{"/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
 	{"/usr/local/src/bash/{old,new,dist,bugs}", "/usr/local/src/bash/old", "/usr/local/src/bash/new", "/usr/local/src/bash/dist"},
 	{"{abc{def}}ghi", "{abc{def}}ghi", "", ""},
 	{"{,}", "", "", ""},
 	{"{,,}", "", "", ""},
 	{"{,,,}", "", "", ""},
+	{"\\\\", "\\", "", ""},
+	{"-", "-", "", ""},
 	{braceexpansion, braceexpansion, "", ""},
 	{"{a,b}{1,2}", "a1", "a2", "b1"},
 	{"a{d,c,b}e", "ade", "ace", "abe"},
+	{"x{{a,b,c}}y", "x{a}y", "x{b}y", "x{c}y"},
 	{"a", "a", "", ""},
 	{"a,b", "a,b", "", ""},
 	{"a,,b", "a,,b", "", ""},
@@ -61,6 +67,8 @@ var testData = []testResource{
 
 	{"{a,{{{b}}}}", "a", "{{{b}}}", ""},
 	{"{a{1,2}b}", "{a1b}", "{a2b}", ""},
+	{"{0,1,2}", "0", "1", "2"},
+	{"{-0,-1,-2}", "-0", "-1", "-2"},
 }
 
 func TestPatterns(t *testing.T) {
@@ -113,7 +121,6 @@ func TestNegativeIncrement(t *testing.T) {
 	assert.Equal(t, BraceExpansion{"10", "9", "8"}, Parse("{10..8}"))
 	assert.Equal(t, BraceExpansion{"10", "09", "08"}, Parse("{10..08}"))
 	assert.Equal(t, BraceExpansion{"c", "b", "a"}, Parse("{c..a}"))
-
 	assert.Equal(t, BraceExpansion{"4", "2", "0"}, Parse("{4..0..2}"))
 	assert.Equal(t, BraceExpansion{"4", "2", "0"}, Parse("{4..0..-2}"))
 	assert.Equal(t, BraceExpansion{"e", "c", "a"}, Parse("{e..a..2}"))
@@ -151,5 +158,27 @@ func TestSequence(t *testing.T) {
 	//Alphabetic
 	assert.Equal(t, BraceExpansion{"a", "c", "e", "g", "i", "k"}, Parse("{a..k..2}"))
 	assert.Equal(t, BraceExpansion{"b", "d", "f", "h", "j"}, Parse("{b..k..2}"))
+}
 
+func TestMkdirAllError(t *testing.T) {
+  const (
+    rootdir = ""
+    treeexp = rootdir + "/{dir1,dir2,dir3/{subdir1,subdir2}}"
+  )
+  assert.Error(t, MkdirAll(treeexp, 0750), "creating dirs in root should error")
+}
+
+func TestString(t *testing.T) {
+  r := Parse("/{dir1,dir2}")
+  assert.Equal(t, "/dir1 /dir2", r.String())
+}
+
+func TestResult(t *testing.T) {
+  r := Parse("/{dir1,dir2}")
+  assert.Equal(t, []string{"/dir1", "/dir2"}, r.Result())
+}
+
+func TestErr(t *testing.T) {
+  r := Parse("")
+  assert.Error(t, r.Err(), r.String())
 }

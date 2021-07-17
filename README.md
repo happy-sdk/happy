@@ -9,9 +9,10 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
 ![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
+
 ## Usage
 
-`go get github.com/mkungla/bexp`
+`go get github.com/mkungla/bexp/v2`
 
 ### Get string slice
 
@@ -19,7 +20,7 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 package main
 
 import (
-	"github.com/mkungla/bexp"
+	"github.com/mkungla/bexp/v2"
 	"fmt"
 )
 
@@ -67,11 +68,40 @@ func main() {
 }
 ```
 
+### Generating directory tree
+
+```go
+package main
+
+import (
+	"github.com/mkungla/bexp/v2"
+	"log"
+)
+
+func main() {
+  const (
+    rootdir = "/tmp/bexp"
+    treeexp = rootdir + "/{dir1,dir2,dir3/{subdir1,subdir2}}"
+  )
+  if err := bexp.MkdirAll(treeexp, 0750); err != nil {
+    log.Fatal(err)
+  }
+  
+  // Will produce directory tree
+  // /tmp/bexp
+  // /tmp/bexp/dir1
+  // /tmp/bexp/dir2
+  // /tmp/bexp/dir3
+  // /tmp/bexp/dir3/subdir1
+  // /tmp/bexp/dir3/subdir2
+}
+``` 
+
 ## Inspired by and other similar libraries
 
 > following package were inspiration to create this package,
 > Some of the code is from these packages. The motivation of this package is
-> to improve performance and reduce mem alloc compared to packages listed here.
+> to improve performance and reduce memory alloc compared to packages listed here.
 > also to add some commonly used API's when working with brace expansion strings
 
 - @kujtimiihoxha [go-brace-expansion] Go bash style brace expansion

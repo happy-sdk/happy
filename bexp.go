@@ -5,33 +5,68 @@
 package bexp
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 var (
-	escSlash  = "\u0000SLASH" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escOpen   = "\u0000OPEN" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escClose  = "\u0000CLOSE" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escComma  = "\u0000COMMA" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escPeriod = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escSlash       = "\u0000SLASH" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escOpen        = "\u0000OPEN" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escClose       = "\u0000CLOSE" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escComma       = "\u0000COMMA" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escPeriod      = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+  // ErrEmptyResult representing empty result by parser
+	ErrEmptyResult = errors.New("result is empty")
 )
 
+// BraceExpansion represents bash style brace expansion
 type BraceExpansion []string
 
-func (b BraceExpansion) String() string {
-	return strings.Join(b, " ")
-}
-
+// Parse string expresion into BraceExpansion result
 func Parse(str string) BraceExpansion {
 	if str == "" {
 		return []string{}
 	}
 	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
+}
+
+// MkdirAll calls os.MkdirAll on each math from provided string
+// to create a directory tree from brace expansion.
+// Error can be ErrEmptyResult if parsing provided str results no paths
+// or first error of os.MkdirAll
+func MkdirAll(str string, perm os.FileMode) error {
+  if p := Parse(str); p.Err() == nil {
+    for _, dir := range p {
+      if err := os.MkdirAll(dir, perm); err != nil {
+        return err
+      }
+    }
+  }
+	return nil
+}
+
+// String calls strings.Join(b, " ") and returns resulting string
+func (b BraceExpansion) String() string {
+	return strings.Join(b, " ")
+}
+
+// Err return nil or ErrEmptyResult
+func (b BraceExpansion) Err() (err error) {
+	if len(b) == 0 {
+		err = ErrEmptyResult
+	}
+	return
+}
+
+// Result is convience to get result as string slice
+func (b BraceExpansion) Result() []string {
+	return b
 }
 
 func parseCommaParts(str string) BraceExpansion {
@@ -40,7 +75,7 @@ func parseCommaParts(str string) BraceExpansion {
 	}
 	parts := []string{}
 	m := Balanced("{", "}", str)
-	if m == nil {
+	if !m.Valid {
 		return strings.Split(str, ",")
 	}
 	pre := m.Pre
@@ -62,7 +97,7 @@ func expand(str string, isTop bool) []string {
 	expansions := []string{}
 	m := Balanced("{", "}", str)
 	reg := regexp.MustCompile(`\$$`)
-	if m == nil || reg.Match([]byte(m.Pre)) {
+	if !m.Valid || reg.Match([]byte(m.Pre)) {
 		return []string{str}
 	}
 	isNumericSequence := regexp.MustCompile(`^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$`).Match([]byte(m.Body))
@@ -70,10 +105,11 @@ func expand(str string, isTop bool) []string {
 	isSequence := isNumericSequence || isAlphaSequence
 	isOptions := regexp.MustCompile(`^(.*,)+(.+)?$`).Match([]byte(m.Body))
 	if !isSequence && !isOptions {
-		if regexp.MustCompile(`,.*\}`).Match([]byte(m.Post)) {
-			str = m.Pre + "{" + m.Body + escClose + m.Post
-			return expand(str, false)
-		}
+    // UseCase???
+		// if regexp.MustCompile(`,.*\}`).Match([]byte(m.Post)) {
+		// 	str = m.Pre + "{" + m.Body + escClose + m.Post
+		// 	return expand(str, false)
+		// }
 		return []string{str}
 	}
 	var n []string
@@ -85,16 +121,17 @@ func expand(str string, isTop bool) []string {
 		if len(n) == 1 {
 			//// x{{a,b}}y ==> x{a}y x{b}y
 			n = mapArray(expand(n[0], false), embrace)
-			if len(n) == 1 {
-				if len(m.Post) > 0 {
-					post = expand(m.Post, false)
-				} else {
-					post = []string{""}
-				}
-				return mapArray(post, func(s string) string {
-					return m.Pre + n[0] + s
-				})
-			}
+      // UseCase???
+			// if len(n) == 1 {
+			// 	if len(m.Post) > 0 {
+			// 		post = expand(m.Post, false)
+			// 	} else {
+			// 		post = []string{""}
+			// 	}
+			// 	return mapArray(post, func(s string) string {
+			// 		return m.Pre + n[0] + s
+			// 	})
+			// }
 		}
 	}
 	pre := m.Pre
@@ -126,21 +163,21 @@ func expand(str string, isTop bool) []string {
 			var c string
 			if isAlphaSequence {
 				c = string(rune(i))
-				if c == "\\" {
-					c = ""
-				}
+        // Usecase ???
+				// if c == "\\" {
+				// 	c = ""
+				// }
 			} else {
 				c = strconv.FormatInt(i, 10)
 				if pad {
 					var need = width - len(c)
 					if need > 0 {
 						var z = strings.Join(make([]string, need+1), "0")
-						if i < 0 {
-							c = "-" + z + c[1:]
-						} else {
-							c = z + c
-						}
-
+            c = z + c
+            // Usecase ???
+						// if i < 0 {
+						// 	c = "-" + z + c[1:]
+						// }
 					}
 				}
 			}

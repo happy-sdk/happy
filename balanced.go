@@ -9,15 +9,19 @@ import (
 	"strings"
 )
 
+// BalancedResult is returned for the first non-nested matching pair
+// of a and b in str
 type BalancedResult struct {
-	Start int
-	End   int
-	Pre   string
-	Body  string
-	Post  string
+  Valid bool // is BalancedResult valid
+	Start int // the index of the first match of a
+	End   int // the index of the matching b
+	Pre   string // the preamble, a and b not included
+	Body  string // the match, a and b not included
+	Post  string // the postscript, a and b not included
 }
 
-func Balanced(a interface{}, b interface{}, str string) *BalancedResult {
+// Balanced returns first non-nested matching pair of a and b in str
+func Balanced(a interface{}, b interface{}, str string) BalancedResult {
 	var aVal []byte
 	var bVal []byte
 	if reg, ok := a.(*regexp.Regexp); ok {
@@ -33,14 +37,8 @@ func Balanced(a interface{}, b interface{}, str string) *BalancedResult {
 	return Range(aVal, bVal, str)
 }
 
-func maybeMatch(reg *regexp.Regexp, str []byte) []byte {
-	if v := reg.FindAll(str, 1); v != nil {
-		return v[0]
-	}
-	return nil
-}
-
-func Range(a []byte, b []byte, str string) *BalancedResult {
+// Range retruns the first non-nested matching pair of a and b in str
+func Range(a []byte, b []byte, str string) BalancedResult {
 	var result []int
 	ai := -1
 	if a != nil {
@@ -96,23 +94,39 @@ func Range(a []byte, b []byte, str string) *BalancedResult {
 			}
 		}
 	}
-	if len(result) == 2 {
-		if result[0]+len(a) < result[1] {
-			return &BalancedResult{
-				Start: result[0],
-				End:   result[1],
-				Pre:   str[0:result[0]],
-				Body:  str[result[0]+len(a) : result[1]],
-				Post:  str[result[1]+len(b):],
-			}
-		}
-		return &BalancedResult{
-			Start: result[0],
-			End:   result[1],
-			Pre:   str[0:result[0]],
-			Body:  "",
-			Post:  str[result[1]+len(b):],
-		}
+
+	return composeBalancedResult(a, b, str, result)
+}
+
+func maybeMatch(reg *regexp.Regexp, str []byte) []byte {
+	if v := reg.FindAll(str, 1); v != nil {
+		return v[0]
 	}
 	return nil
+}
+
+func composeBalancedResult(a []byte, b []byte, str string, result []int) (bres BalancedResult) {
+  if len(result) != 2 {
+    return
+  }
+  if result[0]+len(a) < result[1] {
+    bres = BalancedResult{
+      Valid: true,
+      Start: result[0],
+      End:   result[1],
+      Pre:   str[0:result[0]],
+      Body:  str[result[0]+len(a) : result[1]],
+      Post:  str[result[1]+len(b):],
+    }
+  } else {
+    bres = BalancedResult{
+      Valid: true,
+      Start: result[0],
+      End:   result[1],
+      Pre:   str[0:result[0]],
+      Body:  "",
+      Post:  str[result[1]+len(b):],
+    }
+  }
+  return
 }

@@ -6,8 +6,11 @@ package bexp_test
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 
-	"github.com/mkungla/bexp"
+	"github.com/mkungla/bexp/v2"
 )
 
 func ExampleParse() {
@@ -54,4 +57,35 @@ func ExampleParse() {
 	// [ppp pppconfig pppoe pppoeconf]
 	// [data/P1/10 data/P1/11 data/P1/12 data/P1/13 data/P1/14 data/P1/15 data/P1/16 data/P1/17 data/P1/18 data/P1/19 data/P2/20 data/P2/21 data/P2/22 data/P2/23 data/P2/24 data/P2/25 data/P2/26 data/P2/27 data/P2/28 data/P2/29 data/P3/30 data/P3/31 data/P3/32 data/P3/33 data/P3/34 data/P3/35 data/P3/36 data/P3/37 data/P3/38 data/P3/39]
 
+}
+
+func ExampleMkdirAll() {
+	const (
+		rootdir = "/tmp/bexp"
+		treeexp = rootdir + "/{dir1,dir2,dir3/{subdir1,subdir2}}"
+	)
+	if err := bexp.MkdirAll(treeexp, 0750); err != nil {
+		log.Fatal(err)
+	}
+  defer os.RemoveAll(rootdir)
+
+	err := filepath.Walk(rootdir,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			fmt.Println(path)
+			return nil
+		})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+  // Output:
+  // /tmp/bexp
+  // /tmp/bexp/dir1
+  // /tmp/bexp/dir2
+  // /tmp/bexp/dir3
+  // /tmp/bexp/dir3/subdir1
+  // /tmp/bexp/dir3/subdir2
 }
