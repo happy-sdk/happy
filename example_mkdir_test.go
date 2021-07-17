@@ -23,7 +23,7 @@ func ExampleMkdirAll() {
 	if err := bexp.MkdirAll(treeexp, 0750); err != nil {
 		log.Fatal(err)
 	}
-  defer os.RemoveAll(rootdir)
+	defer os.RemoveAll(rootdir)
 
 	err := filepath.Walk(rootdir,
 		func(path string, info os.FileInfo, err error) error {
@@ -37,11 +37,11 @@ func ExampleMkdirAll() {
 		log.Fatal(err)
 	}
 
-  // Output:
-  // /tmp/bexp
-  // /tmp/bexp/dir1
-  // /tmp/bexp/dir2
-  // /tmp/bexp/dir3
-  // /tmp/bexp/dir3/subdir1
-  // /tmp/bexp/dir3/subdir2
+	// Output:
+	// /tmp/bexp
+	// /tmp/bexp/dir1
+	// /tmp/bexp/dir2
+	// /tmp/bexp/dir3
+	// /tmp/bexp/dir3/subdir1
+	// /tmp/bexp/dir3/subdir2
 }

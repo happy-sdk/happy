@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	escSlash       = "\u0000SLASH" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escOpen        = "\u0000OPEN" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escClose       = "\u0000CLOSE" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escComma       = "\u0000COMMA" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escPeriod      = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-  // ErrEmptyResult representing empty result by parser
+	escSlash  = "\u0000SLASH" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escOpen   = "\u0000OPEN" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escClose  = "\u0000CLOSE" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escComma  = "\u0000COMMA" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	escPeriod = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+	// ErrEmptyResult representing empty result by parser
 	ErrEmptyResult = errors.New("result is empty")
 )
 
@@ -41,13 +41,13 @@ func Parse(str string) BraceExpansion {
 // Error can be ErrEmptyResult if parsing provided str results no paths
 // or first error of os.MkdirAll
 func MkdirAll(str string, perm os.FileMode) error {
-  if p := Parse(str); p.Err() == nil {
-    for _, dir := range p {
-      if err := os.MkdirAll(dir, perm); err != nil {
-        return err
-      }
-    }
-  }
+	if p := Parse(str); p.Err() == nil {
+		for _, dir := range p {
+			if err := os.MkdirAll(dir, perm); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -105,7 +105,7 @@ func expand(str string, isTop bool) []string {
 	isSequence := isNumericSequence || isAlphaSequence
 	isOptions := regexp.MustCompile(`^(.*,)+(.+)?$`).Match([]byte(m.Body))
 	if !isSequence && !isOptions {
-    // UseCase???
+		// UseCase???
 		// if regexp.MustCompile(`,.*\}`).Match([]byte(m.Post)) {
 		// 	str = m.Pre + "{" + m.Body + escClose + m.Post
 		// 	return expand(str, false)
@@ -121,7 +121,7 @@ func expand(str string, isTop bool) []string {
 		if len(n) == 1 {
 			//// x{{a,b}}y ==> x{a}y x{b}y
 			n = mapArray(expand(n[0], false), embrace)
-      // UseCase???
+			// UseCase???
 			// if len(n) == 1 {
 			// 	if len(m.Post) > 0 {
 			// 		post = expand(m.Post, false)
@@ -163,7 +163,7 @@ func expand(str string, isTop bool) []string {
 			var c string
 			if isAlphaSequence {
 				c = string(rune(i))
-        // Usecase ???
+				// Usecase ???
 				// if c == "\\" {
 				// 	c = ""
 				// }
@@ -173,8 +173,8 @@ func expand(str string, isTop bool) []string {
 					var need = width - len(c)
 					if need > 0 {
 						var z = strings.Join(make([]string, need+1), "0")
-            c = z + c
-            // Usecase ???
+						c = z + c
+						// Usecase ???
 						// if i < 0 {
 						// 	c = "-" + z + c[1:]
 						// }

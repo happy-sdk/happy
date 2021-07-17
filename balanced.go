@@ -12,9 +12,9 @@ import (
 // BalancedResult is returned for the first non-nested matching pair
 // of a and b in str
 type BalancedResult struct {
-  Valid bool // is BalancedResult valid
-	Start int // the index of the first match of a
-	End   int // the index of the matching b
+	Valid bool   // is BalancedResult valid
+	Start int    // the index of the first match of a
+	End   int    // the index of the matching b
 	Pre   string // the preamble, a and b not included
 	Body  string // the match, a and b not included
 	Post  string // the postscript, a and b not included
@@ -106,27 +106,27 @@ func maybeMatch(reg *regexp.Regexp, str []byte) []byte {
 }
 
 func composeBalancedResult(a []byte, b []byte, str string, result []int) (bres BalancedResult) {
-  if len(result) != 2 {
-    return
-  }
-  if result[0]+len(a) < result[1] {
-    bres = BalancedResult{
-      Valid: true,
-      Start: result[0],
-      End:   result[1],
-      Pre:   str[0:result[0]],
-      Body:  str[result[0]+len(a) : result[1]],
-      Post:  str[result[1]+len(b):],
-    }
-  } else {
-    bres = BalancedResult{
-      Valid: true,
-      Start: result[0],
-      End:   result[1],
-      Pre:   str[0:result[0]],
-      Body:  "",
-      Post:  str[result[1]+len(b):],
-    }
-  }
-  return
+	if len(result) != 2 {
+		return
+	}
+	if result[0]+len(a) < result[1] {
+		bres = BalancedResult{
+			Valid: true,
+			Start: result[0],
+			End:   result[1],
+			Pre:   str[0:result[0]],
+			Body:  str[result[0]+len(a) : result[1]],
+			Post:  str[result[1]+len(b):],
+		}
+	} else {
+		bres = BalancedResult{
+			Valid: true,
+			Start: result[0],
+			End:   result[1],
+			Pre:   str[0:result[0]],
+			Body:  "",
+			Post:  str[result[1]+len(b):],
+		}
+	}
+	return
 }

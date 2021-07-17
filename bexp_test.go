@@ -26,9 +26,9 @@ type testResource struct {
 var testData = []testResource{
 	// // PATHS
 	{"data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
-  {"data/{-1..-3}", "data/-1", "data/-2", "data/-3"},
-  {"data/{-3..-1}", "data/-3", "data/-2", "data/-1"},
-  {"data/{-1..1}", "data/-1", "data/0", "data/1"},
+	{"data/{-1..-3}", "data/-1", "data/-2", "data/-3"},
+	{"data/{-3..-1}", "data/-3", "data/-2", "data/-1"},
+	{"data/{-1..1}", "data/-1", "data/0", "data/1"},
 	{"/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
 	{"/usr/local/src/bash/{old,new,dist,bugs}", "/usr/local/src/bash/old", "/usr/local/src/bash/new", "/usr/local/src/bash/dist"},
 	{"{abc{def}}ghi", "{abc{def}}ghi", "", ""},
@@ -161,24 +161,24 @@ func TestSequence(t *testing.T) {
 }
 
 func TestMkdirAllError(t *testing.T) {
-  const (
-    rootdir = ""
-    treeexp = rootdir + "/{dir1,dir2,dir3/{subdir1,subdir2}}"
-  )
-  assert.Error(t, MkdirAll(treeexp, 0750), "creating dirs in root should error")
+	const (
+		rootdir = ""
+		treeexp = rootdir + "/{dir1,dir2,dir3/{subdir1,subdir2}}"
+	)
+	assert.Error(t, MkdirAll(treeexp, 0750), "creating dirs in root should error")
 }
 
 func TestString(t *testing.T) {
-  r := Parse("/{dir1,dir2}")
-  assert.Equal(t, "/dir1 /dir2", r.String())
+	r := Parse("/{dir1,dir2}")
+	assert.Equal(t, "/dir1 /dir2", r.String())
 }
 
 func TestResult(t *testing.T) {
-  r := Parse("/{dir1,dir2}")
-  assert.Equal(t, []string{"/dir1", "/dir2"}, r.Result())
+	r := Parse("/{dir1,dir2}")
+	assert.Equal(t, []string{"/dir1", "/dir2"}, r.Result())
 }
 
 func TestErr(t *testing.T) {
-  r := Parse("")
-  assert.Error(t, r.Err(), r.String())
+	r := Parse("")
+	assert.Error(t, r.Err(), r.String())
 }
