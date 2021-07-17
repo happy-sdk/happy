@@ -160,14 +160,6 @@ func TestSequence(t *testing.T) {
 	assert.Equal(t, BraceExpansion{"b", "d", "f", "h", "j"}, Parse("{b..k..2}"))
 }
 
-func TestMkdirAllError(t *testing.T) {
-	const (
-		rootdir = ""
-		treeexp = rootdir + "/{dir1,dir2,dir3/{subdir1,subdir2}}"
-	)
-	assert.Error(t, MkdirAll(treeexp, 0750), "creating dirs in root should error")
-}
-
 func TestString(t *testing.T) {
 	r := Parse("/{dir1,dir2}")
 	assert.Equal(t, "/dir1 /dir2", r.String())
