@@ -3,7 +3,7 @@
 Implementing: [3.5.1 Brace Expansion][bash-be]
 
 ![license](https://img.shields.io/github/license/mkungla/bexp)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp)](https://pkg.go.dev/github.com/mkungla/bexp)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp/v2)](https://pkg.go.dev/github.com/mkungla/bexp/v2)
 ![tests](https://github.com/mkungla/bexp/workflows/tests/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/bexp)](https://goreportcard.com/report/github.com/mkungla/bexp)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
@@ -100,10 +100,10 @@ func main() {
 
 ## Inspired by and other similar libraries
 
-> following package were inspiration to create this package,
-> Some of the code is from these packages. The motivation of this package is
-> to improve performance and reduce memory alloc compared to packages listed here.
-> also to add some commonly used API's when working with brace expansion strings
+> following package were inspiration to create this package, The motivation 
+> of this package is to improve performance and reduce memory allocations 
+> compared to other solutions. Also to add some commonly used API's 
+> when working with brace expansion strings
 
 - @kujtimiihoxha [go-brace-expansion] Go bash style brace expansion
 - @thomasheller [braceexpansion] Shell brace expansion implemented in Go (golang).
