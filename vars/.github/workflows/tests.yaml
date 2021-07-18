@@ -24,7 +24,7 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         if: runner.os == 'Linux'
         with:
-          version: v1.32
+          version: v1.41.1
       - name: Run Unit tests
         run: |
           go test -race -covermode atomic -coverprofile=covprofile ./...
