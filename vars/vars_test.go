@@ -7,7 +7,9 @@ package vars
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,30 +28,37 @@ func TestNewBool(t *testing.T) {
 		v, err := NewValue(test.in)
 		assert.Equal(t, err, nil, test.key)
 		assert.Equal(t, test.in, v.String())
-    assert.Equal(t, test.want, v.Bool())
+		assert.Equal(t, test.want, v.Bool())
 
 		v1, err := NewTypedValue(test.in, TypeBool)
-    assert.Equal(t, test.err, err)
-    assert.Equal(t, test.want, v1.Bool())
-    if v1.Type() != TypeBool {
-      t.Errorf("v.Type() != %#v actual: %v", TypeBool, v.Type())
-    }
+		assert.Equal(t, test.err, err)
+		assert.Equal(t, test.want, v1.Bool())
+		if v1.Type() != TypeBool {
+			t.Errorf("v.Type() != %#v actual: %v", TypeBool, v1.Type())
+		}
 
-    v2, err := NewValue(test.want)
-    assert.Equal(t, nil, err)
-    assert.Equal(t, test.want, v2.Bool())
-    if v2.Type() != TypeBool {
-      t.Errorf("v.Type() != %#v actual: %v", TypeBool, v.Type())
-    }
+		v2, err := NewValue(test.want)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, test.want, v2.Bool())
+		if v2.Type() != TypeBool {
+			t.Errorf("v.Type() != %#v actual: %v", TypeBool, v2.Type())
+		}
 
-    v3, err := NewTyped(test.key, test.in, TypeBool)
-    assert.Equal(t, test.err, err)
-    if err == nil {
-      assert.Equal(t, test.want, v3.Bool())
-      if v3.Type() != TypeBool {
-        t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeBool, v3.val.vtype)
-      }
-    }
+		v3, err := NewTyped(test.key, test.in, TypeBool)
+		assert.Equal(t, test.err, err)
+		if err == nil {
+			assert.Equal(t, test.want, v3.Bool())
+			if v3.Type() != TypeBool {
+				t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeBool, v3.Type())
+			}
+		}
+
+		// v4, err := NewValue(reflect.ValueOf(test.want))
+		// assert.Equal(t, test.want, v4.Bool())
+		// assert.Equal(t, nil, err)
+		// if v4.Type() != TypeBool {
+		// 	t.Errorf("v.Type() != %v actual: %v", TypeBool, v4.Type())
+		// }
 	}
 }
 
@@ -63,26 +72,33 @@ func TestNewFloat32(t *testing.T) {
 		v1, err := NewTypedValue(test.in, TypeFloat32)
 		assert.ErrorIs(t, err, test.err, test.key)
 		assert.Equal(t, test.wantStr, v1.String(), test.key)
-    if v1.Type() != TypeFloat32 {
-      t.Errorf("v.Type() != %#v actual: %v", TypeFloat32, v.Type())
-    }
+		if v1.Type() != TypeFloat32 {
+			t.Errorf("v.Type() != %#v actual: %v", TypeFloat32, v.Type())
+		}
 
-    v2, err := NewValue(test.wantFloat32)
-    assert.Equal(t, nil, err)
-    assert.Equal(t, test.wantStr, v1.String(), test.key)
-    assert.Equal(t, test.wantFloat32, v2.Float32())
-    if v2.Type() != TypeFloat32 {
-      t.Errorf("v.Type() != %#v actual: %v", TypeFloat32, v.Type())
-    }
+		v2, err := NewValue(test.wantFloat32)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, test.wantStr, v1.String(), test.key)
+		assert.Equal(t, test.wantFloat32, v2.Float32())
+		if v2.Type() != TypeFloat32 {
+			t.Errorf("v.Type() != %#v actual: %v", TypeFloat32, v.Type())
+		}
 
-    v3, err := NewTyped(test.key, test.in, TypeFloat32)
-    assert.ErrorIs(t, err, test.err)
-    if err == nil {
-      assert.Equal(t, test.wantFloat32, v3.Float32())
-      if v3.Type() != TypeFloat32 {
-        t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeFloat32, v3.val.vtype)
-      }
-    }
+		v3, err := NewTyped(test.key, test.in, TypeFloat32)
+		assert.ErrorIs(t, err, test.err)
+		if err == nil {
+			assert.Equal(t, test.wantFloat32, v3.Float32())
+			if v3.Type() != TypeFloat32 {
+				t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeFloat32, v3.val.vtype)
+			}
+		}
+
+		// v4, err := NewValue(reflect.ValueOf(test.wantFloat32))
+		// assert.Equal(t, test.wantFloat32, v4.Float32())
+		// assert.Equal(t, nil, err)
+		// if v4.Type() != TypeFloat32 {
+		//   t.Errorf("v.Type() != %v actual: %v", TypeFloat32, v4.Type())
+		// }
 	}
 }
 
@@ -101,26 +117,33 @@ func TestNewFloat64(t *testing.T) {
 		assert.ErrorIs(t, err, test.err, test.key)
 		assert.Equal(t, test.wantStr, v1.String(), test.key)
 		assert.Equal(t, test.wantFloat64, v1.Float64(), test.key)
-    if v1.Type() != TypeFloat64 {
-      t.Errorf("v.Type() != %#v actual: %v", TypeFloat64, v.Type())
-    }
+		if v1.Type() != TypeFloat64 {
+			t.Errorf("v.Type() != %#v actual: %v", TypeFloat64, v.Type())
+		}
 
-    v2, err := NewValue(test.wantFloat64)
-    assert.Equal(t, nil, err)
-    assert.Equal(t, test.wantStr, v1.String(), test.key)
-    assert.Equal(t, test.wantFloat64, v2.Float64())
-    if v2.Type() != TypeFloat64 {
-      t.Errorf("v.Type() != %#v actual: %v", TypeFloat64, v.Type())
-    }
+		v2, err := NewValue(test.wantFloat64)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, test.wantStr, v1.String(), test.key)
+		assert.Equal(t, test.wantFloat64, v2.Float64())
+		if v2.Type() != TypeFloat64 {
+			t.Errorf("v.Type() != %#v actual: %v", TypeFloat64, v.Type())
+		}
 
-    v3, err := NewTyped(test.key, test.in, TypeFloat64)
-    assert.ErrorIs(t, err, test.err)
-    if err == nil {
-      assert.Equal(t, test.wantFloat64, v3.Float64())
-      if v3.Type() != TypeFloat64 {
-        t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeFloat64, v3.val.vtype)
-      }
-    }
+		v3, err := NewTyped(test.key, test.in, TypeFloat64)
+		assert.ErrorIs(t, err, test.err)
+		if err == nil {
+			assert.Equal(t, test.wantFloat64, v3.Float64())
+			if v3.Type() != TypeFloat64 {
+				t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeFloat64, v3.val.vtype)
+			}
+		}
+
+		// v4, err := NewValue(reflect.ValueOf(test.wantFloat64))
+		// assert.Equal(t, test.wantFloat64, v4.Float64())
+		// assert.Equal(t, nil, err)
+		// if v4.Type() != TypeFloat64 {
+		//   t.Errorf("v.Type() != %v actual: %v", TypeFloat64, v4.Type())
+		// }
 	}
 }
 
@@ -135,14 +158,21 @@ func TestNewValueComplex64(t *testing.T) {
 		assert.Equal(t, test.wantStr, v2.String(), test.key)
 		assert.Equal(t, test.wantComplex64, v2.Complex64(), test.key)
 
-    v3, err := NewTyped(test.key, test.in, TypeComplex64)
-    assert.ErrorIs(t, err, test.err)
-    if err == nil {
-      assert.Equal(t, test.wantComplex64, v3.Complex64())
-      if v3.Type() != TypeComplex64 {
-        t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeComplex64, v3.val.vtype)
-      }
-    }
+		v3, err := NewTyped(test.key, test.in, TypeComplex64)
+		assert.ErrorIs(t, err, test.err)
+		if err == nil {
+			assert.Equal(t, test.wantComplex64, v3.Complex64())
+			if v3.Type() != TypeComplex64 {
+				t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeComplex64, v3.val.vtype)
+			}
+		}
+
+		// v4, err := NewValue(reflect.ValueOf(test.wantComplex64))
+		// assert.Equal(t, test.wantComplex64, v4.Complex64())
+		// assert.Equal(t, nil, err)
+		// if v4.Type() != TypeComplex64 {
+		//   t.Errorf("v.Type() != %v actual: %v", TypeComplex64, v4.Type())
+		// }
 	}
 }
 
@@ -157,14 +187,21 @@ func TestNewValueComplex128(t *testing.T) {
 		assert.Equal(t, test.wantStr, v2.String(), test.key)
 		assert.Equal(t, test.wantComplex128, v2.Complex128(), test.key)
 
-    v3, err := NewTyped(test.key, test.in, TypeComplex128)
-    assert.ErrorIs(t, err, test.err)
-    if err == nil {
-      assert.Equal(t, test.wantComplex128, v3.Complex128())
-      if v3.Type() != TypeComplex128 {
-        t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeComplex128, v3.val.vtype)
-      }
-    }
+		v3, err := NewTyped(test.key, test.in, TypeComplex128)
+		assert.ErrorIs(t, err, test.err)
+		if err == nil {
+			assert.Equal(t, test.wantComplex128, v3.Complex128())
+			if v3.Type() != TypeComplex128 {
+				t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeComplex128, v3.val.vtype)
+			}
+		}
+
+		// v4, err := NewValue(reflect.ValueOf(test.wantComplex128))
+		// assert.Equal(t, test.wantComplex128, v4.Complex128())
+		// assert.Equal(t, nil, err)
+		// if v4.Type() != TypeComplex128 {
+		//   t.Errorf("v.Type() != %v actual: %v", TypeComplex128, v4.Type())
+		// }
 	}
 }
 
@@ -180,13 +217,20 @@ func TestNewValueInt(t *testing.T) {
 			assert.Equal(t, test.int, vu.Int(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeInt)
-      if err == nil {
-        assert.Equal(t, test.int, v3.Int())
-        if v3.Type() != TypeInt {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeInt)
+			if err == nil {
+				assert.Equal(t, test.int, v3.Int())
+				if v3.Type() != TypeInt {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.int))
+			// assert.Equal(t, test.int, v4.Int())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeInt {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeInt, v4.Type())
+			// }
 		})
 
 		t.Run(fmt.Sprintf("%s(int8): %q", test.key, test.val), func(t *testing.T) {
@@ -197,13 +241,20 @@ func TestNewValueInt(t *testing.T) {
 			vu, _ := NewValue(test.val)
 			assert.Equal(t, test.int8, vu.Int8(), test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeInt8)
-      if err == nil {
-        assert.Equal(t, test.int8, v3.Int8())
-        if v3.Type() != TypeInt8 {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt8, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeInt8)
+			if err == nil {
+				assert.Equal(t, test.int8, v3.Int8())
+				if v3.Type() != TypeInt8 {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt8, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.int8))
+			// assert.Equal(t, test.int8, v4.Int8())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeInt8 {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeInt8, v4.Type())
+			// }
 		})
 
 		t.Run(fmt.Sprintf("%s(int16): %q", test.key, test.val), func(t *testing.T) {
@@ -218,13 +269,20 @@ func TestNewValueInt(t *testing.T) {
 			assert.Equal(t, test.int16, vu.Int16(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeInt16)
-      if err == nil {
-        assert.Equal(t, test.int16, v3.Int16())
-        if v3.Type() != TypeInt16 {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt16, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeInt16)
+			if err == nil {
+				assert.Equal(t, test.int16, v3.Int16())
+				if v3.Type() != TypeInt16 {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt16, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.int16))
+			// assert.Equal(t, test.int16, v4.Int16())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeInt16 {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeInt16, v4.Type())
+			// }
 		})
 
 		t.Run(fmt.Sprintf("%s(int32): %q", test.key, test.val), func(t *testing.T) {
@@ -239,13 +297,20 @@ func TestNewValueInt(t *testing.T) {
 			assert.Equal(t, test.int32, vu.Int32(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeInt32)
-      if err == nil {
-        assert.Equal(t, test.int32, v3.Int32())
-        if v3.Type() != TypeInt32 {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt32, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeInt32)
+			if err == nil {
+				assert.Equal(t, test.int32, v3.Int32())
+				if v3.Type() != TypeInt32 {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt32, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.int32))
+			// assert.Equal(t, test.int32, v4.Int32())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeInt32 {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeInt32, v4.Type())
+			// }
 		})
 
 		t.Run(fmt.Sprintf("%s(int64): %q", test.key, test.val), func(t *testing.T) {
@@ -260,13 +325,20 @@ func TestNewValueInt(t *testing.T) {
 			assert.Equal(t, test.int64, vu.Int64(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeInt64)
-      if err == nil {
-        assert.Equal(t, test.int64, v3.Int64())
-        if v3.Type() != TypeInt64 {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt64, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeInt64)
+			if err == nil {
+				assert.Equal(t, test.int64, v3.Int64())
+				if v3.Type() != TypeInt64 {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeInt64, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.int64))
+			// assert.Equal(t, test.int64, v4.Int64())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeInt64 {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeInt64, v4.Type())
+			// }
 		})
 	}
 }
@@ -285,13 +357,20 @@ func TestNewValueUint(t *testing.T) {
 			assert.Equal(t, test.uint, vu.Uint(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeUint)
-      if err == nil {
-        assert.Equal(t, test.uint, v3.Uint())
-        if v3.Type() != TypeUint {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeUint)
+			if err == nil {
+				assert.Equal(t, test.uint, v3.Uint())
+				if v3.Type() != TypeUint {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.uint))
+			// assert.Equal(t, test.uint, v4.Uint())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeUint {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeUint, v4.Type())
+			// }
 		})
 
 		t.Run(fmt.Sprintf("%s(uint8): %q", test.key, test.val), func(t *testing.T) {
@@ -306,13 +385,20 @@ func TestNewValueUint(t *testing.T) {
 			assert.Equal(t, test.uint8, vu.Uint8(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeUint8)
-      if err == nil {
-        assert.Equal(t, test.uint8, v3.Uint8())
-        if v3.Type() != TypeUint8 {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint8, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeUint8)
+			if err == nil {
+				assert.Equal(t, test.uint8, v3.Uint8())
+				if v3.Type() != TypeUint8 {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint8, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.uint8))
+			// assert.Equal(t, test.uint8, v4.Uint8())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeUint8 {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeUint8, v4.Type())
+			// }
 		})
 
 		t.Run(fmt.Sprintf("%s(uint16): %q", test.key, test.val), func(t *testing.T) {
@@ -327,13 +413,20 @@ func TestNewValueUint(t *testing.T) {
 			assert.Equal(t, test.uint16, vu.Uint16(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeUint8)
-      if err == nil {
-        assert.Equal(t, test.uint16, v3.Uint16())
-        if v3.Type() != TypeUint8 {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint8, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeUint16)
+			if err == nil {
+				assert.Equal(t, test.uint16, v3.Uint16())
+				if v3.Type() != TypeUint16 {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint16, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.uint16))
+			// assert.Equal(t, test.uint16, v4.Uint16())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeUint16 {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeUint16, v4.Type())
+			// }
 		})
 
 		t.Run(fmt.Sprintf("%s(uint32): %q", test.key, test.val), func(t *testing.T) {
@@ -348,13 +441,20 @@ func TestNewValueUint(t *testing.T) {
 			assert.Equal(t, test.uint32, vu.Uint32(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeUint32)
-      if err == nil {
-        assert.Equal(t, test.uint32, v3.Uint32())
-        if v3.Type() != TypeUint32 {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint32, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeUint32)
+			if err == nil {
+				assert.Equal(t, test.uint32, v3.Uint32())
+				if v3.Type() != TypeUint32 {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint32, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.uint32))
+			// assert.Equal(t, test.uint32, v4.Uint32())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeUint32 {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeUint32, v4.Type())
+			// }
 		})
 
 		t.Run(fmt.Sprintf("%s(uint64): %q", test.key, test.val), func(t *testing.T) {
@@ -369,13 +469,20 @@ func TestNewValueUint(t *testing.T) {
 			assert.Equal(t, test.uint64, vu.Uint64(), test.key)
 			assert.NoError(t, err, test.key)
 
-      v3, err := NewTyped(test.key, test.val, TypeUint64)
-      if err == nil {
-        assert.Equal(t, test.uint64, v3.Uint64())
-        if v3.Type() != TypeUint64 {
-          t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint64, v3.val.vtype)
-        }
-      }
+			v3, err := NewTyped(test.key, test.val, TypeUint64)
+			if err == nil {
+				assert.Equal(t, test.uint64, v3.Uint64())
+				if v3.Type() != TypeUint64 {
+					t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUint64, v3.val.vtype)
+				}
+			}
+
+			// v4, err := NewValue(reflect.ValueOf(test.uint64))
+			// assert.Equal(t, test.uint64, v4.Uint64())
+			// assert.Equal(t, nil, err)
+			// if v4.Type() != TypeUint64 {
+			//   t.Errorf("v.Type() != %v actual: %v", TypeUint64, v4.Type())
+			// }
 		})
 	}
 }
@@ -401,13 +508,20 @@ func TestNewValueUintptr(t *testing.T) {
 		assert.Equal(t, test.want, vu.Uintptr(), test.key)
 		assert.NoError(t, err, test.key)
 
-    v3, err := NewTyped(test.key, test.val, TypeUintptr)
-    if err == nil {
-      assert.Equal(t, test.want, v3.Uintptr())
-      if v3.Type() != TypeUintptr {
-        t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUintptr, v3.val.vtype)
-      }
-    }
+		v3, err := NewTyped(test.key, test.val, TypeUintptr)
+		if err == nil {
+			assert.Equal(t, test.want, v3.Uintptr())
+			if v3.Type() != TypeUintptr {
+				t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeUintptr, v3.val.vtype)
+			}
+		}
+
+		// v4, err := NewValue(reflect.ValueOf(test.want))
+		// assert.Equal(t, test.want, v4.Uintptr())
+		// assert.Equal(t, nil, err)
+		// if v4.Type() != TypeUintptr {
+		//   t.Errorf("v.Type() != %v actual: %v", TypeUintptr, v4.Type())
+		// }
 	}
 }
 
@@ -419,218 +533,233 @@ func TestNewValueString(t *testing.T) {
 		v1, _ := NewTypedValue(test.val, TypeString)
 		assert.Equal(t, test.val, v1.String(), test.key)
 
-    v3, err := NewTyped(test.key, test.val, TypeString)
-    if err == nil {
-      assert.Equal(t, test.val, v3.String())
-      if v3.Type() != TypeString {
-        t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeString, v3.val.vtype)
-      }
-    }
+		v3, err := NewTyped(test.key, test.val, TypeString)
+		if err == nil {
+			assert.Equal(t, test.val, v3.String())
+			if v3.Type() != TypeString {
+				t.Errorf("v.Type() != vars.Type(%v) actual: %v", TypeString, v3.val.vtype)
+			}
+		}
+
+		// v4, err := NewValue(reflect.ValueOf(test.val))
+		// assert.Equal(t, test.val, v4.String())
+		// assert.Equal(t, nil, err)
+		// if v4.Type() != TypeString {
+		//   t.Errorf("v.Type() != %v actual: %v", TypeString, v4.Type())
+		// }
 	}
 }
 
 func TestNewVariableTypes(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.in)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, test.bool, v.Bool(), test.key)
-    assert.Equal(t, test.float32, v.Float32(), test.key)
-    assert.Equal(t, test.float64, v.Float64(), test.key)
-    assert.Equal(t, test.complex64, v.Complex64(), test.key)
-    assert.Equal(t, test.complex128, v.Complex128(), test.key)
-    assert.Equal(t, test.int, v.Int(), test.key)
-    assert.Equal(t, test.int8, v.Int8(), test.key)
-    assert.Equal(t, test.int16, v.Int16(), test.key)
-    assert.Equal(t, test.int32, v.Int32(), test.key)
-    assert.Equal(t, test.int64, v.Int64(), test.key)
-    assert.Equal(t, test.uint, v.Uint(), test.key)
-    assert.Equal(t, test.uint8, v.Uint8(), test.key)
-    assert.Equal(t, test.uint16, v.Uint16(), test.key)
-    assert.Equal(t, test.uint32, v.Uint32(), test.key)
-    assert.Equal(t, test.uint64, v.Uint64(), test.key)
-    assert.Equal(t, test.uintptr, v.Uintptr(), test.key)
-    assert.Equal(t, test.string, v.String(), test.key)
-    assert.Equal(t, test.bytes, v.Bytes(), test.key)
-    assert.Equal(t, test.runes, v.Runes(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.in)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, test.bool, v.Bool(), test.key)
+		assert.Equal(t, test.float32, v.Float32(), test.key)
+		assert.Equal(t, test.float64, v.Float64(), test.key)
+		assert.Equal(t, test.complex64, v.Complex64(), test.key)
+		assert.Equal(t, test.complex128, v.Complex128(), test.key)
+		assert.Equal(t, test.int, v.Int(), test.key)
+		assert.Equal(t, test.int8, v.Int8(), test.key)
+		assert.Equal(t, test.int16, v.Int16(), test.key)
+		assert.Equal(t, test.int32, v.Int32(), test.key)
+		assert.Equal(t, test.int64, v.Int64(), test.key)
+		assert.Equal(t, test.uint, v.Uint(), test.key)
+		assert.Equal(t, test.uint8, v.Uint8(), test.key)
+		assert.Equal(t, test.uint16, v.Uint16(), test.key)
+		assert.Equal(t, test.uint32, v.Uint32(), test.key)
+		assert.Equal(t, test.uint64, v.Uint64(), test.key)
+		assert.Equal(t, test.uintptr, v.Uintptr(), test.key)
+		assert.Equal(t, test.string, v.String(), test.key)
+		assert.Equal(t, test.bytes, v.Bytes(), test.key)
+		assert.Equal(t, test.runes, v.Runes(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeBool(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.bool)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeBool, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.bool)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeBool, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeFloat32(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.float32)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeFloat32, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.float32)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeFloat32, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeFloat64(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.float64)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeFloat64, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.float64)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeFloat64, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeComplex64(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.complex64)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeComplex64, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.complex64)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeComplex64, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeComplex128(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.complex128)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeComplex128, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.complex128)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeComplex128, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeInt(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.int)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeInt, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.int)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeInt, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeInt8(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.int8)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeInt8, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.int8)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeInt8, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeInt16(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.int16)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeInt16, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.int16)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeInt16, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeInt32(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.int32)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeInt32, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.int32)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeInt32, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeInt64(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.int64)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeInt64, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.int64)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeInt64, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeUint(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.uint)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeUint, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.uint)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeUint, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeUint8(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.uint8)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeUint8, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.uint8)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeUint8, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeUint16(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.uint16)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeUint16, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.uint16)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeUint16, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeUint32(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.uint32)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeUint32, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.uint32)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeUint32, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeUint64(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.uint64)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeUint64, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.uint64)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeUint64, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeUintptr(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.uintptr)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeUintptr, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.uintptr)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeUintptr, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeString(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.string)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeString, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.string)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeString, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeBytes(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.bytes)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeBytes, v.Type(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.bytes)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeBytes, v.Type(), test.key)
+	}
 }
 
 func TestNewVariableValueTypeRunes(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := New(test.key, test.runes)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, TypeRunes, v.Type(), test.key)
-    assert.Equal(t, test.runes, v.Runes(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := New(test.key, test.runes)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, TypeRunes, v.Type(), test.key)
+		assert.Equal(t, test.runes, v.Runes(), test.key)
+	}
+
+	v2, err := New("runes", []rune{utf8.RuneSelf + 1})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, TypeRunes, v2.Type())
+
+	v3, err := New("runes", []rune{utf8.UTFMax + 1})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, TypeRunes, v3.Type())
 }
 
 func TestValueTypes(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := NewValue(test.in)
-    assert.Equal(t, err, nil, test.key)
-    assert.Equal(t, test.bool, v.Bool(), test.key)
-    assert.Equal(t, test.float32, v.Float32(), test.key)
-    assert.Equal(t, test.complex64, v.Complex64(), test.key)
-    assert.Equal(t, test.complex128, v.Complex128(), test.key)
-    assert.Equal(t, test.int, v.Int(), test.key)
-    assert.Equal(t, test.int8, v.Int8(), test.key)
-    assert.Equal(t, test.int16, v.Int16(), test.key)
-    assert.Equal(t, test.int32, v.Int32(), test.key)
-    assert.Equal(t, test.int64, v.Int64(), test.key)
-    assert.Equal(t, test.uint, v.Uint(), test.key)
-    assert.Equal(t, test.uint8, v.Uint8(), test.key)
-    assert.Equal(t, test.uint16, v.Uint16(), test.key)
-    assert.Equal(t, test.uint32, v.Uint32(), test.key)
-    assert.Equal(t, test.uint64, v.Uint64(), test.key)
-    assert.Equal(t, test.uintptr, v.Uintptr(), test.key)
-    assert.Equal(t, test.string, v.String(), test.key)
-    assert.Equal(t, test.bytes, v.Bytes(), test.key)
-    assert.Equal(t, test.runes, v.Runes(), test.key)
-  }
+	for _, test := range typeTests {
+		v, err := NewValue(test.in)
+		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, test.bool, v.Bool(), test.key)
+		assert.Equal(t, test.float32, v.Float32(), test.key)
+		assert.Equal(t, test.complex64, v.Complex64(), test.key)
+		assert.Equal(t, test.complex128, v.Complex128(), test.key)
+		assert.Equal(t, test.int, v.Int(), test.key)
+		assert.Equal(t, test.int8, v.Int8(), test.key)
+		assert.Equal(t, test.int16, v.Int16(), test.key)
+		assert.Equal(t, test.int32, v.Int32(), test.key)
+		assert.Equal(t, test.int64, v.Int64(), test.key)
+		assert.Equal(t, test.uint, v.Uint(), test.key)
+		assert.Equal(t, test.uint8, v.Uint8(), test.key)
+		assert.Equal(t, test.uint16, v.Uint16(), test.key)
+		assert.Equal(t, test.uint32, v.Uint32(), test.key)
+		assert.Equal(t, test.uint64, v.Uint64(), test.key)
+		assert.Equal(t, test.uintptr, v.Uintptr(), test.key)
+		assert.Equal(t, test.string, v.String(), test.key)
+		assert.Equal(t, test.bytes, v.Bytes(), test.key)
+		assert.Equal(t, test.runes, v.Runes(), test.key)
+	}
 }
 
 func TestNewFromKeyVal(t *testing.T) {
@@ -654,33 +783,90 @@ func TestNewFromKeyValEmptyKey(t *testing.T) {
 	assert.ErrorIs(t, err, ErrVariableKeyEmpty)
 }
 
-func TestValueLen(t *testing.T) {
+func TestLen(t *testing.T) {
 	for _, test := range typeTests {
 		v, err := NewValue(test.in)
 		assert.Equal(t, nil, err, test.key)
 		assert.Equal(t, len(v.String()), len(test.in), test.key)
 		assert.Equal(t, v.Len(), len(test.in), test.key)
+
+		v2, err := New(test.key, test.in)
+		assert.Equal(t, nil, err, test.key)
+		assert.Equal(t, len(v2.String()), len(test.in), test.key)
+		assert.Equal(t, v2.Len(), len(test.in), test.key)
 	}
 }
 
-func TestFlags(t *testing.T) {
-  f := parserFmtFlags{}
-	assert.False(t, f.widPresent)
-	assert.False(t, f.precPresent)
-	assert.False(t, f.minus)
-	assert.False(t, f.plus)
-	assert.False(t, f.sharp)
-	assert.False(t, f.space)
-	assert.False(t, f.zero)
-	assert.False(t, f.plusV)
-	assert.False(t, f.sharpV)
-	assert.False(t, f.sharpV)
+func TestValueFields(t *testing.T) {
+	v, err := NewValue("word1 word2 word3")
+	assert.Equal(t, nil, err)
+	if len(v.Fields()) != 3 {
+		t.Error("len of fields should be 3")
+	}
+	v2, err := New("fields", "word1 word2 word3")
+	assert.Equal(t, nil, err)
+	if len(v2.Fields()) != 3 {
+		t.Error("len of fields should be 3")
+	}
 }
 
-func TestValueFields(t *testing.T) {
-  v, err := NewValue("word1 word2 word3")
-  assert.Equal(t, nil, err)
-  if len(v.Fields()) != 3 {
-    t.Error("len of fields should be 3")
-  }
+func TestArbitraryValues(t *testing.T) {
+	v1, err := New("map", make(map[int]string))
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "", v1.String())
+
+	list := make(map[int]string)
+	list[1] = "line1"
+	v2, err := New("map", list)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "", v2.String())
+
+	v3, err := New("bytes", []byte{})
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "[]", v3.String())
+
+	v4, err := New("bytes", []byte{1, 2, 3})
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "[1 2 3]", v4.String())
+
+	v5, err := NewTyped("bytes", "[1 2 3]", TypeBytes)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, []byte{1, 2, 3}, v5.Bytes())
+
+	_, err = NewTyped("bytes", "[100 200 300]", TypeBytes)
+	assert.ErrorIs(t, err, strconv.ErrRange)
+
+	v6, err := New("struct", parserFmtFlags{})
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "", v6.String())
+
+	strfn := func() string { return "str" }
+	v7, err := New("map", strfn)
+	assert.Equal(t, nil, err)
+	assert.Empty(t, v7.String())
+	assert.Equal(t, TypeUnknown, v7.Type())
+}
+
+func TestErrors(t *testing.T) {
+	_, err := NewTyped("", "", TypeString)
+	assert.ErrorIs(t, err, ErrVariableKeyEmpty)
+}
+
+func TestRune(t *testing.T) {
+	_, err := New("rune", rune(0x81))
+	assert.ErrorIs(t, err, nil)
+}
+
+func TestParser(t *testing.T) {
+	p := &parser{}
+	assert.False(t, p.Flag(0))
+	prec, ok := p.Precision()
+	assert.False(t, ok)
+	assert.Equal(t, 0, prec)
+	wid, ok2 := p.Width()
+	assert.False(t, ok2)
+	assert.Equal(t, 0, wid)
+	ret, err := p.Write([]byte{})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, ret)
 }

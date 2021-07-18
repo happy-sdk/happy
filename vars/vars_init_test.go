@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -169,10 +168,6 @@ var newTests = []newTest{
 	{"uintptr", uintptr(10), nil},
 	{"string", "string", nil},
 	{"byte_arr", []byte{1, 2, 3}, nil},
-	{"reflect.str", reflect.ValueOf(string("s")), nil},
-	{"reflect.err", reflect.ValueOf(errors.New("s")), nil},
-	{"reflect.func", reflect.ValueOf(func() {}), nil},
-	{"default", newTest{"test", 1, nil}, nil},
 }
 
 var boolTests = []boolTest{
@@ -280,6 +275,7 @@ var float32Tests = []float32Test{
 	{"FLOAT_23", "1e-45", "1e-45", 1e-45, nil},
 	{"FLOAT_24", "2e-45", "1e-45", 1e-45, nil},
 	{"FLOAT_25", "4951760157141521099596496896", "4.9517602e+27", 4.9517602e+27, nil},
+	{"FLOAT_26", "200", "200", 200, nil},
 }
 
 var float64Tests = []float64Test{
@@ -382,6 +378,9 @@ var float64Tests = []float64Test{
 	{"FLOAT_97", "1.00000000000000011102230246251565404236316680908203124", "1", 1, nil},
 	{"FLOAT_98", "1.00000000000000011102230246251565404236316680908203126", "1.0000000000000002", 1.0000000000000002, nil},
 	{"FLOAT_99", "1.00000000000000011102230246251565404236316680908203125" + strings.Repeat("0", 10000) + "1", "1.0000000000000002", 1.0000000000000002, nil},
+	{"FLOAT_100", "NaN", "NaN", -math.NaN(), nil},
+	{"FLOAT_101", "NaN", "NaN", +math.NaN(), nil},
+	{"FLOAT_102", "NaN", "NaN", math.NaN(), nil},
 }
 
 var complex64Tests = []complex64Test{

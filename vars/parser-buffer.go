@@ -26,9 +26,9 @@ func (b *parserBuffer) writeRune(r rune) {
 
 	bb := *b
 	n := len(bb)
-	for n+utf8.UTFMax > cap(bb) {
-		bb = append(bb, 0)
-	}
+	// for n+utf8.UTFMax > cap(bb) {
+	// 	bb = append(bb, 0)
+	// }
 	w := utf8.EncodeRune(bb[n:n+utf8.UTFMax], r)
 	*b = bb[:n+w]
 }
