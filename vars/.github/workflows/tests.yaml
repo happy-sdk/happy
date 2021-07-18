@@ -7,7 +7,17 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.41.1
+
   test:
+    needs: lint
     strategy:
       matrix:
         go: [1.15.x, 1.16.x]
@@ -18,22 +28,23 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - uses: actions/checkout@v2
-      - run: go test -v -coverprofile=profile.cov ./...
+      - run: go test -race -covermode atomic -coverprofile=covprofile ./...
+      - name: Install goveralls
+        if: runner.os == 'Linux'
+        run: go get github.com/mattn/goveralls
       - name: Send coverage
         if: runner.os == 'Linux'
-        uses: shogo82148/actions-goveralls@v1
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          path-to-profile: profile.cov
-          flag-name: Go-${{ matrix.go }}
-          parallel: true
+        run: goveralls -parallel -coverprofile=covprofile -service=github -flagname=${{ runner.os }}-Go-${{ matrix.go }}
 
-  # notifies that all test jobs are finished.
   finish:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: shogo82148/actions-goveralls@v1
+      - uses: actions/setup-go@v1
         with:
-          parallel-finished: true
+          go-version: tip
+      - uses: actions/checkout@v2
+      - name: Install goveralls
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        run: goveralls -parallel-finish -service=github
