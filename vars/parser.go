@@ -44,14 +44,12 @@ func (p *parser) free() {
 	if cap(p.buf) < 64<<10 {
 		p.buf = p.buf[:0]
 		p.arg = nil
-		// p.value = reflect.Value{}
 		parserPool.Put(p)
 	}
 }
 
 func (p *parser) printArg(arg interface{}) (vtype Type, raw interface{}) {
 	p.arg = arg
-	// p.value = reflect.Value{}
 	if arg == nil {
 		p.fmt.padString(nilAngleString)
 		return
@@ -136,7 +134,6 @@ func parseBool(str string) (r bool, s string, e error) {
 
 func parseFloat(str string, bitSize int) (r float64, s string, e error) {
 	r, e = strconv.ParseFloat(str, bitSize)
-	// s = strconv.FormatFloat(r, 'f', -1, bitSize)
 	if bitSize == 32 {
 		s = fmt.Sprintf("%v", float32(r))
 	} else {
