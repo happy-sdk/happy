@@ -6,6 +6,11 @@ package vars
 
 import "strings"
 
+// Type of value
+func (v Value) Type() Type {
+	return v.vtype
+}
+
 // Bool returns boolean representation of the var Value
 func (v Value) Bool() bool {
 	switch v.str {
