@@ -23,12 +23,7 @@ func (v Value) Bool() bool {
 // Float32 returns Float32 representation of the Value
 func (v Value) Float32() float32 {
   if v.vtype == TypeFloat32 {
-    switch v.raw.(type) {
-    case float64:
-      return float32(v.raw.(float64))
-    default:
-      return v.raw.(float32)
-    }
+    return v.raw.(float32)
 	}
 	val, _, _ := parseFloat(v.str, 32)
 	return float32(val)
