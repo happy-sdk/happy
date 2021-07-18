@@ -13,45 +13,68 @@ func (v Value) Type() Type {
 
 // Bool returns boolean representation of the var Value
 func (v Value) Bool() bool {
-	switch v.str {
-	case "1", "t", "T", "true", "TRUE", "True":
-		return true
+  if v.vtype == TypeBool {
+		return v.raw.(bool)
 	}
-	return false
+	val, _, _ := parseBool(v.str)
+	return val
 }
 
 // Float32 returns Float32 representation of the Value
 func (v Value) Float32() float32 {
+  if v.vtype == TypeFloat32 {
+    switch v.raw.(type) {
+    case float64:
+      return float32(v.raw.(float64))
+    default:
+      return v.raw.(float32)
+    }
+	}
 	val, _, _ := parseFloat(v.str, 32)
 	return float32(val)
 }
 
 // Float64 returns float64 representation of Value
 func (v Value) Float64() float64 {
+  if v.vtype == TypeFloat64 {
+		return v.raw.(float64)
+	}
 	val, _, _ := parseFloat(v.str, 64)
 	return val
 }
 
 // Complex64 returns complex64 representation of the Value
 func (v Value) Complex64() complex64 {
+  if v.vtype == TypeComplex64 {
+		return v.raw.(complex64)
+	}
 	val, _, _ := parseComplex64(v.str)
 	return val
 }
 
 // Complex128 returns complex128 representation of the Value
 func (v Value) Complex128() complex128 {
+  if v.vtype == TypeComplex128 {
+		return v.raw.(complex128)
+	}
 	val, _, _ := parseComplex128(v.str)
 	return val
 }
 
 // Int returns int representation of the Value
 func (v Value) Int() int {
-	val, _, _ := parseInt(v.str, 10, 0)
-	return int(val)
+  if v.vtype == TypeInt {
+    return v.raw.(int)
+  }
+  val, _, _ := parseInt(v.str, 10, 0)
+  return int(val)
 }
 
 // Int8 returns int8 representation of the Value
 func (v Value) Int8() int8 {
+  if v.vtype == TypeInt8 {
+		return v.raw.(int8)
+	}
 	val, _, _ := parseInt(v.str, 10, 8)
 	return int8(val)
 }
@@ -76,36 +99,54 @@ func (v Value) Int64() int64 {
 
 // Uint returns uint representation of the Value
 func (v Value) Uint() uint {
-	val, _, _ := parseUint(v.str, 10, 0)
-	return uint(val)
+  if v.vtype == TypeUint {
+    return v.raw.(uint)
+  }
+  val, _, _ := parseUint(v.str, 10, 0)
+  return uint(val)
 }
 
 // Uint8 returns uint8 representation of the Value
 func (v Value) Uint8() uint8 {
+  if v.vtype == TypeUint8 {
+		return v.raw.(uint8)
+	}
 	val, _, _ := parseUint(v.str, 10, 8)
 	return uint8(val)
 }
 
 // Uint16 returns uint16 representation of the Value
 func (v Value) Uint16() uint16 {
+  if v.vtype == TypeUint16 {
+		return v.raw.(uint16)
+	}
 	val, _, _ := parseUint(v.str, 10, 16)
 	return uint16(val)
 }
 
 // Uint32 returns uint32 representation of the Value
 func (v Value) Uint32() uint32 {
+  if v.vtype == TypeUint32 {
+		return v.raw.(uint32)
+	}
 	val, _, _ := parseUint(v.str, 10, 32)
 	return uint32(val)
 }
 
 // Uint64 returns uint64 representation of the Value
 func (v Value) Uint64() uint64 {
+  if v.vtype == TypeUint64 {
+		return v.raw.(uint64)
+	}
 	val, _, _ := parseUint(v.str, 10, 64)
-	return uint64(val)
+  return uint64(val)
 }
 
 // Uintptr returns uintptr representation of the Value
 func (v Value) Uintptr() uintptr {
+  if v.vtype == TypeUintptr {
+		return v.raw.(uintptr)
+	}
 	val, _, _ := parseUint(v.str, 10, 64)
 	return uintptr(val)
 }
@@ -132,7 +173,7 @@ func (v Value) Len() int {
 
 // Empty returns true if this Value is empty
 func (v Value) Empty() bool {
-	return v.Len() == 0
+	return v.Len() == 0 || v.raw == nil
 }
 
 // Fields calls strings.Fields on Value string

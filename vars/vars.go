@@ -16,6 +16,7 @@ import (
 
 const (
 	TypeUnknown Type = iota
+  TypeString
 	TypeBool
 	TypeFloat32
 	TypeFloat64
@@ -32,7 +33,6 @@ const (
 	TypeUint32
 	TypeUint64
 	TypeUintptr
-	TypeString
 	TypeBytes
 	TypeRunes
 	TypeReflectVal
@@ -227,6 +227,7 @@ func NewTypedValue(val string, vtype Type) (Value, error) {
 		raw, v, err = parseBool(val)
 	case TypeFloat32:
 		raw, v, err = parseFloat(val, 32)
+    raw = float32(raw.(float64))
 	case TypeFloat64:
 		raw, v, err = parseFloat(val, 64)
 	case TypeComplex64:
@@ -235,27 +236,37 @@ func NewTypedValue(val string, vtype Type) (Value, error) {
 		raw, v, err = parseComplex128(val)
 	case TypeInt:
 		raw, v, err = parseInt(val, 10, 0)
+    raw = int(raw.(int64))
 	case TypeInt8:
 		raw, v, err = parseInt(val, 10, 8)
+    raw = int8(raw.(int64))
 	case TypeInt16:
 		raw, v, err = parseInt(val, 10, 16)
+    raw = int16(raw.(int64))
 	case TypeInt32:
 		raw, v, err = parseInt(val, 10, 32)
+    raw = int32(raw.(int64))
 	case TypeInt64:
 		raw, v, err = parseInt(val, 10, 64)
 	case TypeUint:
 		raw, v, err = parseUint(val, 10, 0)
+    raw = uint(raw.(uint64))
 	case TypeUint8:
 		raw, v, err = parseUint(val, 10, 8)
+    raw = uint8(raw.(uint64))
 	case TypeUint16:
 		raw, v, err = parseUint(val, 10, 16)
+    raw = uint16(raw.(uint64))
 	case TypeUint32:
 		raw, v, err = parseUint(val, 10, 32)
+    raw = uint32(raw.(uint64))
 	case TypeUint64:
 		raw, v, err = parseUint(val, 10, 64)
 	case TypeUintptr:
 		raw, v, err = parseUint(val, 10, 64)
+    raw = uintptr(raw.(uint64))
 	}
+
 	return Value{
 		raw:   raw,
 		vtype: vtype,
