@@ -32,6 +32,7 @@ const (
 type newTest struct {
 	key string
 	val interface{}
+  err error
 }
 
 type boolTest struct {
@@ -74,7 +75,7 @@ type float32Test struct {
 	in          string
 	wantStr     string
 	wantFloat32 float32
-	wantErr     error
+	err     error
 }
 
 type float64Test struct {
@@ -82,7 +83,7 @@ type float64Test struct {
 	in          string
 	wantStr     string
 	wantFloat64 float64
-	wantErr     error
+	err     error
 }
 
 type complex64Test struct {
@@ -90,7 +91,7 @@ type complex64Test struct {
 	in            string
 	wantStr       string
 	wantComplex64 complex64
-	wantErr       error
+	err       error
 }
 
 type complex128Test struct {
@@ -98,7 +99,7 @@ type complex128Test struct {
 	in             string
 	wantStr        string
 	wantComplex128 complex128
-	wantErr        error
+	err        error
 }
 
 type stringTest struct {
@@ -131,11 +132,7 @@ type typeTest struct {
 	runes      []rune
 }
 
-func checkIntString(t *testing.T, expected int64, str string) {
-	if str != fmt.Sprintf("%d", expected) {
-		t.Errorf("expected %d got %q", expected, str)
-	}
-}
+
 
 func checkUintString(t *testing.T, expected uint64, str string) {
 	if str != fmt.Sprintf("%d", expected) {
@@ -150,6 +147,12 @@ func checkErrors(t *testing.T, val string, flags uint, flag uint, err error) {
 
 	if flags&flag != 0 && !errors.Is(err, strconv.ErrSyntax) && !errors.Is(err, strconv.ErrRange) {
 		t.Errorf("expected strconv.ErrRange got %#v", err)
+	}
+}
+
+func checkIntString(t *testing.T, expected int64, str string) {
+	if str != fmt.Sprintf("%d", expected) {
+		t.Errorf("expected %d got %q", expected, str)
 	}
 }
 
@@ -237,30 +240,30 @@ func eqRunes(a, b []rune) bool {
 }
 
 var newTests = []newTest{
-	{"key", "<nil>"},
-	{"key", "val"},
-	{"bool", true},
-	{"float32", float32(32)},
-	{"float64", float64(64)},
-	{"complex64", complex64(64)},
-	{"complex128", complex128(128)},
-	{"int", int(1)},
-	{"int8", int8(8)},
-	{"int16", int16(16)},
-	{"int32", int32(32)},
-	{"int64", int64(64)},
-	{"uint", uint(1)},
-	{"uint8", uint8(8)},
-	{"uint16", uint16(16)},
-	{"uint32", uint32(32)},
-	{"uint64", uint64(64)},
-	{"uintptr", uintptr(10)},
-	{"string", "string"},
-	{"byte_arr", []byte{1, 2, 3}},
-	{"reflect.str", reflect.ValueOf(string("s"))},
-	{"reflect.err", reflect.ValueOf(errors.New("s"))},
-	{"reflect.func", reflect.ValueOf(func() {})},
-	{"default", newTest{"test", 1}},
+	{"key", "<nil>", nil},
+	{"key", "val", nil},
+	{"bool", true, nil},
+	{"float32", float32(32), nil},
+	{"float64", float64(64), nil},
+	{"complex64", complex64(64), nil},
+	{"complex128", complex128(128), nil},
+	{"int", int(1), nil},
+	{"int8", int8(8), nil},
+	{"int16", int16(16), nil},
+	{"int32", int32(32), nil},
+	{"int64", int64(64), nil},
+	{"uint", uint(1), nil},
+	{"uint8", uint8(8), nil},
+	{"uint16", uint16(16), nil},
+	{"uint32", uint32(32), nil},
+	{"uint64", uint64(64), nil},
+	{"uintptr", uintptr(10), nil},
+	{"string", "string", nil},
+	{"byte_arr", []byte{1, 2, 3}, nil},
+	{"reflect.str", reflect.ValueOf(string("s")), nil},
+	{"reflect.err", reflect.ValueOf(errors.New("s")), nil},
+	{"reflect.func", reflect.ValueOf(func() {}), nil},
+	{"default", newTest{"test", 1, nil}, nil},
 }
 
 var boolTests = []boolTest{
@@ -515,8 +518,6 @@ var stringTests = []stringTest{
 	{"CGO_FFLAGS", "-g -O2"},
 	{"CGO_LDFLAGS", "-g -O2"},
 	{"STRING_1", "some-string"},
-	{"STRING_2", "some-string with space "},
-	{"STRING_3", " some-string with space"},
 	{"STRING_4", "1234567"},
 }
 
