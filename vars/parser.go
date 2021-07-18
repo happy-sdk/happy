@@ -42,7 +42,7 @@ func (p *parser) Precision() (prec int, ok bool) { return p.fmt.prec, p.fmt.prec
 
 // Width returns the value of the width option and whether it has been set.
 // Satisfy fmt.State
-func (p *parser) Width() (wid int, ok bool)      { return p.fmt.wid, p.fmt.widPresent }
+func (p *parser) Width() (wid int, ok bool) { return p.fmt.wid, p.fmt.widPresent }
 
 // Write so we can call Fprintf on a parser (through State), for
 // recursive use in custom verbs.
@@ -178,19 +178,19 @@ func (p *parser) printValue(value reflect.Value, depth int) {
 	case reflect.Bool:
 		p.fmt.boolean(f.Bool())
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-    p.fmt.integer(uint64(f.Int()), 10, signed, 'v', sdigits)
+		p.fmt.integer(uint64(f.Int()), 10, signed, 'v', sdigits)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-    p.fmt.integer(uint64(f.Int()), 10, signed, 'v', sdigits)
+		p.fmt.integer(uint64(f.Int()), 10, signed, 'v', sdigits)
 	case reflect.Float32:
-    p.fmt.float(f.Float(), 32, 'g', -1)
+		p.fmt.float(f.Float(), 32, 'g', -1)
 	case reflect.Float64:
-    p.fmt.float(f.Float(), 64, 'g', -1)
+		p.fmt.float(f.Float(), 64, 'g', -1)
 	case reflect.Complex64:
-    p.fmt.complex(f.Complex(), 64)
+		p.fmt.complex(f.Complex(), 64)
 	case reflect.Complex128:
-    p.fmt.complex(f.Complex(), 128)
+		p.fmt.complex(f.Complex(), 128)
 	case reflect.String:
-    p.fmt.string(f.String())
+		p.fmt.string(f.String())
 	case reflect.Map:
 		if p.fmt.sharpV {
 			p.buf.writeString(f.Type().String())

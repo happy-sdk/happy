@@ -32,7 +32,7 @@ const (
 type newTest struct {
 	key string
 	val interface{}
-  err error
+	err error
 }
 
 type boolTest struct {
@@ -41,12 +41,6 @@ type boolTest struct {
 	want bool
 	err  error
 }
-
-// type testVtype struct {
-// 	key   string
-// 	vtype uint
-// 	err   uint
-// }
 
 type testInt struct {
 	key   string
@@ -75,7 +69,7 @@ type float32Test struct {
 	in          string
 	wantStr     string
 	wantFloat32 float32
-	err     error
+	err         error
 }
 
 type float64Test struct {
@@ -83,7 +77,7 @@ type float64Test struct {
 	in          string
 	wantStr     string
 	wantFloat64 float64
-	err     error
+	err         error
 }
 
 type complex64Test struct {
@@ -91,7 +85,7 @@ type complex64Test struct {
 	in            string
 	wantStr       string
 	wantComplex64 complex64
-	err       error
+	err           error
 }
 
 type complex128Test struct {
@@ -99,7 +93,7 @@ type complex128Test struct {
 	in             string
 	wantStr        string
 	wantComplex128 complex128
-	err        error
+	err            error
 }
 
 type stringTest struct {
@@ -132,8 +126,6 @@ type typeTest struct {
 	runes      []rune
 }
 
-
-
 func checkUintString(t *testing.T, expected uint64, str string) {
 	if str != fmt.Sprintf("%d", expected) {
 		t.Errorf("expected %d got %q", expected, str)
@@ -154,89 +146,6 @@ func checkIntString(t *testing.T, expected int64, str string) {
 	if str != fmt.Sprintf("%d", expected) {
 		t.Errorf("expected %d got %q", expected, str)
 	}
-}
-
-func genStringTestBytes() []byte {
-	var out []byte
-	for _, data := range stringTests {
-		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.val)
-		out = append(out, []byte(line)...)
-	}
-	return out
-}
-
-func genAtobTestBytes() []byte {
-	var out []byte
-	for _, data := range boolTests {
-		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
-		out = append(out, []byte(line)...)
-	}
-	return out
-}
-
-func genAtofTestBytes() []byte {
-	var out []byte
-	for _, data := range float64Tests {
-		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
-		out = append(out, []byte(line)...)
-	}
-	return out
-}
-
-func genAtof32TestBytes() []byte {
-	var out []byte
-	for _, data := range float32Tests {
-		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
-		out = append(out, []byte(line)...)
-	}
-	return out
-}
-
-func genAtoui64TestBytes() []byte {
-	var out []byte
-	for _, data := range uintTests {
-		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.val)
-		out = append(out, []byte(line)...)
-	}
-	return out
-}
-
-func genAtoi64TestBytes() []byte {
-	var out []byte
-	for _, data := range intTests {
-		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.val)
-		out = append(out, []byte(line)...)
-	}
-	return out
-}
-
-func eqBytes(a, b []byte) bool {
-	if (a == nil) != (b == nil) {
-		return false
-	}
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-func eqRunes(a, b []rune) bool {
-	if (a == nil) != (b == nil) {
-		return false
-	}
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 var newTests = []newTest{

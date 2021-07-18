@@ -36,10 +36,10 @@ func TestValueTypes(t *testing.T) {
 }
 
 func TestValueLen(t *testing.T) {
-  for _, test := range typeTests {
-    v, err := NewValue(test.in)
-    assert.Equal(t, err, nil)
-    assert.Equal(t, len(v.String()), len(test.in))
-    assert.Equal(t, v.Len(), len(test.in))
-  }
+	for _, test := range typeTests {
+		v, err := NewValue(test.in)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, len(v.String()), len(test.in))
+		assert.Equal(t, v.Len(), len(test.in))
+	}
 }

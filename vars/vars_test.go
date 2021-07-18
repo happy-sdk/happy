@@ -226,36 +226,36 @@ func TestNewValueUint(t *testing.T) {
 }
 
 func TestNewValueUintptr(t *testing.T) {
-  tests := []struct {
-    key  string
-    val  string
-    want uintptr
-    errs uint
-  }{
-    {"UINTPTR_1", "1", 1, 0},
-    {"UINTPTR_2", "2", 2, 0},
-    {"UINTPTR_3", "9000000000000000000", 9000000000000000000, 0},
-  }
-  for _, test := range tests {
-    v, err := NewTypedValue(test.val, TypeUintptr)
+	tests := []struct {
+		key  string
+		val  string
+		want uintptr
+		errs uint
+	}{
+		{"UINTPTR_1", "1", 1, 0},
+		{"UINTPTR_2", "2", 2, 0},
+		{"UINTPTR_3", "9000000000000000000", 9000000000000000000, 0},
+	}
+	for _, test := range tests {
+		v, err := NewTypedValue(test.val, TypeUintptr)
 		checkUintString(t, uint64(test.want), v.String())
-    assert.Equal(t, v.Uintptr(), test.want)
-    checkErrors(t, test.val, test.errs, errUintptr, err)
+		assert.Equal(t, v.Uintptr(), test.want)
+		checkErrors(t, test.val, test.errs, errUintptr, err)
 
-    vu, err := NewValue(test.val)
-    assert.Equal(t, vu.Uintptr(), test.want)
-    assert.NoError(t, err)
-  }
+		vu, err := NewValue(test.val)
+		assert.Equal(t, vu.Uintptr(), test.want)
+		assert.NoError(t, err)
+	}
 }
 
 func TestNewValueString(t *testing.T) {
-  for _, test := range stringTests {
-    v, _ := NewValue(test.val)
-    assert.Equal(t, v.String(), test.val)
+	for _, test := range stringTests {
+		v, _ := NewValue(test.val)
+		assert.Equal(t, v.String(), test.val)
 
-    v1, _ := NewTypedValue(test.val, TypeString)
-    assert.Equal(t, v1.String(), test.val)
-  }
+		v1, _ := NewTypedValue(test.val, TypeString)
+		assert.Equal(t, v1.String(), test.val)
+	}
 }
 
 func TestNewFromKeyVal(t *testing.T) {

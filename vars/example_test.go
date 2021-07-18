@@ -10,11 +10,9 @@ import (
 )
 
 func ExampleValue() {
-	empty1, _ := vars.NewValue(nil)
-	empty2, _ := vars.NewValue("")
-	if empty1.String() == empty2.String() {
-		// both produce empty var
-	}
+	vnil, _ := vars.NewValue(nil)
+	fmt.Println(vnil.String())
+
 	v, _ := vars.NewValue(123456)
 	fmt.Println(v.String())
 
@@ -29,6 +27,7 @@ func ExampleValue() {
 	fmt.Println(v.Uintptr())
 
 	// Output:
+	// <nil>
 	// 123456
 	// 123456
 	// false

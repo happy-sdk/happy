@@ -194,20 +194,20 @@ func NewFromKeyVal(kv string) (v Variable, err error) {
 // NewTyped parses variable and sets appropriately parser error for given type
 // if parsing to requested type fails
 func NewTyped(key string, val string, vtype Type) (Variable, error) {
-  var variable Variable
-  var err error
-  value, err := NewTypedValue(val, vtype)
-  if err != nil {
-    return variable, err
-  }
-  if len(key) == 0 {
+	var variable Variable
+	var err error
+	value, err := NewTypedValue(val, vtype)
+	if err != nil {
+		return variable, err
+	}
+	if len(key) == 0 {
 		err = ErrVariableKeyEmpty
 	}
-  variable = Variable{
-    key: key,
-    val: value,
-  }
-  return variable, err
+	variable = Variable{
+		key: key,
+		val: value,
+	}
+	return variable, err
 }
 
 // NewTypedValue tries to parse value to given type

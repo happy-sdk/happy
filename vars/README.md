@@ -1,6 +1,6 @@
 # VARS
 
-![license](https://img.shields.io/github/license/mkungla/vars) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v3)](https://pkg.go.dev/github.com/mkungla/vars/v3) ![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars) [![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg?branch=main)](https://coveralls.io/github/mkungla/vars?branch=main)  ![benchmarks](https://github.com/mkungla/vars/workflows/benchmarks/badge.svg) ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/vars)
+![license](https://img.shields.io/github/license/mkungla/vars) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v4)](https://pkg.go.dev/github.com/mkungla/vars/v4) ![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars) [![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg?branch=main)](https://coveralls.io/github/mkungla/vars?branch=main)  ![benchmarks](https://github.com/mkungla/vars/workflows/benchmarks/badge.svg) ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/vars)
 
 ## About
 Package vars provides the API to parse variables from various input formats/types to common key value pair vars.Value or variable sets to vars.Collection
@@ -9,59 +9,61 @@ Package vars provides the API to parse variables from various input formats/type
 ## Install
 
 ```
-go get github.com/mkungla/vars/v3
+go get github.com/mkungla/vars/v4
 ```
 
 ## Usage
 
-**working with [vars.Value](https://pkg.go.dev/github.com/mkungla/vars/v3#Value)**
+**working with [vars.Value](https://pkg.go.dev/github.com/mkungla/vars/v4#Value)**
+
 ```go
 package main
 
 import (
   "fmt"
-  "github.com/mkungla/vars/v3"
+  "github.com/mkungla/vars/v4"
 )
 
 func main() {
-  empty1, _ := vars.ParseValue(nil)
-  empty2 := vars.NewValue("")
-  if empty1.String() == empty2.String() {
-    // both produce empty var
-  }
-  v, _ := vars.ParseValue(123456)
-  fmt.Println(v.String())
-  fmt.Println(v.Int())
-  fmt.Println(v.Empty())
-  fmt.Println(v.Int64())
-  fmt.Println(v.Float32())
-  fmt.Println(v.Float64())
-  fmt.Println(v.Len())
-  fmt.Println(v.Runes())
-  fmt.Println(v.Uint64())
-  fmt.Println(v.Uintptr())
+  vnil, _ := vars.NewValue(nil)
+  fmt.Println(vnil.String())
 
-  // Output:
-  // 123456
-  // 123456
-  // false
-  // 123456
-  // 123456
-  // 123456
-  // 6
-  // [49 50 51 52 53 54]
-  // 123456
-  // 123456
+	v, _ := vars.NewValue(123456)
+	fmt.Println(v.String())
+
+	fmt.Println(v.Int())
+	fmt.Println(v.Empty())
+	fmt.Println(v.Int64())
+	fmt.Println(v.Float32())
+	fmt.Println(v.Float64())
+	fmt.Println(v.Len())
+	fmt.Println(v.Runes())
+	fmt.Println(v.Uint64())
+	fmt.Println(v.Uintptr())
+
+	// Output:
+  // <nil>
+	// 123456
+	// 123456
+	// false
+	// 123456
+	// 123456
+	// 123456
+	// 6
+	// [49 50 51 52 53 54]
+	// 123456
+	// 123456
 }
 ```
 
-**working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v3#Value)**
+**working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v4#Collection)**
+
 ```go
 package main
 
 import (
   "fmt"
-  "github.com/mkungla/vars/v3"
+  "github.com/mkungla/vars/v4"
 )
 
 func main() {
@@ -91,7 +93,7 @@ package main
 import (
   "fmt"
   "io/ioutil"
-  "github.com/mkungla/vars/v3"
+  "github.com/mkungla/vars/v4"
 )
 
 func main() {

@@ -216,24 +216,24 @@ func (f *parserFmt) float(v float64, size int, verb rune, prec int) {
 // r = real(v) and j = imag(v) as (r+ji) using
 // fmtFloat for r and j formatting.
 func (f *parserFmt) complex(v complex128, size int) {
-  oldPlus := f.plus
-  f.buf.writeByte('(')
-  f.float(real(v), size/2, 'g', -1)
-  // Imaginary part always has a sign.
+	oldPlus := f.plus
+	f.buf.writeByte('(')
+	f.float(real(v), size/2, 'g', -1)
+	// Imaginary part always has a sign.
 	f.plus = true
-  f.float(imag(v), size/2, 'g', -1)
-  f.buf.writeString("i)")
-  f.plus = oldPlus
+	f.float(imag(v), size/2, 'g', -1)
+	f.buf.writeString("i)")
+	f.plus = oldPlus
 }
 
 // fmtInteger formats signed and unsigned integers.
 func (f *parserFmt) integer(u uint64, base int, isSigned bool, verb rune, digits string) {
-  negative := isSigned && int64(u) < 0
+	negative := isSigned && int64(u) < 0
 	if negative {
 		u = -u
 	}
-  buf := f.intbuf[0:]
-  // The already allocated f.intbuf with a capacity of 68 bytes
+	buf := f.intbuf[0:]
+	// The already allocated f.intbuf with a capacity of 68 bytes
 	// is large enough for integer formatting when no precision or width is set.
 	if f.widPresent || f.precPresent {
 		// Account 3 extra bytes for possible addition of a sign and "0x".
@@ -243,7 +243,7 @@ func (f *parserFmt) integer(u uint64, base int, isSigned bool, verb rune, digits
 			buf = make([]byte, width)
 		}
 	}
-  // Two ways to ask for extra leading zero digits: %.3d or %03d.
+	// Two ways to ask for extra leading zero digits: %.3d or %03d.
 	// If both are specified the f.zero flag is ignored and
 	// padding with spaces is used instead.
 	prec := 0
