@@ -28,12 +28,13 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - uses: actions/checkout@v2
+      - run: go mod download
       - run: go test -race -covermode atomic -coverprofile=covprofile ./...
       - name: Install goveralls
-        if: runner.os == 'Linux'
+        env:
+          GO111MODULE: off
         run: go get github.com/mattn/goveralls
       - name: Send coverage
-        if: runner.os == 'Linux'
         run: goveralls -parallel -coverprofile=covprofile -service=github -flagname=${{ runner.os }}-Go-${{ matrix.go }}
 
   finish:
@@ -45,6 +46,8 @@ jobs:
           go-version: tip
       - uses: actions/checkout@v2
       - name: Install goveralls
+        env:
+          GO111MODULE: off
         run: go get github.com/mattn/goveralls
       - name: Send coverage
         run: goveralls -parallel-finish -service=github
