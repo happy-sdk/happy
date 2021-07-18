@@ -193,10 +193,50 @@ func parseComplex128(str string) (r complex128, s string, e error) {
 	return r, s, e
 }
 
+func parseInts(val string, vtype Type) (raw interface{}, v string, err error) {
+	switch vtype {
+	case TypeInt:
+		raw, v, err = parseInt(val, 10, 0)
+		raw = int(raw.(int64))
+	case TypeInt8:
+		raw, v, err = parseInt(val, 10, 8)
+		raw = int8(raw.(int64))
+	case TypeInt16:
+		raw, v, err = parseInt(val, 10, 16)
+		raw = int16(raw.(int64))
+	case TypeInt32:
+		raw, v, err = parseInt(val, 10, 32)
+		raw = int32(raw.(int64))
+	case TypeInt64:
+		raw, v, err = parseInt(val, 10, 64)
+	}
+	return
+}
+
 func parseInt(str string, base, bitSize int) (r int64, s string, e error) {
 	r, e = strconv.ParseInt(str, base, bitSize)
 	s = strconv.Itoa(int(r))
 	return r, s, e
+}
+
+func parseUints(val string, vtype Type) (raw interface{}, v string, err error) {
+	switch vtype {
+	case TypeUint:
+		raw, v, err = parseUint(val, 10, 0)
+		raw = uint(raw.(uint64))
+	case TypeUint8:
+		raw, v, err = parseUint(val, 10, 8)
+		raw = uint8(raw.(uint64))
+	case TypeUint16:
+		raw, v, err = parseUint(val, 10, 16)
+		raw = uint16(raw.(uint64))
+	case TypeUint32:
+		raw, v, err = parseUint(val, 10, 32)
+		raw = uint32(raw.(uint64))
+	case TypeUint64:
+		raw, v, err = parseUint(val, 10, 64)
+	}
+	return
 }
 
 func parseUint(str string, base, bitSize int) (r uint64, s string, e error) {
