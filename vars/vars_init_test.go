@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-package vars
+package vars_test
 
 import (
 	"errors"
@@ -435,4 +435,58 @@ var typeTests = []typeTest{
 	{"STRING_1", "asdf", false, 0, 0, complex(0, 0i), complex(0, 0i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "asdf", []byte{97, 115, 100, 102}, []rune{'a', 's', 'd', 'f'}},
 	{"FLOAT_1", "2." + strings.Repeat("2", 40) + "e+1", false, 22.222221, 22.22222222222222, complex(0, 0i), complex(0, 0i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "2.2222222222222222222222222222222222222222e+1", []byte("2.2222222222222222222222222222222222222222e+1"), []rune("2.2222222222222222222222222222222222222222e+1")},
 	{"COMPLEX128_1", "123456700 1e-100", false, 0, 0, complex(1.234567e+08, 0i), complex(1.234567e+08, 1e-100), 0, 127, 32767, 0, 0, 0, 255, 65535, 0, 0, 0, "123456700 1e-100", []byte("123456700 1e-100"), []rune("123456700 1e-100")},
+}
+
+func genAtoi64TestBytes() []byte {
+	var out []byte
+	for _, data := range intTests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.val)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genAtoui64TestBytes() []byte {
+	var out []byte
+	for _, data := range uintTests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.val)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genAtof32TestBytes() []byte {
+	var out []byte
+	for _, data := range float32Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genAtofTestBytes() []byte {
+	var out []byte
+	for _, data := range float64Tests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genAtobTestBytes() []byte {
+	var out []byte
+	for _, data := range boolTests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.in)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func genStringTestBytes() []byte {
+	var out []byte
+	for _, data := range stringTests {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.val)
+		out = append(out, []byte(line)...)
+	}
+	return out
 }
