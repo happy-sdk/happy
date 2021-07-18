@@ -132,6 +132,9 @@ func (p *parser) printArg(arg interface{}) (vtype Type) {
 	case []byte:
 		p.fmt.bytes(f, "[]byte")
 		vtype = TypeBytes
+	case []rune:
+		p.fmt.runes(f)
+		vtype = TypeRunes
 	case reflect.Value:
 		// Handle extractable values with special methods
 		vtype = TypeReflectVal

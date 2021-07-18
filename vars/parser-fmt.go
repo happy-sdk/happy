@@ -371,3 +371,10 @@ func (f *parserFmt) bytes(v []byte, typeString string) {
 	}
 	f.buf.writeByte(']')
 }
+
+// runes formats runes slice
+func (f *parserFmt) runes(v []rune) {
+	for _, c := range v {
+    f.buf.writeRune(c)
+	}
+}

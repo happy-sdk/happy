@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	TypeUnknown = iota
+	TypeUnknown Type = iota
 	TypeBool
 	TypeFloat32
 	TypeFloat64
@@ -34,6 +34,7 @@ const (
 	TypeUintptr
 	TypeString
 	TypeBytes
+	TypeRunes
 	TypeReflectVal
 
 	signed   = true

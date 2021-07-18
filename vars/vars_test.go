@@ -306,6 +306,159 @@ func TestNewVariableTypes(t *testing.T) {
   }
 }
 
+func TestNewVariableValueTypeBool(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.bool)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeBool, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeFloat32(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.float32)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeFloat32, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeFloat64(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.float64)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeFloat64, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeComplex64(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.complex64)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeComplex64, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeComplex128(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.complex128)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeComplex128, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeInt(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.int)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeInt, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeInt8(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.int8)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeInt8, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeInt16(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.int16)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeInt16, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeInt32(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.int32)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeInt32, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeInt64(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.int64)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeInt64, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeUint(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.uint)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeUint, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeUint8(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.uint8)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeUint8, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeUint16(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.uint16)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeUint16, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeUint32(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.uint32)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeUint32, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeUint64(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.uint64)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeUint64, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeUintptr(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.uintptr)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeUintptr, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeString(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.string)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeString, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeBytes(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.bytes)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeBytes, v.Type(), test.key)
+  }
+}
+
+func TestNewVariableValueTypeRunes(t *testing.T) {
+  for _, test := range typeTests {
+    v, err := New(test.key, test.runes)
+    assert.Equal(t, err, nil, test.key)
+    assert.Equal(t, TypeRunes, v.Type(), test.key)
+    assert.Equal(t, test.runes, v.Runes(), test.key)
+  }
+}
+
 func TestValueTypes(t *testing.T) {
   for _, test := range typeTests {
     v, err := NewValue(test.in)
@@ -355,7 +508,7 @@ func TestNewFromKeyValEmptyKey(t *testing.T) {
 func TestValueLen(t *testing.T) {
 	for _, test := range typeTests {
 		v, err := NewValue(test.in)
-		assert.Equal(t, err, nil, test.key)
+		assert.Equal(t, nil, err, test.key)
 		assert.Equal(t, len(v.String()), len(test.in), test.key)
 		assert.Equal(t, v.Len(), len(test.in), test.key)
 	}
@@ -373,4 +526,12 @@ func TestFlags(t *testing.T) {
 	assert.False(t, f.plusV)
 	assert.False(t, f.sharpV)
 	assert.False(t, f.sharpV)
+}
+
+func TestValueFields(t *testing.T) {
+  v, err := NewValue("word1 word2 word3")
+  assert.Equal(t, nil, err)
+  if len(v.Fields()) != 3 {
+    t.Error("len of fields should be 3")
+  }
 }
