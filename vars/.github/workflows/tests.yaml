@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
 
 jobs:
   lint:
@@ -35,6 +34,9 @@ jobs:
           GO111MODULE: off
         run: go get github.com/mattn/goveralls
       - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ github.token }}
+          GIT_BRANCH: ${{ github.head_ref }}
         run: goveralls -parallel -coverprofile=covprofile -service=github -flagname=${{ runner.os }}-Go-${{ matrix.go }}
 
   finish:
@@ -50,4 +52,7 @@ jobs:
           GO111MODULE: off
         run: go get github.com/mattn/goveralls
       - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ github.token }}
+          GIT_BRANCH: ${{ github.head_ref }}
         run: goveralls -parallel-finish -service=github
