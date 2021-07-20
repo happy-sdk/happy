@@ -61,7 +61,7 @@ func (c *Collection) GetWithPrefix(prfx string) (vars Collection) {
 func (c *Collection) ToKeyValSlice() []string {
 	r := []string{}
 	c.Range(func(key string, value Variable) bool {
-		r = append(r, fmt.Sprintf("%s = %q", key, value.String()))
+		r = append(r, fmt.Sprintf("%s=%q", key, value.String()))
 		return true
 	})
 	return r

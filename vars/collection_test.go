@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,19 +21,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var tests = []struct {
+	k       string
+	defVal  string
+	wantLen int
+}{
+	{"STRING", "one two", 2},
+	{"STRING", "one two three four ", 4},
+	{"STRING", " one two three four ", 4},
+	{"STRING", "1 2 3 4 5 6 7 8.1", 8},
+	{"", "", 0},
+}
+
 func TestCollectionParseFields(t *testing.T) {
 	collection := vars.ParseFromBytes([]byte{})
-	tests := []struct {
-		k       string
-		defVal  string
-		wantLen int
-	}{
-		{"STRING", "one two", 2},
-		{"STRING", "one two three four ", 4},
-		{"STRING", " one two three four ", 4},
-		{"STRING", "1 2 3 4 5 6 7 8.1", 8},
-		{"", "", 0},
-	}
+
 	for _, tt := range tests {
 		val := collection.Get(tt.k, tt.defVal)
 		actual := len(val.Fields())
@@ -44,9 +47,10 @@ func TestCollectionParseFields(t *testing.T) {
 
 func TestCollectionSet(t *testing.T) {
 	var collection vars.Collection
-	collection.Set("STRING", "collection")
-	if val := collection.Get("STRING"); val.String() != "collection" {
-		t.Errorf("expected collection but got %q", val)
+	for _, tt := range tests {
+		collection.Set(tt.k, tt.defVal)
+		assert.Equal(t, collection.Get(tt.k).String(), tt.defVal)
+		assert.True(t, collection.Has(tt.k))
 	}
 }
 
@@ -188,12 +192,18 @@ func TestCollectionGetOrDefaultTo(t *testing.T) {
 }
 
 func TestCollectionParseFromBytes(t *testing.T) {
-	collection := vars.ParseFromBytes(genStringTestBytes())
+	bytes := genStringTestBytes()
+	collection := vars.ParseFromBytes(bytes)
 	for _, test := range stringTests {
 		if actual := collection.Get(test.key); actual.String() != test.val {
 			t.Errorf("Collection.Get(%q) = %q, want %q", test.key, actual.String(), test.val)
 		}
 	}
+
+	sort.Slice(bytes, func(i int, j int) bool { return bytes[i] < bytes[j] })
+	bytes2 := collection.ToBytes()
+	sort.Slice(bytes2, func(i int, j int) bool { return bytes2[i] < bytes2[j] })
+	assert.Equal(t, bytes, bytes2)
 }
 
 func TestCollectionParseFromString(t *testing.T) {
@@ -204,6 +214,12 @@ func TestCollectionParseFromString(t *testing.T) {
 			t.Errorf("Collection.Get(%q) = %q, want %q", test.key, actual.String(), test.val)
 		}
 	}
+
+	sort.Strings(slice)
+	slice2 := collection.ToKeyValSlice()
+	slice2 = append(slice2, "")
+	sort.Strings(slice2)
+	assert.Equal(t, slice, slice2)
 
 	collection2 := vars.ParseKeyValSlice([]string{"X"})
 	if actual := collection2.Get("x"); actual.String() != "" {
