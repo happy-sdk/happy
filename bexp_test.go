@@ -71,20 +71,46 @@ var testData = []testResource{
 	{"{-0,-1,-2}", "-0", "-1", "-2"},
 }
 
-func TestPatterns(t *testing.T) {
+func TestParse(t *testing.T) {
 	for _, test := range testData {
 		t.Run(test.Pattern, func(t *testing.T) {
-			v := Parse(test.Pattern)
-			if len(v) > 0 && v[0] != test.Res0 {
-				t.Errorf("Unexpected expected: %q  got: %q from: %v", test.Res0, v[0], v)
+      v := Parse(test.Pattern)
+			if len(v) > 0 {
+				assert.Equal(t, test.Res0, v[0])
 			}
-			if len(v) > 1 && v[1] != test.Res1 {
-				t.Error("Unexpected result: " + v[1])
+			if len(v) > 1 {
+        assert.Equal(t, test.Res1, v[1])
 			}
-			if len(v) > 2 && v[2] != test.Res2 {
-				t.Error("Unexpected result: " + v[2])
+			if len(v) > 2 {
+        assert.Equal(t, test.Res2, v[2])
 			}
 		})
+	}
+}
+
+func TestParseValid(t *testing.T) {
+  empty, err := ParseValid("")
+  assert.ErrorIs(t, err, ErrEmptyResult)
+  assert.Equal(t, "", empty[0])
+
+  single, err := ParseValid("a")
+  assert.NoError(t, single.Err())
+  assert.ErrorIs(t, err, ErrUnchangedBraceExpansion)
+  assert.Equal(t, "a", single[0])
+
+  for _, test := range testData {
+    t.Run(test.Pattern, func(t *testing.T) {
+      v, _ := ParseValid(test.Pattern)
+      if len(v) > 0 {
+        assert.Equal(t, test.Res0, v[0])
+      }
+      if len(v) > 1 {
+        assert.Equal(t, test.Res1, v[1])
+      }
+      if len(v) > 2 {
+        assert.Equal(t, test.Res2, v[2])
+      }
+    })
 	}
 }
 
@@ -95,7 +121,7 @@ func TestBashExpansion(t *testing.T) {
 		lines := strings.Split(v, "\r\n")
 		cs := lines[0]
 		lines = lines[1:]
-		expected := BraceExpansion{}
+		expected := BraceExpansion{""}
 		for _, l := range lines {
 			if len(l) != 0 {
 				expected = append(expected, l[1:len(l)-1])
@@ -171,6 +197,10 @@ func TestResult(t *testing.T) {
 }
 
 func TestErr(t *testing.T) {
-	r := Parse("")
-	assert.Error(t, r.Err(), r.String())
+	empty := Parse("")
+	assert.ErrorIs(t, empty.Err(), ErrEmptyResult)
+
+	single := Parse("a")
+	assert.NoError(t, single.Err())
+  assert.Equal(t, "a", single[0])
 }

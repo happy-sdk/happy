@@ -118,6 +118,3 @@ func main() {
 [braceexpansion]: https://github.com/thomasheller/braceexpansion
 [ortho]: https://github.com/pittfit/ortho
 [go-balanced-match]: https://github.com/kujtimiihoxha/go-balanced-match
-
-
-[brace-expansion]: https://github.com/kujtimiihoxha/go-balanced-match

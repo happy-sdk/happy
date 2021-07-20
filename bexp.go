@@ -21,8 +21,12 @@ var (
 	escClose  = "\u0000CLOSE" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
 	escComma  = "\u0000COMMA" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
 	escPeriod = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
+
 	// ErrEmptyResult representing empty result by parser
-	ErrEmptyResult = errors.New("result is empty")
+	ErrEmptyResult     = errors.New("result is empty")
+  // ErrUnchangedBraceExpansion for any incorrectly formed brace expansion
+  // where input string is left unchanged
+	ErrUnchangedBraceExpansion = errors.New("brace expansion left unchanged")
 )
 
 // BraceExpansion represents bash style brace expansion
@@ -31,9 +35,28 @@ type BraceExpansion []string
 // Parse string expresion into BraceExpansion result
 func Parse(str string) BraceExpansion {
 	if str == "" {
-		return []string{}
+		return []string{""} // Any incorrectly formed brace expansion is left unchanged.
 	}
 	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
+}
+
+// ParseValid is for convienience to get errors on input:
+// 1. ErrEmptyResult when provided string is empty
+// 2. ErrUnchangedBraceExpansion when provided string was left unchanged
+// Result will always be `BraceExpansion` with min len 1 to satisfy
+// "Any incorrectly formed brace expansion is left unchanged."
+func ParseValid(str string) (BraceExpansion, error) {
+  res := Parse(str)
+  if len(res) == 1 {
+    if err := res.Err(); err != nil {
+      return res, err
+    }
+    if res[0] == str {
+      return res, ErrUnchangedBraceExpansion
+    }
+  }
+
+  return res, nil
 }
 
 // MkdirAll calls os.MkdirAll on each math from provided string
@@ -56,9 +79,16 @@ func (b BraceExpansion) String() string {
 	return strings.Join(b, " ")
 }
 
-// Err return nil or ErrEmptyResult
+// Err returns nil or ErrEmptyResult.
+// When working with Brace Expansions this method is for convinience to handle
+// only empty string as errors in your program.
+// Note that even then it is actually not invalid.
+// As Brace Expansion docs say:
+// "Any incorrectly formed brace expansion is left unchanged."
+// See .ParseValid if you want to get errors if provided string was not
+// correctly formed brace expansion.
 func (b BraceExpansion) Err() (err error) {
-	if len(b) == 0 {
+	if len(b) == 0 || (len(b) == 1 && len(b[0]) == 0) {
 		err = ErrEmptyResult
 	}
 	return
@@ -197,6 +227,7 @@ func expand(str string, isTop bool) []string {
 	}
 	return expansions
 }
+
 func concatMap(xs []string, fn func(el string) []string) []string {
 	res := []string{}
 	for i := 0; i < len(xs); i++ {
@@ -205,6 +236,7 @@ func concatMap(xs []string, fn func(el string) []string) []string {
 	}
 	return res
 }
+
 func some(arr []string, fn func(el string) bool) bool {
 	for _, v := range arr {
 		if fn(v) {
@@ -221,18 +253,22 @@ func mapArray(arr []string, call func(str string) string) []string {
 	}
 	return ret
 }
+
 func max(x, y int) int {
 	if x > y {
 		return x
 	}
 	return y
 }
+
 func isPadded(el string) bool {
 	return regexp.MustCompile(`^-?0\d`).Match([]byte(el))
 }
+
 func embrace(str string) string {
 	return "{" + str + "}"
 }
+
 func lte(i int64, y int64) bool {
 	return i <= y
 }

@@ -12,6 +12,10 @@ import (
 
 func ExampleParse() {
 	var v []string
+
+  v = bexp.Parse("/path/unmodified")
+  fmt.Println(v)
+
 	v = bexp.Parse("file-{a,b,c}.jpg")
 	fmt.Println(v)
 
@@ -43,6 +47,7 @@ func ExampleParse() {
 	fmt.Println(v)
 
 	// Output:
+  // [/path/unmodified]
 	// [file-a.jpg file-b.jpg file-c.jpg]
 	// [-v -v -v]
 	// [file0.jpg file1.jpg file2.jpg]
