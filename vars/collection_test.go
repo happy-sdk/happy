@@ -31,6 +31,7 @@ func TestCollectionParseFields(t *testing.T) {
 		{"STRING", "one two three four ", 4},
 		{"STRING", " one two three four ", 4},
 		{"STRING", "1 2 3 4 5 6 7 8.1", 8},
+		{"", "", 0},
 	}
 	for _, tt := range tests {
 		val := collection.Get(tt.k, tt.defVal)
@@ -207,6 +208,11 @@ func TestCollectionParseFromString(t *testing.T) {
 	collection2 := vars.ParseKeyValSlice([]string{"X"})
 	if actual := collection2.Get("x"); actual.String() != "" {
 		t.Errorf("Collection.Get(\"X\") = %q, want \"\"", actual.String())
+	}
+
+	collection3 := vars.ParseKeyValSlice([]string{})
+	if l := collection3.Len(); l != 0 {
+		t.Errorf("Collection.Len() == %d, want \"0\"", l)
 	}
 }
 

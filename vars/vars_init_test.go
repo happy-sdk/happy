@@ -488,5 +488,7 @@ func genStringTestBytes() []byte {
 		line := fmt.Sprintf(`%s="%s"`+"\n", data.key, data.val)
 		out = append(out, []byte(line)...)
 	}
+  // add empty line
+  out = append(out, []byte("")...)
 	return out
 }
