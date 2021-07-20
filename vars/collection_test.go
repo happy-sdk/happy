@@ -5,6 +5,7 @@
 package vars_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math"
 	"math/rand"
@@ -46,10 +47,11 @@ func TestCollectionParseFields(t *testing.T) {
 }
 
 func TestCollectionSet(t *testing.T) {
-	collection := vars.NewCollection()
+	collection := new(vars.Collection)
 	for _, tt := range tests {
-		collection.Set(tt.k, tt.defVal)
-		assert.Equal(t, tt.defVal, collection.Get(tt.k).String())
+		v := fmt.Sprintf("%v", tt.defVal)
+		collection.Store(tt.k, v)
+		assert.Equal(t, v, collection.Get(tt.k).String())
 		assert.True(t, collection.Has(tt.k))
 	}
 }
@@ -66,7 +68,7 @@ func TestCollectionEnvFile(t *testing.T) {
 }
 
 func TestCollectionKeyNoSpaces(t *testing.T) {
-	collection := vars.NewCollection()
+	collection := new(vars.Collection)
 	collection.Set("valid", true)
 	collection.Set(" invalid", true)
 
@@ -182,7 +184,7 @@ func TestCollectionGetOrDefaultTo(t *testing.T) {
 		{"STRING_2", "some-string with space ", "some-string with space "},
 		{"STRING_3", " some-string with space", " some-string with space"},
 		{"STRING_4", "1234567", "1234567"},
-		{"", "1234567", "1234567"},
+		{"", "1234567", ""},
 	}
 	for _, tt := range tests {
 		if actual := collection.Get(tt.k, tt.defVal); actual.String() != tt.want {
@@ -235,7 +237,7 @@ func TestCollectionParseFromString(t *testing.T) {
 func TestConcurrentRange(t *testing.T) {
 	const mapSize = 1 << 10
 
-	m := vars.NewCollection()
+	m := new(vars.Collection)
 	for n := int64(1); n <= mapSize; n++ {
 		m.Store(strconv.Itoa(int(n)), int64(n))
 	}
@@ -276,7 +278,7 @@ func TestConcurrentRange(t *testing.T) {
 	for n := iters; n > 0; n-- {
 		seen := make(map[int64]bool, mapSize)
 
-		m.Range(func(ki string, vi *vars.Value) bool {
+		m.Range(func(ki string, vi vars.Value) bool {
 			pk, err := strconv.Atoi(ki)
 			k := int64(pk)
 			assert.NoError(t, err)
@@ -298,7 +300,7 @@ func TestConcurrentRange(t *testing.T) {
 }
 
 func TestMissCounting(t *testing.T) {
-	m := vars.NewCollection()
+	m := new(vars.Collection)
 
 	// Since the miss-counting in missLocked (via Delete)
 	// compares the miss count with len(m.dirty),

@@ -86,10 +86,10 @@ type (
 	//
 	// The zero Map is empty and ready for use.
 	// A Map must not be copied after first use.
-  Collection struct {
-  	m   *sync.Map
-  	len int64
-  }
+	Collection struct {
+		m   sync.Map
+		len int64
+	}
 
 	// parser is used to store a printer's state and is reused with
 	// sync.Pool to avoid allocations.
@@ -238,15 +238,10 @@ func NewTypedValue(val string, vtype Type) (Value, error) {
 	}, err
 }
 
-// NewCollection returns new collection
-func NewCollection() *Collection {
-  return &Collection{m: &sync.Map{}}
-}
-
 // ParseKeyValSlice parses variables from any []"key=val" slice and
 // returns Collection
 func ParseKeyValSlice(kv []string) *Collection {
-	vars := NewCollection()
+	vars := new(Collection)
 	if len(kv) == 0 {
 		return vars
 	}

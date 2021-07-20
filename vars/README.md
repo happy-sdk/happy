@@ -68,21 +68,35 @@ import (
 
 func main() {
   collection := vars.ParseKeyValSlice([]string{
-    "key1=val1",
-    "key2=2",
-    "_key3=true",
-  })
-  collection.Set("other4", "1.001")
+		"key1=val1",
+		"key2=2",
+		"_key31=true",
+		"_key32=true",
+		"_key33=true",
+		"_key34=true",
+	})
+	collection.Set("other4", "1.001")
 
-  set := collection.GetWithPrefix("_key3")
-  for key, val := range set {
-    fmt.Println(key, val)
-  }
-  fmt.Println(collection.Get("other4").Float64())
+	set := collection.GetWithPrefix("_key3")
 
-  // Output:
-  // _key3 true
-  // 1.001
+	var keys []string
+
+	set.Range(func(key string, val vars.Value) bool {
+		keys = append(keys, key)
+		return true
+	})
+	sort.Strings(keys)
+	for _, k := range keys {
+		fmt.Println(k)
+	}
+	fmt.Println(collection.Get("other4").Float64())
+
+	// Output:
+	// _key31
+	// _key32
+	// _key33
+	// _key34
+	// 1.001
 }
 ```
 
@@ -98,21 +112,19 @@ import (
 
 func main() {
   content, err := ioutil.ReadFile("testdata/dot_env")
-  if err != nil {
-    fmt.Println(err)
-    return
-  }
-  collection := vars.ParseFromBytes(content)
-  if val := collection.Get("GOARCH"); val != "amd64" {
-    fmt.Printf("expected GOARCH to equal amd64 got %s\n", val)
-  }
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	collection := vars.ParseFromBytes(content)
+	goarch := collection.Get("GOARCH")
+	fmt.Printf("GOARCH = %s\n", goarch)
+
+  // Output:
+  // GOARCH = amd64
 }
 ```
-
-## Contributing
-
-[benchmark results](https://mkungla.github.io/vars/dev/bench/)
-
 
 ## License
 
