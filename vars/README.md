@@ -42,7 +42,7 @@ func main() {
 	fmt.Println(v.Uintptr())
 
 	// Output:
-  // <nil>
+	// <nil>
 	// 123456
 	// 123456
 	// false
