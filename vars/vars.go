@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"unsafe"
 )
 
 const (
@@ -57,10 +56,6 @@ var (
 	parserPool = sync.Pool{
 		New: func() interface{} { return new(parser) },
 	}
-
-	// expunged is an arbitrary pointer that marks entries which have been deleted
-	// from the dirty map.
-	expunged = unsafe.Pointer(new(interface{}))
 )
 
 type (
