@@ -46,10 +46,10 @@ func TestCollectionParseFields(t *testing.T) {
 }
 
 func TestCollectionSet(t *testing.T) {
-	var collection vars.Collection
+	collection := vars.NewCollection()
 	for _, tt := range tests {
 		collection.Set(tt.k, tt.defVal)
-		assert.Equal(t, collection.Get(tt.k).String(), tt.defVal)
+		assert.Equal(t, tt.defVal, collection.Get(tt.k).String())
 		assert.True(t, collection.Has(tt.k))
 	}
 }
@@ -66,7 +66,7 @@ func TestCollectionEnvFile(t *testing.T) {
 }
 
 func TestCollectionKeyNoSpaces(t *testing.T) {
-	var collection vars.Collection
+	collection := vars.NewCollection()
 	collection.Set("valid", true)
 	collection.Set(" invalid", true)
 
@@ -235,11 +235,9 @@ func TestCollectionParseFromString(t *testing.T) {
 func TestConcurrentRange(t *testing.T) {
 	const mapSize = 1 << 10
 
-	m := new(vars.Collection)
+	m := vars.NewCollection()
 	for n := int64(1); n <= mapSize; n++ {
-		v, err := vars.New(strconv.Itoa(int(n)), int64(n))
-		assert.NoError(t, err)
-		m.Store(v)
+		m.Store(strconv.Itoa(int(n)), int64(n))
 	}
 
 	done := make(chan struct{})
@@ -262,9 +260,7 @@ func TestConcurrentRange(t *testing.T) {
 				for n := int64(1); n < mapSize; n++ {
 					key := strconv.Itoa(int(n))
 					if r.Int63n(mapSize) == 0 {
-						v, err := vars.New(strconv.Itoa(int(n)), n*i*g)
-						assert.NoError(t, err)
-						m.Store(v)
+						m.Store(strconv.Itoa(int(n)), n*i*g)
 					} else {
 						m.Load(key)
 					}
@@ -280,7 +276,7 @@ func TestConcurrentRange(t *testing.T) {
 	for n := iters; n > 0; n-- {
 		seen := make(map[int64]bool, mapSize)
 
-		m.Range(func(ki string, vi vars.Variable) bool {
+		m.Range(func(ki string, vi *vars.Value) bool {
 			pk, err := strconv.Atoi(ki)
 			k := int64(pk)
 			assert.NoError(t, err)
@@ -302,12 +298,12 @@ func TestConcurrentRange(t *testing.T) {
 }
 
 func TestMissCounting(t *testing.T) {
-	var m vars.Collection
+	m := vars.NewCollection()
 
 	// Since the miss-counting in missLocked (via Delete)
 	// compares the miss count with len(m.dirty),
 	// add an initial entry to bias len(m.dirty) above the miss count.
-	m.Store(vars.Variable{})
+	m.Store("", struct{}{})
 
 	var finalized uint32
 
@@ -320,8 +316,7 @@ func TestMissCounting(t *testing.T) {
 			atomic.AddUint32(&finalized, 1)
 		})
 
-		v, _ := vars.New(key, struct{}{})
-		m.Store(v)
+		m.Store(key, struct{}{})
 		m.Delete(key)
 		runtime.GC()
 	}
