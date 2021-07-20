@@ -2,6 +2,21 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
+// Package bexp implements Brace Expansion mechanism to generate arbitrary strings.
+// Patterns to be brace expanded take the form of an optional preamble,
+// followed by either a series of comma-separated strings or a sequence
+// expression between a pair of braces, followed by an optional postscript.
+// The preamble is prefixed to each string contained within the braces, and the
+// postscript is then appended to each resulting string, expanding left to right.
+//
+// Brace expansions may be nested. The results of each expanded string are not
+// sorted; left to right order is preserved. For example,
+//
+//	Parse("a{d,c,b}e")
+//	[]string{"ade", "ace", "abe"}
+//
+// More info about Bash Brace Expansion can be found at
+// https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html
 package bexp
 
 import (
