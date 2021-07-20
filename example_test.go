@@ -7,9 +7,7 @@ package bexp_test
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/mkungla/bexp/v2"
 )
@@ -65,62 +63,61 @@ func ExampleParse() {
 
 }
 
-
 func ExampleParse_osExpand() {
-  const treeExp = "$MY_ROOT_DIR/dir{1..3}/{subdir1,subdir2}"
-  mapper := func(varName string) string {
+	const treeExp = "$MY_ROOT_DIR/dir{1..3}/{subdir1,subdir2}"
+	mapper := func(varName string) string {
 		switch varName {
 		case "MY_ROOT_DIR":
 			return "/my_root"
 		}
 		return ""
 	}
-  str := os.Expand(treeExp, mapper)
-  fmt.Println("str := os.Expand(treeExp, mapper)")
-  fmt.Println(str)
+	str := os.Expand(treeExp, mapper)
+	fmt.Println("str := os.Expand(treeExp, mapper)")
+	fmt.Println(str)
 
-  fmt.Println("v := bexp.Parse(str)")
-  v := bexp.Parse(str)
-  for _, p := range v {
-    fmt.Println(p)
-  }
+	fmt.Println("v := bexp.Parse(str)")
+	v := bexp.Parse(str)
+	for _, p := range v {
+		fmt.Println(p)
+	}
 
-  // Output:
-  // str := os.Expand(treeExp, mapper)
-  // /my_root/dir{1..3}/{subdir1,subdir2}
-  // v := bexp.Parse(str)
-  // /my_root/dir1/subdir1
-  // /my_root/dir1/subdir2
-  // /my_root/dir2/subdir1
-  // /my_root/dir2/subdir2
-  // /my_root/dir3/subdir1
-  // /my_root/dir3/subdir2
+	// Output:
+	// str := os.Expand(treeExp, mapper)
+	// /my_root/dir{1..3}/{subdir1,subdir2}
+	// v := bexp.Parse(str)
+	// /my_root/dir1/subdir1
+	// /my_root/dir1/subdir2
+	// /my_root/dir2/subdir1
+	// /my_root/dir2/subdir2
+	// /my_root/dir3/subdir1
+	// /my_root/dir3/subdir2
 }
 
 func ExampleParse_osExpandEnv() {
-  const treeExp = "$MY_ROOT_DIR/dir{1..3}/{subdir1,subdir2}"
-  os.Setenv("MY_ROOT_DIR", "/my_root")
+	const treeExp = "$MY_ROOT_DIR/dir{1..3}/{subdir1,subdir2}"
+	os.Setenv("MY_ROOT_DIR", "/my_root")
 
-  str := os.ExpandEnv(treeExp)
-  fmt.Println("str := os.ExpandEnv(treeExp)")
-  fmt.Println(str)
+	str := os.ExpandEnv(treeExp)
+	fmt.Println("str := os.ExpandEnv(treeExp)")
+	fmt.Println(str)
 
-  fmt.Println("v := bexp.Parse(str)")
-  v := bexp.Parse(str)
-  for _, p := range v {
-    fmt.Println(p)
-  }
+	fmt.Println("v := bexp.Parse(str)")
+	v := bexp.Parse(str)
+	for _, p := range v {
+		fmt.Println(p)
+	}
 
-  // Output:
-  // str := os.ExpandEnv(treeExp)
-  // /my_root/dir{1..3}/{subdir1,subdir2}
-  // v := bexp.Parse(str)
-  // /my_root/dir1/subdir1
-  // /my_root/dir1/subdir2
-  // /my_root/dir2/subdir1
-  // /my_root/dir2/subdir2
-  // /my_root/dir3/subdir1
-  // /my_root/dir3/subdir2
+	// Output:
+	// str := os.ExpandEnv(treeExp)
+	// /my_root/dir{1..3}/{subdir1,subdir2}
+	// v := bexp.Parse(str)
+	// /my_root/dir1/subdir1
+	// /my_root/dir1/subdir2
+	// /my_root/dir2/subdir1
+	// /my_root/dir2/subdir2
+	// /my_root/dir3/subdir1
+	// /my_root/dir3/subdir2
 }
 
 func ExampleParseValid() {
@@ -133,43 +130,4 @@ func ExampleParseValid() {
 	// Output:
 	// "" - true
 	// "abc" - true
-}
-
-func ExampleMkdirAll() {
-	const (
-		rootdir = "/tmp/bexp"
-		treeExp = rootdir + "/{dir1,dir2,dir3/{subdir1,subdir2}}"
-	)
-	if err := bexp.MkdirAll(treeExp, 0750); err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(rootdir)
-
-	if err := bexp.MkdirAll(rootdir+"/path/unmodified", 0750); err != nil {
-		log.Fatal(err)
-	}
-
-	err := filepath.Walk(rootdir,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			fmt.Println(path)
-			return nil
-		})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer os.RemoveAll(rootdir)
-
-	// Output:
-	// /tmp/bexp
-	// /tmp/bexp/dir1
-	// /tmp/bexp/dir2
-	// /tmp/bexp/dir3
-	// /tmp/bexp/dir3/subdir1
-	// /tmp/bexp/dir3/subdir2
-	// /tmp/bexp/path
-	// /tmp/bexp/path/unmodified
 }

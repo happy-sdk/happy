@@ -74,43 +74,43 @@ var testData = []testResource{
 func TestParse(t *testing.T) {
 	for _, test := range testData {
 		t.Run(test.Pattern, func(t *testing.T) {
-      v := Parse(test.Pattern)
+			v := Parse(test.Pattern)
 			if len(v) > 0 {
 				assert.Equal(t, test.Res0, v[0])
 			}
 			if len(v) > 1 {
-        assert.Equal(t, test.Res1, v[1])
+				assert.Equal(t, test.Res1, v[1])
 			}
 			if len(v) > 2 {
-        assert.Equal(t, test.Res2, v[2])
+				assert.Equal(t, test.Res2, v[2])
 			}
 		})
 	}
 }
 
 func TestParseValid(t *testing.T) {
-  empty, err := ParseValid("")
-  assert.ErrorIs(t, err, ErrEmptyResult)
-  assert.Equal(t, "", empty[0])
+	empty, err := ParseValid("")
+	assert.ErrorIs(t, err, ErrEmptyResult)
+	assert.Equal(t, "", empty[0])
 
-  single, err := ParseValid("a")
-  assert.NoError(t, single.Err())
-  assert.ErrorIs(t, err, ErrUnchangedBraceExpansion)
-  assert.Equal(t, "a", single[0])
+	single, err := ParseValid("a")
+	assert.NoError(t, single.Err())
+	assert.ErrorIs(t, err, ErrUnchangedBraceExpansion)
+	assert.Equal(t, "a", single[0])
 
-  for _, test := range testData {
-    t.Run(test.Pattern, func(t *testing.T) {
-      v, _ := ParseValid(test.Pattern)
-      if len(v) > 0 {
-        assert.Equal(t, test.Res0, v[0])
-      }
-      if len(v) > 1 {
-        assert.Equal(t, test.Res1, v[1])
-      }
-      if len(v) > 2 {
-        assert.Equal(t, test.Res2, v[2])
-      }
-    })
+	for _, test := range testData {
+		t.Run(test.Pattern, func(t *testing.T) {
+			v, _ := ParseValid(test.Pattern)
+			if len(v) > 0 {
+				assert.Equal(t, test.Res0, v[0])
+			}
+			if len(v) > 1 {
+				assert.Equal(t, test.Res1, v[1])
+			}
+			if len(v) > 2 {
+				assert.Equal(t, test.Res2, v[2])
+			}
+		})
 	}
 }
 
@@ -202,5 +202,5 @@ func TestErr(t *testing.T) {
 
 	single := Parse("a")
 	assert.NoError(t, single.Err())
-  assert.Equal(t, "a", single[0])
+	assert.Equal(t, "a", single[0])
 }

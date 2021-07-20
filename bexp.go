@@ -38,9 +38,9 @@ var (
 	escPeriod = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
 
 	// ErrEmptyResult representing empty result by parser
-	ErrEmptyResult     = errors.New("result is empty")
-  // ErrUnchangedBraceExpansion for any incorrectly formed brace expansion
-  // where input string is left unchanged
+	ErrEmptyResult = errors.New("result is empty")
+	// ErrUnchangedBraceExpansion for any incorrectly formed brace expansion
+	// where input string is left unchanged
 	ErrUnchangedBraceExpansion = errors.New("brace expansion left unchanged")
 )
 
@@ -61,17 +61,17 @@ func Parse(str string) BraceExpansion {
 // Result will always be `BraceExpansion` with min len 1 to satisfy
 // "Any incorrectly formed brace expansion is left unchanged."
 func ParseValid(str string) (BraceExpansion, error) {
-  res := Parse(str)
-  if len(res) == 1 {
-    if err := res.Err(); err != nil {
-      return res, err
-    }
-    if res[0] == str {
-      return res, ErrUnchangedBraceExpansion
-    }
-  }
+	res := Parse(str)
+	if len(res) == 1 {
+		if err := res.Err(); err != nil {
+			return res, err
+		}
+		if res[0] == str {
+			return res, ErrUnchangedBraceExpansion
+		}
+	}
 
-  return res, nil
+	return res, nil
 }
 
 // MkdirAll calls os.MkdirAll on each math from provided string
