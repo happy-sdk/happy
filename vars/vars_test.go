@@ -695,13 +695,13 @@ func TestValueFields(t *testing.T) {
 func TestArbitraryValues(t *testing.T) {
 	v1, err := vars.New("map", make(map[int]string))
 	assert.Equal(t, nil, err)
-	assert.Equal(t, "", v1.String())
+	assert.Equal(t, "map[]", v1.String())
 
 	list := make(map[int]string)
 	list[1] = "line1"
 	v2, err := vars.New("map", list)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, "", v2.String())
+	assert.Equal(t, "map[1:line1]", v2.String())
 
 	v3, err := vars.New("bytes", []byte{})
 	assert.Equal(t, nil, err)
@@ -720,12 +720,12 @@ func TestArbitraryValues(t *testing.T) {
 
 	v6, err := vars.New("struct", struct{}{})
 	assert.Equal(t, nil, err)
-	assert.Equal(t, "", v6.String())
+	assert.Equal(t, "{}", v6.String())
 
 	strfn := func() string { return "str" }
 	v7, err := vars.New("map", strfn)
 	assert.Equal(t, nil, err)
-	assert.Empty(t, v7.String())
+	assert.NotEmpty(t, v7.String())
 	assert.Equal(t, vars.TypeUnknown, v7.Type())
 }
 

@@ -6,6 +6,7 @@ package vars
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -140,6 +141,9 @@ func NewValue(val interface{}) (Value, error) {
 		str:   string(p.buf),
 	}
 	p.free()
+	if t == TypeUnknown && len(s.str) == 0 {
+		s.str = fmt.Sprint(s.raw)
+	}
 	return s, nil
 }
 
