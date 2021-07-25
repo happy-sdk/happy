@@ -11,6 +11,7 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
 ![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 <!-- ![GitHub all releases](https://img.shields.io/github/downloads/mkungla/bexp/total) -->
 
 ## Usage
