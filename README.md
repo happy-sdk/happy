@@ -14,72 +14,81 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 <!-- ![GitHub all releases](https://img.shields.io/github/downloads/mkungla/bexp/total) -->
 
+- [Usage](#usage)
+- [Get string slice](#get-string-slice)
+- [Generating directory tree](#generating-directory-tree)
+- [Need error checking?](#need-error-checking)
+- [With **os.Expand**](#with-osexpand)
+- [With **os.ExpandEnv**](#with-osexpandenv)
+
 ## Usage
 
 `go get github.com/mkungla/bexp/v2`
 
-### Get string slice
+## Get string slice
 
 ```go
 package main
 
 import (
-	"github.com/mkungla/bexp/v2"
-	"fmt"
+  "fmt"
+
+  "github.com/mkungla/bexp/v2"
 )
 
 func main() {
-	var v []string
-	v = bexp.Parse("file-{a,b,c}.jpg")
-	fmt.Println(v)
-	// [file-a.jpg file-b.jpg file-c.jpg]
+  var v []string
+  v = bexp.Parse("file-{a,b,c}.jpg")
+  fmt.Println(v)
+  // [file-a.jpg file-b.jpg file-c.jpg]
 
-	v = bexp.Parse("-v{,,}")
-	fmt.Println(v)
-	// [-v -v -v]
+  v = bexp.Parse("-v{,,}")
+  fmt.Println(v)
+  // [-v -v -v]
 
-	v = bexp.Parse("file{0..2}.jpg")
-	fmt.Println(v)
-	// [file0.jpg file1.jpg file2.jpg]
+  v = bexp.Parse("file{0..2}.jpg")
+  fmt.Println(v)
+  // [file0.jpg file1.jpg file2.jpg]
 
-	v = bexp.Parse("file{2..0}.jpg")
-	fmt.Println(v)
-	// [file2.jpg file1.jpg file0.jpg]
+  v = bexp.Parse("file{2..0}.jpg")
+  fmt.Println(v)
+  // [file2.jpg file1.jpg file0.jpg]
 
-	v = bexp.Parse("file{0..4..2}.jpg")
-	fmt.Println(v)
-	// [file0.jpg file2.jpg file4.jpg]
+  v = bexp.Parse("file{0..4..2}.jpg")
+  fmt.Println(v)
+  // [file0.jpg file2.jpg file4.jpg]
 
-	v = bexp.Parse("file-{a..e..2}.jpg")
-	fmt.Println(v)
-	// [file-a.jpg file-c.jpg file-e.jpg]
+  v = bexp.Parse("file-{a..e..2}.jpg")
+  fmt.Println(v)
+  // [file-a.jpg file-c.jpg file-e.jpg]
 
-	v = bexp.Parse("file{00..10..5}.jpg")
-	fmt.Println(v)
-	// [file00.jpg file05.jpg file10.jpg]
+  v = bexp.Parse("file{00..10..5}.jpg")
+  fmt.Println(v)
+  // [file00.jpg file05.jpg file10.jpg]
 
-	v = bexp.Parse("{{A..C},{a..c}}")
-	fmt.Println(v)
-	// [A B C a b c]
+  v = bexp.Parse("{{A..C},{a..c}}")
+  fmt.Println(v)
+  // [A B C a b c]
 
-	v = bexp.Parse("ppp{,config,oe{,conf}}")
-	fmt.Println(v)
-	// [ppp pppconfig pppoe pppoeconf]
+  v = bexp.Parse("ppp{,config,oe{,conf}}")
+  fmt.Println(v)
+  // [ppp pppconfig pppoe pppoeconf]
 
-	v = bexp.Parse("data/{P1/{10..19},P2/{20..29},P3/{30..39}}")
-	fmt.Println(v)
-	// [data/P1/10 data/P1/11 data/P1/12 data/P1/13 data/P1/14 data/P1/15 data/P1/16 data/P1/17 data/P1/18 data/P1/19 data/P2/20 data/P2/21 data/P2/22 data/P2/23 data/P2/24 data/P2/25 data/P2/26 data/P2/27 data/P2/28 data/P2/29 data/P3/30 data/P3/31 data/P3/32 data/P3/33 data/P3/34 data/P3/35 data/P3/36 data/P3/37 data/P3/38 data/P3/39]
+  v = bexp.Parse("data/{P1/{10..19},P2/{20..29},P3/{30..39}}")
+  fmt.Println(v)
+  // [data/P1/10 data/P1/11 data/P1/12 data/P1/13 data/P1/14 data/P1/15 data/P1/16 data/P1/17 data/P1/18 data/P1/19 data/P2/20 data/P2/21 data/P2/22 data/P2/23 data/P2/24 data/P2/25 data/P2/26 data/P2/27 data/P2/28 data/P2/29 data/P3/30 data/P3/31 data/P3/32 data/P3/33 data/P3/34 data/P3/35 data/P3/36 data/P3/37 data/P3/38 data/P3/39]
 }
 ```
 
-### Generating directory tree
+## Generating directory tree
 
 ```go
 package main
 
 import (
-	"github.com/mkungla/bexp/v2"
-	"log"
+  "log"
+
+  "github.com/mkungla/bexp/v2"
 )
 
 func main() {
@@ -90,7 +99,7 @@ func main() {
   if err := bexp.MkdirAll(treeexp, 0750); err != nil {
     log.Fatal(err)
   }
-  
+
   // Will produce directory tree
   // /tmp/bexp
   // /tmp/bexp/dir1
@@ -107,22 +116,109 @@ func main() {
 package main
 
 import (
-	"errors"
-	"fmt"
+  "errors"
+  "fmt"
 
-	"github.com/mkungla/bexp/v2"
+  "github.com/mkungla/bexp/v2"
 )
 
 func main() {
-	empty, err := bexp.ParseValid("")
-	fmt.Printf("%q - %t\n", empty[0], errors.Is(err, bexp.ErrEmptyResult))
+  empty, err := bexp.ParseValid("")
+  fmt.Printf("%q - %t\n", empty[0], errors.Is(err, bexp.ErrEmptyResult))
 
-	abc, err := bexp.ParseValid("abc")
-	fmt.Printf("%q - %t\n", abc[0], errors.Is(err, bexp.ErrUnchangedBraceExpansion))
+  abc, err := bexp.ParseValid("abc")
+  fmt.Printf("%q - %t\n", abc[0], errors.Is(err, bexp.ErrUnchangedBraceExpansion))
 
-	// Output:
-	// "" - true
-	// "abc" - true
+  // Output:
+  // "" - true
+  // "abc" - true
+}
+```
+
+## With **os.Expand**
+
+[os.Expand](https://pkg.go.dev/os#Expand)
+
+```go
+package main
+
+import (
+  "fmt"
+  "os"
+
+  "github.com/mkungla/bexp/v2"
+)
+
+func main() {
+  const treeExp = "$MY_ROOT_DIR/dir{1..3}/{subdir1,subdir2}"
+  mapper := func(varName string) string {
+    switch varName {
+    case "MY_ROOT_DIR":
+      return "/my_root"
+    }
+    return ""
+  }
+  str := os.Expand(treeExp, mapper)
+  fmt.Println("str := os.Expand(treeExp, mapper)")
+  fmt.Println(str)
+
+  fmt.Println("v := bexp.Parse(str)")
+  v := bexp.Parse(str)
+  for _, p := range v {
+    fmt.Println(p)
+  }
+
+  // Output:
+  // str := os.Expand(treeExp, mapper)
+  // /my_root/dir{1..3}/{subdir1,subdir2}
+  // v := bexp.Parse(str)
+  // /my_root/dir1/subdir1
+  // /my_root/dir1/subdir2
+  // /my_root/dir2/subdir1
+  // /my_root/dir2/subdir2
+  // /my_root/dir3/subdir1
+  // /my_root/dir3/subdir2
+}
+```
+
+## With **os.ExpandEnv**
+
+[os.ExpandEnv](https://pkg.go.dev/os#ExpandEnv)
+
+```go
+package main
+
+import (
+  "fmt"
+  "os"
+
+  "github.com/mkungla/bexp/v2"
+)
+
+func main() {
+  const treeExp = "$MY_ROOT_DIR/dir{1..3}/{subdir1,subdir2}"
+  os.Setenv("MY_ROOT_DIR", "/my_root")
+  
+  str := os.ExpandEnv(treeExp)
+  fmt.Println("str := os.ExpandEnv(treeExp)")
+  fmt.Println(str)
+  
+  fmt.Println("v := bexp.Parse(str)")
+  v := bexp.Parse(str)
+  for _, p := range v {
+    fmt.Println(p)
+  }
+  
+  // Output:
+  // str := os.ExpandEnv(treeExp)
+  // /my_root/dir{1..3}/{subdir1,subdir2}
+  // v := bexp.Parse(str)
+  // /my_root/dir1/subdir1
+  // /my_root/dir1/subdir2
+  // /my_root/dir2/subdir1
+  // /my_root/dir2/subdir2
+  // /my_root/dir3/subdir1
+  // /my_root/dir3/subdir2
 }
 ```
 
