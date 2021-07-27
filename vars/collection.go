@@ -27,10 +27,10 @@ func (c *Collection) Get(k string, defval ...interface{}) (val Value) {
 			if def, ok := defval[0].(Value); ok {
 				return def
 			}
-			d, _ := NewValue(defval[0])
+			d := NewValue(defval[0])
 			return d
 		}
-		e, _ := NewValue("")
+		e := NewValue("")
 		return e
 	}
 	return val
@@ -88,7 +88,7 @@ func (c *Collection) Store(key string, value interface{}) {
 	if vv, ok := value.(Value); ok {
 		c.m.Store(k, vv)
 	} else {
-		v, _ := NewValue(value)
+		v := NewValue(value)
 		c.m.Store(k, v)
 	}
 	atomic.AddInt64(&c.len, 1)
@@ -118,7 +118,7 @@ func (c *Collection) LoadOrStore(key string, value interface{}) (actual Value, l
 		if vv, ok := value.(Value); ok {
 			actual = vv
 		} else {
-			v, _ := NewValue(value)
+			v := NewValue(value)
 			actual = v
 		}
 		c.m.Store(k, actual)

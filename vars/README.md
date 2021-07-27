@@ -1,6 +1,6 @@
 # VARS
 
-![license](https://img.shields.io/github/license/mkungla/vars) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v4)](https://pkg.go.dev/github.com/mkungla/vars/v4) ![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars) [![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg?branch=main)](https://coveralls.io/github/mkungla/vars?branch=main)  ![benchmarks](https://github.com/mkungla/vars/workflows/benchmarks/badge.svg) ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/vars)
+![license](https://img.shields.io/github/license/mkungla/vars) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v5)](https://pkg.go.dev/github.com/mkungla/vars/v5) ![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars) [![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg?branch=main)](https://coveralls.io/github/mkungla/vars?branch=main)  ![benchmarks](https://github.com/mkungla/vars/workflows/benchmarks/badge.svg) ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/vars)
 
 ## About
 Package vars provides the API to parse variables from various input formats/types to common key value pair vars.Value or variable sets to vars.Collection
@@ -9,26 +9,26 @@ Package vars provides the API to parse variables from various input formats/type
 ## Install
 
 ```
-go get github.com/mkungla/vars/v4
+go get github.com/mkungla/vars/v5
 ```
 
 ## Usage
 
-**working with [vars.Value](https://pkg.go.dev/github.com/mkungla/vars/v4#Value)**
+**working with [vars.Value](https://pkg.go.dev/github.com/mkungla/vars/v5#Value)**
 
 ```go
 package main
 
 import (
   "fmt"
-  "github.com/mkungla/vars/v4"
+  "github.com/mkungla/vars/v5"
 )
 
 func main() {
-  vnil, _ := vars.NewValue(nil)
+  vnil := vars.NewValue(nil)
   fmt.Println(vnil.String())
 
-  v, _ := vars.NewValue(123456)
+  v := vars.NewValue(123456)
   fmt.Println(v.String())
 
   fmt.Println(v.Int())
@@ -56,14 +56,14 @@ func main() {
 }
 ```
 
-**working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v4#Collection)**
+**working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v5#Collection)**
 
 ```go
 package main
 
 import (
   "fmt"
-  "github.com/mkungla/vars/v4"
+  "github.com/mkungla/vars/v5"
 )
 
 func main() {
@@ -108,7 +108,7 @@ package main
 import (
   "fmt"
   "io/ioutil"
-  "github.com/mkungla/vars/v4"
+  "github.com/mkungla/vars/v5"
 )
 
 func main() {

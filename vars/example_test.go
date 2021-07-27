@@ -8,14 +8,14 @@ import (
 	"io/ioutil"
 	"sort"
 
-	"github.com/mkungla/vars/v4"
+	"github.com/mkungla/vars/v5"
 )
 
 func ExampleValue() {
-	vnil, _ := vars.NewValue(nil)
+	vnil := vars.NewValue(nil)
 	fmt.Println(vnil.String())
 
-	v, _ := vars.NewValue(123456)
+	v := vars.NewValue(123456)
 	fmt.Println(v.String())
 
 	fmt.Println(v.Int())

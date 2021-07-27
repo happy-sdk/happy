@@ -17,7 +17,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/mkungla/vars/v4"
+	"github.com/mkungla/vars/v5"
 
 	"github.com/stretchr/testify/assert"
 )

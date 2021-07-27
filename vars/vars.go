@@ -121,18 +121,16 @@ type (
 
 // New return untyped Variable, If error occurred while parsing
 // Variable represents default 0, nil value
-func New(key string, val interface{}) (Variable, error) {
-	v, err := NewValue(val)
-	vv := Variable{
+func New(key string, val interface{}) Variable {
+	return Variable{
 		key: key,
-		val: v,
+		val: NewValue(val),
 	}
-	return vv, err
 }
 
 // NewValue return Value, If error occurred while parsing
 // VAR represents default 0, nil value
-func NewValue(val interface{}) (Value, error) {
+func NewValue(val interface{}) Value {
 	p := getParser()
 	t, raw := p.printArg(val)
 	s := Value{
@@ -144,7 +142,7 @@ func NewValue(val interface{}) (Value, error) {
 	if t == TypeUnknown && len(s.str) == 0 {
 		s.str = fmt.Sprint(s.raw)
 	}
-	return s, nil
+	return s
 }
 
 // NewFromKeyVal parses variable from single "key=val" pair and
@@ -163,7 +161,7 @@ func NewFromKeyVal(kv string) (v Variable, err error) {
 	for i := 0; i < l; i++ {
 		if kv[i] == '=' {
 			key = kv[:i]
-			v, err = New(key, kv[i+1:])
+			v = New(key, kv[i+1:])
 			if i < l {
 				break
 			}
