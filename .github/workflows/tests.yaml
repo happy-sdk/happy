@@ -21,10 +21,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v1
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
         if: runner.os == 'Linux'
+        uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.32
+          version: v1.42
       - name: Run Unit tests
         run: |
           go test -race -covermode atomic -coverprofile=covprofile ./...
