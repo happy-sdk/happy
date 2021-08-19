@@ -6,7 +6,6 @@ package bexp_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/mkungla/bexp/v2"
 )
@@ -41,9 +40,6 @@ func BenchmarkParse(b *testing.B) {
 	for _, test := range benchdata {
 		b.Run(test.Pattern, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				if i == 1 {
-					time.Sleep(100 * time.Nanosecond)
-				}
 				v := bexp.Parse(test.Pattern)
 				l := len(v)
 				if l > 0 && v[0] != test.Res0 {
