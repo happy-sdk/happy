@@ -182,7 +182,11 @@ func getCenterTile(lat, long float64, zoom int) (z, x, y int) {
 	if float64(x) >= n {
 		x = int(n - 1)
 	}
-	y = int(math.Floor((1.0 - math.Log(math.Tan(lat*math.Pi/180.0)+1.0/math.Cos(lat*math.Pi/180.0))/math.Pi) / 2.0 * n))
+	y = int(math.Floor((1.0 - math.Log(
+		math.Tan(lat*math.Pi/180.0)+
+			1.0/
+				math.Cos(lat*math.Pi/180.0))/
+		math.Pi) / 2.0 * n))
 	return x, y, zoom
 }
 
