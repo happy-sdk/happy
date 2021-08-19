@@ -149,10 +149,7 @@ func expand(str string, isTop bool) []string {
 		return []string{str}
 	}
 
-	var (
-		expansions []string
-		post       []string
-	)
+	var post []string
 
 	if len(m.Post) > 0 {
 		post = expand(m.Post, false)
@@ -161,6 +158,7 @@ func expand(str string, isTop bool) []string {
 	}
 
 	if regexp.MustCompile(`\$$`).Match([]byte(m.Pre)) {
+		expansions := []string{}
 		for i := 0; i < len(post); i++ {
 			expansions = append(expansions, m.Pre+"{"+m.Body+"}"+post[i])
 		}
@@ -182,9 +180,11 @@ func expand(str string, isTop bool) []string {
 	}
 
 	var n []string
+	var n2 []string
 
 	if isSequence {
 		n = strings.Split(m.Body, `..`)
+		n2 = expandSequence(n, isAlphaSequence)
 	} else {
 		n = parseCommaParts(m.Body)
 		if len(n) == 1 {
@@ -195,30 +195,15 @@ func expand(str string, isTop bool) []string {
 				})
 			}
 		}
+		n2 = concatMap(n, func(el string) []string { return expand(el, false) })
 	}
 
-	var N []string
-
-	if isSequence {
-		N = expandSequence(n, isAlphaSequence)
-	} else {
-		N = concatMap(n, func(el string) []string { return expand(el, false) })
-	}
-
-	for j := 0; j < len(N); j++ {
-		for k := 0; k < len(post); k++ {
-			expansion := m.Pre + N[j] + post[k]
-			if !isTop || isSequence || expansion != "" {
-				expansions = append(expansions, expansion)
-			}
-		}
-	}
-	return expansions
+	return expandToExpansionSlice(n2, post, m.Pre, isTop, isSequence)
 }
 
 func expandSequence(n []string, isAlphaSequence bool) []string {
-	x := numeric(n[0])
-	y := numeric(n[1])
+	x := numeric(n[0]) //nolint: ifshort
+	y := numeric(n[1]) //nolint: ifshort
 	width := max(len(n[0]), len(n[1]))
 
 	var incr int64
@@ -237,7 +222,7 @@ func expandSequence(n []string, isAlphaSequence bool) []string {
 
 	pad := some(n, isPadded)
 
-	N := []string{}
+	n2 := []string{}
 
 	for i := x; test(i, y); i += incr {
 		var c string
@@ -247,22 +232,40 @@ func expandSequence(n []string, isAlphaSequence bool) []string {
 				c = ""
 			}
 		} else {
-			c = strconv.FormatInt(i, 10)
-			if pad {
-				var need = width - len(c)
-				if need > 0 {
-					var z = strings.Join(make([]string, need+1), "0")
-					if i < 0 {
-						c = "-" + z + c[1:]
-					} else {
-						c = z + c
-					}
-				}
+			c = expandNonAlphaSequence(i, width, pad)
+		}
+		n2 = append(n2, c)
+	}
+	return n2
+}
+
+func expandNonAlphaSequence(i int64, width int, pad bool) string {
+	c := strconv.FormatInt(i, 10)
+	if pad {
+		var need = width - len(c)
+		if need > 0 {
+			var z = strings.Join(make([]string, need+1), "0")
+			if i < 0 {
+				c = "-" + z + c[1:]
+			} else {
+				c = z + c
 			}
 		}
-		N = append(N, c)
 	}
-	return N
+	return c
+}
+
+func expandToExpansionSlice(n2, post []string, pre string, isTop, isSequence bool) []string {
+	expansions := []string{}
+	for j := 0; j < len(n2); j++ {
+		for k := 0; k < len(post); k++ {
+			expansion := pre + n2[j] + post[k]
+			if !isTop || isSequence || expansion != "" {
+				expansions = append(expansions, expansion)
+			}
+		}
+	}
+	return expansions
 }
 
 func concatMap(xs []string, fn func(el string) []string) []string {

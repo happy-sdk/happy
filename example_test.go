@@ -120,21 +120,12 @@ func ExampleParse_osExpandEnv() {
 	// /my_root/dir3/subdir2
 }
 
-func ExampleParseValid() {
-	empty, err := bexp.ParseValid("")
-	fmt.Printf("%q - %t\n", empty[0], errors.Is(err, bexp.ErrEmptyResult))
-
-	abc, err := bexp.ParseValid("abc")
-	fmt.Printf("%q - %t\n", abc[0], errors.Is(err, bexp.ErrUnchangedBraceExpansion))
-
-	// Output:
-	// "" - true
-	// "abc" - true
-}
-
 // ExampleExpandOsmTiles the example shows how to create Openstreetmap tiles
 // around the desired latitude and longitude coordinates.
-func ExampleExpandOsmTiles() {
+//
+// https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png
+// https://a.tile.openstreetmap.org/1/1/1.png
+func ExampleParse_expandOsmTiles() {
 	x, y, z := getCenterTile(51.03, 13.78, 5)
 	pattern := fmt.Sprintf(
 		"https://tile.openstreetmap.org/%d/{%d..%d}/{%d..%d}.png",
@@ -189,5 +180,14 @@ func getCenterTile(lat, long float64, zoom int) (z, x, y int) {
 	return x, y, zoom
 }
 
-// https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png
-// https://a.tile.openstreetmap.org/1/1/1.png
+func ExampleParseValid() {
+	empty, err := bexp.ParseValid("")
+	fmt.Printf("%q - %t\n", empty[0], errors.Is(err, bexp.ErrEmptyResult))
+
+	abc, err := bexp.ParseValid("abc")
+	fmt.Printf("%q - %t\n", abc[0], errors.Is(err, bexp.ErrUnchangedBraceExpansion))
+
+	// Output:
+	// "" - true
+	// "abc" - true
+}

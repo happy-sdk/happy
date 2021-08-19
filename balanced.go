@@ -41,8 +41,8 @@ func Balanced(a interface{}, b interface{}, str string) BalancedResult {
 func Range(a []byte, b []byte, str string) BalancedResult {
 	var (
 		result []int
-		ai     int = -1
-		bi     int = -1
+		ai     = -1
+		bi     = -1
 	)
 
 	if a != nil {
@@ -69,10 +69,11 @@ func doRange(a []byte, b []byte, ai, bi int, str string) []int {
 
 		right int
 		left  int
-		i     int = ai
+		i     = ai
 	)
 	left = len(str)
 	for i < len(str) && i >= 0 && result == nil {
+		//nolint: gocritic, nestif
 		if i == ai {
 			begs = append(begs, i)
 			ai = strings.Index(str[i+1:], string(a))

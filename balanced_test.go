@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint: funlen
 func TestBalanced(t *testing.T) {
 	assert.Equal(t, BalancedResult{
 		Valid: true,
