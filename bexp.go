@@ -144,6 +144,7 @@ func parseCommaParts(str string) BraceExpansion {
 	return parts
 }
 
+//nolint: nestif
 func expand(str string, isTop bool) []string {
 	m := Balanced("{", "}", str)
 
@@ -167,9 +168,17 @@ func expand(str string, isTop bool) []string {
 		return expansions
 	}
 
-	isNumericSequence := regexp.MustCompile(`^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$`).Match([]byte(m.Body))
-	isAlphaSequence := regexp.MustCompile(`^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$`).Match([]byte(m.Body))
-	isSequence := isNumericSequence || isAlphaSequence
+	var (
+		isNumericSequence,
+		isAlphaSequence bool
+	)
+	isSequence := strings.Contains(m.Body, "..")
+	if isSequence {
+		isNumericSequence = regexp.MustCompile(`^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$`).Match([]byte(m.Body))
+		isAlphaSequence = regexp.MustCompile(`^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$`).Match([]byte(m.Body))
+		isSequence = isNumericSequence || isAlphaSequence
+	}
+
 	// isOptions := regexp.MustCompile(`^(.*,)+(.+)?$`).Match([]byte(m.Body))
 	isOptions := strings.Contains(m.Body, ",")
 
