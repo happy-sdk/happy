@@ -43,7 +43,7 @@ func BenchmarkParse(b *testing.B) {
 
 		name := test.Name + "("
 		if len(test.Pattern) > 10 {
-			name += test.Pattern[10:] + ")"
+			name += test.Pattern[0:10] + ")"
 		} else {
 			name += test.Pattern + ")"
 		}
