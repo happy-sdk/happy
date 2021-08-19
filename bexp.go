@@ -229,8 +229,8 @@ func expandSequence(n []string, isAlphaSequence bool) []string {
 	}
 
 	test := lte
-	reverse := y < x
-	if reverse {
+	// reverse
+	if y < x {
 		incr *= -1
 		test = gte
 	}
