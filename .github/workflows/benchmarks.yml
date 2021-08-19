@@ -14,28 +14,28 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run benchmark
         run: go test -bench .
-      # - name: Download previous benchmark data
-      #   uses: actions/cache@v1
-      #   with:
-      #     path: ./cache
-      #     key: ${{ runner.os }}-benchmark
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
         # Run `github-action-benchmark` action
-      # - name: Store benchmark result
-      #   uses: mkungla/github-action-benchmark@v1
-      #   with:
-      #     # What benchmark tool the output.txt came from
-      #     tool: 'go'
-      #     # Where the output from the benchmark tool is stored
-      #     output-file-path: output.txt
-      #     # Workflow will fail when an alert happens
-      #     fail-on-alert: true
-      #     # GitHub API token to make a commit comment
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     # Enable alert commit comment
-      #     comment-on-alert: true
-      #     alert-comment-cc-users: '@mkungla'
-      #     gh-pages-branch: "gh-pages"
-      #     benchmark-data-dir-path: "dev/bench"
-      #     auto-push: true
-      #     alert-threshold: 150%
-      #     fail-threshold: 200%
+      - name: Store benchmark result
+        uses: mkungla/github-action-benchmark@v1
+        with:
+          # What benchmark tool the output.txt came from
+          tool: 'go'
+          # Where the output from the benchmark tool is stored
+          output-file-path: output.txt
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # GitHub API token to make a commit comment
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Enable alert commit comment
+          comment-on-alert: true
+          alert-comment-cc-users: '@mkungla'
+          gh-pages-branch: "gh-pages"
+          benchmark-data-dir-path: "dev/bench"
+          auto-push: true
+          alert-threshold: 150%
+          fail-threshold: 200%
