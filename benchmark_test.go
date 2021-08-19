@@ -26,6 +26,7 @@ type benchTestGroup struct {
 	Tests []benchTest
 }
 
+//nolint: gochecknoglobals
 var benchdata = []benchTestGroup{
 	{
 		"fs-path",

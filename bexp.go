@@ -21,13 +21,11 @@ package bexp
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var (
@@ -36,19 +34,15 @@ var (
 	// ErrUnchangedBraceExpansion for any incorrectly formed brace expansion
 	// where input string is left unchanged.
 	ErrUnchangedBraceExpansion = errors.New("brace expansion left unchanged")
-
-	//nolint: gochecknoglobals
-	escSlash, escOpen, escClose, escComma, escPeriod string
 )
 
-func init() {
-	uqts := fmt.Sprintf("%d\u0000", time.Now().Nanosecond())
-	escSlash = "\u0000SLASH" + uqts
-	escOpen = "\u0000OPEN" + uqts
-	escClose = "\u0000CLOSE" + uqts
-	escComma = "\u0000COMMA" + uqts
-	escPeriod = "\u0000PERIOD" + uqts
-}
+const (
+	escSlash  = "\u0000SLASHbexp1\u0000"
+	escOpen   = "\u0000OPENexp1\u0000"
+	escClose  = "\u0000CLOSEexp1\u0000"
+	escComma  = "\u0000COMMAexp1\u0000"
+	escPeriod = "\u0000PERIODexp1\u0000"
+)
 
 // BraceExpansion represents bash style brace expansion.
 type BraceExpansion []string
@@ -137,102 +131,115 @@ func parseCommaParts(str string) BraceExpansion {
 	body := m.Body
 	post := m.Post
 	p := strings.Split(pre, ",")
+
 	p[len(p)-1] += "{" + body + "}"
 	postParts := parseCommaParts(post)
 	if len(post) > 0 {
 		p[len(p)-1] += postParts[0]
-		postParts = postParts[1:]
-		p = append(p, postParts...)
+		p = append(p, postParts[1:]...)
 	}
 	parts = append(parts, p...)
 	return parts
 }
 
 func expand(str string, isTop bool) []string {
-	expansions := []string{}
 	m := Balanced("{", "}", str)
-	reg := regexp.MustCompile(`\$$`)
-	if !m.Valid || reg.Match([]byte(m.Pre)) {
+
+	if !m.Valid {
 		return []string{str}
 	}
+
+	var (
+		expansions []string
+		post       []string
+	)
+
+	if len(m.Post) > 0 {
+		post = expand(m.Post, false)
+	} else {
+		post = []string{""}
+	}
+
+	if regexp.MustCompile(`\$$`).Match([]byte(m.Pre)) {
+		for i := 0; i < len(post); i++ {
+			expansions = append(expansions, m.Pre+"{"+m.Body+"}"+post[i])
+		}
+		return expansions
+	}
+
 	isNumericSequence := regexp.MustCompile(`^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$`).Match([]byte(m.Body))
 	isAlphaSequence := regexp.MustCompile(`^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$`).Match([]byte(m.Body))
 	isSequence := isNumericSequence || isAlphaSequence
-	isOptions := regexp.MustCompile(`^(.*,)+(.+)?$`).Match([]byte(m.Body))
+	// isOptions := regexp.MustCompile(`^(.*,)+(.+)?$`).Match([]byte(m.Body))
+	isOptions := strings.Contains(m.Body, ",")
+
 	if !isSequence && !isOptions {
 		// UseCase???
 		if regexp.MustCompile(`,.*\}`).Match([]byte(m.Post)) {
-			str = m.Pre + "{" + m.Body + escClose + m.Post
-			return expand(str, false)
+			return expand(m.Pre+"{"+m.Body+escClose+m.Post, false)
 		}
 		return []string{str}
 	}
+
 	var n []string
-	var post []string
+
 	if isSequence {
 		n = strings.Split(m.Body, `..`)
 	} else {
 		n = parseCommaParts(m.Body)
 		if len(n) == 1 {
-			// x{{a,b}}y ==> x{a}y x{b}y
 			n = mapArray(expand(n[0], false), embrace)
-			// UseCase???
 			if len(n) == 1 {
-				if len(m.Post) > 0 {
-					post = expand(m.Post, false)
-				} else {
-					post = []string{""}
-				}
 				return mapArray(post, func(s string) string {
 					return m.Pre + n[0] + s
 				})
 			}
 		}
 	}
-	pre := m.Pre
-	if len(m.Post) > 0 {
-		post = expand(m.Post, false)
-	} else {
-		post = []string{""}
-	}
+
 	var N []string
+
 	if isSequence {
 		x := numeric(n[0])
 		y := numeric(n[1])
 		width := max(len(n[0]), len(n[1]))
+
 		var incr int64
 		if len(n) == 3 {
 			incr = int64(math.Abs(float64(numeric(n[2]))))
 		} else {
 			incr = 1
 		}
+
 		test := lte
 		reverse := y < x
 		if reverse {
 			incr *= -1
 			test = gte
 		}
+
 		pad := some(n, isPadded)
+
 		N = []string{}
+
 		for i := x; test(i, y); i += incr {
 			var c string
 			if isAlphaSequence {
 				c = string(rune(i))
-				// Usecase ???
-				// if c == "\\" {
-				// 	c = ""
-				// }
+				if c == "\\" {
+					c = ""
+				}
 			} else {
 				c = strconv.FormatInt(i, 10)
 				if pad {
 					var need = width - len(c)
 					if need > 0 {
 						var z = strings.Join(make([]string, need+1), "0")
-						c = z + c
-						// Usecase ???
-						// if i < 0 {
-						// 	c = "-" + z + c[1:]
-						// }
+						if i < 0 {
+							c = "-" + z + c[1:]
+						} else {
+							c = z + c
+						}
 					}
 				}
 			}
@@ -244,7 +251,7 @@ func expand(str string, isTop bool) []string {
 
 	for j := 0; j < len(N); j++ {
 		for k := 0; k < len(post); k++ {
-			expansion := pre + N[j] + post[k]
+			expansion := m.Pre + N[j] + post[k]
 			if !isTop || isSequence || expansion != "" {
 				expansions = append(expansions, expansion)
 			}
@@ -311,12 +318,19 @@ func numeric(str string) int64 {
 }
 
 func escapeBraces(str string) string {
-	return sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(str, escSlash, "\\\\"), escOpen, "\\{"), escClose, "\\}"), escComma, "\\,"), escPeriod, "\\.")
-
+	return sliceAndJoin(
+		sliceAndJoin(
+			sliceAndJoin(
+				sliceAndJoin(
+					sliceAndJoin(str, escSlash, "\\\\"), escOpen, "\\{"), escClose, "\\}"), escComma, "\\,"), escPeriod, "\\.")
 }
 
 func unescapeBraces(str string) string {
-	return sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(str, "\\", escSlash), "{", escOpen), "}", escClose), ",", escComma), ".", escPeriod)
+	return sliceAndJoin(
+		sliceAndJoin(
+			sliceAndJoin(
+				sliceAndJoin(
+					sliceAndJoin(str, "\\", escSlash), "{", escOpen), "}", escClose), ",", escComma), ".", escPeriod)
 }
 
 func sliceAndJoin(str string, join string, slice string) string {

@@ -63,7 +63,6 @@ func Range(a []byte, b []byte, str string) BalancedResult {
 }
 
 func doRange(a []byte, b []byte, ai, bi int, str string) []int {
-
 	var (
 		result []int
 		begs   []int

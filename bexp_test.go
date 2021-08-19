@@ -104,7 +104,6 @@ func TestTestDataWithBash(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestParse(t *testing.T) {
