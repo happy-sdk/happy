@@ -189,6 +189,7 @@ func TestNegativeIncrement(t *testing.T) {
 	assert.Equal(t, BraceExpansion{"3", "2", "1"}, Parse("{3..1}"))
 	assert.Equal(t, BraceExpansion{"10", "9", "8"}, Parse("{10..8}"))
 	assert.Equal(t, BraceExpansion{"10", "09", "08"}, Parse("{10..08}"))
+	assert.Equal(t, BraceExpansion{"-10", "-09", "-08"}, Parse("{-10..-08}"))
 	assert.Equal(t, BraceExpansion{"c", "b", "a"}, Parse("{c..a}"))
 	assert.Equal(t, BraceExpansion{"4", "2", "0"}, Parse("{4..0..2}"))
 	assert.Equal(t, BraceExpansion{"4", "2", "0"}, Parse("{4..0..-2}"))
@@ -254,4 +255,41 @@ func TestErr(t *testing.T) {
 	single := Parse("a")
 	assert.NoError(t, single.Err())
 	assert.Equal(t, "a", single[0])
+}
+
+func TestIsPadded(t *testing.T) {
+	tests := []struct {
+		in   string
+		want bool
+	}{
+		{"01", true},
+		{"00001", true},
+		{"-01", true},
+		{"-00001", true},
+		{"-00", true},
+		{"00", true},
+		{"00string", true},
+		{"-00string", true},
+		{"0string", false},
+		{"-0string", false},
+		{"string", false},
+		{"-string", false},
+	}
+	for _, test := range tests {
+		assert.Equal(t, test.want, isPadded(test.in))
+	}
+}
+
+func TestSpace(t *testing.T) {
+
+	// assert.Equal(t, BraceExpansion{"{a, b, c, d }1"}, Parse("{a, b, c, d }1"))
+	// assert.Equal(t, BraceExpansion{"{a,b,c,d} 1"}, Parse("\"{a,b,c,d} 1\""))
+	// assert.Equal(t, BraceExpansion{"a 1", "b 1", "c 1", "d 1"}, Parse("{\"a \",\"b \",\"c \",\"d \"}1"))
+	// assert.Equal(t, BraceExpansion{"a 1", "b 1", "c 1", "d 1"}, Parse("{a,b,c,d}\" 1\""))
+
+	// s1 := fmt.Sprintf("{%q,%q,%q,%q}1", "a ", "b ", "c ", "d ")
+	// assert.Equal(t, BraceExpansion{"a 1", "b 1", "c 1", "d 1"}, Parse(s1))
+
+	// s2 := fmt.Sprintf("{a,b,c,d}%q", " 1")
+	// assert.Equal(t, BraceExpansion{"a 1", "b 1", "c 1", "d 1"}, Parse(s2))
 }
