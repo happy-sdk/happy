@@ -200,51 +200,7 @@ func expand(str string, isTop bool) []string {
 	var N []string
 
 	if isSequence {
-		x := numeric(n[0])
-		y := numeric(n[1])
-		width := max(len(n[0]), len(n[1]))
-
-		var incr int64
-		if len(n) == 3 {
-			incr = int64(math.Abs(float64(numeric(n[2]))))
-		} else {
-			incr = 1
-		}
-
-		test := lte
-		reverse := y < x
-		if reverse {
-			incr *= -1
-			test = gte
-		}
-
-		pad := some(n, isPadded)
-
-		N = []string{}
-
-		for i := x; test(i, y); i += incr {
-			var c string
-			if isAlphaSequence {
-				c = string(rune(i))
-				if c == "\\" {
-					c = ""
-				}
-			} else {
-				c = strconv.FormatInt(i, 10)
-				if pad {
-					var need = width - len(c)
-					if need > 0 {
-						var z = strings.Join(make([]string, need+1), "0")
-						if i < 0 {
-							c = "-" + z + c[1:]
-						} else {
-							c = z + c
-						}
-					}
-				}
-			}
-			N = append(N, c)
-		}
+		N = expandSequence(n, isAlphaSequence)
 	} else {
 		N = concatMap(n, func(el string) []string { return expand(el, false) })
 	}
@@ -258,6 +214,55 @@ func expand(str string, isTop bool) []string {
 		}
 	}
 	return expansions
+}
+
+func expandSequence(n []string, isAlphaSequence bool) []string {
+	x := numeric(n[0])
+	y := numeric(n[1])
+	width := max(len(n[0]), len(n[1]))
+
+	var incr int64
+	if len(n) == 3 {
+		incr = int64(math.Abs(float64(numeric(n[2]))))
+	} else {
+		incr = 1
+	}
+
+	test := lte
+	reverse := y < x
+	if reverse {
+		incr *= -1
+		test = gte
+	}
+
+	pad := some(n, isPadded)
+
+	N := []string{}
+
+	for i := x; test(i, y); i += incr {
+		var c string
+		if isAlphaSequence {
+			c = string(rune(i))
+			if c == "\\" {
+				c = ""
+			}
+		} else {
+			c = strconv.FormatInt(i, 10)
+			if pad {
+				var need = width - len(c)
+				if need > 0 {
+					var z = strings.Join(make([]string, need+1), "0")
+					if i < 0 {
+						c = "-" + z + c[1:]
+					} else {
+						c = z + c
+					}
+				}
+			}
+		}
+		N = append(N, c)
+	}
+	return N
 }
 
 func concatMap(xs []string, fn func(el string) []string) []string {

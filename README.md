@@ -4,8 +4,8 @@ Go implementation of Brace Expansion mechanism to generate arbitrary strings.
 
 Implementing: [3.5.1 Brace Expansion][bash-be]
 
-![license](https://img.shields.io/github/license/mkungla/bexp)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp/v2)](https://pkg.go.dev/github.com/mkungla/bexp/v2)
+![license](https://img.shields.io/github/license/mkungla/bexp)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
