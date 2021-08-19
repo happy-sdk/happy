@@ -160,7 +160,8 @@ func expand(str string, isTop bool) []string {
 		post = []string{""}
 	}
 
-	if regexp.MustCompile(`\$$`).Match([]byte(m.Pre)) {
+	// better than regexp.MustCompile(`\$$`).Match([]byte(m.Pre))
+	if strings.HasSuffix(m.Pre, "$") {
 		expansions := []string{}
 		for i := 0; i < len(post); i++ {
 			expansions = append(expansions, m.Pre+"{"+m.Body+"}"+post[i])
