@@ -7,6 +7,7 @@ package bexp_test
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/mkungla/bexp/v2"
@@ -130,3 +131,60 @@ func ExampleParseValid() {
 	// "" - true
 	// "abc" - true
 }
+
+// ExampleExpandOsmTiles the example shows how to create Openstreetmap tiles
+// around the desired latitude and longitude coordinates.
+func ExampleExpandOsmTiles() {
+	x, y, z := getCenterTile(51.03, 13.78, 5)
+	pattern := fmt.Sprintf(
+		"https://tile.openstreetmap.org/%d/{%d..%d}/{%d..%d}.png",
+		z, x-2, x+2, y-2, y+2,
+	)
+
+	tiles := bexp.Parse(pattern)
+
+	fmt.Println("pattern:", pattern)
+	for _, tile := range tiles {
+		fmt.Println(tile)
+	}
+	// Output:
+	// pattern: https://tile.openstreetmap.org/5/{15..19}/{8..12}.png
+	// https://tile.openstreetmap.org/5/15/8.png
+	// https://tile.openstreetmap.org/5/15/9.png
+	// https://tile.openstreetmap.org/5/15/10.png
+	// https://tile.openstreetmap.org/5/15/11.png
+	// https://tile.openstreetmap.org/5/15/12.png
+	// https://tile.openstreetmap.org/5/16/8.png
+	// https://tile.openstreetmap.org/5/16/9.png
+	// https://tile.openstreetmap.org/5/16/10.png
+	// https://tile.openstreetmap.org/5/16/11.png
+	// https://tile.openstreetmap.org/5/16/12.png
+	// https://tile.openstreetmap.org/5/17/8.png
+	// https://tile.openstreetmap.org/5/17/9.png
+	// https://tile.openstreetmap.org/5/17/10.png
+	// https://tile.openstreetmap.org/5/17/11.png
+	// https://tile.openstreetmap.org/5/17/12.png
+	// https://tile.openstreetmap.org/5/18/8.png
+	// https://tile.openstreetmap.org/5/18/9.png
+	// https://tile.openstreetmap.org/5/18/10.png
+	// https://tile.openstreetmap.org/5/18/11.png
+	// https://tile.openstreetmap.org/5/18/12.png
+	// https://tile.openstreetmap.org/5/19/8.png
+	// https://tile.openstreetmap.org/5/19/9.png
+	// https://tile.openstreetmap.org/5/19/10.png
+	// https://tile.openstreetmap.org/5/19/11.png
+	// https://tile.openstreetmap.org/5/19/12.png
+}
+
+func getCenterTile(lat, long float64, zoom int) (z, x, y int) {
+	n := math.Exp2(float64(zoom))
+	x = int(math.Floor((long + 180.0) / 360.0 * n))
+	if float64(x) >= n {
+		x = int(n - 1)
+	}
+	y = int(math.Floor((1.0 - math.Log(math.Tan(lat*math.Pi/180.0)+1.0/math.Cos(lat*math.Pi/180.0))/math.Pi) / 2.0 * n))
+	return x, y, zoom
+}
+
+// https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png
+// https://a.tile.openstreetmap.org/1/1/1.png
