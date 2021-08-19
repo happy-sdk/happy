@@ -35,7 +35,7 @@ jobs:
           comment-on-alert: true
           alert-comment-cc-users: '@mkungla'
           gh-pages-branch: "gh-pages"
-          benchmark-data-dir-path: "dev/bench"
+          benchmark-data-dir-path: "benchmark"
           auto-push: true
           alert-threshold: 150%
           fail-threshold: 200%

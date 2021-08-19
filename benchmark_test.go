@@ -2,9 +2,14 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-package bexp
+package bexp_test
 
-import "testing"
+import (
+	"testing"
+	"time"
+
+	"github.com/mkungla/bexp/v2"
+)
 
 type benchResource struct {
 	Pattern string
@@ -13,26 +18,33 @@ type benchResource struct {
 	Res2    string
 }
 
-var benchdata = []benchResource{
-	{"data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
-	{"{a{1,2}b}", "{a1b}", "{a2b}", ""},
-	{"/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
-	{"{a,b}x{1,2}", "ax1", "ax2", "bx1"},
-	{"{a,{{{b}}}}", "a", "{{{b}}}", ""},
-	{"/usr/local/src/bash/{old,new,dist,bugs}", "/usr/local/src/bash/old", "/usr/local/src/bash/new", "/usr/local/src/bash/dist"},
-	{"a{b,c,}", "ab", "ac", "a"},
-	{"{,,,}", "", "", ""},
-	{"{}", "{}", "", ""},
-	{"a,,b", "a,,b", "", ""},
-	{",a", ",a", "", ""},
-	{braceexpansion, braceexpansion, "", ""},
-}
-
 func BenchmarkParse(b *testing.B) {
+	var benchdata = []benchResource{
+		{"data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
+		{"{a{1,2}b}", "{a1b}", "{a2b}", ""},
+		{"/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
+		{"{a,b}x{1,2}", "ax1", "ax2", "bx1"},
+		{"{a,{{{b}}}}", "a", "{{{b}}}", ""},
+		{
+			"/usr/local/src/bash/{old,new,dist,bugs}",
+			"/usr/local/src/bash/old",
+			"/usr/local/src/bash/new",
+			"/usr/local/src/bash/dist",
+		},
+		{"a{b,c,}", "ab", "ac", "a"},
+		{"{,,,}", "", "", ""},
+		{"{}", "{}", "", ""},
+		{"a,,b", "a,,b", "", ""},
+		{",a", ",a", "", ""},
+	}
+
 	for _, test := range benchdata {
 		b.Run(test.Pattern, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				v := Parse(test.Pattern)
+				if i == 1 {
+					time.Sleep(100 * time.Nanosecond)
+				}
+				v := bexp.Parse(test.Pattern)
 				l := len(v)
 				if l > 0 && v[0] != test.Res0 {
 					b.Errorf("Unexpected result: expected: %q  got: %q from: %v", test.Res0, v[0], v)
