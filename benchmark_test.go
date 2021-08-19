@@ -5,61 +5,103 @@
 package bexp_test
 
 import (
+	"fmt"
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/mkungla/bexp/v2"
+	"github.com/stretchr/testify/assert"
 )
 
-type benchResource struct {
-	Name    string
+type benchTest struct {
 	Pattern string
 	Res0    string
 	Res1    string
 	Res2    string
 }
 
-func BenchmarkParse(b *testing.B) {
-	var benchdata = []benchResource{
-		{"fs-path", "data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
-		{"fs-path", "/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
-		{
-			"fs-path",
-			"/usr/local/src/bash/{old,new,dist,bugs}",
-			"/usr/local/src/bash/old",
-			"/usr/local/src/bash/new",
-			"/usr/local/src/bash/dist",
+type benchTestGroup struct {
+	Name  string
+	Tests []benchTest
+}
+
+var benchdata = []benchTestGroup{
+	{
+		"fs-path",
+		[]benchTest{
+			{
+				"data/{P1/{10..19},P2/{20..29},P3/{30..39}}",
+				"data/P1/10", "data/P1/11", "data/P1/12",
+			},
+			{
+				"/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}",
+				"/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*",
+			},
+			{
+				"/usr/local/src/bash/{old,new,dist,bugs}",
+				"/usr/local/src/bash/old",
+				"/usr/local/src/bash/new",
+				"/usr/local/src/bash/dist",
+			},
 		},
-		{"string", "{a,b}x{1,2}", "ax1", "ax2", "bx1"},
-		{"string", "{a,{{{b}}}}", "a", "{{{b}}}", ""},
-		{"string", "{a{1,2}b}", "{a1b}", "{a2b}", ""},
-		{"string", "a{b,c,}", "ab", "ac", "a"},
-		{"string", "{,,,}", "", "", ""},
-		{"string", "{}", "{}", "", ""},
-		{"string", "a,,b", "a,,b", "", ""},
-		{"string", ",a", ",a", "", ""},
+	},
+	{
+		"string",
+		[]benchTest{
+			{"{a,b}x{1,2}", "ax1", "ax2", "bx1"},
+			{"{a,{{{b}}}}", "a", "{{{b}}}", ""},
+			{"{a{1,2}b}", "{a1b}", "{a2b}", ""},
+			{"a{b,c,}", "ab", "ac", "a"},
+			{"{,,,}", "", "", ""},
+			{"{}", "{}", "", ""},
+			{"a,,b", "a,,b", "", ""},
+			{",a", ",a", "", ""},
+		},
+	},
+}
+
+// TestBenchData tests bench data so that we dont need to validate results when benchmarking.
+func TestBenchData(t *testing.T) {
+	checkbash := true
+	if _, err := exec.LookPath("bash"); err != nil {
+		checkbash = false
 	}
-
-	for _, test := range benchdata {
-
-		name := test.Name + "("
-		if len(test.Pattern) > 10 {
-			name += test.Pattern[0:10] + ")"
-		} else {
-			name += test.Pattern + ")"
-		}
-		b.Run(name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				v := bexp.Parse(test.Pattern)
-				l := len(v)
-				if l > 0 && v[0] != test.Res0 {
-					b.Errorf("Unexpected result: expected: %q  got: %q from: %v", test.Res0, v[0], v)
+	for _, group := range benchdata {
+		t.Run(group.Name, func(t *testing.T) {
+			t.Parallel()
+			for _, test := range group.Tests {
+				v, _ := bexp.ParseValid(test.Pattern)
+				if len(v) > 0 {
+					assert.Equal(t, test.Res0, v[0])
 				}
-				if l > 1 && v[1] != test.Res1 {
-					b.Error("Unexpected result: " + v[1])
+				if len(v) > 1 {
+					assert.Equal(t, test.Res1, v[1])
 				}
-				if l > 2 && v[2] != test.Res2 {
-					b.Error("Unexpected result: " + v[2])
+				if len(v) > 2 {
+					assert.Equal(t, test.Res2, v[2])
 				}
+				if checkbash {
+					out, err := exec.Command("bash", "-c", fmt.Sprintf("echo %s", test.Pattern)).Output()
+					assert.NoError(t, err)
+					res := strings.Fields(string(out))
+					assert.False(t, len(test.Res0) > 0 && len(res) == 0, "bash -c returned empty result expecting: ", test.Res0)
+					assert.False(t, len(test.Res1) > 0 && len(res) < 2, "bash -c less than 2 matches")
+					assert.False(t, len(test.Res2) > 0 && len(res) < 3, "bash -c less than 3 matches")
+				}
+			}
+		})
+	}
+}
+func BenchmarkParseValid(b *testing.B) {
+	for _, group := range benchdata {
+		b.Run(group.Name, func(b *testing.B) {
+			for _, test := range group.Tests {
+				b.Run(test.Pattern, func(b *testing.B) {
+					for i := 0; i < b.N; i++ {
+						bexp.ParseValid(test.Pattern)
+					}
+				})
 			}
 		})
 	}

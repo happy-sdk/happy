@@ -77,8 +77,8 @@ var testData = []testResource{
 	{"a{},b}c", "a}c", "abc", ""},
 }
 
-// ensure that test data is valid
-func TestTestData(t *testing.T) {
+// TestTestDataWithBash ensures that test data is valid and expecations match bash output.
+func TestTestDataWithBash(t *testing.T) {
 	if _, err := exec.LookPath("bash"); err != nil {
 		t.Log("bash not found")
 		return
