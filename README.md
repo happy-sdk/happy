@@ -6,13 +6,16 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 
 ![license](https://img.shields.io/github/license/mkungla/bexp)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp/v2)](https://pkg.go.dev/github.com/mkungla/bexp/v2)
+![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
+
 ![tests](https://github.com/mkungla/bexp/workflows/tests/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/bexp)](https://goreportcard.com/report/github.com/mkungla/bexp)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
-![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)
-![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
-[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
+[![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)](https://mkungla.github.io/bexp/benchmark/)
 <!-- ![GitHub all releases](https://img.shields.io/github/downloads/mkungla/bexp/total) -->
+
+
 
 - [Usage](#usage)
 - [Get string slice](#get-string-slice)
