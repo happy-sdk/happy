@@ -60,6 +60,23 @@ var benchdata = []benchTestGroup{
 			{",a", ",a", "", ""},
 		},
 	},
+	{
+		"url",
+		[]benchTest{
+			{
+				"https://tile.openstreetmap.org/1/{10..30}/{10..30}.png",
+				"https://tile.openstreetmap.org/1/10/10.png",
+				"https://tile.openstreetmap.org/1/10/11.png",
+				"https://tile.openstreetmap.org/1/10/12.png",
+			},
+			{
+				"https://example.cdn/{image-series-{a,b}-{1,2}.png",
+				"https://example.cdn/{image-series-a-1.png",
+				"https://example.cdn/{image-series-a-2.png",
+				"https://example.cdn/{image-series-b-1.png",
+			},
+		},
+	},
 }
 
 // TestBenchData tests bench data so that we dont need to validate results when benchmarking.
