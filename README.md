@@ -114,6 +114,9 @@ func main() {
 
 ## Expand URLS
 
+The example shows how to create Openstreetmap tiles  
+around the desired latitude and longitude coordinates.
+
 ```go
 package main
 
