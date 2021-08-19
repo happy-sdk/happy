@@ -11,6 +11,7 @@ import (
 )
 
 type benchResource struct {
+	Name    string
 	Pattern string
 	Res0    string
 	Res1    string
@@ -19,26 +20,34 @@ type benchResource struct {
 
 func BenchmarkParse(b *testing.B) {
 	var benchdata = []benchResource{
-		{"data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
-		{"{a{1,2}b}", "{a1b}", "{a2b}", ""},
-		{"/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
-		{"{a,b}x{1,2}", "ax1", "ax2", "bx1"},
-		{"{a,{{{b}}}}", "a", "{{{b}}}", ""},
+		{"fs-path", "data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
+		{"fs-path", "/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
 		{
+			"fs-path",
 			"/usr/local/src/bash/{old,new,dist,bugs}",
 			"/usr/local/src/bash/old",
 			"/usr/local/src/bash/new",
 			"/usr/local/src/bash/dist",
 		},
-		{"a{b,c,}", "ab", "ac", "a"},
-		{"{,,,}", "", "", ""},
-		{"{}", "{}", "", ""},
-		{"a,,b", "a,,b", "", ""},
-		{",a", ",a", "", ""},
+		{"string", "{a,b}x{1,2}", "ax1", "ax2", "bx1"},
+		{"string", "{a,{{{b}}}}", "a", "{{{b}}}", ""},
+		{"string", "{a{1,2}b}", "{a1b}", "{a2b}", ""},
+		{"string", "a{b,c,}", "ab", "ac", "a"},
+		{"string", "{,,,}", "", "", ""},
+		{"string", "{}", "{}", "", ""},
+		{"string", "a,,b", "a,,b", "", ""},
+		{"string", ",a", ",a", "", ""},
 	}
 
 	for _, test := range benchdata {
-		b.Run(test.Pattern, func(b *testing.B) {
+
+		name := test.Name + "("
+		if len(test.Pattern) > 10 {
+			name += test.Pattern[10:] + ")"
+		} else {
+			name += test.Pattern + ")"
+		}
+		b.Run(name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				v := bexp.Parse(test.Pattern)
 				l := len(v)
