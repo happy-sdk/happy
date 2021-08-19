@@ -26,7 +26,7 @@ jobs:
           # What benchmark tool the output.txt came from
           tool: 'go'
           # Where the output from the benchmark tool is stored
-          output-file-path: output.txt
+          output-file-path: .github/bench.result
           # Workflow will fail when an alert happens
           fail-on-alert: true
           # GitHub API token to make a commit comment
