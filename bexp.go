@@ -335,11 +335,11 @@ func gte(i int64, y int64) bool {
 }
 
 func numeric(str string) int64 {
-	v, err := strconv.ParseInt(str, 10, 64)
+	v, err := strconv.Atoi(str)
 	if err != nil {
 		return int64(str[0])
 	}
-	return v
+	return int64(v)
 }
 
 func escapeBraces(str string) string {
@@ -358,6 +358,8 @@ func unescapeBraces(str string) string {
 					sliceAndJoin(str, "\\", escSlash), "{", escOpen), "}", escClose), ",", escComma), ".", escPeriod)
 }
 
+// sliceAndJoin replaces separators
+// return strings.Join(strings.Split(str, slice), join).
 func sliceAndJoin(str string, join string, slice string) string {
-	return strings.Join(strings.Split(str, slice), join)
+	return strings.ReplaceAll(str, slice, join)
 }

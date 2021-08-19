@@ -33,7 +33,7 @@ func BenchmarkIsPadded(b *testing.B) {
 			}
 		}
 	})
-	b.Run("isPaddedRegexp", func(b *testing.B) {
+	b.Run("GO/isPaddedRegexp", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, test := range tests {
 				res := regexp.MustCompile(`^-?0\d`).Match([]byte(test.in))
