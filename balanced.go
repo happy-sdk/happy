@@ -10,7 +10,7 @@ import (
 )
 
 // BalancedResult is returned for the first non-nested matching pair
-// of a and b in str
+// of a and b in str.
 type BalancedResult struct {
 	Valid bool   // is BalancedResult valid
 	Start int    // the index of the first match of a
@@ -20,7 +20,7 @@ type BalancedResult struct {
 	Post  string // the postscript, a and b not included
 }
 
-// Balanced returns first non-nested matching pair of a and b in str
+// Balanced returns first non-nested matching pair of a and b in str.
 func Balanced(a interface{}, b interface{}, str string) BalancedResult {
 	var aVal []byte
 	var bVal []byte
@@ -37,65 +37,80 @@ func Balanced(a interface{}, b interface{}, str string) BalancedResult {
 	return Range(aVal, bVal, str)
 }
 
-// Range retruns the first non-nested matching pair of a and b in str
+// Range retruns the first non-nested matching pair of a and b in str.
 func Range(a []byte, b []byte, str string) BalancedResult {
-	var result []int
-	ai := -1
+	var (
+		result []int
+		ai     int = -1
+		bi     int = -1
+	)
+
 	if a != nil {
 		ai = strings.Index(str, string(a))
 	}
-	bi := -1
+
 	if b != nil {
 		bi = strings.Index(str[ai+1:], string(b))
 	}
 	if bi != -1 {
 		bi += ai + 1
 	}
-	i := ai
 	if ai >= 0 && bi > 0 {
-		begs := []int{}
-		var right int
-		left := len(str)
-		for i < len(str) && i >= 0 && result == nil {
-			if i == ai {
-				begs = append(begs, i)
-				ai = strings.Index(str[i+1:], string(a))
-				if ai != -1 {
-					ai += i + 1
-				}
-			} else if len(begs) == 1 {
-				result = []int{
-					begs[len(begs)-1],
-					bi,
-				}
-				begs = begs[:len(begs)-1]
-			} else {
-				beg := begs[len(begs)-1]
-				begs = begs[:len(begs)-1]
-				if beg < left {
-					left = beg
-					right = bi
-				}
-				bi = strings.Index(str[i+1:], string(b))
-				if bi != -1 {
-					bi += i + 1
-				}
-			}
-			if ai < bi && ai >= 0 {
-				i = ai
-			} else {
-				i = bi
-			}
-		}
-		if len(begs) > 0 {
-			result = []int{
-				left,
-				right,
-			}
-		}
+		result = doRange(a, b, ai, bi, str)
 	}
 
 	return composeBalancedResult(a, b, str, result)
+}
+
+func doRange(a []byte, b []byte, ai, bi int, str string) []int {
+
+	var (
+		result []int
+		begs   []int
+
+		right int
+		left  int
+		i     int = ai
+	)
+	left = len(str)
+	for i < len(str) && i >= 0 && result == nil {
+		if i == ai {
+			begs = append(begs, i)
+			ai = strings.Index(str[i+1:], string(a))
+			if ai != -1 {
+				ai += i + 1
+			}
+		} else if len(begs) == 1 {
+			result = []int{
+				begs[len(begs)-1],
+				bi,
+			}
+			begs = begs[:len(begs)-1]
+		} else {
+			beg := begs[len(begs)-1]
+			begs = begs[:len(begs)-1]
+			if beg < left {
+				left = beg
+				right = bi
+			}
+			bi = strings.Index(str[i+1:], string(b))
+			if bi != -1 {
+				bi += i + 1
+			}
+		}
+		if ai < bi && ai >= 0 {
+			i = ai
+		} else {
+			i = bi
+		}
+	}
+	if len(begs) > 0 {
+		result = []int{
+			left,
+			right,
+		}
+	}
+	return result
 }
 
 func maybeMatch(reg *regexp.Regexp, str []byte) []byte {

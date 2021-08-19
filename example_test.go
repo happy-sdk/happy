@@ -12,6 +12,7 @@ import (
 	"github.com/mkungla/bexp/v2"
 )
 
+//nolint: lll
 func ExampleParse() {
 	var v []string
 
@@ -60,14 +61,12 @@ func ExampleParse() {
 	// [A B C a b c]
 	// [ppp pppconfig pppoe pppoeconf]
 	// [data/P1/10 data/P1/11 data/P1/12 data/P1/13 data/P1/14 data/P1/15 data/P1/16 data/P1/17 data/P1/18 data/P1/19 data/P2/20 data/P2/21 data/P2/22 data/P2/23 data/P2/24 data/P2/25 data/P2/26 data/P2/27 data/P2/28 data/P2/29 data/P3/30 data/P3/31 data/P3/32 data/P3/33 data/P3/34 data/P3/35 data/P3/36 data/P3/37 data/P3/38 data/P3/39]
-
 }
 
 func ExampleParse_osExpand() {
 	const treeExp = "$MY_ROOT_DIR/dir{1..3}/{subdir1,subdir2}"
 	mapper := func(varName string) string {
-		switch varName {
-		case "MY_ROOT_DIR":
+		if varName == "MY_ROOT_DIR" {
 			return "/my_root"
 		}
 		return ""

@@ -23,34 +23,44 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
-	escSlash  = "\u0000SLASH" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escOpen   = "\u0000OPEN" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escClose  = "\u0000CLOSE" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escComma  = "\u0000COMMA" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-	escPeriod = "\u0000PERIOD" + fmt.Sprintf("%f", rand.Float32()) + "\u0000"
-
-	// ErrEmptyResult representing empty result by parser
+	// ErrEmptyResult representing empty result by parser.
 	ErrEmptyResult = errors.New("result is empty")
 	// ErrUnchangedBraceExpansion for any incorrectly formed brace expansion
-	// where input string is left unchanged
+	// where input string is left unchanged.
 	ErrUnchangedBraceExpansion = errors.New("brace expansion left unchanged")
+
+	//nolint: gochecknoglobals
+	escSlash, escOpen, escClose, escComma, escPeriod string
 )
 
-// BraceExpansion represents bash style brace expansion
+func init() {
+	uqts := fmt.Sprintf("%d\u0000", time.Now().Nanosecond())
+	escSlash = "\u0000SLASH" + uqts
+	escOpen = "\u0000OPEN" + uqts
+	escClose = "\u0000CLOSE" + uqts
+	escComma = "\u0000COMMA" + uqts
+	escPeriod = "\u0000PERIOD" + uqts
+}
+
+// BraceExpansion represents bash style brace expansion.
 type BraceExpansion []string
 
-// Parse string expresion into BraceExpansion result
+// Parse string expresion into BraceExpansion result.
 func Parse(str string) BraceExpansion {
 	if str == "" {
 		return []string{""} // Any incorrectly formed brace expansion is left unchanged.
+	}
+	// escape a leading {} for case {},a}b / a{},b}c
+	if strings.HasPrefix(str, "{}") {
+		str = "\\{\\}" + str[2:]
 	}
 	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
 }
@@ -59,7 +69,7 @@ func Parse(str string) BraceExpansion {
 // 1. ErrEmptyResult when provided string is empty
 // 2. ErrUnchangedBraceExpansion when provided string was left unchanged
 // Result will always be `BraceExpansion` with min len 1 to satisfy
-// "Any incorrectly formed brace expansion is left unchanged."
+// "Any incorrectly formed brace expansion is left unchanged.".
 func ParseValid(str string) (BraceExpansion, error) {
 	res := Parse(str)
 	if len(res) == 1 {
@@ -77,7 +87,7 @@ func ParseValid(str string) (BraceExpansion, error) {
 // MkdirAll calls os.MkdirAll on each math from provided string
 // to create a directory tree from brace expansion.
 // Error can be ErrEmptyResult if parsing provided str results no paths
-// or first error of os.MkdirAll
+// or first error of os.MkdirAll.
 func MkdirAll(str string, perm os.FileMode) error {
 	if p := Parse(str); p.Err() == nil {
 		for _, dir := range p {
@@ -89,7 +99,7 @@ func MkdirAll(str string, perm os.FileMode) error {
 	return nil
 }
 
-// String calls strings.Join(b, " ") and returns resulting string
+// String calls strings.Join(b, " ") and returns resulting string.
 func (b BraceExpansion) String() string {
 	return strings.Join(b, " ")
 }
@@ -109,7 +119,7 @@ func (b BraceExpansion) Err() (err error) {
 	return
 }
 
-// Result is convience to get result as string slice
+// Result is convience to get result as string slice.
 func (b BraceExpansion) Result() []string {
 	return b
 }
@@ -151,10 +161,10 @@ func expand(str string, isTop bool) []string {
 	isOptions := regexp.MustCompile(`^(.*,)+(.+)?$`).Match([]byte(m.Body))
 	if !isSequence && !isOptions {
 		// UseCase???
-		// if regexp.MustCompile(`,.*\}`).Match([]byte(m.Post)) {
-		// 	str = m.Pre + "{" + m.Body + escClose + m.Post
-		// 	return expand(str, false)
-		// }
+		if regexp.MustCompile(`,.*\}`).Match([]byte(m.Post)) {
+			str = m.Pre + "{" + m.Body + escClose + m.Post
+			return expand(str, false)
+		}
 		return []string{str}
 	}
 	var n []string
@@ -164,19 +174,19 @@ func expand(str string, isTop bool) []string {
 	} else {
 		n = parseCommaParts(m.Body)
 		if len(n) == 1 {
-			//// x{{a,b}}y ==> x{a}y x{b}y
+			// x{{a,b}}y ==> x{a}y x{b}y
 			n = mapArray(expand(n[0], false), embrace)
 			// UseCase???
-			// if len(n) == 1 {
-			// 	if len(m.Post) > 0 {
-			// 		post = expand(m.Post, false)
-			// 	} else {
-			// 		post = []string{""}
-			// 	}
-			// 	return mapArray(post, func(s string) string {
-			// 		return m.Pre + n[0] + s
-			// 	})
-			// }
+			if len(n) == 1 {
+				if len(m.Post) > 0 {
+					post = expand(m.Post, false)
+				} else {
+					post = []string{""}
+				}
+				return mapArray(post, func(s string) string {
+					return m.Pre + n[0] + s
+				})
+			}
 		}
 	}
 	pre := m.Pre
@@ -307,7 +317,6 @@ func escapeBraces(str string) string {
 
 func unescapeBraces(str string) string {
 	return sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(sliceAndJoin(str, "\\", escSlash), "{", escOpen), "}", escClose), ",", escComma), ".", escPeriod)
-
 }
 
 func sliceAndJoin(str string, join string, slice string) string {

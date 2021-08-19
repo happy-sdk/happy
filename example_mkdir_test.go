@@ -26,7 +26,8 @@ func ExampleMkdirAll() {
 	defer os.RemoveAll(rootdir)
 
 	if err := bexp.MkdirAll(rootdir+"/path/unmodified", 0750); err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	err := filepath.Walk(rootdir,
@@ -38,10 +39,9 @@ func ExampleMkdirAll() {
 			return nil
 		})
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
-
-	defer os.RemoveAll(rootdir)
 
 	// Output:
 	// /tmp/bexp

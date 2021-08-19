@@ -5,15 +5,13 @@
 package bexp
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-)
-
-const (
-	braceexpansion = "braceexpansion"
 )
 
 type testResource struct {
@@ -23,6 +21,7 @@ type testResource struct {
 	Res2    string
 }
 
+//nolint: gochecknoglobals
 var testData = []testResource{
 	// // PATHS
 	{"data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P1/12"},
@@ -30,14 +29,18 @@ var testData = []testResource{
 	{"data/{-3..-1}", "data/-3", "data/-2", "data/-1"},
 	{"data/{-1..1}", "data/-1", "data/0", "data/1"},
 	{"/usr/{ucb/{ex,edit},lib/{ex?.?*,how_ex}}", "/usr/ucb/ex", "/usr/ucb/edit", "/usr/lib/ex?.?*"},
-	{"/usr/local/src/bash/{old,new,dist,bugs}", "/usr/local/src/bash/old", "/usr/local/src/bash/new", "/usr/local/src/bash/dist"},
+	{
+		"/usr/local/src/bash/{old,new,dist,bugs}",
+		"/usr/local/src/bash/old",
+		"/usr/local/src/bash/new",
+		"/usr/local/src/bash/dist",
+	},
 	{"{abc{def}}ghi", "{abc{def}}ghi", "", ""},
 	{"{,}", "", "", ""},
 	{"{,,}", "", "", ""},
 	{"{,,,}", "", "", ""},
 	{"\\\\", "\\", "", ""},
 	{"-", "-", "", ""},
-	{braceexpansion, braceexpansion, "", ""},
 	{"{a,b}{1,2}", "a1", "a2", "b1"},
 	{"a{d,c,b}e", "ade", "ace", "abe"},
 	{"x{{a,b,c}}y", "x{a}y", "x{b}y", "x{c}y"},
@@ -69,6 +72,39 @@ var testData = []testResource{
 	{"{a{1,2}b}", "{a1b}", "{a2b}", ""},
 	{"{0,1,2}", "0", "1", "2"},
 	{"{-0,-1,-2}", "-0", "-1", "-2"},
+	{"{},a}b", "{},a}b", "", ""},
+	{"{},abc", "{},abc", "", ""},
+	{"a{},b}c", "a}c", "abc", ""},
+}
+
+// ensure that test data is valid
+func TestTestData(t *testing.T) {
+	if _, err := exec.LookPath("bash"); err != nil {
+		t.Log("bash not found")
+		return
+	}
+	for _, test := range testData {
+		t.Run(test.Pattern, func(t *testing.T) {
+			out, err := exec.Command("bash", "-c", fmt.Sprintf("echo %s", test.Pattern)).Output()
+			assert.NoError(t, err)
+			res := strings.Fields(string(out))
+			assert.False(t, len(test.Res0) > 0 && len(res) == 0, "bash -c returned empty result expecting: ", test.Res0)
+
+			assert.False(t, len(test.Res1) > 0 && len(res) < 2, "bash -c less than 2 matches")
+			assert.False(t, len(test.Res2) > 0 && len(res) < 3, "bash -c less than 3 matches")
+
+			if len(res) > 0 {
+				assert.Equal(t, test.Res0, res[0])
+			}
+			if len(res) > 1 {
+				assert.Equal(t, test.Res1, res[1])
+			}
+			if len(res) > 2 {
+				assert.Equal(t, test.Res2, res[2])
+			}
+		})
+	}
+
 }
 
 func TestParse(t *testing.T) {
@@ -154,8 +190,16 @@ func TestNegativeIncrement(t *testing.T) {
 
 func TestNested(t *testing.T) {
 	assert.Equal(t, BraceExpansion{"a", "b1", "b2", "b3", "c"}, Parse("{a,b{1..3},c}"))
-	assert.Equal(t, BraceExpansion(strings.Split("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "")), Parse("{{A..Z},{a..z}}"))
-	assert.Equal(t, BraceExpansion{"ppp", "pppconfig", "pppoe", "pppoeconf"}, Parse("ppp{,config,oe{,conf}}"))
+	assert.Equal(t, BraceExpansion(strings.Split(
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+		"",
+	)), Parse("{{A..Z},{a..z}}"))
+	assert.Equal(t, BraceExpansion{
+		"ppp",
+		"pppconfig",
+		"pppoe",
+		"pppoeconf",
+	}, Parse("ppp{,config,oe{,conf}}"))
 }
 
 func TestOrder(t *testing.T) {
@@ -172,16 +216,16 @@ func TestSameType(t *testing.T) {
 }
 
 func TestSequence(t *testing.T) {
-	//Numeric
+	// Numeric
 	assert.Equal(t, BraceExpansion{"a1b2c", "a1b3c", "a2b2c", "a2b3c"}, Parse("a{1..2}b{2..3}c"))
 	assert.Equal(t, BraceExpansion{"12", "13", "22", "23"}, Parse("{1..2}{2..3}"))
-	//Numeric with step count
+	// Numeric with step count
 	assert.Equal(t, BraceExpansion{"0", "2", "4", "6", "8"}, Parse("{0..8..2}"))
 	assert.Equal(t, BraceExpansion{"1", "3", "5", "7"}, Parse("{1..8..2}"))
-	//Numeric with negative
+	// Numeric with negative
 	assert.Equal(t, BraceExpansion{"3", "2", "1", "0", "-1", "-2"}, Parse("{3..-2}"))
 
-	//Alphabetic
+	// Alphabetic
 	assert.Equal(t, BraceExpansion{"a", "c", "e", "g", "i", "k"}, Parse("{a..k..2}"))
 	assert.Equal(t, BraceExpansion{"b", "d", "f", "h", "j"}, Parse("{b..k..2}"))
 }
