@@ -342,7 +342,19 @@ func numeric(str string) int64 {
 	return int64(v)
 }
 
+// escapeBraces is cheaper strings.NewReplacer to escape braces
+//
+// var escapeBraces = strings.NewReplacer(
+// 	"\\\\", escSlash,
+// 	"\\{", escOpen,
+// 	"\\}", escClose,
+// 	"\\,", escComma,
+// 	"\\.", escPeriod,
+// )
+//
+// escapeBraces.Replace(str)
 func escapeBraces(str string) string {
+
 	return sliceAndJoin(
 		sliceAndJoin(
 			sliceAndJoin(
@@ -350,6 +362,14 @@ func escapeBraces(str string) string {
 					sliceAndJoin(str, escSlash, "\\\\"), escOpen, "\\{"), escClose, "\\}"), escComma, "\\,"), escPeriod, "\\.")
 }
 
+// unescapeBraces is cheaper strings.NewReplacer to escape braces
+// var unescapeBraces = strings.NewReplacer(
+// 	escSlash, "",
+// 	escOpen, "{",
+// 	escClose, "}",
+// 	escComma, ",",
+// 	escPeriod, ".",
+// )
 func unescapeBraces(str string) string {
 	return sliceAndJoin(
 		sliceAndJoin(
