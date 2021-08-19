@@ -352,9 +352,8 @@ func numeric(str string) int64 {
 // 	"\\.", escPeriod,
 // )
 //
-// escapeBraces.Replace(str)
+// escapeBraces.Replace(str).
 func escapeBraces(str string) string {
-
 	return sliceAndJoin(
 		sliceAndJoin(
 			sliceAndJoin(
@@ -369,7 +368,7 @@ func escapeBraces(str string) string {
 // 	escClose, "}",
 // 	escComma, ",",
 // 	escPeriod, ".",
-// )
+// ).
 func unescapeBraces(str string) string {
 	return sliceAndJoin(
 		sliceAndJoin(
