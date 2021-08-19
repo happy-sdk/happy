@@ -236,6 +236,10 @@ func TestSequence(t *testing.T) {
 	// Alphabetic
 	assert.Equal(t, BraceExpansion{"a", "c", "e", "g", "i", "k"}, Parse("{a..k..2}"))
 	assert.Equal(t, BraceExpansion{"b", "d", "f", "h", "j"}, Parse("{b..k..2}"))
+	assert.Equal(t, BraceExpansion{"1", "4", "7", "10"}, Parse("{1..10..-3}"))
+	assert.Equal(t, BraceExpansion{"1", "4", "7", "10"}, Parse("{1..10..3}"))
+	assert.Equal(t, BraceExpansion{"1", "5", "9"}, Parse("{1..10..4}"))
+	assert.Equal(t, BraceExpansion{"1", "5", "9"}, Parse("{1..10..04}"))
 }
 
 func TestString(t *testing.T) {

@@ -186,6 +186,11 @@ func expand(str string, isTop bool) []string {
 
 	if isSequence {
 		n = strings.Split(m.Body, `..`)
+		if len(n) == 3 {
+			// {1..10..04} leading 0 should be removed
+			n[2] = strings.TrimLeft(n[2], "0")
+		}
+
 		n2 = expandSequence(n, isAlphaSequence)
 	} else {
 		n = parseCommaParts(m.Body)
