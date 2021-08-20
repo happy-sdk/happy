@@ -33,10 +33,12 @@ func BenchmarkIsPadded(b *testing.B) {
 			}
 		}
 	})
+
+	re := regexp.MustCompile(`^-?0\d`)
 	b.Run("GO/isPaddedRegexp", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, test := range tests {
-				res := regexp.MustCompile(`^-?0\d`).Match([]byte(test.in))
+				res := re.Match([]byte(test.in))
 				if res != test.want {
 					b.Errorf("expected %t got %t", !test.want, test.want)
 				}
