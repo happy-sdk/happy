@@ -283,6 +283,8 @@ func TestIsPadded(t *testing.T) {
 		{"string", false},
 		{"-string", false},
 		{"-", false},
+		{"1", false},
+		{"-1", false},
 	}
 	for _, test := range tests {
 		assert.Equal(t, test.want, isPadded(test.in))
