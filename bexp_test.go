@@ -83,6 +83,9 @@ var testData = []testResource{
 	{"{},a}b", "{},a}b", "", ""},
 	{"{},abc", "{},abc", "", ""},
 	{"a{},b}c", "a}c", "abc", ""},
+	{"-", "-", "", ""},
+	{"+", "+", "", ""},
+	{"$", "$", "", ""},
 }
 
 // TestTestDataWithBash ensures that test data is valid and expecations match bash output.
@@ -279,6 +282,7 @@ func TestIsPadded(t *testing.T) {
 		{"-0string", false},
 		{"string", false},
 		{"-string", false},
+		{"-", false},
 	}
 	for _, test := range tests {
 		assert.Equal(t, test.want, isPadded(test.in))
