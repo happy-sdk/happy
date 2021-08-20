@@ -55,7 +55,7 @@ type BraceExpansion []string
 // Parse string expresion into BraceExpansion result.
 func Parse(str string) BraceExpansion {
 	if str == "" {
-		return BraceExpansion{""}
+		return []string{""}
 	}
 	// escape a leading {} for case {},a}b / a{},b}c
 	if strings.HasPrefix(str, "{}") {
@@ -124,7 +124,7 @@ func (b BraceExpansion) Result() []string {
 	return b
 }
 
-func parseCommaParts(str string) BraceExpansion {
+func parseCommaParts(str string) []string {
 	if str == "" {
 		return []string{""}
 	}
@@ -208,13 +208,9 @@ func expand(str string, isTop bool) []string {
 		n2 = expandSequence(n, isAlphaSequence)
 	} else {
 		n = parseCommaParts(m.Body)
+
 		if len(n) == 1 {
 			n = mapArray(expand(n[0], false), embrace)
-			if len(n) == 1 {
-				return mapArray(post, func(s string) string {
-					return m.Pre + n[0] + s
-				})
-			}
 		}
 		n2 = concatMap(n, func(el string) []string { return expand(el, false) })
 	}

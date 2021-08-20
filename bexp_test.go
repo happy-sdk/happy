@@ -86,6 +86,8 @@ var testData = []testResource{
 	{"-", "-", "", ""},
 	{"+", "+", "", ""},
 	{"$", "$", "", ""},
+	{"{2{,}}", "{2}", "{2}", ""},
+	{"bb{2{,}}bb{{..,}}", "bb{2}bb{..}", "bb{2}bb{}", "bb{2}bb{..}"},
 }
 
 // TestTestDataWithBash ensures that test data is valid and expecations match bash output.
