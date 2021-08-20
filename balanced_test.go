@@ -105,18 +105,7 @@ func TestBalanced(t *testing.T) {
 
 	regStart := regexp.MustCompile(`\{`)
 	regEnd := regexp.MustCompile(`\}`)
-	assert.Equal(t, BalancedResult{}, Balanced(regStart, regEnd, "nope"))
-
-	regStart = regexp.MustCompile(`\s+\{\s+`)
-	regEnd = regexp.MustCompile(`\s+\}\s+`)
-	assert.Equal(t, BalancedResult{
-		Valid: true,
-		Start: 3,
-		End:   17,
-		Pre:   "pre",
-		Body:  "in{nest}",
-		Post:  "post",
-	}, Balanced(regStart, regEnd, "pre  {   in{nest}   }  post"))
+	assert.Equal(t, BalancedResult{}, Balanced(regStart.String(), regEnd.String(), "nope"))
 
 	assert.Equal(t, BalancedResult{}, Balanced("{", "}", "nope"))
 }

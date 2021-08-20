@@ -5,7 +5,6 @@
 package bexp
 
 import (
-	"regexp"
 	"strings"
 )
 
@@ -21,36 +20,24 @@ type BalancedResult struct {
 }
 
 // Balanced returns first non-nested matching pair of a and b in str.
-func Balanced(a interface{}, b interface{}, str string) BalancedResult {
-	var aVal []byte
-	var bVal []byte
-	if reg, ok := a.(*regexp.Regexp); ok {
-		aVal = maybeMatch(reg, []byte(str))
-	} else {
-		aVal = []byte(a.(string))
-	}
-	if reg, ok := b.(*regexp.Regexp); ok {
-		bVal = maybeMatch(reg, []byte(str))
-	} else {
-		bVal = []byte(b.(string))
-	}
-	return Range(aVal, bVal, str)
+func Balanced(a, b string, str string) BalancedResult {
+	return Range(a, b, str)
 }
 
 // Range retruns the first non-nested matching pair of a and b in str.
-func Range(a []byte, b []byte, str string) BalancedResult {
+func Range(a, b string, str string) BalancedResult {
 	var (
 		result []int
 		ai     = -1
 		bi     = -1
 	)
 
-	if a != nil {
-		ai = strings.Index(str, string(a))
+	if len(a) > 0 {
+		ai = strings.Index(str, a)
 	}
 
-	if b != nil {
-		bi = strings.Index(str[ai+1:], string(b))
+	if len(b) > 0 {
+		bi = strings.Index(str[ai+1:], b)
 	}
 	if bi != -1 {
 		bi += ai + 1
@@ -62,7 +49,7 @@ func Range(a []byte, b []byte, str string) BalancedResult {
 	return composeBalancedResult(a, b, str, result)
 }
 
-func doRange(a []byte, b []byte, ai, bi int, str string) []int {
+func doRange(a string, b string, ai, bi int, str string) []int {
 	var (
 		result []int
 		begs   []int
@@ -76,7 +63,7 @@ func doRange(a []byte, b []byte, ai, bi int, str string) []int {
 		//nolint: gocritic, nestif
 		if i == ai {
 			begs = append(begs, i)
-			ai = strings.Index(str[i+1:], string(a))
+			ai = strings.Index(str[i+1:], a)
 			if ai != -1 {
 				ai += i + 1
 			}
@@ -93,7 +80,7 @@ func doRange(a []byte, b []byte, ai, bi int, str string) []int {
 				left = beg
 				right = bi
 			}
-			bi = strings.Index(str[i+1:], string(b))
+			bi = strings.Index(str[i+1:], b)
 			if bi != -1 {
 				bi += i + 1
 			}
@@ -113,14 +100,7 @@ func doRange(a []byte, b []byte, ai, bi int, str string) []int {
 	return result
 }
 
-func maybeMatch(reg *regexp.Regexp, str []byte) []byte {
-	if v := reg.FindAll(str, 1); v != nil {
-		return v[0]
-	}
-	return nil
-}
-
-func composeBalancedResult(a []byte, b []byte, str string, result []int) (bres BalancedResult) {
+func composeBalancedResult(a string, b string, str string, result []int) (bres BalancedResult) {
 	if len(result) != 2 {
 		return
 	}
