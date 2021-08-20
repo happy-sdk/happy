@@ -1,4 +1,4 @@
-module github.com/mkungla/bexp/v2
+module github.com/mkungla/bexp/v3
 
 go 1.14
 

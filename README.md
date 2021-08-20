@@ -4,7 +4,7 @@ Go implementation of Brace Expansion mechanism to generate arbitrary strings.
 
 Implementing: [3.5.1 Brace Expansion][bash-be]
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp/v2)](https://pkg.go.dev/github.com/mkungla/bexp/v2)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp/v3)](https://pkg.go.dev/github.com/mkungla/bexp/v3)
 ![license](https://img.shields.io/github/license/mkungla/bexp)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
@@ -28,7 +28,7 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 
 ## Usage
 
-`go get github.com/mkungla/bexp/v2`
+`go get github.com/mkungla/bexp/v3`
 
 ## Get string slice
 
@@ -38,7 +38,7 @@ package main
 import (
   "fmt"
 
-  "github.com/mkungla/bexp/v2"
+  "github.com/mkungla/bexp/v3"
 )
 
 func main() {
@@ -93,7 +93,7 @@ package main
 import (
   "log"
 
-  "github.com/mkungla/bexp/v2"
+  "github.com/mkungla/bexp/v3"
 )
 
 func main() {
@@ -128,7 +128,7 @@ import (
   "log"
   "math"
 
-  "github.com/mkungla/bexp/v2"
+  "github.com/mkungla/bexp/v3"
 )
 
 func getCenterTile(lat, long float64, zoom int) (z, x, y int) {
@@ -194,7 +194,7 @@ import (
   "errors"
   "fmt"
 
-  "github.com/mkungla/bexp/v2"
+  "github.com/mkungla/bexp/v3"
 )
 
 func main() {
@@ -221,7 +221,7 @@ import (
   "fmt"
   "os"
 
-  "github.com/mkungla/bexp/v2"
+  "github.com/mkungla/bexp/v3"
 )
 
 func main() {
@@ -267,7 +267,7 @@ import (
   "fmt"
   "os"
 
-  "github.com/mkungla/bexp/v2"
+  "github.com/mkungla/bexp/v3"
 )
 
 func main() {

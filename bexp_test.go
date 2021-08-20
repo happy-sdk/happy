@@ -142,7 +142,6 @@ func TestParseValid(t *testing.T) {
 	assert.Equal(t, "", empty[0])
 
 	single, err := ParseValid("a")
-	assert.NoError(t, single.Err())
 	assert.ErrorIs(t, err, ErrUnchangedBraceExpansion)
 	assert.Equal(t, "a", single[0])
 
@@ -169,7 +168,7 @@ func TestBashExpansion(t *testing.T) {
 		lines := strings.Split(v, "\r\n")
 		cs := lines[0]
 		lines = lines[1:]
-		expected := BraceExpansion{""}
+		expected := []string{""}
 		for _, l := range lines {
 			if len(l) != 0 {
 				expected = append(expected, l[1:len(l)-1])
@@ -181,33 +180,33 @@ func TestBashExpansion(t *testing.T) {
 }
 
 func TestIgnoreDollar(t *testing.T) {
-	assert.Equal(t, BraceExpansion{"${1..3}"}, Parse("${1..3}"))
-	assert.Equal(t, BraceExpansion{"${a,b}${c,d}"}, Parse("${a,b}${c,d}"))
-	assert.Equal(t, BraceExpansion{"x${a,b}x${c,d}x"}, Parse("x${a,b}x${c,d}x"))
+	assert.Equal(t, []string{"${1..3}"}, Parse("${1..3}"))
+	assert.Equal(t, []string{"${a,b}${c,d}"}, Parse("${a,b}${c,d}"))
+	assert.Equal(t, []string{"x${a,b}x${c,d}x"}, Parse("x${a,b}x${c,d}x"))
 }
 
 func TestEmptyOption(t *testing.T) {
-	assert.Equal(t, BraceExpansion{"-v", "-v", "-v", "-v", "-v"}, Parse("-v{,,,,}"))
+	assert.Equal(t, []string{"-v", "-v", "-v", "-v", "-v"}, Parse("-v{,,,,}"))
 }
 
 func TestNegativeIncrement(t *testing.T) {
-	assert.Equal(t, BraceExpansion{"3", "2", "1"}, Parse("{3..1}"))
-	assert.Equal(t, BraceExpansion{"10", "9", "8"}, Parse("{10..8}"))
-	assert.Equal(t, BraceExpansion{"10", "09", "08"}, Parse("{10..08}"))
-	assert.Equal(t, BraceExpansion{"-10", "-09", "-08"}, Parse("{-10..-08}"))
-	assert.Equal(t, BraceExpansion{"c", "b", "a"}, Parse("{c..a}"))
-	assert.Equal(t, BraceExpansion{"4", "2", "0"}, Parse("{4..0..2}"))
-	assert.Equal(t, BraceExpansion{"4", "2", "0"}, Parse("{4..0..-2}"))
-	assert.Equal(t, BraceExpansion{"e", "c", "a"}, Parse("{e..a..2}"))
+	assert.Equal(t, []string{"3", "2", "1"}, Parse("{3..1}"))
+	assert.Equal(t, []string{"10", "9", "8"}, Parse("{10..8}"))
+	assert.Equal(t, []string{"10", "09", "08"}, Parse("{10..08}"))
+	assert.Equal(t, []string{"-10", "-09", "-08"}, Parse("{-10..-08}"))
+	assert.Equal(t, []string{"c", "b", "a"}, Parse("{c..a}"))
+	assert.Equal(t, []string{"4", "2", "0"}, Parse("{4..0..2}"))
+	assert.Equal(t, []string{"4", "2", "0"}, Parse("{4..0..-2}"))
+	assert.Equal(t, []string{"e", "c", "a"}, Parse("{e..a..2}"))
 }
 
 func TestNested(t *testing.T) {
-	assert.Equal(t, BraceExpansion{"a", "b1", "b2", "b3", "c"}, Parse("{a,b{1..3},c}"))
-	assert.Equal(t, BraceExpansion(strings.Split(
+	assert.Equal(t, []string{"a", "b1", "b2", "b3", "c"}, Parse("{a,b{1..3},c}"))
+	assert.Equal(t, strings.Split(
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 		"",
-	)), Parse("{{A..Z},{a..z}}"))
-	assert.Equal(t, BraceExpansion{
+	), Parse("{{A..Z},{a..z}}"))
+	assert.Equal(t, []string{
 		"ppp",
 		"pppconfig",
 		"pppoe",
@@ -216,87 +215,81 @@ func TestNested(t *testing.T) {
 }
 
 func TestOrder(t *testing.T) {
-	assert.Equal(t, BraceExpansion{"ade", "ace", "abe"}, Parse("a{d,c,b}e"))
+	assert.Equal(t, []string{"ade", "ace", "abe"}, Parse("a{d,c,b}e"))
 }
 
 func TestPad(t *testing.T) {
-	assert.Equal(t, BraceExpansion{"9", "10", "11"}, Parse("{9..11}"))
-	assert.Equal(t, BraceExpansion{"09", "10", "11"}, Parse("{09..11}"))
+	assert.Equal(t, []string{"9", "10", "11"}, Parse("{9..11}"))
+	assert.Equal(t, []string{"09", "10", "11"}, Parse("{09..11}"))
 }
 
 func TestSameType(t *testing.T) {
-	assert.Equal(t, BraceExpansion{"{a..9}"}, Parse("{a..9}"))
+	assert.Equal(t, []string{"{a..9}"}, Parse("{a..9}"))
 }
 
 func TestSequence(t *testing.T) {
 	// Numeric
-	assert.Equal(t, BraceExpansion{"a1b2c", "a1b3c", "a2b2c", "a2b3c"}, Parse("a{1..2}b{2..3}c"))
-	assert.Equal(t, BraceExpansion{"12", "13", "22", "23"}, Parse("{1..2}{2..3}"))
+	assert.Equal(t, []string{"a1b2c", "a1b3c", "a2b2c", "a2b3c"}, Parse("a{1..2}b{2..3}c"))
+	assert.Equal(t, []string{"12", "13", "22", "23"}, Parse("{1..2}{2..3}"))
 
 	// Numeric with step count
-	assert.Equal(t, BraceExpansion{"0", "2", "4", "6", "8"}, Parse("{0..8..2}"))
-	assert.Equal(t, BraceExpansion{"1", "3", "5", "7"}, Parse("{1..8..2}"))
-	assert.Equal(t, BraceExpansion{"1", "4", "7", "10"}, Parse("{1..10..-3}"))
-	assert.Equal(t, BraceExpansion{"1", "4", "7", "10"}, Parse("{1..10..3}"))
-	assert.Equal(t, BraceExpansion{"1", "5", "9"}, Parse("{1..10..4}"))
-	assert.Equal(t, BraceExpansion{"1", "5", "9"}, Parse("{1..10..04}"))
-	assert.Equal(t, BraceExpansion{"01", "04", "07", "10"}, Parse("{01..10..3}"))
-	assert.Equal(t, BraceExpansion{"01", "04", "07", "10"}, Parse("{01..10..03}"))
+	assert.Equal(t, []string{"0", "2", "4", "6", "8"}, Parse("{0..8..2}"))
+	assert.Equal(t, []string{"1", "3", "5", "7"}, Parse("{1..8..2}"))
+	assert.Equal(t, []string{"1", "4", "7", "10"}, Parse("{1..10..-3}"))
+	assert.Equal(t, []string{"1", "4", "7", "10"}, Parse("{1..10..3}"))
+	assert.Equal(t, []string{"1", "5", "9"}, Parse("{1..10..4}"))
+	assert.Equal(t, []string{"1", "5", "9"}, Parse("{1..10..04}"))
+	assert.Equal(t, []string{"01", "04", "07", "10"}, Parse("{01..10..3}"))
+	assert.Equal(t, []string{"01", "04", "07", "10"}, Parse("{01..10..03}"))
 
 	// Numeric with negative
-	assert.Equal(t, BraceExpansion{"3", "2", "1", "0", "-1", "-2"}, Parse("{3..-2}"))
-	assert.Equal(t, BraceExpansion{"-3", "-2", "-1", "0", "1", "2"}, Parse("{-3..2}"))
+	assert.Equal(t, []string{"3", "2", "1", "0", "-1", "-2"}, Parse("{3..-2}"))
+	assert.Equal(t, []string{"-3", "-2", "-1", "0", "1", "2"}, Parse("{-3..2}"))
 
 	// Alphabetic
-	assert.Equal(t, BraceExpansion{"a", "b", "c", "d"}, Parse("{a..d}"))
-	assert.Equal(t, BraceExpansion{"d", "c", "b", "a"}, Parse("{d..a}"))
-	assert.Equal(t, BraceExpansion{"b", "a", "`", "_", "^", "]", "", "[", "Z", "Y", "X", "W", "V", "U"}, Parse("{b..U}"))
-	assert.Equal(t, BraceExpansion{"U", "V", "W", "X", "Y", "Z", "[", "", "]", "^", "_", "`", "a", "b"}, Parse("{U..b}"))
+	assert.Equal(t, []string{"a", "b", "c", "d"}, Parse("{a..d}"))
+	assert.Equal(t, []string{"d", "c", "b", "a"}, Parse("{d..a}"))
+	assert.Equal(t, []string{"b", "a", "`", "_", "^", "]", "", "[", "Z", "Y", "X", "W", "V", "U"}, Parse("{b..U}"))
+	assert.Equal(t, []string{"U", "V", "W", "X", "Y", "Z", "[", "", "]", "^", "_", "`", "a", "b"}, Parse("{U..b}"))
 
 	// Alphabetic with step count
-	assert.Equal(t, BraceExpansion{"a", "c", "e", "g", "i", "k"}, Parse("{a..k..2}"))
-	assert.Equal(t, BraceExpansion{"b", "d", "f", "h", "j"}, Parse("{b..k..2}"))
-	assert.Equal(t, BraceExpansion{"a", "e", "i", "m", "q"}, Parse("{a..s..4}"))
-	assert.Equal(t, BraceExpansion{"a", "e", "i", "m", "q"}, Parse("{a..s..-4}"))
-	assert.Equal(t, BraceExpansion{"s", "o", "k", "g", "c"}, Parse("{s..a..4}"))
-	assert.Equal(t, BraceExpansion{"s", "o", "k", "g", "c"}, Parse("{s..a..-4}"))
+	assert.Equal(t, []string{"a", "c", "e", "g", "i", "k"}, Parse("{a..k..2}"))
+	assert.Equal(t, []string{"b", "d", "f", "h", "j"}, Parse("{b..k..2}"))
+	assert.Equal(t, []string{"a", "e", "i", "m", "q"}, Parse("{a..s..4}"))
+	assert.Equal(t, []string{"a", "e", "i", "m", "q"}, Parse("{a..s..-4}"))
+	assert.Equal(t, []string{"s", "o", "k", "g", "c"}, Parse("{s..a..4}"))
+	assert.Equal(t, []string{"s", "o", "k", "g", "c"}, Parse("{s..a..-4}"))
 
-	assert.Equal(t, BraceExpansion{"A", "C", "E", "G", "I", "K"}, Parse("{A..K..2}"))
-	assert.Equal(t, BraceExpansion{"B", "D", "F", "H", "J"}, Parse("{B..K..2}"))
-	assert.Equal(t, BraceExpansion{"A", "E", "I", "M", "Q"}, Parse("{A..S..4}"))
-	assert.Equal(t, BraceExpansion{"A", "E", "I", "M", "Q"}, Parse("{A..S..-4}"))
-	assert.Equal(t, BraceExpansion{"S", "O", "K", "G", "C"}, Parse("{S..A..4}"))
-	assert.Equal(t, BraceExpansion{"S", "O", "K", "G", "C"}, Parse("{S..A..-4}"))
+	assert.Equal(t, []string{"A", "C", "E", "G", "I", "K"}, Parse("{A..K..2}"))
+	assert.Equal(t, []string{"B", "D", "F", "H", "J"}, Parse("{B..K..2}"))
+	assert.Equal(t, []string{"A", "E", "I", "M", "Q"}, Parse("{A..S..4}"))
+	assert.Equal(t, []string{"A", "E", "I", "M", "Q"}, Parse("{A..S..-4}"))
+	assert.Equal(t, []string{"S", "O", "K", "G", "C"}, Parse("{S..A..4}"))
+	assert.Equal(t, []string{"S", "O", "K", "G", "C"}, Parse("{S..A..-4}"))
 
-	assert.Equal(t, BraceExpansion{"{-e..-a..1}"}, Parse("{-e..-a..1}"))
-	assert.Equal(t, BraceExpansion{"{-a..c..1}"}, Parse("{-a..c..1}"))
-	assert.Equal(t, BraceExpansion{"{a..-c..1}"}, Parse("{a..-c..1}"))
-	assert.Equal(t, BraceExpansion{"{a..-c}"}, Parse("{a..-c}"))
-	assert.Equal(t, BraceExpansion{"{-c..a}"}, Parse("{-c..a}"))
+	assert.Equal(t, []string{"{-e..-a..1}"}, Parse("{-e..-a..1}"))
+	assert.Equal(t, []string{"{-a..c..1}"}, Parse("{-a..c..1}"))
+	assert.Equal(t, []string{"{a..-c..1}"}, Parse("{a..-c..1}"))
+	assert.Equal(t, []string{"{a..-c}"}, Parse("{a..-c}"))
+	assert.Equal(t, []string{"{-c..a}"}, Parse("{-c..a}"))
 }
 
 func TestString(t *testing.T) {
 	r := Parse("/{dir1,dir2}")
-	assert.Equal(t, "/dir1 /dir2", r.String())
+	assert.Equal(t, "/dir1 /dir2", BraceExpansion(r).String())
 }
 
 func TestStrings(t *testing.T) {
-	var r []string = Parse("/{dir1,dir2}")
+	r := Parse("/{dir1,dir2}")
 	assert.Equal(t, []string{"/dir1", "/dir2"}, r)
+
+	var r2 BraceExpansion = Parse("/{dir1,dir2}")
+	assert.EqualValues(t, []string{"/dir1", "/dir2"}, r2)
 }
 
 func TestResult(t *testing.T) {
 	r := Parse("/{dir1,dir2}")
-	assert.Equal(t, []string{"/dir1", "/dir2"}, r.Result())
-}
-
-func TestErr(t *testing.T) {
-	empty := Parse("")
-	assert.ErrorIs(t, empty.Err(), ErrEmptyResult)
-
-	single := Parse("a")
-	assert.NoError(t, single.Err())
-	assert.Equal(t, "a", single[0])
+	assert.Equal(t, []string{"/dir1", "/dir2"}, BraceExpansion(r).Result())
 }
 
 func TestIsPadded(t *testing.T) {
@@ -329,14 +322,14 @@ func TestIsPadded(t *testing.T) {
 
 func TestSpace(t *testing.T) {
 
-	// assert.Equal(t, BraceExpansion{"{a, b, c, d }1"}, Parse("{a, b, c, d }1"))
-	// assert.Equal(t, BraceExpansion{"{a,b,c,d} 1"}, Parse("\"{a,b,c,d} 1\""))
-	// assert.Equal(t, BraceExpansion{"a 1", "b 1", "c 1", "d 1"}, Parse("{\"a \",\"b \",\"c \",\"d \"}1"))
-	// assert.Equal(t, BraceExpansion{"a 1", "b 1", "c 1", "d 1"}, Parse("{a,b,c,d}\" 1\""))
+	// assert.Equal(t, []string{"{a, b, c, d }1"}, Parse("{a, b, c, d }1"))
+	// assert.Equal(t, []string{"{a,b,c,d} 1"}, Parse("\"{a,b,c,d} 1\""))
+	// assert.Equal(t, []string{"a 1", "b 1", "c 1", "d 1"}, Parse("{\"a \",\"b \",\"c \",\"d \"}1"))
+	// assert.Equal(t, []string{"a 1", "b 1", "c 1", "d 1"}, Parse("{a,b,c,d}\" 1\""))
 
 	// s1 := fmt.Sprintf("{%q,%q,%q,%q}1", "a ", "b ", "c ", "d ")
-	// assert.Equal(t, BraceExpansion{"a 1", "b 1", "c 1", "d 1"}, Parse(s1))
+	// assert.Equal(t, []string{"a 1", "b 1", "c 1", "d 1"}, Parse(s1))
 
 	// s2 := fmt.Sprintf("{a,b,c,d}%q", " 1")
-	// assert.Equal(t, BraceExpansion{"a 1", "b 1", "c 1", "d 1"}, Parse(s2))
+	// assert.Equal(t, []string{"a 1", "b 1", "c 1", "d 1"}, Parse(s2))
 }

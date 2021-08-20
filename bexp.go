@@ -41,7 +41,7 @@ var (
 
 const (
 	// token version.
-	tv        = "\u0000v2"
+	tv        = "\u0000v3"
 	escSlash  = tv + "SLASH\u0000"
 	escOpen   = tv + "OPEN\u0000"
 	escClose  = tv + "CLOSE\u0000"
@@ -53,43 +53,49 @@ const (
 type BraceExpansion []string
 
 // Parse string expresion into BraceExpansion result.
-func Parse(str string) BraceExpansion {
-	if str == "" {
+func Parse(expr string) []string {
+	if expr == "" {
 		return []string{""}
 	}
 	// escape a leading {} for case {},a}b / a{},b}c
-	if strings.HasPrefix(str, "{}") {
-		str = "\\{\\}" + str[2:]
+	if strings.HasPrefix(expr, "{}") {
+		expr = "\\{\\}" + expr[2:]
 	}
 
-	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
+	return mapArray(expand(escapeBraces(expr), true), unescapeBraces)
 }
 
 // ParseValid is for convienience to get errors on input:
 // 1. ErrEmptyResult when provided string is empty
+// When working with Brace Expansions this method is for convinience to handle
+// only empty string as errors in your program.
+// Note that even then it is actually not invalid. As Brace Expansion docs say:
+// "Any incorrectly formed brace expansion is left unchanged.".
+//
 // 2. ErrUnchangedBraceExpansion when provided string was left unchanged
 // Result will always be `BraceExpansion` with min len 1 to satisfy
 // "Any incorrectly formed brace expansion is left unchanged.".
-func ParseValid(str string) (BraceExpansion, error) {
-	res := Parse(str)
+func ParseValid(expr string) (res []string, err error) {
+	res = Parse(expr)
+
 	if len(res) == 1 {
-		if err := res.Err(); err != nil {
-			return res, err
+		if len(res) == 0 || (len(res) == 1 && len(res[0]) == 0) {
+			return res, ErrEmptyResult
 		}
-		if res[0] == str {
+		if res[0] == expr {
 			return res, ErrUnchangedBraceExpansion
 		}
 	}
 
-	return res, nil
+	return res, err
 }
 
 // MkdirAll calls os.MkdirAll on each math from provided string
 // to create a directory tree from brace expansion.
 // Error can be ErrEmptyResult if parsing provided str results no paths
 // or first error of os.MkdirAll.
-func MkdirAll(str string, perm os.FileMode) error {
-	if p := Parse(str); p.Err() == nil {
+func MkdirAll(expr string, perm os.FileMode) error {
+	if p, err := ParseValid(expr); err == nil || errors.Is(err, ErrUnchangedBraceExpansion) {
 		for _, dir := range p {
 			if err := os.MkdirAll(dir, perm); err != nil {
 				return err
@@ -102,21 +108,6 @@ func MkdirAll(str string, perm os.FileMode) error {
 // String calls strings.Join(b, " ") and returns resulting string.
 func (b BraceExpansion) String() string {
 	return strings.Join(b, " ")
-}
-
-// Err returns nil or ErrEmptyResult.
-// When working with Brace Expansions this method is for convinience to handle
-// only empty string as errors in your program.
-// Note that even then it is actually not invalid.
-// As Brace Expansion docs say:
-// "Any incorrectly formed brace expansion is left unchanged."
-// See .ParseValid if you want to get errors if provided string was not
-// correctly formed brace expansion.
-func (b BraceExpansion) Err() (err error) {
-	if len(b) == 0 || (len(b) == 1 && len(b[0]) == 0) {
-		err = ErrEmptyResult
-	}
-	return
 }
 
 // Result is convience to get result as string slice.
@@ -148,7 +139,6 @@ func parseCommaParts(str string) []string {
 	return parts
 }
 
-//nolint: nestif
 func expand(str string, isTop bool) []string {
 	m := Balanced("{", "}", str)
 

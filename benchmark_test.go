@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mkungla/bexp/v2"
+	"github.com/mkungla/bexp/v3"
 	"github.com/stretchr/testify/assert"
 )
 

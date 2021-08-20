@@ -10,7 +10,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/mkungla/bexp/v2"
+	"github.com/mkungla/bexp/v3"
 )
 
 //nolint: lll
