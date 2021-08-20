@@ -15,6 +15,8 @@
 //	Parse("a{d,c,b}e")
 //	[]string{"ade", "ace", "abe"}
 //
+// Any incorrectly formed brace expansion is left unchanged.
+//
 // More info about Bash Brace Expansion can be found at
 // https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html
 package bexp
@@ -38,11 +40,13 @@ var (
 )
 
 const (
-	escSlash  = "\u0000SLASHbexp1\u0000"
-	escOpen   = "\u0000OPENexp1\u0000"
-	escClose  = "\u0000CLOSEexp1\u0000"
-	escComma  = "\u0000COMMAexp1\u0000"
-	escPeriod = "\u0000PERIODexp1\u0000"
+	// token version.
+	tv        = "\u0000v2"
+	escSlash  = tv + "SLASH\u0000"
+	escOpen   = tv + "OPEN\u0000"
+	escClose  = tv + "CLOSE\u0000"
+	escComma  = tv + "COMMA\u0000"
+	escPeriod = tv + "PERIOD\u0000"
 )
 
 // BraceExpansion represents bash style brace expansion.
@@ -51,14 +55,14 @@ type BraceExpansion []string
 // Parse string expresion into BraceExpansion result.
 func Parse(str string) BraceExpansion {
 	if str == "" {
-		return []string{""} // Any incorrectly formed brace expansion is left unchanged.
+		return BraceExpansion{""}
 	}
 	// escape a leading {} for case {},a}b / a{},b}c
 	if strings.HasPrefix(str, "{}") {
 		str = "\\{\\}" + str[2:]
 	}
-	exp := expand(escapeBraces(str), true)
-	return mapArray(exp, unescapeBraces)
+
+	return mapArray(expand(escapeBraces(str), true), unescapeBraces)
 }
 
 // ParseValid is for convienience to get errors on input:
