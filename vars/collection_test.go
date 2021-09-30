@@ -193,6 +193,26 @@ func TestCollectionGetOrDefaultTo(t *testing.T) {
 	}
 }
 
+func TestCollectionGetOrDefaultValue(t *testing.T) {
+	collection := vars.ParseFromBytes([]byte{})
+	tests := []struct {
+		k      string
+		defVal vars.Value
+		want   string
+	}{
+		{"STRING_1", vars.NewValue("some-string"), "some-string"},
+		{"STRING_2", vars.NewValue("some-string with space "), "some-string with space "},
+		{"STRING_3", vars.NewValue(" some-string with space"), " some-string with space"},
+		{"STRING_4", vars.NewValue("1234567"), "1234567"},
+		{"", vars.NewValue("1234567"), ""},
+	}
+	for _, tt := range tests {
+		if actual := collection.Get(tt.k, tt.defVal); actual.String() != tt.want {
+			t.Errorf("Collection.GetOrDefaultTo(%q, %q) = %q, want %q", tt.k, tt.defVal, actual, tt.want)
+		}
+	}
+}
+
 func TestCollectionParseFromBytes(t *testing.T) {
 	bytes := genStringTestBytes()
 	collection := vars.ParseFromBytes(bytes)
