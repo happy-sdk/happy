@@ -26,37 +26,37 @@ import (
 
 func main() {
   vnil := vars.NewValue(nil)
-	fmt.Printf("%t\n", vnil.Type() == vars.TypeUnknown)
-	fmt.Println(vnil.String())
+  fmt.Printf("%t\n", vnil.Type() == vars.TypeUnknown)
+  fmt.Println(vnil.String())
 
-	v := vars.NewValue(123456)
-	fmt.Printf("%t\n", v.Type() == vars.TypeInt)
-	fmt.Println(v.String())
+  v := vars.NewValue(123456)
+  fmt.Printf("%t\n", v.Type() == vars.TypeInt)
+  fmt.Println(v.String())
 
-	fmt.Println(v.Int())
-	fmt.Println(v.Empty())
-	fmt.Println(v.Int64())
-	fmt.Println(v.Float32())
-	fmt.Println(v.Float64())
-	fmt.Println(v.Len())
-	fmt.Println(v.Runes())
-	fmt.Println(v.Uint64())
-	fmt.Println(v.Uintptr())
+  fmt.Println(v.Int())
+  fmt.Println(v.Empty())
+  fmt.Println(v.Int64())
+  fmt.Println(v.Float32())
+  fmt.Println(v.Float64())
+  fmt.Println(v.Len())
+  fmt.Println(v.Runes())
+  fmt.Println(v.Uint64())
+  fmt.Println(v.Uintptr())
 
-	// Output:
-	// true
-	// <nil>
-	// true
-	// 123456
-	// 123456
-	// false
-	// 123456
-	// 123456
-	// 123456
-	// 6
-	// [49 50 51 52 53 54]
-	// 123456
-	// 123456
+  // Output:
+  // true
+  // <nil>
+  // true
+  // 123456
+  // 123456
+  // false
+  // 123456
+  // 123456
+  // 123456
+  // 6
+  // [49 50 51 52 53 54]
+  // 123456
+  // 123456
 }
 ```
 
