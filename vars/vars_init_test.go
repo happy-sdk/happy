@@ -31,7 +31,6 @@ const (
 type newTest struct {
 	key string
 	val interface{}
-	err error
 }
 
 type boolTest struct {
@@ -148,26 +147,26 @@ func checkIntString(t *testing.T, expected int64, str string) {
 }
 
 var newTests = []newTest{
-	{"key", "<nil>", nil},
-	{"key", "val", nil},
-	{"bool", true, nil},
-	{"float32", float32(32), nil},
-	{"float64", float64(64), nil},
-	{"complex64", complex64(64), nil},
-	{"complex128", complex128(128), nil},
-	{"int", int(1), nil},
-	{"int8", int8(8), nil},
-	{"int16", int16(16), nil},
-	{"int32", int32(32), nil},
-	{"int64", int64(64), nil},
-	{"uint", uint(1), nil},
-	{"uint8", uint8(8), nil},
-	{"uint16", uint16(16), nil},
-	{"uint32", uint32(32), nil},
-	{"uint64", uint64(64), nil},
-	{"uintptr", uintptr(10), nil},
-	{"string", "string", nil},
-	{"byte_arr", []byte{1, 2, 3}, nil},
+	{"key", "<nil>"},
+	{"key", "val"},
+	{"bool", true},
+	{"float32", float32(32)},
+	{"float64", float64(64)},
+	{"complex64", complex64(64)},
+	{"complex128", complex128(128)},
+	{"int", int(1)},
+	{"int8", int8(8)},
+	{"int16", int16(16)},
+	{"int32", int32(32)},
+	{"int64", int64(64)},
+	{"uint", uint(1)},
+	{"uint8", uint8(8)},
+	{"uint16", uint16(16)},
+	{"uint32", uint32(32)},
+	{"uint64", uint64(64)},
+	{"uintptr", uintptr(10)},
+	{"string", "string"},
+	{"byte_arr", []byte{1, 2, 3}},
 }
 
 var boolTests = []boolTest{
