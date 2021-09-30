@@ -13,9 +13,11 @@ import (
 
 func ExampleValue() {
 	vnil := vars.NewValue(nil)
+	fmt.Printf("%t\n", vnil.Type() == vars.TypeUnknown)
 	fmt.Println(vnil.String())
 
 	v := vars.NewValue(123456)
+	fmt.Printf("%t\n", v.Type() == vars.TypeInt)
 	fmt.Println(v.String())
 
 	fmt.Println(v.Int())
@@ -29,7 +31,9 @@ func ExampleValue() {
 	fmt.Println(v.Uintptr())
 
 	// Output:
+	// true
 	// <nil>
+	// true
 	// 123456
 	// 123456
 	// false
