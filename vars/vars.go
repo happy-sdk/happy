@@ -131,6 +131,9 @@ func New(key string, val interface{}) Variable {
 // NewValue return Value, If error occurred while parsing
 // VAR represents default 0, nil value
 func NewValue(val interface{}) Value {
+	if vv, ok := val.(Value); ok {
+		return vv
+	}
 	p := getParser()
 	t, raw := p.printArg(val)
 	s := Value{
