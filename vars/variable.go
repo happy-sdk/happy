@@ -9,6 +9,11 @@ func (v Variable) Type() Type {
 	return v.val.Type()
 }
 
+// Value returns Value of variable
+func (v Variable) Value() Value {
+	return v.val
+}
+
 // Key returns assigned key for this variable
 func (v Variable) Key() string {
 	return v.key
