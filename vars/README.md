@@ -68,6 +68,9 @@ func main() {
 
 **working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v5#Collection)**
 
+> Because of underlying `sync.Map` it is meant to be populated once and read many times
+> read thoroughly sync.Map docs to understand where .Collection may not me right for you!
+
 ```go
 package main
 
