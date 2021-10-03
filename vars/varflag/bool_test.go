@@ -58,9 +58,12 @@ func TestBoolFlagValues(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			flag, _ := Bool(tt.name, tt.alias)
 			args := fmt.Sprintf("--%s=%s", tt.name, tt.arg)
+			flag.Default(!tt.b)
+
 			if present, err := flag.Parse([]string{args}); !present || err != nil {
 				t.Error("expected bool flag parser to return present, nil got ", present, err)
 			}
+
 			if !flag.Present() {
 				t.Error("expected bool flag to be present")
 			}
@@ -76,6 +79,9 @@ func TestBoolFlagValues(t *testing.T) {
 			flag.Unset()
 			if flag.Present() {
 				t.Error("expected bool flag not to be present")
+			}
+			if flag.Value() != !tt.b {
+				t.Errorf("expected %t got %t after unset", !tt.b, flag.Value())
 			}
 		})
 	}

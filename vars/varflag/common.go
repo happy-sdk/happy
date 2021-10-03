@@ -163,7 +163,7 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr 
 		pargs  []string
 	)
 
-	poses, pargs, err = f.findFlag(args)
+	poses, pargs, err = f.normalize(args)
 	if err != nil {
 		return
 	}
@@ -248,9 +248,9 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, bool
 	return values, pr, nil
 }
 
-// findFlag reports flag positions if flag is present and returns normalized
+// normalize reports flag positions if flag is present and returns normalized
 // arg slice where key=val is already correctly splitted.
-func (f *Common) findFlag(args []string) (pos []int, pargs []string, err error) {
+func (f *Common) normalize(args []string) (pos []int, pargs []string, err error) {
 	var (
 		currflag string
 		split    bool
