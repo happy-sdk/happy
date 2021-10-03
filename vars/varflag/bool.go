@@ -21,7 +21,7 @@ func Bool(name string, value bool, usage string, aliases ...string) (*BoolFlag, 
 		Common: *c,
 	}
 	f.usage = usage
-	f.Default(value)
+	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeBool)
 	f.variable, _ = vars.NewTyped(name, "false", vars.TypeBool)
 	return f, nil
 }
@@ -43,22 +43,9 @@ func (f *BoolFlag) Value() bool {
 	return f.val
 }
 
-// Default sets default value for boool flag.
-func (f *BoolFlag) Default(def ...bool) vars.Variable {
-	if len(def) > 0 && f.defval.Empty() {
-		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeBool)
-		f.val = def[0]
-	}
-	return f.defval
-}
-
 // Unset the bool flag value.
 func (f *BoolFlag) Unset() {
-	if !f.defval.Empty() {
-		f.variable = f.defval
-	} else {
-		f.variable, _ = vars.NewTyped(f.name, "false", vars.TypeBool)
-	}
+	f.variable = f.defval
 	f.isPresent = false
 	f.val = f.variable.Bool()
 }

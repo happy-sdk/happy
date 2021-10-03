@@ -18,10 +18,7 @@ func (f *Common) Name() string {
 }
 
 // Default sets flag default.
-func (f *Common) Default(def ...interface{}) vars.Variable {
-	if len(def) > 0 && f.defval.Empty() {
-		f.defval = vars.New(f.name, def[0])
-	}
+func (f *Common) Default() vars.Variable {
 	return f.defval
 }
 

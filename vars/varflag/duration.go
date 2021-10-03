@@ -18,7 +18,7 @@ func Duration(name string, value time.Duration, usage string, aliases ...string)
 	}
 	f := &DurationFlag{val: value, Common: *c}
 	f.usage = usage
-	f.Default(value)
+	f.defval = vars.New(f.name, value)
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeString)
 	return f, nil
 }
@@ -47,7 +47,6 @@ func (f *DurationFlag) Value() time.Duration {
 // Default sets default value for duration flag.
 func (f *DurationFlag) Default(def ...time.Duration) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
-		f.defval = vars.New(f.name, def[0])
 		f.val = def[0]
 	}
 	return f.defval
@@ -55,11 +54,7 @@ func (f *DurationFlag) Default(def ...time.Duration) vars.Variable {
 
 // Unset the bool flag value.
 func (f *DurationFlag) Unset() {
-	if !f.defval.Empty() {
-		f.variable = f.defval
-	} else {
-		f.variable, _ = vars.NewTyped(f.name, "false", vars.TypeString)
-	}
+	f.variable = f.defval
 	f.isPresent = false
 	val, _ := time.ParseDuration(f.defval.String())
 	f.val = val

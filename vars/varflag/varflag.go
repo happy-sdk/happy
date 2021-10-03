@@ -79,7 +79,7 @@ type (
 		// IsRequired returns true if this flag is required
 		IsRequired() bool
 		// Set flag default value
-		Default(def ...interface{}) vars.Variable
+		Default() vars.Variable
 		// String calls Value().String()
 		String() string
 	}
@@ -156,7 +156,7 @@ func New(name string, value string, usage string, aliases ...string) (*Common, e
 	if err != nil {
 		return nil, err
 	}
-	f.Default(value)
+	f.defval = vars.New(f.name, value)
 	f.usage = usage
 	f.variable = vars.New(name, "")
 	return f, err

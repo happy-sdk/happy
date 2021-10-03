@@ -55,11 +55,7 @@ func (f *IntFlag) Default(def ...int) vars.Variable {
 
 // Unset the int flag value.
 func (f *IntFlag) Unset() {
-	if !f.defval.Empty() {
-		f.variable = f.defval
-	} else {
-		f.variable, _ = vars.NewTyped(f.name, "0", vars.TypeInt64)
-	}
+	f.variable = f.defval
 	f.isPresent = false
 	f.val = f.variable.Int()
 }

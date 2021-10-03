@@ -18,7 +18,7 @@ func Uint(name string, value uint, usage string, aliases ...string) (*UintFlag, 
 	}
 	f := &UintFlag{val: value, Common: *c}
 	f.usage = usage
-	f.Default(value)
+	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeUint)
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeUint64)
 	return f, nil
 }
@@ -44,22 +44,9 @@ func (f *UintFlag) Value() uint {
 	return f.val
 }
 
-// Default sets default value for uint flag.
-func (f *UintFlag) Default(def ...uint) vars.Variable {
-	if len(def) > 0 && f.defval.Empty() {
-		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeUint)
-		f.val = def[0]
-	}
-	return f.defval
-}
-
 // Unset the int flag value.
 func (f *UintFlag) Unset() {
-	if !f.defval.Empty() {
-		f.variable = f.defval
-	} else {
-		f.variable, _ = vars.NewTyped(f.name, "0", vars.TypeUint)
-	}
+	f.variable = f.defval
 	f.isPresent = false
 	f.val = f.variable.Uint()
 }

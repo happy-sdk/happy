@@ -18,7 +18,7 @@ func Float(name string, value float64, usage string, aliases ...string) (*FloatF
 	}
 	f := &FloatFlag{val: value, Common: *c}
 	f.usage = usage
-	f.Default(value)
+	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeFloat64)
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeFloat64)
 	return f, nil
 }
@@ -43,7 +43,6 @@ func (f *FloatFlag) Value() float64 {
 // Default sets default value for float64 flag.
 func (f *FloatFlag) Default(def ...float64) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
-		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeFloat64)
 		f.val = def[0]
 	}
 	return f.defval
@@ -51,11 +50,7 @@ func (f *FloatFlag) Default(def ...float64) vars.Variable {
 
 // Unset the bool flag value.
 func (f *FloatFlag) Unset() {
-	if !f.defval.Empty() {
-		f.variable = f.defval
-	} else {
-		f.variable, _ = vars.NewTyped(f.name, "0", vars.TypeFloat64)
-	}
+	f.variable = f.defval
 	f.isPresent = false
 	f.val = f.variable.Float64()
 }

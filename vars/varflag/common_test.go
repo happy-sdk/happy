@@ -14,7 +14,7 @@ import (
 type testflag struct {
 	name     string
 	aliases  []string
-	defval   interface{}
+	defval   string
 	required bool
 	hidden   bool
 	short    bool
@@ -28,16 +28,16 @@ func testflags() []testflag {
 		{"fl", nil, "def-val", false, false, false, true},
 		{"flag", nil, "def-val", false, false, false, true},
 		{"flag", nil, "def-val", false, false, false, true},
-		{"flag2", nil, nil, false, true, false, true},
-		{"flag3", nil, nil, true, false, false, true},
+		{"flag2", nil, "", false, true, false, true},
+		{"flag3", nil, "", true, false, false, true},
 		{"flag-sub-1", []string{"alias", "a", "b"}, "flag sub", false, false, false, true},
 		{"f", nil, "def-val", false, false, true, true},
 		{"flag2", nil, "def-val", false, false, false, true},
 		// invalid
-		{"2", nil, nil, false, false, false, false},
-		{" flag", []string{"flag", "flag2"}, nil, false, false, false, false},
-		{"flag ", nil, nil, false, false, false, false},
-		{"2flag", nil, nil, false, false, false, false},
+		{"2", nil, "", false, false, false, false},
+		{" flag", []string{"flag", "flag2"}, "", false, false, false, false},
+		{"flag ", nil, "", false, false, false, false},
+		{"2flag", nil, "", false, false, false, false},
 	}
 }
 
@@ -110,12 +110,11 @@ func TestUsage(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name, "", "")
-			flag.Default(tt.defval)
+			flag, _ := New(tt.name, tt.defval, "")
 			flag.Usage(desc)
 
 			expexted := desc
-			if tt.defval != nil {
+			if tt.defval != "" {
 				expexted += fmt.Sprintf(" default: %q", fmt.Sprint(tt.defval))
 			}
 			if flag.Usage() != expexted {
@@ -310,8 +309,8 @@ func TestUnset(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name, "", "")
-			flag.Default(tt.defval)
+			flag, _ := New(tt.name, tt.defval, "")
+
 			args := []string{flag.Flag(), tval}
 			flag.Parse(args)
 
@@ -322,7 +321,7 @@ func TestUnset(t *testing.T) {
 			flag.Unset()
 
 			exp := ""
-			if tt.defval != nil {
+			if tt.defval != "" {
 				exp = fmt.Sprint(tt.defval)
 			}
 
