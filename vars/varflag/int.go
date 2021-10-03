@@ -25,7 +25,11 @@ func Int(name string, aliases ...string) (*IntFlag, error) {
 func (f *IntFlag) Parse(args []string) (bool, error) {
 	return f.parse(args, func(vv []vars.Variable) (err error) {
 		if len(vv) > 0 {
-			f.variable = vv[0]
+			val, err := vars.NewTyped(f.name, vv[0].String(), vars.TypeInt)
+			if err != nil {
+				return fmt.Errorf("%w: %q", ErrInvalidValue, err)
+			}
+			f.variable = val
 			f.val = f.variable.Int()
 		}
 		return err
@@ -45,4 +49,15 @@ func (f *IntFlag) Default(def ...int) vars.Variable {
 		f.val = def[0]
 	}
 	return f.defval
+}
+
+// Unset the int flag value.
+func (f *IntFlag) Unset() {
+	if !f.defval.Empty() {
+		f.variable = f.defval
+	} else {
+		f.variable, _ = vars.NewTyped(f.name, "0", vars.TypeInt)
+	}
+	f.isPresent = false
+	f.val = f.variable.Int()
 }
