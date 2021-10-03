@@ -109,7 +109,7 @@ func (f *Common) Var() vars.Variable {
 	return f.variable
 }
 
-// Value returns string value of flag
+// Value returns string value of flag.
 func (f *Common) Value() string {
 	return f.variable.String()
 }

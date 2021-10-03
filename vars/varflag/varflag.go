@@ -2,7 +2,7 @@
 // Use of this source code is governed by a The Apache-style
 // license that can be found in the LICENSE file.
 
-// Package flag implements command-line flag parsing into vars.Variables
+// Package varflag implements command-line flag parsing into vars.Variables
 // for easy type handling with additional flag types.
 package varflag
 
@@ -18,18 +18,25 @@ import (
 )
 
 const (
-	// NamespaceMustCompile against following expression.
+	// FlagRe check flag name against following expression.
 	FlagRe = "^[a-z][a-z0-9_-]*[a-z0-9]$"
 )
 
 var (
-	ErrFlag              = errors.New("flag error")
-	ErrParse             = errors.New("flag parse error")
-	ErrMissingValue      = errors.New("missing value for flag")
-	ErrInvalidValue      = errors.New("invalid value for flag")
+	// ErrFlag is returned when flag fails to initialize.
+	ErrFlag = errors.New("flag error")
+	// ErrParse is used to indicate parse errors.
+	ErrParse = errors.New("flag parse error")
+	// ErrMissingValue is used when flag value was not in parsed args.
+	ErrMissingValue = errors.New("missing value for flag")
+	// ErrInvalidValue is used when invalid value was provided.
+	ErrInvalidValue = errors.New("invalid value for flag")
+	// ErrFlagAlreadyParsed is returned when this flag was already parsed.
 	ErrFlagAlreadyParsed = errors.New("flag is already parsed")
-	ErrMissingRequired   = errors.New("missing required flag")
-	ErrMissingOptions    = errors.New("missing options")
+	// ErrMissingRequired indicates that required flag was not in argument set.
+	ErrMissingRequired = errors.New("missing required flag")
+	// ErrMissingOptions is returned when option flag parser does not find options.
+	ErrMissingOptions = errors.New("missing options")
 )
 
 type (
@@ -124,7 +131,7 @@ type (
 		val time.Duration
 	}
 
-	// Float64 defines a float64 flag with specified name.
+	// Float64Flag defines a float64 flag with specified name.
 	Float64Flag struct {
 		Common
 		val float64
