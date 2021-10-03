@@ -44,7 +44,7 @@ func (f *Common) Flag() string {
 	return "--" + f.name
 }
 
-// GetAliases Returns all aliases for the flag together with primary "name".
+// Aliases returns all aliases for the flag together with primary "name".
 func (f *Common) Aliases() []string {
 	return f.aliases
 }
@@ -67,7 +67,7 @@ func (f *Common) AliasesString() string {
 	return strings.Join(aliases, ",")
 }
 
-// Hidden reports whether flag should be visible in help menu.
+// IsHidden reports whether flag should be visible in help menu.
 func (f *Common) IsHidden() bool {
 	return f.hidden
 }
@@ -109,6 +109,7 @@ func (f *Common) Var() vars.Variable {
 	return f.variable
 }
 
+// Value returns string value of flag
 func (f *Common) Value() string {
 	return f.variable.String()
 }

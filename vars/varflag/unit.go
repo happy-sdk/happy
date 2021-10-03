@@ -32,13 +32,13 @@ func (f *UintFlag) Parse(args []string) (bool, error) {
 	})
 }
 
-// Get uint flag value, it returns default value if not present
+// Value returns uint flag value, it returns default value if not present
 // or 0 if default is also not set.
 func (f *UintFlag) Value() uint {
 	return f.val
 }
 
-// Set default value for uint flag.
+// Default sets default value for uint flag.
 func (f *UintFlag) Default(def ...uint) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
 		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeUint)

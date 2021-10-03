@@ -36,13 +36,13 @@ func (f *DurationFlag) Parse(args []string) (bool, error) {
 	})
 }
 
-// Get duration flag value, it returns default value if not present
+// Value returns duration flag value, it returns default value if not present
 // or 0 if default is also not set.
 func (f *DurationFlag) Value() time.Duration {
 	return f.val
 }
 
-// Set default value for duration flag.
+// Default sets default value for duration flag.
 func (f *DurationFlag) Default(def ...time.Duration) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
 		f.defval = vars.New(f.name, def[0])

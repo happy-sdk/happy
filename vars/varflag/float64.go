@@ -32,13 +32,13 @@ func (f *Float64Flag) Parse(args []string) (bool, error) {
 	})
 }
 
-// Get float64 flag value, it returns default value if not present
+// Value return float64 flag value, it returns default value if not present
 // or 0 if default is also not set.
 func (f *Float64Flag) Value() float64 {
 	return f.val
 }
 
-// Set default value for float64 flag.
+// Default sets default value for float64 flag.
 func (f *Float64Flag) Default(def ...float64) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
 		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeFloat64)

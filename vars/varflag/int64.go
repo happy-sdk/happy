@@ -32,13 +32,13 @@ func (f *Int64Flag) Parse(args []string) (bool, error) {
 	})
 }
 
-// Get int64 flag value, it returns default value if not present
+// Value returns int64 flag value, it returns default value if not present
 // or 0 if default is also not set.
 func (f *Int64Flag) Value() int64 {
 	return f.val
 }
 
-// Set default value for int64 flag.
+// Default sets default value for int64 flag.
 func (f *Int64Flag) Default(def ...int64) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
 		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeInt64)

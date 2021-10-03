@@ -32,13 +32,13 @@ func (f *IntFlag) Parse(args []string) (bool, error) {
 	})
 }
 
-// Get int flag value, it returns default value if not present
+// Value returns int flag value, it returns default value if not present
 // or 0 if default is also not set.
 func (f *IntFlag) Value() int {
 	return f.val
 }
 
-// Set default value for int flag.
+// Default sets default value for int flag.
 func (f *IntFlag) Default(def ...int) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
 		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeInt)

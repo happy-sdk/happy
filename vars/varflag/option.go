@@ -65,7 +65,7 @@ func (f *OptionFlag) Parse(args []string) (ok bool, err error) {
 	return f.isPresent, err
 }
 
-// Option return parsed options.
+// Value returns parsed options.
 func (f *OptionFlag) Value() []string {
 	opts := []string{}
 	for o, set := range f.opts {

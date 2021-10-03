@@ -32,13 +32,13 @@ func (f *BoolFlag) Parse(args []string) (bool, error) {
 	})
 }
 
-// Get bool flag value, it returns default value if not present
+// Value returns bool flag value, it returns default value if not present
 // or false if default is also not set.
 func (f *BoolFlag) Value() bool {
 	return f.val
 }
 
-// Set default value for boool flag.
+// Default sets default value for boool flag.
 func (f *BoolFlag) Default(def ...bool) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
 		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeBool)
