@@ -17,7 +17,7 @@ func Int(name string, aliases ...string) (*IntFlag, error) {
 		return nil, err
 	}
 	f := &IntFlag{val: 0, Common: *c}
-	f.variable, _ = vars.NewTyped(name, "", vars.TypeInt)
+	f.variable, _ = vars.NewTyped(name, "", vars.TypeInt64)
 	return f, nil
 }
 
@@ -25,12 +25,12 @@ func Int(name string, aliases ...string) (*IntFlag, error) {
 func (f *IntFlag) Parse(args []string) (bool, error) {
 	return f.parse(args, func(vv []vars.Variable) (err error) {
 		if len(vv) > 0 {
-			val, err := vars.NewTyped(f.name, vv[0].String(), vars.TypeInt)
+			val, err := vars.NewTyped(f.name, vv[0].String(), vars.TypeInt64)
 			if err != nil {
 				return fmt.Errorf("%w: %q", ErrInvalidValue, err)
 			}
 			f.variable = val
-			f.val = f.variable.Int()
+			f.val = f.variable.Int64()
 		}
 		return err
 	})
@@ -38,14 +38,14 @@ func (f *IntFlag) Parse(args []string) (bool, error) {
 
 // Value returns int flag value, it returns default value if not present
 // or 0 if default is also not set.
-func (f *IntFlag) Value() int {
+func (f *IntFlag) Value() int64 {
 	return f.val
 }
 
 // Default sets default value for int flag.
-func (f *IntFlag) Default(def ...int) vars.Variable {
+func (f *IntFlag) Default(def ...int64) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
-		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeInt)
+		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeInt64)
 		f.val = def[0]
 	}
 	return f.defval
@@ -56,8 +56,8 @@ func (f *IntFlag) Unset() {
 	if !f.defval.Empty() {
 		f.variable = f.defval
 	} else {
-		f.variable, _ = vars.NewTyped(f.name, "0", vars.TypeInt)
+		f.variable, _ = vars.NewTyped(f.name, "0", vars.TypeInt64)
 	}
 	f.isPresent = false
-	f.val = f.variable.Int()
+	f.val = f.variable.Int64()
 }

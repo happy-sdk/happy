@@ -132,7 +132,7 @@ type (
 	}
 
 	// Float64Flag defines a float64 flag with specified name.
-	Float64Flag struct {
+	FloatFlag struct {
 		Common
 		val float64
 	}
@@ -140,23 +140,11 @@ type (
 	// IntFlag defines an int flag with specified name,.
 	IntFlag struct {
 		Common
-		val int
-	}
-
-	// Int64Flag defines an int64 flag with specified name.
-	Int64Flag struct {
-		Common
 		val int64
 	}
 
 	// UintFlag defines a uint flag with specified name.
 	UintFlag struct {
-		Common
-		val uint
-	}
-
-	// Uint64Flag defines a uint64 flag with specified name.
-	Uint64Flag struct {
 		Common
 		val uint64
 	}

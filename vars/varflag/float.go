@@ -10,19 +10,19 @@ import (
 	"github.com/mkungla/vars/v5"
 )
 
-// Float64 returns new float64 flag. Argument "a" can be any nr of aliases.
-func Float64(name string, aliases ...string) (*Float64Flag, error) {
+// Float returns new float flag. Argument "a" can be any nr of aliases.
+func Float(name string, aliases ...string) (*FloatFlag, error) {
 	c, err := newCommon(name, aliases...)
 	if err != nil {
 		return nil, err
 	}
-	f := &Float64Flag{val: 0, Common: *c}
+	f := &FloatFlag{val: 0, Common: *c}
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeFloat64)
 	return f, nil
 }
 
-// Parse float64 flag.
-func (f *Float64Flag) Parse(args []string) (bool, error) {
+// Parse float flag.
+func (f *FloatFlag) Parse(args []string) (bool, error) {
 	return f.parse(args, func(vv []vars.Variable) (err error) {
 		if len(vv) > 0 {
 			f.variable = vv[0]
@@ -34,12 +34,12 @@ func (f *Float64Flag) Parse(args []string) (bool, error) {
 
 // Value return float64 flag value, it returns default value if not present
 // or 0 if default is also not set.
-func (f *Float64Flag) Value() float64 {
+func (f *FloatFlag) Value() float64 {
 	return f.val
 }
 
 // Default sets default value for float64 flag.
-func (f *Float64Flag) Default(def ...float64) vars.Variable {
+func (f *FloatFlag) Default(def ...float64) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
 		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeFloat64)
 		f.val = def[0]
@@ -48,7 +48,7 @@ func (f *Float64Flag) Default(def ...float64) vars.Variable {
 }
 
 // Unset the bool flag value.
-func (f *Float64Flag) Unset() {
+func (f *FloatFlag) Unset() {
 	if !f.defval.Empty() {
 		f.variable = f.defval
 	} else {
