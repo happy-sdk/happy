@@ -11,12 +11,14 @@ import (
 )
 
 // Duration returns new duration flag. Argument "a" can be any nr of aliases.
-func Duration(name string, aliases ...string) (*DurationFlag, error) {
+func Duration(name string, value time.Duration, usage string, aliases ...string) (*DurationFlag, error) {
 	c, err := newCommon(name, aliases...)
 	if err != nil {
 		return nil, err
 	}
-	f := &DurationFlag{val: time.Duration(0), Common: *c}
+	f := &DurationFlag{val: value, Common: *c}
+	f.usage = usage
+	f.Default(value)
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeString)
 	return f, nil
 }

@@ -11,12 +11,14 @@ import (
 )
 
 // Float returns new float flag. Argument "a" can be any nr of aliases.
-func Float(name string, aliases ...string) (*FloatFlag, error) {
+func Float(name string, value float64, usage string, aliases ...string) (*FloatFlag, error) {
 	c, err := newCommon(name, aliases...)
 	if err != nil {
 		return nil, err
 	}
-	f := &FloatFlag{val: 0, Common: *c}
+	f := &FloatFlag{val: value, Common: *c}
+	f.usage = usage
+	f.Default(value)
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeFloat64)
 	return f, nil
 }

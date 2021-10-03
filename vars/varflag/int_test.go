@@ -15,8 +15,8 @@ func TestIntFlag(t *testing.T) {
 	var tests = []struct {
 		name   string
 		in     []string
-		want   int64
-		defval int64
+		want   int
+		defval int
 		ok     bool
 		err    error
 	}{
@@ -30,7 +30,7 @@ func TestIntFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, _ := Int(tt.name)
+			flag, _ := Int(tt.name, tt.defval, "")
 			flag.Default(tt.defval)
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
 				t.Errorf("failed to parse int flag expected %t,%q got %t,%#v (%d)", tt.ok, tt.err, ok, err, flag.Value())

@@ -32,7 +32,7 @@ func TestFloatFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, _ := Float(tt.name)
+			flag, _ := Float(tt.name, tt.defval, "")
 			flag.Default(tt.defval)
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
 				t.Errorf("failed to parse uint flag expected %t,%q got %t,%#v (%f)", tt.ok, tt.err, ok, err, flag.Value())

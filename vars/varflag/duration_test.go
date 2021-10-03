@@ -26,7 +26,7 @@ func TestDurationFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, _ := Duration(tt.name)
+			flag, _ := Duration(tt.name, tt.defval, "")
 			flag.Default(tt.defval)
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
 				t.Errorf("failed to parse uint flag expected %t,%q got %t,%#v (%d)", tt.ok, tt.err, ok, err, flag.Value())

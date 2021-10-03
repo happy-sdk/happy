@@ -44,7 +44,7 @@ func testflags() []testflag {
 func TestName(t *testing.T) {
 	for _, tt := range testflags() {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, err := New(tt.name, tt.aliases...)
+			flag, err := New(tt.name, "", "", tt.aliases...)
 			if tt.valid {
 				if err != nil {
 					t.Errorf("valid flag %q did not expect error got %q", tt.name, err)
@@ -70,7 +70,7 @@ func TestFlag(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 			expected := "-" + tt.name
 			if !tt.short {
 				expected = "-" + expected
@@ -90,12 +90,12 @@ func TestNoArgs(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 
 			if ok, err := flag.Parse([]string{}); ok || !errors.Is(err, ErrParse) {
 				t.Errorf("flag should fail to parse got %t %q", ok, err)
 			}
-			flag2, _ := New(tt.name)
+			flag2, _ := New(tt.name, "", "")
 			if ok, err := flag2.Parse(nil); ok || !errors.Is(err, ErrParse) {
 				t.Errorf("flag should fail to parse got %t %q", ok, err)
 			}
@@ -110,7 +110,7 @@ func TestUsage(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 			flag.Default(tt.defval)
 			flag.Usage(desc)
 
@@ -131,7 +131,7 @@ func TestAliases(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name, tt.aliases...)
+			flag, _ := New(tt.name, "", "", tt.aliases...)
 			if len(tt.aliases) != len(flag.Aliases()) {
 				t.Errorf(
 					"flag %q expected (%d) aliases got (%d) aliases - %s",
@@ -155,7 +155,7 @@ func TestAliasesString(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name, tt.aliases...)
+			flag, _ := New(tt.name, "", "", tt.aliases...)
 			if len(tt.aliases) > 0 {
 				str := flag.AliasesString()
 				for _, a := range tt.aliases {
@@ -181,7 +181,7 @@ func TestIsHidden(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 			if tt.hidden {
 				flag.Hide()
 			}
@@ -198,7 +198,7 @@ func TestGlobal(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 			if flag.IsGlobal() {
 				t.Error("flag should not be global by default")
 			}
@@ -208,7 +208,7 @@ func TestGlobal(t *testing.T) {
 				t.Error("flag should not be global after parsing from generic string")
 			}
 
-			flag2, _ := New(tt.name)
+			flag2, _ := New(tt.name, "", "")
 			flag2.Parse([]string{"/bin/app", "--" + tt.name, "some-value"})
 			if !flag2.IsGlobal() {
 				t.Error("flag should be global after parsing from os args")
@@ -223,7 +223,7 @@ func TestAliasParse(t *testing.T) {
 			if !tt.valid || len(tt.aliases) == 0 || len(tt.aliases[0]) > 1 {
 				return
 			}
-			flag, _ := New(tt.name, tt.aliases...)
+			flag, _ := New(tt.name, "", "", tt.aliases...)
 			args := []string{"-" + tt.aliases[0], "some value for alias"}
 			if ok, err := flag.Parse(args); !ok || err != nil {
 				t.Error("expected string flag to parse alias, ", ok, err)
@@ -238,7 +238,7 @@ func TestPos(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 			if flag.Pos() != 0 {
 				t.Errorf("flag.Pos want 0 got %d", flag.Pos())
 			}
@@ -254,7 +254,7 @@ func TestPos(t *testing.T) {
 }
 
 func TestStringFlagPosition(t *testing.T) {
-	flag, _ := New("position-flag", "a")
+	flag, _ := New("position-flag", "", "", "a")
 	if ok, err := flag.Parse([]string{"--some-flag=value2", "--position-flag=value1"}); !ok || err != nil {
 		t.Error("expected string flag to parse, ", ok, err)
 	}
@@ -275,7 +275,7 @@ func TestRequired(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 			if tt.required {
 				flag.Required()
 			}
@@ -294,7 +294,7 @@ func TestRequired(t *testing.T) {
 }
 
 func TestStringFlagEmpty(t *testing.T) {
-	flag, _ := New("some-flag")
+	flag, _ := New("some-flag", "", "")
 	if ok, err := flag.Parse([]string{"--some-flag"}); ok || err == nil {
 		t.Error("expected string flag parser to return not ok, ", ok, err)
 	}
@@ -310,7 +310,7 @@ func TestUnset(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 			flag.Default(tt.defval)
 			args := []string{flag.Flag(), tval}
 			flag.Parse(args)
@@ -334,10 +334,10 @@ func TestUnset(t *testing.T) {
 }
 
 func TestStringFlagPositionSpaces(t *testing.T) {
-	flag1, _ := New("some-flag1")
-	flag2, _ := New("some-flag2")
-	flag3, _ := New("some-flag3")
-	flag4, _ := New("n")
+	flag1, _ := New("some-flag1", "", "")
+	flag2, _ := New("some-flag2", "", "")
+	flag3, _ := New("some-flag3", "", "")
+	flag4, _ := New("n", "", "")
 	args := []string{"-n", "a", "--some-flag1", "value1", "random", "--some-flag3", "value3", "--some-flag2", "value2"}
 
 	if ok, err := flag1.Parse(args); !ok || err != nil {
@@ -370,7 +370,7 @@ func TestStringFlagPositionSpaces(t *testing.T) {
 }
 
 func TestInvalidArgs(t *testing.T) {
-	flag1, _ := New("some-flag1")
+	flag1, _ := New("some-flag1", "", "")
 	args := []string{"-n", "a", "--some-flag1", "-=value", "randome", "--some-flag3", "value3", "--some-flag2", "value2"}
 
 	if ok, err := flag1.Parse(args); ok || !errors.Is(err, ErrParse) {
@@ -385,7 +385,7 @@ func TestVariable(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name)
+			flag, _ := New(tt.name, "", "")
 			args := []string{flag.Flag(), tval}
 			if flag.IsGlobal() {
 				t.Error("flag should be global by default")

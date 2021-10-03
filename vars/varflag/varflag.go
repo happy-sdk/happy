@@ -140,22 +140,24 @@ type (
 	// IntFlag defines an int flag with specified name,.
 	IntFlag struct {
 		Common
-		val int64
+		val int
 	}
 
 	// UintFlag defines a uint flag with specified name.
 	UintFlag struct {
 		Common
-		val uint64
+		val uint
 	}
 )
 
 // New returns new common string flag. Argument "a" can be any nr of aliases.
-func New(name string, aliases ...string) (*Common, error) {
+func New(name string, value string, usage string, aliases ...string) (*Common, error) {
 	f, err := newCommon(name, aliases...)
 	if err != nil {
 		return nil, err
 	}
+	f.Default(value)
+	f.usage = usage
 	f.variable = vars.New(name, "")
 	return f, err
 }

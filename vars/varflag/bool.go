@@ -11,12 +11,17 @@ import (
 )
 
 // Bool returns new bool flag. Argument "a" can be any nr of aliases.
-func Bool(name string, aliases ...string) (*BoolFlag, error) {
+func Bool(name string, value bool, usage string, aliases ...string) (*BoolFlag, error) {
 	c, err := newCommon(name, aliases...)
 	if err != nil {
 		return nil, err
 	}
-	f := &BoolFlag{val: false, Common: *c}
+	f := &BoolFlag{
+		val:    value,
+		Common: *c,
+	}
+	f.usage = usage
+	f.Default(value)
 	f.variable, _ = vars.NewTyped(name, "false", vars.TypeBool)
 	return f, nil
 }

@@ -11,12 +11,14 @@ import (
 )
 
 // Int returns new int flag. Argument "a" can be any nr of aliases.
-func Int(name string, aliases ...string) (*IntFlag, error) {
+func Int(name string, value int, usage string, aliases ...string) (*IntFlag, error) {
 	c, err := newCommon(name, aliases...)
 	if err != nil {
 		return nil, err
 	}
-	f := &IntFlag{val: 0, Common: *c}
+	f := &IntFlag{val: value, Common: *c}
+	f.usage = usage
+	f.Default(value)
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeInt64)
 	return f, nil
 }
@@ -30,7 +32,7 @@ func (f *IntFlag) Parse(args []string) (bool, error) {
 				return fmt.Errorf("%w: %q", ErrInvalidValue, err)
 			}
 			f.variable = val
-			f.val = f.variable.Int64()
+			f.val = f.variable.Int()
 		}
 		return err
 	})
@@ -38,12 +40,12 @@ func (f *IntFlag) Parse(args []string) (bool, error) {
 
 // Value returns int flag value, it returns default value if not present
 // or 0 if default is also not set.
-func (f *IntFlag) Value() int64 {
+func (f *IntFlag) Value() int {
 	return f.val
 }
 
 // Default sets default value for int flag.
-func (f *IntFlag) Default(def ...int64) vars.Variable {
+func (f *IntFlag) Default(def ...int) vars.Variable {
 	if len(def) > 0 && f.defval.Empty() {
 		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeInt64)
 		f.val = def[0]
@@ -59,5 +61,5 @@ func (f *IntFlag) Unset() {
 		f.variable, _ = vars.NewTyped(f.name, "0", vars.TypeInt64)
 	}
 	f.isPresent = false
-	f.val = f.variable.Int64()
+	f.val = f.variable.Int()
 }

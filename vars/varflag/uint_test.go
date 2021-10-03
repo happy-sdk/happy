@@ -15,8 +15,8 @@ func TestUintFlag(t *testing.T) {
 	var tests = []struct {
 		name   string
 		in     []string
-		want   uint64
-		defval uint64
+		want   uint
+		defval uint
 		ok     bool
 		err    error
 	}{
@@ -30,14 +30,13 @@ func TestUintFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, _ := Uint(tt.name)
-			flag.Default(tt.defval)
+			flag, _ := Uint(tt.name, tt.defval, "")
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
 				t.Errorf("failed to parse uint flag expected %t,%q got %t,%#v (%d)", tt.ok, tt.err, ok, err, flag.Value())
 			}
 
 			if flag.Value() != tt.want {
-				t.Errorf("expected value to be %d got %d", tt.want, flag.Value())
+				t.Errorf("provided %q expected value to be %d got %d", tt.in, tt.want, flag.Value())
 			}
 			flag.Unset()
 			if flag.Value() != tt.defval {

@@ -13,7 +13,7 @@ import (
 
 // Option returns new string flag. Argument "opts" is string slice
 // of options this flag accepts.
-func Option(name string, opts []string, aliases ...string) (*OptionFlag, error) {
+func Option(name string, value []string, usage string, opts []string, aliases ...string) (*OptionFlag, error) {
 	if len(opts) == 0 {
 		return nil, ErrMissingOptions
 	}
@@ -22,6 +22,8 @@ func Option(name string, opts []string, aliases ...string) (*OptionFlag, error) 
 		return nil, err
 	}
 	f := &OptionFlag{Common: *c}
+	f.Default(value)
+	f.usage = usage
 	f.opts = make(map[string]bool, len(opts))
 	for _, o := range opts {
 		f.opts[o] = false
@@ -77,10 +79,10 @@ func (f *OptionFlag) Value() []string {
 }
 
 // Default sets flag default.
-func (f *OptionFlag) Default(def ...interface{}) vars.Variable {
+func (f *OptionFlag) Default(def ...[]string) vars.Variable {
 	if len(def) > 0 && def[0] != nil && f.defval.Empty() {
-		var defopts = def[0].([]string)
-		f.defval = vars.New(f.name+":default", strings.Join(defopts, "|"))
+		var defopts = def[0]
+		f.defval = vars.New(f.name, strings.Join(defopts, "|"))
 	}
 	return f.defval
 }
