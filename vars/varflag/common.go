@@ -156,10 +156,9 @@ func (f *Common) parse(args []string, read func([]vars.Variable) error) (bool, e
 	return f.isPresent, err
 }
 
-//nolint: funlen,gocognit,cyclop
 func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr bool, err error) {
 	var (
-		values = []vars.Variable{}
+		values []vars.Variable
 		poses  []int // slice of positions (useful for multiflag)
 		pargs  []string
 	)
@@ -179,37 +178,9 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr 
 
 	sort.Ints(poses)
 
-	for _, pose := range poses {
-		// handle bool flags
-		if f.variable.Type() == vars.TypeBool {
-			var value vars.Variable
-			falsestr := "false"
-			bval := "true"
-			if len(pargs) > pose {
-				switch pargs[pose] {
-				case falsestr, "0", "off":
-					bval = falsestr
-					// case "true", "1", "on":
-				}
-			}
-			// no need for err check since we only pass valid strings
-			value, _ = vars.NewTyped(f.name, bval, vars.TypeBool)
-			pr = true
-			values = append(values, value)
-			continue
-		}
-
-		if len(pargs) == pose {
-			return pr, fmt.Errorf("%w: %s", ErrMissingValue, f.name)
-		}
-		// update pose only once for first occourance
-		if f.pos == 0 {
-			f.pos = pose
-		}
-		pr = true
-		value := pargs[pose]
-		// if we get other flags we can validate is value a flag or not
-		values = append(values, vars.New(f.name, value))
+	values, pr, err = f.parseValues(poses, pargs)
+	if err != nil {
+		return pr, err
 	}
 
 	// what was before the flag including flag it self
@@ -234,6 +205,47 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr 
 	}
 	err = read(values)
 	return pr, err
+}
+
+func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, bool, error) {
+	var (
+		pr     bool
+		values = []vars.Variable{}
+	)
+
+	for _, pose := range poses {
+		// handle bool flags
+		if f.variable.Type() == vars.TypeBool {
+			var value vars.Variable
+			falsestr := "false"
+			bval := "true"
+			if len(pargs) > pose {
+				switch pargs[pose] {
+				case falsestr, "0", "off":
+					bval = falsestr
+					// case "true", "1", "on":
+				}
+			}
+			// no need for err check since we only pass valid strings
+			value, _ = vars.NewTyped(f.name, bval, vars.TypeBool)
+			pr = true
+			values = append(values, value)
+			continue
+		}
+
+		if len(pargs) == pose {
+			return values, pr, fmt.Errorf("%w: %s", ErrMissingValue, f.name)
+		}
+		// update pose only once for first occourance
+		if f.pos == 0 {
+			f.pos = pose
+		}
+		pr = true
+		value := pargs[pose]
+		// if we get other flags we can validate is value a flag or not
+		values = append(values, vars.New(f.name, value))
+	}
+	return values, pr, nil
 }
 
 // findFlag reports flag positions if flag is present and returns normalized
