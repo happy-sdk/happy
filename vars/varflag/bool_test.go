@@ -86,6 +86,39 @@ func TestBoolFlagValues(t *testing.T) {
 	}
 }
 
+func TestBoolFlagValuesWithoutEq(t *testing.T) {
+	for _, tt := range booltests() {
+		t.Run(tt.name, func(t *testing.T) {
+			flag, _ := Bool(tt.name, !tt.b, "", tt.alias)
+			fname := fmt.Sprintf("--%s", tt.name)
+
+			if present, err := flag.Parse([]string{fname, tt.arg}); !present || err != nil {
+				t.Error("expected bool flag parser to return present, nil got ", present, err)
+			}
+
+			if !flag.Present() {
+				t.Error("expected bool flag to be present")
+			}
+			if flag.Value() != tt.b {
+				t.Errorf("expected bool value to be %t got %t", tt.b, flag.Value())
+			}
+			if flag.String() != tt.str {
+				t.Errorf("expected bool value to be %q got %q", tt.str, flag.String())
+			}
+			if flag.Var().Type() != vars.TypeBool {
+				t.Errorf("expected bool value Type to be TypeBool got %v", flag.Var().Type())
+			}
+			flag.Unset()
+			if flag.Present() {
+				t.Error("expected bool flag not to be present")
+			}
+			if flag.Value() != !tt.b {
+				t.Errorf("expected %t got %t after unset", !tt.b, flag.Value())
+			}
+		})
+	}
+}
+
 func TestBoolFlagAliasValues(t *testing.T) {
 	for _, tt := range booltests() {
 		t.Run(tt.name, func(t *testing.T) {

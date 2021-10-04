@@ -7,7 +7,9 @@ package varflag_test
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/mkungla/varflag/v5"
@@ -163,4 +165,62 @@ func ExampleFloat64() {
 	// string      1.001000023
 	// float32     1.0010000467
 	// float64     1.0010000230
+}
+
+func ExampleInt() {
+	os.Args = []string{"/bin/app", "--int", fmt.Sprint(math.MinInt64), "int64"}
+	f, _ := varflag.Int("int", 1, "")
+	f.Parse(os.Args)
+
+	fmt.Printf("%-12s%s\n", "string", f.String())
+	fmt.Printf("%-12s%d\n", "int", f.Var().Int())
+	fmt.Printf("%-12s%d\n", "int64", f.Var().Int64())
+	fmt.Printf("%-12s%d\n", "uint", f.Var().Uint())
+	fmt.Printf("%-12s%d\n", "uint64", f.Var().Uint64())
+	fmt.Printf("%-12s%f\n", "float32", f.Var().Float32())
+	fmt.Printf("%-12s%f\n", "float64", f.Var().Float64())
+	// Output:
+	// string      -9223372036854775808
+	// int         -9223372036854775808
+	// int64       -9223372036854775808
+	// uint        0
+	// uint64      0
+	// float32     -9223372036854775808.000000
+	// float64     -9223372036854775808.000000
+}
+
+func ExampleUint() {
+	os.Args = []string{"/bin/app", "--uint", strconv.FormatUint(math.MaxUint64, 10), "uint64"}
+	f, _ := varflag.Uint("uint", 1, "")
+	f.Parse(os.Args)
+
+	fmt.Printf("%-12s%s\n", "string", f.String())
+	fmt.Printf("%-12s%d\n", "int", f.Var().Int())
+	fmt.Printf("%-12s%d\n", "int64", f.Var().Int64())
+	fmt.Printf("%-12s%d\n", "uint", f.Var().Uint())
+	fmt.Printf("%-12s%d\n", "uint64", f.Var().Uint64())
+	fmt.Printf("%-12s%f\n", "float32", f.Var().Float32())
+	fmt.Printf("%-12s%f\n", "float64", f.Var().Float64())
+	// Output:
+	// string      18446744073709551615
+	// int         9223372036854775807
+	// int64       9223372036854775807
+	// uint        18446744073709551615
+	// uint64      18446744073709551615
+	// float32     18446744073709551616.000000
+	// float64     18446744073709551616.000000
+}
+
+func ExampleBool() {
+	os.Args = []string{"/bin/app", "--bool"}
+	f, _ := varflag.Bool("bool", false, "")
+	f.Parse(os.Args)
+
+	fmt.Printf("%-12s%s\n", "string", f.String())
+	fmt.Printf("%-12s%t\n", "value", f.Value())
+	fmt.Printf("%-12s%t\n", "bool", f.Var().Bool())
+	// Output:
+	// string      true
+	// value       true
+	// bool        true
 }

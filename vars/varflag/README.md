@@ -9,17 +9,23 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
 [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/varflag)](https://goreportcard.com/report/github.com/mkungla/varflag)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/varflag/badge.svg?branch=main)](https://coveralls.io/github/mkungla/varflag?branch=main)
 
+- [varflag](#varflag)
+- [Usage](#usage)
+  - [String flag](#string-flag)
+  - [Duration flag](#duration-flag)
+  - [Float flag](#float-flag)
+  - [Int flag](#int-flag)
+  - [Uint Flag](#uint-flag)
+  - [Bool Flag](#bool-flag)
 
-## Usage
+# Usage
 
 > note that major version ensures compatibility with
 > https://github.com/mkungla/vars package
 
 `go get github.com/mkungla/varflag/v5`
 
-
-
-### Simple string flag
+## String flag
 
 ```go
 package main
@@ -88,7 +94,7 @@ func main() {
 }
 ```
 
-### Duration flag
+## Duration flag
 
 ```go
 os.Args = []string{"/bin/app", "--duration", "1h30s"}
@@ -114,7 +120,7 @@ fmt.Printf("%-12s%f\n", "float64", dur.Var().Float64())
 // float64     3630000000000.000000
 ```
 
-### Float flag
+## Float flag
 
 ```go
 os.Args = []string{"/bin/app", "--float", "1.001000023"}
@@ -130,6 +136,81 @@ fmt.Printf("%-12s%.10f\n", "float64", f.Var().Float64())
 // string      1.001000023
 // float32     1.0010000467
 // float64     1.0010000230
+```
+
+## Int flag
+
+```go
+os.Args = []string{"/bin/app", "--int", fmt.Sprint(math.MinInt64), "int64"}
+f, _ := varflag.Int("int", 1, "")
+f.Parse(os.Args)
+
+fmt.Printf("%-12s%s\n", "string", f.String())
+fmt.Printf("%-12s%d\n", "int", f.Var().Int())
+fmt.Printf("%-12s%d\n", "int64", f.Var().Int64())
+fmt.Printf("%-12s%d\n", "uint", f.Var().Uint())
+fmt.Printf("%-12s%d\n", "uint64", f.Var().Uint64())
+fmt.Printf("%-12s%f\n", "float32", f.Var().Float32())
+fmt.Printf("%-12s%f\n", "float64", f.Var().Float64())
+// Output:
+// string      -9223372036854775808
+// int         -9223372036854775808
+// int64       -9223372036854775808
+// uint        0
+// uint64      0
+// float32     -9223372036854775808.000000
+// float64     -9223372036854775808.000000
+```
+
+## Uint Flag
+
+```go
+os.Args = []string{"/bin/app", "--uint", strconv.FormatUint(math.MaxUint64, 10), "uint64"}
+f, _ := varflag.Uint("uint", 1, "")
+f.Parse(os.Args)
+
+fmt.Printf("%-12s%s\n", "string", f.String())
+fmt.Printf("%-12s%d\n", "int", f.Var().Int())
+fmt.Printf("%-12s%d\n", "int64", f.Var().Int64())
+fmt.Printf("%-12s%d\n", "uint", f.Var().Uint())
+fmt.Printf("%-12s%d\n", "uint64", f.Var().Uint64())
+fmt.Printf("%-12s%f\n", "float32", f.Var().Float32())
+fmt.Printf("%-12s%f\n", "float64", f.Var().Float64())
+// Output:
+// string      18446744073709551615
+// int         9223372036854775807
+// int64       9223372036854775807
+// uint        18446744073709551615
+// uint64      18446744073709551615
+// float32     18446744073709551616.000000
+// float64     18446744073709551616.000000
+}
+```
+
+## Bool Flag
+
+Valid bool flag args are
+
+**true**
+
+`--bool, --bool=true, --bool=1 --bool=on, --bool true, --bool 1, --bool on`
+
+**false**
+
+`--bool, --bool=false, --bool=0 --bool=off, --bool false, --bool 0, --bool off`
+
+```go
+os.Args = []string{"/bin/app", "--bool"}
+f, _ := varflag.Bool("bool", false, "")
+f.Parse(os.Args)
+
+fmt.Printf("%-12s%s\n", "string", f.String())
+fmt.Printf("%-12s%t\n", "value", f.Value())
+fmt.Printf("%-12s%t\n", "bool", f.Var().Bool())
+// Output:
+// string      true
+// value       true
+// bool        true
 ```
 
 **test**
