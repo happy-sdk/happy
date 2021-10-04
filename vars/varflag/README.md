@@ -19,6 +19,7 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
   - [Uint Flag](#uint-flag)
   - [Bool Flag](#bool-flag)
   - [Option Flag](#option-flag)
+  - [Bash Brace Expansion Flag](#bash-brace-expansion-flag)
 
 # Usage
 
@@ -232,6 +233,23 @@ fmt.Printf("%-12s%#v\n", "value", f.Value())
 // Output:
 // string      opt1|opt2
 // value       []string{"opt1", "opt2"}
+```
+
+## Bash Brace Expansion Flag
+
+uses [githubc.com/mkungla/bexp](https://github.com/mkungla/bexp) for Brace Expansion
+
+```go
+os.Args = []string{"/bin/app", "--images", "image-{0..2}.jpg"}
+f, _ := varflag.Bexp("images", "image-{a,b,c}.jpg", "expand path", "")
+f.Parse(os.Args)
+
+fmt.Printf("%-12s%s\n", "string", f.String())
+fmt.Printf("%-12s%#v\n", "value", f.Value())
+
+// Output:
+// string      image-0.jpg|image-1.jpg|image-2.jpg
+// value       []string{"image-0.jpg", "image-1.jpg", "image-2.jpg"}
 ```
 
 **test**

@@ -90,3 +90,14 @@ func BenchmarkOption(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkBexp(b *testing.B) {
+	args := []string{"/bin/app", "--some-flag", "file{0..2}.jpg"}
+	b.Run("pkg:bexp", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			flag, _ := Bexp("some-flag", "file-{a,b,c}.jpg", "expand path", "")
+			flag.Parse(args)
+			flag.Value()
+		}
+	})
+}

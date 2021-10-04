@@ -151,6 +151,11 @@ type (
 		Common
 		val uint
 	}
+
+	BexpFlag struct {
+		Common
+		val []string
+	}
 )
 
 // New returns new common string flag. Argument "a" can be any nr of aliases.

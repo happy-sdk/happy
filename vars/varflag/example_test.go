@@ -241,3 +241,16 @@ func ExampleOption() {
 	// string      opt1|opt2
 	// value       []string{"opt1", "opt2"}
 }
+
+func ExampleBexp() {
+	os.Args = []string{"/bin/app", "--images", "image-{0..2}.jpg"}
+	f, _ := varflag.Bexp("images", "image-{a,b,c}.jpg", "expand path", "")
+	f.Parse(os.Args)
+
+	fmt.Printf("%-12s%s\n", "string", f.String())
+	fmt.Printf("%-12s%#v\n", "value", f.Value())
+
+	// Output:
+	// string      image-0.jpg|image-1.jpg|image-2.jpg
+	// value       []string{"image-0.jpg", "image-1.jpg", "image-2.jpg"}
+}
