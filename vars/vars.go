@@ -47,29 +47,29 @@ const (
 
 var (
 
-	// ErrVariableKeyEmpty is used when variable key is empty string
+	// ErrVariableKeyEmpty is used when variable key is empty string.
 	ErrVariableKeyEmpty = errors.New("variable key can not be empty")
 
-	// EmptyVar variable
+	// EmptyVar variable.
 	EmptyVar = Variable{}
 
-	// parserPool is cached parser
+	// parserPool is cached parser.
 	parserPool = sync.Pool{
 		New: func() interface{} { return new(parser) },
 	}
 )
 
 type (
-	// Type represents type of raw value
+	// Type represents type of raw value.
 	Type uint
 
-	// Variable is universl representation of key val pair
+	// Variable is universl representation of key val pair.
 	Variable struct {
 		key string
 		val Value
 	}
 
-	// Value describes the variable value
+	// Value describes the variable value.
 	Value struct {
 		vtype Type
 		raw   interface{}
@@ -120,7 +120,7 @@ type (
 )
 
 // New return untyped Variable, If error occurred while parsing
-// Variable represents default 0, nil value
+// Variable represents default 0, nil value.
 func New(key string, val interface{}) Variable {
 	return Variable{
 		key: key,
@@ -129,7 +129,7 @@ func New(key string, val interface{}) Variable {
 }
 
 // NewValue return Value, If error occurred while parsing
-// VAR represents default 0, nil value
+// VAR represents default 0, nil value.
 func NewValue(val interface{}) Value {
 	if vv, ok := val.(Value); ok {
 		return vv
@@ -149,7 +149,7 @@ func NewValue(val interface{}) Value {
 }
 
 // NewFromKeyVal parses variable from single "key=val" pair and
-// returns Variable
+// returns Variable.
 func NewFromKeyVal(kv string) (v Variable, err error) {
 	if len(kv) == 0 {
 		err = ErrVariableKeyEmpty
@@ -179,7 +179,7 @@ func NewFromKeyVal(kv string) (v Variable, err error) {
 }
 
 // NewTyped parses variable and sets appropriately parser error for given type
-// if parsing to requested type fails
+// if parsing to requested type fails.
 func NewTyped(key string, val string, vtype Type) (Variable, error) {
 	var variable Variable
 	var err error
@@ -197,7 +197,7 @@ func NewTyped(key string, val string, vtype Type) (Variable, error) {
 	return variable, err
 }
 
-// NewTypedValue tries to parse value to given type
+// NewTypedValue tries to parse value to given type.
 func NewTypedValue(val string, vtype Type) (Value, error) {
 	var v string
 	var err error
@@ -239,7 +239,7 @@ func NewTypedValue(val string, vtype Type) (Value, error) {
 }
 
 // ParseKeyValSlice parses variables from any []"key=val" slice and
-// returns Collection
+// returns Collection.
 func ParseKeyValSlice(kv []string) *Collection {
 	vars := new(Collection)
 	if len(kv) == 0 {

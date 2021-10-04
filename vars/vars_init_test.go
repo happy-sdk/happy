@@ -216,6 +216,7 @@ var intTests = []testInt{
 	{"INT_24", "21474836471x", 0, 127, 32767, 2147483647, 0, errInt | errInt8 | errInt16 | errInt32 | errInt64},
 	{"INT_25", "2147483647", 1<<31 - 1, 127, 32767, 1<<31 - 1, 1<<31 - 1, errInt8 | errInt16},
 	{"INT_26", "-2147483647", -(1<<31 - 1), -128, -32768, -(1<<31 - 1), -(1<<31 - 1), errInt8 | errInt16},
+	{"INT_27", strconv.FormatInt(math.MaxInt64, 10), int(math.MaxInt64), math.MaxInt8, math.MaxInt16, math.MaxInt32, math.MaxInt64, errInt8 | errInt16 | errInt32},
 }
 
 var uintTests = []testUint{
@@ -246,6 +247,7 @@ var uintTests = []testUint{
 	{"UINT_24", "21474836471x", 0, 255, 65535, 4294967295, 0, errUint | errUint8 | errUint16 | errUint32 | errUint64},
 	{"UINT_25", "2147483647", 1<<31 - 1, 255, 65535, 1<<31 - 1, 1<<31 - 1, errUint8 | errUint16},
 	{"UINT_26", "-2147483647", 0, 0, 0, 0, 0, errUint | errUint8 | errUint16 | errUint32 | errUint64},
+	{"UINT_27", strconv.FormatUint(math.MaxUint64, 10), uint(math.MaxUint64), math.MaxUint8, math.MaxUint16, math.MaxUint32, math.MaxUint64, errUint8 | errUint16 | errUint32},
 }
 
 var float32Tests = []float32Test{

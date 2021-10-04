@@ -53,7 +53,7 @@ func TestNewBool(t *testing.T) {
 	}
 }
 
-// func (v Value) Float32() float32
+// func (v Value) Float32() float32.
 func TestNewFloat32(t *testing.T) {
 	for _, test := range float32Tests {
 		v := vars.NewValue(test.in)

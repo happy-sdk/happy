@@ -43,7 +43,7 @@ func randString(n int) string {
 }
 
 // Benchmark
-// go test -bench BenchmarkNew -benchmem
+// go test -bench BenchmarkNew -benchmem.
 func BenchmarkNew(b *testing.B) {
 	// cached var
 	b.Run("string:repeat", func(b *testing.B) {
@@ -127,7 +127,7 @@ func parseFmt(key string, val interface{}) Variable {
 }
 
 // Benchmark
-// go test -bench BenchmarkParse -benchmem
+// go test -bench BenchmarkParse -benchmem.
 func BenchmarkParse(b *testing.B) {
 	// cached var
 	b.Run("string:cached:pkg", func(b *testing.B) {
@@ -199,7 +199,7 @@ func BenchmarkParse(b *testing.B) {
 }
 
 // BenchmarkBool
-// go test -bench BenchmarkBool -benchmem
+// go test -bench BenchmarkBool -benchmem.
 func BenchmarkBool(b *testing.B) {
 	b.Run("strconv", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {

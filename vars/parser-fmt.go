@@ -105,7 +105,7 @@ func (f *parserFmt) string(s string) {
 	f.padString(s)
 }
 
-// bytes formats bytes slice
+// bytes formats bytes slice.
 func (f *parserFmt) bytes(v []byte, typeString string) {
 	f.buf.writeByte('[')
 	for i, c := range v {
@@ -117,7 +117,7 @@ func (f *parserFmt) bytes(v []byte, typeString string) {
 	f.buf.writeByte(']')
 }
 
-// runes formats runes slice
+// runes formats runes slice.
 func (f *parserFmt) runes(v []rune) {
 	for _, c := range v {
 		f.buf.writeRune(c)

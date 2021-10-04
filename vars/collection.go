@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 )
 
-// Set updates key value pair in collection. if not set
+// Set updates key value pair in collection. if not set.
 func (c *Collection) Set(k string, v interface{}) {
 	c.LoadOrStore(k, v)
 }
@@ -36,18 +36,18 @@ func (c *Collection) Get(k string, defval ...interface{}) (val Value) {
 	return val
 }
 
-// Has reprts whether given variable  exists
+// Has reprts whether given variable  exists.
 func (c *Collection) Has(k string) bool {
 	_, ok := c.m.Load(k)
 	return ok
 }
 
-// Len of collection
+// Len of collection.
 func (c *Collection) Len() int {
 	return int(c.len)
 }
 
-// GetWithPrefix return all variables with prefix if any as map[]
+// GetWithPrefix return all variables with prefix if any as map[].
 func (c *Collection) GetWithPrefix(prfx string) (vars *Collection) {
 	vars = new(Collection)
 	c.Range(func(key string, value Value) bool {
@@ -59,7 +59,7 @@ func (c *Collection) GetWithPrefix(prfx string) (vars *Collection) {
 	return
 }
 
-// ToKeyValSlice produces []string slice of strings in format key = "value"
+// ToKeyValSlice produces []string slice of strings in format key = "value".
 func (c *Collection) ToKeyValSlice() []string {
 	r := []string{}
 	c.m.Range(func(key, value interface{}) bool {
@@ -72,7 +72,7 @@ func (c *Collection) ToKeyValSlice() []string {
 }
 
 // ToBytes returns []byte containing
-// key = "value"\n
+// key = "value"\n.
 func (c *Collection) ToBytes() []byte {
 	s := c.ToKeyValSlice()
 	b := bytes.Buffer{}

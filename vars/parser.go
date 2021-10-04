@@ -18,18 +18,18 @@ func getParser() *parser {
 	return p
 }
 
-// Flag satisfies fmt.State
+// Flag satisfies fmt.State.
 func (p *parser) Flag(b int) bool {
 	return false
 }
 
-// Precision satisfies fmt.State
+// Precision satisfies fmt.State.
 func (p *parser) Precision() (prec int, ok bool) { return 0, false }
 
-// Width satisfies fmt.State
+// Width satisfies fmt.State.
 func (p *parser) Width() (wid int, ok bool) { return 0, false }
 
-// Write satisfies fmt.State
+// Write satisfies fmt.State.
 func (p *parser) Write(b []byte) (ret int, err error) { return 0, nil }
 
 // free saves used parser structs in parserPool;
@@ -233,12 +233,13 @@ func parseUints(val string, vtype Type) (raw interface{}, v string, err error) {
 	case TypeUint64:
 		raw, v, err = parseUint(val, 10, 64)
 	}
+
 	return
 }
 
 func parseUint(str string, base, bitSize int) (r uint64, s string, e error) {
 	r, e = strconv.ParseUint(str, base, bitSize)
-	s = strconv.Itoa(int(r))
+	s = strconv.FormatUint(r, base)
 	return r, s, e
 }
 

@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/mkungla/vars/v5"
-
 	"github.com/stretchr/testify/assert"
 )
 
