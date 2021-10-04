@@ -8,6 +8,7 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
 ![tests](https://github.com/mkungla/varflag/workflows/test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/varflag)](https://goreportcard.com/report/github.com/mkungla/varflag)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/varflag/badge.svg?branch=main)](https://coveralls.io/github/mkungla/varflag?branch=main)
+[![benchmarks](https://img.shields.io/badge/benchmark-result-green)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fmkungla%varflag.git)
 
 - [varflag](#varflag)
 - [Usage](#usage)
