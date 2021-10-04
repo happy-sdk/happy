@@ -6,20 +6,21 @@ package varflag
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mkungla/vars/v5"
 )
 
 // Bool returns new bool flag. Argument "a" can be any nr of aliases.
 func Bool(name string, value bool, usage string, aliases ...string) (*BoolFlag, error) {
-	c, err := newCommon(name, aliases...)
-	if err != nil {
-		return nil, err
+	if !ValidFlagName(name) {
+		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
-	f := &BoolFlag{
-		val:    value,
-		Common: *c,
-	}
+
+	f := &BoolFlag{}
+	f.name = strings.TrimLeft(name, "-")
+	f.val = value
+	f.aliases = normalizeAliases(aliases)
 	f.usage = usage
 	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeBool)
 	f.variable, _ = vars.NewTyped(name, "false", vars.TypeBool)
@@ -40,11 +41,15 @@ func (f *BoolFlag) Parse(args []string) (bool, error) {
 // Value returns bool flag value, it returns default value if not present
 // or false if default is also not set.
 func (f *BoolFlag) Value() bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.val
 }
 
 // Unset the bool flag value.
 func (f *BoolFlag) Unset() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.variable = f.defval
 	f.isPresent = false
 	f.val = f.variable.Bool()

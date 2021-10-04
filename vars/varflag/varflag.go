@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -87,6 +88,7 @@ type (
 	// Common is default string flag. Common flag ccan be used to
 	// as base for custom flags by owerriding .Parse func.
 	Common struct {
+		mu sync.RWMutex
 		// name of this flag
 		name string
 		// aliases for this flag
@@ -152,14 +154,17 @@ type (
 
 // New returns new common string flag. Argument "a" can be any nr of aliases.
 func New(name string, value string, usage string, aliases ...string) (*Common, error) {
-	f, err := newCommon(name, aliases...)
-	if err != nil {
-		return nil, err
+	if !ValidFlagName(name) {
+		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
+
+	f := &Common{}
+	f.name = strings.TrimLeft(name, "-")
+	f.aliases = normalizeAliases(aliases)
 	f.defval = vars.New(f.name, value)
 	f.usage = usage
 	f.variable = vars.New(name, "")
-	return f, err
+	return f, nil
 }
 
 // Parse parses flags against provided args,
@@ -187,17 +192,4 @@ func ValidFlagName(s string) bool {
 	}
 	re := regexp.MustCompile(FlagRe)
 	return re.MatchString(s)
-}
-
-func newCommon(name string, aliases ...string) (*Common, error) {
-	if !ValidFlagName(name) {
-		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
-	}
-
-	f := &Common{}
-	f.name = strings.TrimLeft(name, "-")
-	for _, alias := range aliases {
-		f.aliases = append(f.aliases, strings.TrimLeft(alias, "-"))
-	}
-	return f, nil
 }

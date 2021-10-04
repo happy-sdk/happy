@@ -17,13 +17,15 @@ func Option(name string, value []string, usage string, opts []string, aliases ..
 	if len(opts) == 0 {
 		return nil, ErrMissingOptions
 	}
-	c, err := newCommon(name, aliases...)
-	if err != nil {
-		return nil, err
+	if !ValidFlagName(name) {
+		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
-	f := &OptionFlag{Common: *c}
+	f := &OptionFlag{}
 	f.usage = usage
 	f.opts = make(map[string]bool, len(opts))
+	f.name = strings.TrimLeft(name, "-")
+	f.aliases = normalizeAliases(aliases)
+
 	f.defval = vars.New(f.name, strings.Join(value, "|"))
 	for _, o := range opts {
 		f.opts[o] = false
@@ -44,7 +46,7 @@ func (f *OptionFlag) Parse(args []string) (ok bool, err error) {
 		}
 	}
 
-	f.isPresent, err = f.parse(args, func(v []vars.Variable) (err error) {
+	_, err = f.parse(args, func(v []vars.Variable) (err error) {
 		opts = v
 		return err
 	})
@@ -62,13 +64,17 @@ func (f *OptionFlag) Parse(args []string) (ok bool, err error) {
 			f.opts[o.String()] = true
 			str = append(str, o.String())
 		}
+		f.mu.Lock()
 		f.variable = vars.New(f.name, strings.Join(str, "|"))
+		f.mu.Unlock()
 	}
 	return f.isPresent, err
 }
 
 // Value returns parsed options.
 func (f *OptionFlag) Value() []string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	opts := []string{}
 	for o, set := range f.opts {
 		if set {

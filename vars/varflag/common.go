@@ -63,11 +63,15 @@ func (f *Common) AliasesString() string {
 
 // IsHidden reports whether flag should be visible in help menu.
 func (f *Common) IsHidden() bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.hidden
 }
 
 // Hide flag from help menu.
 func (f *Common) Hide() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.hidden = true
 }
 
@@ -87,6 +91,8 @@ func (f *Common) IsGlobal() bool {
 // you can define 2 BoolFlag's with name "verbose" and alias "v"
 // and mark one of these with BelongsTo("*").
 func (f *Common) BelongsTo(cmdname string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if len(f.command) == 0 {
 		f.command = cmdname
 	}
@@ -96,19 +102,25 @@ func (f *Common) BelongsTo(cmdname string) {
 // When BelongsTo is set to wildcard "*" then this function will return
 // name of the command which triggered this flag to be parsed.
 func (f *Common) CommandName() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.command
 }
 
 // Pos returns flags position after command and case of global since app name
 // min value is 1 which means first global flag or first flag after command.
 func (f *Common) Pos() int {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.pos
 }
 
 // Unset the value.
 func (f *Common) Unset() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if !f.defval.Empty() {
-		f.variable = vars.New(f.name, f.defval)
+		f.variable = f.defval
 	} else {
 		f.variable = vars.New(f.name, "")
 	}
@@ -117,22 +129,30 @@ func (f *Common) Unset() {
 
 // Present reports whether flag was set in commandline.
 func (f *Common) Present() bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.isPresent
 }
 
 // Var returns vars.Variable for this flag.
 // where key is flag and Value flags value.
 func (f *Common) Var() vars.Variable {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.variable
 }
 
 // Value returns string value of flag.
 func (f *Common) Value() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.variable.String()
 }
 
 // Required sets this flag as required.
 func (f *Common) Required() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if !f.required {
 		f.required = true
 	}
@@ -140,6 +160,8 @@ func (f *Common) Required() {
 
 // IsRequired returns true if this flag is required.
 func (f *Common) IsRequired() bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.required
 }
 
@@ -155,7 +177,9 @@ func (f *Common) Parse(args []string) (bool, error) {
 
 // String calls Value().String().
 func (f *Common) String() string {
-	return f.Var().String()
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return f.variable.String()
 }
 
 // Parse value for the flag from given string.
@@ -170,12 +194,13 @@ func (f *Common) parse(args []string, read func([]vars.Variable) error) (bool, e
 		return false, fmt.Errorf("%w: no arguments", ErrParse)
 	}
 
-	var err error
-	f.isPresent, err = f.parseArgs(args, read)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	err := f.parseArgs(args, read)
 	return f.isPresent, err
 }
 
-func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr bool, err error) {
+func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (err error) {
 	var (
 		values []vars.Variable
 		poses  []int // slice of positions (useful for multiflag)
@@ -197,9 +222,9 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr 
 
 	sort.Ints(poses)
 
-	values, pr, err = f.parseValues(poses, pargs)
+	values, err = f.parseValues(poses, pargs)
 	if err != nil {
-		return pr, err
+		return err
 	}
 
 	// what was before the flag including flag it self
@@ -228,15 +253,11 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr 
 		}
 	}
 
-	err = read(values)
-	return pr, err
+	return read(values)
 }
 
-func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, bool, error) {
-	var (
-		pr     bool
-		values = []vars.Variable{}
-	)
+func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, error) {
+	values := []vars.Variable{}
 
 	for _, pose := range poses {
 		// handle bool flags
@@ -253,24 +274,24 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, bool
 			}
 			// no need for err check since we only pass valid strings
 			value, _ = vars.NewTyped(f.name, bval, vars.TypeBool)
-			pr = true
+			f.isPresent = true
 			values = append(values, value)
 			continue
 		}
 
 		if len(pargs) == pose {
-			return values, pr, fmt.Errorf("%w: %s", ErrMissingValue, f.name)
+			return values, fmt.Errorf("%w: %s", ErrMissingValue, f.name)
 		}
 		// update pose only once for first occourance
 		if f.pos == 0 {
 			f.pos = pose
 		}
-		pr = true
+		f.isPresent = true
 		value := pargs[pose]
 		// if we get other flags we can validate is value a flag or not
 		values = append(values, vars.New(f.name, value))
 	}
-	return values, pr, nil
+	return values, nil
 }
 
 // normalize reports flag positions if flag is present and returns normalized
@@ -327,4 +348,12 @@ func (f *Common) normalize(args []string) (pos []int, pargs []string, err error)
 		}
 	}
 	return pos, pargs, err
+}
+
+func normalizeAliases(a []string) []string {
+	aliases := []string{}
+	for _, alias := range a {
+		aliases = append(aliases, strings.TrimLeft(alias, "-"))
+	}
+	return aliases
 }

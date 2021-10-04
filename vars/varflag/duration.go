@@ -6,6 +6,7 @@ package varflag
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/mkungla/vars/v5"
@@ -13,11 +14,14 @@ import (
 
 // Duration returns new duration flag. Argument "a" can be any nr of aliases.
 func Duration(name string, value time.Duration, usage string, aliases ...string) (*DurationFlag, error) {
-	c, err := newCommon(name, aliases...)
-	if err != nil {
-		return nil, err
+	if !ValidFlagName(name) {
+		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
-	f := &DurationFlag{val: value, Common: *c}
+
+	f := &DurationFlag{}
+	f.name = strings.TrimLeft(name, "-")
+	f.val = value
+	f.aliases = normalizeAliases(aliases)
 	f.usage = usage
 	f.defval = vars.New(f.name, value)
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeString)
@@ -42,11 +46,15 @@ func (f *DurationFlag) Parse(args []string) (bool, error) {
 // Value returns duration flag value, it returns default value if not present
 // or 0 if default is also not set.
 func (f *DurationFlag) Value() time.Duration {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.val
 }
 
 // Unset the bool flag value.
 func (f *DurationFlag) Unset() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.variable = f.defval
 	f.isPresent = false
 	val, _ := time.ParseDuration(f.defval.String())

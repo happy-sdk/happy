@@ -6,20 +6,23 @@ package varflag
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/mkungla/vars/v5"
 )
 
 // Uint returns new uint flag. Argument "a" can be any nr of aliases.
 func Uint(name string, value uint, usage string, aliases ...string) (*UintFlag, error) {
-	c, err := newCommon(name, aliases...)
-	if err != nil {
-		return nil, err
+	if !ValidFlagName(name) {
+		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
-	f := &UintFlag{val: value, Common: *c}
+	f := &UintFlag{}
 	f.usage = usage
 	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeUint)
 	f.variable = f.defval
+	f.name = strings.TrimLeft(name, "-")
+	f.val = value
+	f.aliases = normalizeAliases(aliases)
 	f.val = value
 	return f, nil
 }
@@ -42,11 +45,15 @@ func (f *UintFlag) Parse(args []string) (bool, error) {
 // Value returns uint flag value, it returns default value if not present
 // or 0 if default is also not set.
 func (f *UintFlag) Value() uint {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.val
 }
 
 // Unset the int flag value.
 func (f *UintFlag) Unset() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.variable = f.defval
 	f.isPresent = false
 	f.val = f.variable.Uint()
