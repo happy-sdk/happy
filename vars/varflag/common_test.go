@@ -448,3 +448,62 @@ func TestVariable(t *testing.T) {
 		})
 	}
 }
+
+func TestParse(t *testing.T) {
+	flags := []Flag{}
+	args := []string{}
+	for _, tt := range testflags() {
+		if !tt.valid {
+			continue
+		}
+		flag, _ := New(tt.name, tt.defval, "")
+		flags = append(flags, flag)
+		args = append(args, flag.Flag(), "some value")
+	}
+
+	if err := Parse(flags, args); err != nil {
+		t.Errorf("did not expect error got %s", err)
+	}
+	for _, flag := range flags {
+		if !flag.Present() {
+			t.Errorf("expected flag to be present")
+		}
+	}
+}
+
+func TestParseErrors(t *testing.T) {
+	flags := []Flag{}
+	args := []string{}
+	for _, tt := range testflags() {
+		if !tt.valid {
+			continue
+		}
+		flag, _ := New(tt.name, tt.defval, "")
+		flags = append(flags, flag)
+		args = append(args, flag.Flag(), "some value")
+	}
+	// add one invalid flag
+	fflag, err := Float64("float-flag", 10, "")
+	if err != nil {
+		t.Errorf("did not expect error got %s", err)
+	}
+	flags = append(flags, fflag)
+	args = append(args, fflag.Flag(), "invalid value")
+
+	iflag, err := Int("float-flag", 10, "")
+	if err != nil {
+		t.Errorf("did not expect error got %s", err)
+	}
+
+	flags = append(flags, iflag)
+	args = append(args, iflag.Flag(), "invalid value")
+
+	if err = Parse(flags, args); !errors.Is(err, ErrInvalidValue) {
+		t.Errorf("expected error got %s", err)
+	}
+	for _, flag := range flags {
+		if !flag.Present() {
+			t.Errorf("expected flag to be present")
+		}
+	}
+}

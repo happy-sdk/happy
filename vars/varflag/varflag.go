@@ -162,6 +162,24 @@ func New(name string, value string, usage string, aliases ...string) (*Common, e
 	return f, err
 }
 
+// Parse parses flags against provided args,
+// If one of the flags fails to parse, it will return
+// wrapped error these errors.
+func Parse(flags []Flag, args []string) error {
+	var errs error
+	for _, flag := range flags {
+		_, err := flag.Parse(args)
+		if err != nil {
+			if errs == nil {
+				errs = err
+			} else {
+				errs = fmt.Errorf("%w: %s", errs, err)
+			}
+		}
+	}
+	return errs
+}
+
 // ValidFlagName returns true if s is string which is valid flag name.
 func ValidFlagName(s string) bool {
 	if len(s) == 1 {

@@ -114,6 +114,24 @@ fmt.Printf("%-12s%f\n", "float64", dur.Var().Float64())
 // float64     3630000000000.000000
 ```
 
+### Float flag
+
+```go
+os.Args = []string{"/bin/app", "--float", "1.001000023"}
+f, _ := varflag.Float64("float", 1.0, "")
+f.Parse(os.Args)
+
+fmt.Printf("%-12s%.10f\n", "float", f.Value())
+fmt.Printf("%-12s%s\n", "string", f.String())
+fmt.Printf("%-12s%.10f\n", "float32", f.Var().Float32())
+fmt.Printf("%-12s%.10f\n", "float64", f.Var().Float64())
+// Output:
+// float       1.0010000230
+// string      1.001000023
+// float32     1.0010000467
+// float64     1.0010000230
+```
+
 **test**
 
 ```

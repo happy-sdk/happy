@@ -13,11 +13,11 @@ import (
 	"github.com/mkungla/varflag/v5"
 )
 
-func ExampleNew() {
+func ExampleParse() {
 	os.Args = []string{
 		"/bin/app",
 		"-v",
-		"--str",
+		"--str1",
 		"some value",
 		"arg1",
 		"arg2",
@@ -25,12 +25,7 @@ func ExampleNew() {
 		"some other value",
 	}
 
-	str, err := varflag.New("str", ".", "some string")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	strWasProvided, err := str.Parse(os.Args)
+	str1, err := varflag.New("str1", ".", "some string")
 	if err != nil {
 		log.Println(err)
 		return
@@ -41,35 +36,32 @@ func ExampleNew() {
 		log.Println(err)
 		return
 	}
-	str2WasProvided, err := str2.Parse(os.Args)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+
+	varflag.Parse([]varflag.Flag{str1, str2}, os.Args)
 
 	fmt.Printf(
 		"found %q with value %q, (%t) - it was global flag (%t) in position %d\n",
-		str.Name(),
-		str.Value(),
-		strWasProvided,
-		str.IsGlobal(),
-		str.Pos(),
+		str1.Name(),
+		str1.Value(),
+		str1.Present(),
+		str1.IsGlobal(),
+		str1.Pos(),
 	)
 
 	fmt.Printf(
 		"found %q with value %q, (%t) - it was global flag (%t) in position %d\n",
 		str2.Name(),
 		str2.Value(),
-		str2WasProvided,
+		str2.Present(),
 		str2.IsGlobal(),
 		str2.Pos(),
 	)
 	// Output:
-	// found "str" with value "some value", (true) - it was global flag (true) in position 3
+	// found "str1" with value "some value", (true) - it was global flag (true) in position 3
 	// found "str2" with value "some other value", (true) - it was global flag (true) in position 7
 }
 
-func ExampleFlag() {
+func ExampleNew() {
 	os.Args = []string{
 		"/bin/app",
 		"--str",
@@ -82,6 +74,8 @@ func ExampleFlag() {
 		log.Println(err)
 		return
 	}
+	// if you have single flag then parse it directly.
+	// no need for pkg .Parse
 	found, err := str.Parse(os.Args)
 	if err != nil {
 		log.Println(err)
@@ -141,6 +135,7 @@ func ExampleDuration() {
 	fmt.Printf("%-12s%d\n", "int64", dur.Var().Int64())
 	fmt.Printf("%-12s%d\n", "uint", dur.Var().Uint())
 	fmt.Printf("%-12s%d\n", "uint64", dur.Var().Uint64())
+	fmt.Printf("%-12s%f\n", "float32", dur.Var().Float32())
 	fmt.Printf("%-12s%f\n", "float64", dur.Var().Float64())
 	// Output:
 	// duration    3630000000000
@@ -150,5 +145,22 @@ func ExampleDuration() {
 	// int64       3630000000000
 	// uint        3630000000000
 	// uint64      3630000000000
+	// float32     3629999980544.000000
 	// float64     3630000000000.000000
+}
+
+func ExampleFloat64() {
+	os.Args = []string{"/bin/app", "--float", "1.001000023"}
+	f, _ := varflag.Float64("float", 1.0, "")
+	f.Parse(os.Args)
+
+	fmt.Printf("%-12s%.10f\n", "float", f.Value())
+	fmt.Printf("%-12s%s\n", "string", f.String())
+	fmt.Printf("%-12s%.10f\n", "float32", f.Var().Float32())
+	fmt.Printf("%-12s%.10f\n", "float64", f.Var().Float64())
+	// Output:
+	// float       1.0010000230
+	// string      1.001000023
+	// float32     1.0010000467
+	// float64     1.0010000230
 }
