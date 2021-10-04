@@ -153,7 +153,7 @@ func (v Value) Uintptr() uintptr {
 // String returns string representation of the Value.
 func (v Value) String() string {
 	if v.vtype == TypeDuration {
-		return fmt.Sprint(time.Duration(v.raw.(int64)))
+		return fmt.Sprint(v.raw.(time.Duration))
 	}
 	return v.str
 }
