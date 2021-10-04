@@ -19,21 +19,28 @@ func TestFloatFlag(t *testing.T) {
 		defval float64
 		ok     bool
 		err    error
+		cerr   error
 	}{
-		{"basic", []string{"--basic", "1"}, 1, 10, true, nil},
-		{"basic", []string{"--basic", "0"}, 0, 11, true, nil},
-		{"basic", []string{"--basic", fmt.Sprint(math.MaxFloat64)}, math.MaxFloat64, 12, true, nil},
-		{"basic", []string{"--basic", fmt.Sprint(math.MaxFloat64)}, math.MaxFloat64, 13, true, nil},
-		{"basic", []string{"--basic", "1000"}, 1000, 14, true, nil},
-		{"basic", []string{"--basic", "1.0"}, 1.0, 15, true, nil},
-		{"basic", []string{"--basic", "0.0001"}, 0.0001, 15, true, nil},
-		{"basic", []string{"--basic", "-0.0001"}, -0.0001, 15, true, nil},
+		{"basic", []string{"--basic", "1"}, 1, 10, true, nil, nil},
+		{"basic", []string{"--basic", "0"}, 0, 11, true, nil, nil},
+		{"", []string{"--basic", "0"}, 0, 11, true, nil, ErrFlag},
+		{"basic", []string{"--basic", fmt.Sprint(math.MaxFloat64)}, math.MaxFloat64, 12, true, nil, nil},
+		{"basic", []string{"--basic", fmt.Sprint(math.MaxFloat64)}, math.MaxFloat64, 13, true, nil, nil},
+		{"basic", []string{"--basic", "1000"}, 1000, 14, true, nil, nil},
+		{"basic", []string{"--basic", "1.0"}, 1.0, 15, true, nil, nil},
+		{"basic", []string{"--basic", "0.0001"}, 0.0001, 15, true, nil, nil},
+		{"basic", []string{"--basic", "-0.0001"}, -0.0001, 15, true, nil, nil},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, _ := Float(tt.name, tt.defval, "")
-			flag.Default(tt.defval)
+			flag, err := Float(tt.name, tt.defval, "")
+			if !errors.Is(err, tt.cerr) {
+				t.Errorf("expected err to be %#v got %#v", tt.cerr, err)
+			}
+			if err != nil {
+				return
+			}
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
 				t.Errorf("failed to parse uint flag expected %t,%q got %t,%#v (%f)", tt.ok, tt.err, ok, err, flag.Value())
 			}

@@ -40,14 +40,6 @@ func (f *FloatFlag) Value() float64 {
 	return f.val
 }
 
-// Default sets default value for float64 flag.
-func (f *FloatFlag) Default(def ...float64) vars.Variable {
-	if len(def) > 0 && f.defval.Empty() {
-		f.val = def[0]
-	}
-	return f.defval
-}
-
 // Unset the bool flag value.
 func (f *FloatFlag) Unset() {
 	f.variable = f.defval

@@ -44,14 +44,6 @@ func (f *DurationFlag) Value() time.Duration {
 	return f.val
 }
 
-// Default sets default value for duration flag.
-func (f *DurationFlag) Default(def ...time.Duration) vars.Variable {
-	if len(def) > 0 && f.defval.Empty() {
-		f.val = def[0]
-	}
-	return f.defval
-}
-
 // Unset the bool flag value.
 func (f *DurationFlag) Unset() {
 	f.variable = f.defval

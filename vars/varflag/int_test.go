@@ -18,20 +18,27 @@ func TestIntFlag(t *testing.T) {
 		want   int
 		defval int
 		ok     bool
+		cerr   error
 		err    error
 	}{
-		{"basic", []string{"--basic", "1"}, 1, 10, true, nil},
-		{"basic", []string{"--basic", "0"}, 0, 11, true, nil},
-		{"basic", []string{"--basic", fmt.Sprint(math.MaxInt64)}, math.MaxInt64, 12, true, nil},
-		{"basic", []string{"--basic", fmt.Sprint(math.MaxInt64)}, math.MaxInt64, 13, true, nil},
-		{"basic", []string{"--basic", "1000"}, 1000, 14, true, nil},
-		{"basic", []string{"--basic", "1.0"}, 15, 15, true, ErrInvalidValue},
+		{"basic", []string{"--basic", "1"}, 1, 10, true, nil, nil},
+		{"", []string{"--basic", "1"}, 1, 0, false, ErrFlag, nil},
+		{"basic", []string{"--basic", "0"}, 0, 11, true, nil, nil},
+		{"basic", []string{"--basic", fmt.Sprint(math.MaxInt64)}, math.MaxInt64, 12, true, nil, nil},
+		{"basic", []string{"--basic", fmt.Sprint(math.MaxInt64)}, math.MaxInt64, 13, true, nil, nil},
+		{"basic", []string{"--basic", "1000"}, 1000, 14, true, nil, nil},
+		{"basic", []string{"--basic", "1.0"}, 15, 15, true, nil, ErrInvalidValue},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, _ := Int(tt.name, tt.defval, "")
-			flag.Default(tt.defval)
+			flag, err := Int(tt.name, tt.defval, "")
+			if !errors.Is(err, tt.cerr) {
+				t.Errorf("expected err to be %#v got %#v", tt.cerr, err)
+			}
+			if err != nil {
+				return
+			}
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
 				t.Errorf("failed to parse int flag expected %t,%q got %t,%#v (%d)", tt.ok, tt.err, ok, err, flag.Value())
 			}

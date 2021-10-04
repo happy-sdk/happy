@@ -18,7 +18,7 @@ func Int(name string, value int, usage string, aliases ...string) (*IntFlag, err
 	}
 	f := &IntFlag{val: value, Common: *c}
 	f.usage = usage
-	f.Default(value)
+	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeInt64)
 	f.variable, _ = vars.NewTyped(name, "", vars.TypeInt64)
 	return f, nil
 }
@@ -42,15 +42,6 @@ func (f *IntFlag) Parse(args []string) (bool, error) {
 // or 0 if default is also not set.
 func (f *IntFlag) Value() int {
 	return f.val
-}
-
-// Default sets default value for int flag.
-func (f *IntFlag) Default(def ...int) vars.Variable {
-	if len(def) > 0 && f.defval.Empty() {
-		f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(def[0]), vars.TypeInt64)
-		f.val = def[0]
-	}
-	return f.defval
 }
 
 // Unset the int flag value.
