@@ -23,10 +23,7 @@ func (f *Common) Default() vars.Variable {
 }
 
 // Usage returns a usage description for that flag.
-func (f *Common) Usage(usage ...string) string {
-	if len(usage) > 0 {
-		f.usage = strings.TrimSpace(usage[0])
-	}
+func (f *Common) Usage() string {
 	if !f.defval.Empty() {
 		return fmt.Sprintf("%s default: %q", f.usage, f.defval.String())
 	}

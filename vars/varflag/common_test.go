@@ -70,7 +70,7 @@ func TestFlag(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name, "", "")
+			flag, _ := New(tt.name, tt.defval, "")
 			expected := "-" + tt.name
 			if !tt.short {
 				expected = "-" + expected
@@ -79,6 +79,9 @@ func TestFlag(t *testing.T) {
 
 			if got != expected {
 				t.Errorf(".Flag want = %q, got = %q", expected, got)
+			}
+			if tt.defval != flag.Default().String() {
+				t.Errorf("expected flag default to be %q got %q", tt.defval, flag.Default().String())
 			}
 		})
 	}
@@ -110,9 +113,7 @@ func TestUsage(t *testing.T) {
 			if !tt.valid {
 				return
 			}
-			flag, _ := New(tt.name, tt.defval, "")
-			flag.Usage(desc)
-
+			flag, _ := New(tt.name, tt.defval, desc)
 			expexted := desc
 			if tt.defval != "" {
 				expexted += fmt.Sprintf(" default: %q", fmt.Sprint(tt.defval))

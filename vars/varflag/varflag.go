@@ -49,7 +49,7 @@ type (
 		// Get primary name for the flag. Usually that is long option
 		Name() string
 		// Usage returns a usage description for that flag
-		Usage(...string) string
+		Usage() string
 		// Flag returns flag with leading - or --
 		// useful for help menus
 		Flag() string
