@@ -36,11 +36,9 @@ func (f *BexpFlag) Parse(args []string) (ok bool, err error) {
 			exp := bexp.Parse(vv.String())
 			f.val = append(f.val, exp...)
 		}
-		return err
+		return nil
 	})
-	if err != nil {
-		return ok, err
-	}
+
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if !ok {

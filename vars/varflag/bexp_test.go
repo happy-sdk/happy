@@ -4,7 +4,10 @@
 
 package varflag
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestBexpFlag(t *testing.T) {
 	flag, _ := Bexp("some-flag", "file-{a,b,c}.jpg", "expand path", "")
@@ -36,5 +39,21 @@ func TestBexpFlagDefaults(t *testing.T) {
 
 	if flag.String() != "file-a.jpg|file-b.jpg|file-c.jpg" {
 		t.Errorf("expected option value to be \"file-a.jpg|file-b.jpg|file-c.jpg\" got %q", flag.String())
+	}
+
+	flag2, _ := Bexp("some-flag", "file-{x,y,z}.jpg", "expand path", "")
+	if ok, err := flag2.Parse([]string{"some-flag", ""}); ok || err != nil {
+		t.Error("expected option flag parser to return ok, ", ok, err)
+	}
+
+	if flag2.String() != "file-x.jpg|file-y.jpg|file-z.jpg" {
+		t.Errorf("expected option value to be \"file-a.jpg|file-b.jpg|file-c.jpg\" got %q", flag2.String())
+	}
+}
+
+func TestBexpInvalidName(t *testing.T) {
+	_, err := Bexp("", "file-{a,b,c}.jpg", "expand path", "")
+	if !errors.Is(err, ErrFlag) {
+		t.Error("expected bexp flag parser to return err, ", err)
 	}
 }
