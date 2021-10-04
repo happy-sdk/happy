@@ -17,6 +17,7 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
   - [Int flag](#int-flag)
   - [Uint Flag](#uint-flag)
   - [Bool Flag](#bool-flag)
+  - [Option Flag](#option-flag)
 
 # Usage
 
@@ -211,6 +212,21 @@ fmt.Printf("%-12s%t\n", "bool", f.Var().Bool())
 // string      true
 // value       true
 // bool        true
+```
+
+## Option Flag
+
+```go
+os.Args = []string{"/bin/app", "--option", "opt1", "--option", "opt2"}
+f, _ := varflag.Option("option", []string{"defaultOpt"}, "", []string{"opt1", "opt2", "opt3", "defaultOpt"})
+f.Parse(os.Args)
+
+fmt.Printf("%-12s%s\n", "string", f.String())
+fmt.Printf("%-12s%#v\n", "value", f.Value())
+
+// Output:
+// string      opt1|opt2
+// value       []string{"opt1", "opt2"}
 ```
 
 **test**

@@ -224,3 +224,16 @@ func ExampleBool() {
 	// value       true
 	// bool        true
 }
+
+func ExampleOption() {
+	os.Args = []string{"/bin/app", "--option", "opt1", "--option", "opt2"}
+	f, _ := varflag.Option("option", []string{"defaultOpt"}, "", []string{"opt1", "opt2", "opt3", "defaultOpt"})
+	f.Parse(os.Args)
+
+	fmt.Printf("%-12s%s\n", "string", f.String())
+	fmt.Printf("%-12s%#v\n", "value", f.Value())
+
+	// Output:
+	// string      opt1|opt2
+	// value       []string{"opt1", "opt2"}
+}
