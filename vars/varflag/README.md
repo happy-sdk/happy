@@ -148,6 +148,7 @@ f, _ := varflag.Int("int", 1, "")
 f.Parse(os.Args)
 
 fmt.Printf("%-12s%s\n", "string", f.String())
+fmt.Printf("%-12s%d\n", "value", f.Value())
 fmt.Printf("%-12s%d\n", "int", f.Var().Int())
 fmt.Printf("%-12s%d\n", "int64", f.Var().Int64())
 fmt.Printf("%-12s%d\n", "uint", f.Var().Uint())
@@ -156,6 +157,7 @@ fmt.Printf("%-12s%f\n", "float32", f.Var().Float32())
 fmt.Printf("%-12s%f\n", "float64", f.Var().Float64())
 // Output:
 // string      -9223372036854775808
+// value       -9223372036854775808
 // int         -9223372036854775808
 // int64       -9223372036854775808
 // uint        0
@@ -172,6 +174,7 @@ f, _ := varflag.Uint("uint", 1, "")
 f.Parse(os.Args)
 
 fmt.Printf("%-12s%s\n", "string", f.String())
+fmt.Printf("%-12s%d\n", "value", f.Value())
 fmt.Printf("%-12s%d\n", "int", f.Var().Int())
 fmt.Printf("%-12s%d\n", "int64", f.Var().Int64())
 fmt.Printf("%-12s%d\n", "uint", f.Var().Uint())
@@ -180,6 +183,7 @@ fmt.Printf("%-12s%f\n", "float32", f.Var().Float32())
 fmt.Printf("%-12s%f\n", "float64", f.Var().Float64())
 // Output:
 // string      18446744073709551615
+// value       18446744073709551615
 // int         9223372036854775807
 // int64       9223372036854775807
 // uint        18446744073709551615
