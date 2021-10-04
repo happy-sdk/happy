@@ -98,7 +98,7 @@ func (f *Common) BelongsTo(cmdname string) {
 	}
 }
 
-// Returns empty string if command is not set with .BelongsTo
+// CommandName returns empty string if command is not set with .BelongsTo
 // When BelongsTo is set to wildcard "*" then this function will return
 // name of the command which triggered this flag to be parsed.
 func (f *Common) CommandName() string {
