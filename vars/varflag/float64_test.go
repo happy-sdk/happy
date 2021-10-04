@@ -30,11 +30,12 @@ func TestFloatFlag(t *testing.T) {
 		{"basic", []string{"--basic", "1.0"}, 1.0, 15, true, nil, nil},
 		{"basic", []string{"--basic", "0.0001"}, 0.0001, 15, true, nil, nil},
 		{"basic", []string{"--basic", "-0.0001"}, -0.0001, 15, true, nil, nil},
+		{"basic", []string{"--basic", "float"}, 15, 15, true, ErrInvalidValue, nil},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, err := Float(tt.name, tt.defval, "")
+			flag, err := Float64(tt.name, tt.defval, "")
 			if !errors.Is(err, tt.cerr) {
 				t.Errorf("expected err to be %#v got %#v", tt.cerr, err)
 			}

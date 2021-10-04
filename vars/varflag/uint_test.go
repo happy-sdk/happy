@@ -46,8 +46,12 @@ func TestUintFlag(t *testing.T) {
 			if flag.Value() != tt.want {
 				t.Errorf("provided %q expected value to be %d got %d", tt.in, tt.want, flag.Value())
 			}
+			if tt.ok && uint64(tt.want) != flag.Var().Uint64() {
+				t.Errorf("expected uint(%d) convert to uint64 %d got %d", flag.Value(), uint64(tt.want), flag.Var().Uint64())
+			}
+
 			flag.Unset()
-			if flag.Value() != tt.defval {
+			if tt.ok && flag.Value() != tt.defval {
 				t.Errorf("expected value to be %d got %d", tt.defval, flag.Value())
 			}
 

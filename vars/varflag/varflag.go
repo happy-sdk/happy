@@ -132,7 +132,7 @@ type (
 	}
 
 	// Float64Flag defines a float64 flag with specified name.
-	FloatFlag struct {
+	Float64Flag struct {
 		Common
 		val float64
 	}

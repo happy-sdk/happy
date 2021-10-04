@@ -19,7 +19,8 @@ func Uint(name string, value uint, usage string, aliases ...string) (*UintFlag, 
 	f := &UintFlag{val: value, Common: *c}
 	f.usage = usage
 	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeUint)
-	f.variable, _ = vars.NewTyped(name, "", vars.TypeUint64)
+	f.variable = f.defval
+	f.val = value
 	return f, nil
 }
 

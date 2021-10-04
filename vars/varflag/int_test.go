@@ -46,6 +46,10 @@ func TestIntFlag(t *testing.T) {
 			if flag.Value() != tt.want {
 				t.Errorf("expected value to be %d got %d", tt.want, flag.Value())
 			}
+			if tt.ok && int64(tt.want) != flag.Var().Int64() {
+				t.Errorf("expected int(%d) convert to int64 %d got %d", flag.Value(), int64(tt.want), flag.Var().Int64())
+			}
+
 			flag.Unset()
 			if flag.Value() != tt.defval {
 				t.Errorf("expected value to be %d got %d", tt.defval, flag.Value())

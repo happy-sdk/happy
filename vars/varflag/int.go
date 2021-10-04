@@ -18,8 +18,8 @@ func Int(name string, value int, usage string, aliases ...string) (*IntFlag, err
 	}
 	f := &IntFlag{val: value, Common: *c}
 	f.usage = usage
-	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeInt64)
-	f.variable, _ = vars.NewTyped(name, "", vars.TypeInt64)
+	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeInt)
+	f.variable = f.defval
 	return f, nil
 }
 
@@ -27,7 +27,7 @@ func Int(name string, value int, usage string, aliases ...string) (*IntFlag, err
 func (f *IntFlag) Parse(args []string) (bool, error) {
 	return f.parse(args, func(vv []vars.Variable) (err error) {
 		if len(vv) > 0 {
-			val, err := vars.NewTyped(f.name, vv[0].String(), vars.TypeInt64)
+			val, err := vars.NewTyped(f.name, vv[0].String(), vars.TypeInt)
 			if err != nil {
 				return fmt.Errorf("%w: %q", ErrInvalidValue, err)
 			}
