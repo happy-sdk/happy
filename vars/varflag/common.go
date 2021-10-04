@@ -25,7 +25,7 @@ func (f *Common) Default() vars.Variable {
 // Usage returns a usage description for that flag.
 func (f *Common) Usage() string {
 	if !f.defval.Empty() {
-		return fmt.Sprintf("%s default: %q", f.usage, f.defval.String())
+		return fmt.Sprintf("%s - default: %q", f.usage, f.defval.String())
 	}
 	return f.usage
 }
@@ -72,8 +72,31 @@ func (f *Common) Hide() {
 }
 
 // IsGlobal reports whether this flag is global.
+// By default all flags are global flags. You can mark flag non-global
+// by calling .BelongsTo(cmdname string).
 func (f *Common) IsGlobal() bool {
 	return f.global
+}
+
+// BelongsTo marks flag non global and belonging to provided named command.
+// Parsing the flag will only succeed if naemd command was found before the flag.
+// This is useful to have same flag both global and sub command level.
+// Special case is .BelongsTo("*") which marks flag to be parsed
+// if any subcommand is present.
+// e.g. verbose flag:
+// you can define 2 BoolFlag's with name "verbose" and alias "v"
+// and mark one of these with BelongsTo("*").
+func (f *Common) BelongsTo(cmdname string) {
+	if len(f.command) == 0 {
+		f.command = cmdname
+	}
+}
+
+// Returns empty string if command is not set with .BelongsTo
+// When BelongsTo is set to wildcard "*" then this function will return
+// name of the command which triggered this flag to be parsed.
+func (f *Common) CommandName() string {
+	return f.command
 }
 
 // Pos returns flags position after command and case of global since app name
@@ -110,7 +133,9 @@ func (f *Common) Value() string {
 
 // Required sets this flag as required.
 func (f *Common) Required() {
-	f.required = true
+	if !f.required {
+		f.required = true
+	}
 }
 
 // IsRequired returns true if this flag is required.
@@ -179,11 +204,13 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr 
 
 	// what was before the flag including flag it self
 	pre := pargs[:poses[0]]
-	// check global since first arg was a command
-	if !strings.HasPrefix(pre[0], "-") {
-		cmd := pre[0]
+
+	// default is globale
+	f.global = true
+	if f.command != "" {
+		var cmd string
 		opts := 0
-		for _, arg := range pargs {
+		for _, arg := range pre {
 			if arg[0] == '-' {
 				opts = 0
 				continue
@@ -192,11 +219,15 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (pr 
 			if opts > 1 {
 				cmd = arg
 			}
-		}
-		if f.command == "" || cmd == f.command {
-			f.global = true
+			// found portential command
+			if len(cmd) > 0 && (f.command == "*" || cmd == f.command) {
+				f.command = cmd
+				f.global = false
+				break
+			}
 		}
 	}
+
 	err = read(values)
 	return pr, err
 }

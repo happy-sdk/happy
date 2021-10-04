@@ -116,7 +116,7 @@ func TestUsage(t *testing.T) {
 			flag, _ := New(tt.name, tt.defval, desc)
 			expexted := desc
 			if tt.defval != "" {
-				expexted += fmt.Sprintf(" default: %q", fmt.Sprint(tt.defval))
+				expexted += fmt.Sprintf(" - default: %q", fmt.Sprint(tt.defval))
 			}
 			if flag.Usage() != expexted {
 				t.Errorf("Usage() want %q got %q", expexted, flag.Usage())
@@ -204,14 +204,51 @@ func TestGlobal(t *testing.T) {
 			}
 
 			flag.Parse([]string{"--" + tt.name, "some-value"})
-			if flag.IsGlobal() {
-				t.Error("flag should not be global after parsing from generic string")
+			if !flag.IsGlobal() {
+				t.Error("flag should be global after parsing from generic string")
 			}
 
 			flag2, _ := New(tt.name, "", "")
 			flag2.Parse([]string{"/bin/app", "--" + tt.name, "some-value"})
 			if !flag2.IsGlobal() {
 				t.Error("flag should be global after parsing from os args")
+			}
+		})
+	}
+}
+
+func TestNotGlobal(t *testing.T) {
+	for _, tt := range testflags() {
+		t.Run(tt.name, func(t *testing.T) {
+			if !tt.valid {
+				return
+			}
+			flag, _ := New(tt.name, "", "")
+			if flag.IsGlobal() {
+				t.Error("flag should not be global by default")
+			}
+
+			flag.BelongsTo("target-cmd")
+			flag.Parse([]string{"app", "arg1", "arg2", "target-cmd", "arg", "--" + tt.name, "some-value"})
+			if flag.IsGlobal() {
+				t.Error("flag should not be global after parsing from args containing target-cmd")
+			}
+
+			flag2, _ := New(tt.name, "", "")
+			flag2.BelongsTo("*")
+			flag2.Parse([]string{"/bin/app", "--" + tt.name, "some-value"})
+			if !flag2.IsGlobal() {
+				t.Error("flag should be global after parsing from os args not containing any cmds")
+			}
+
+			flag3, _ := New(tt.name, "", "")
+			flag3.BelongsTo("*")
+			flag3.Parse([]string{"/bin/app", "sub-cmd", "--" + tt.name, "some-value"})
+			if flag3.IsGlobal() {
+				t.Error("flag should not be global after parsing from os args containing cmds")
+			}
+			if flag3.CommandName() != "sub-cmd" {
+				t.Errorf("expected flag command to be %q got %q", "sub-cmd", flag3.CommandName())
 			}
 		})
 	}
@@ -398,7 +435,7 @@ func TestVariable(t *testing.T) {
 			if err != nil {
 				t.Errorf("dif not expect error while parsing %q got %q", tt.name, err)
 			}
-			if flag.IsGlobal() {
+			if !flag.IsGlobal() {
 				t.Error("flag should be global")
 			}
 			v := flag.Var()
