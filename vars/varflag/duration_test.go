@@ -24,6 +24,7 @@ func TestDurationFlag(t *testing.T) {
 		{"", []string{"--duration", "10s"}, 10000000000, 0, false, nil, ErrFlag},
 		{"duration", []string{"--duration", "1h10s"}, 3610000000000, 0, true, nil, nil},
 		{"duration", []string{"--duration", "1h30s"}, 3630000000000, 10, true, nil, nil},
+		{"duration", []string{"--duration", "one hour"}, 10, 10, true, ErrInvalidValue, nil},
 	}
 
 	for _, tt := range tests {
@@ -36,7 +37,7 @@ func TestDurationFlag(t *testing.T) {
 				return
 			}
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
-				t.Errorf("failed to parse uint flag expected %t,%q got %t,%#v (%d)", tt.ok, tt.err, ok, err, flag.Value())
+				t.Errorf("failed to parse duration flag expected %t,%q got %t,%#v (%d)", tt.ok, tt.err, ok, err, flag.Value())
 			}
 
 			if flag.Value() != tt.want {

@@ -42,7 +42,7 @@ func TestFloatFlag(t *testing.T) {
 				return
 			}
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
-				t.Errorf("failed to parse uint flag expected %t,%q got %t,%#v (%f)", tt.ok, tt.err, ok, err, flag.Value())
+				t.Errorf("failed to parse float flag expected %t,%q got %t,%#v (%f)", tt.ok, tt.err, ok, err, flag.Value())
 			}
 
 			if flag.Value() != tt.want {

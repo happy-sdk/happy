@@ -5,6 +5,7 @@
 package varflag
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/mkungla/vars/v5"
@@ -30,7 +31,7 @@ func (f *DurationFlag) Parse(args []string) (bool, error) {
 			f.variable = vv[0]
 			val, err := time.ParseDuration(vv[0].String())
 			if err != nil {
-				return err
+				return fmt.Errorf("%w: %s", ErrInvalidValue, err)
 			}
 			f.val = val
 		}
