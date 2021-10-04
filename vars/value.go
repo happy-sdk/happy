@@ -5,7 +5,9 @@
 package vars
 
 import (
+	"fmt"
 	"strings"
+	"time"
 )
 
 // Type of value.
@@ -150,6 +152,9 @@ func (v Value) Uintptr() uintptr {
 
 // String returns string representation of the Value.
 func (v Value) String() string {
+	if v.vtype == TypeDuration {
+		return fmt.Sprint(time.Duration(v.raw.(int64)))
+	}
 	return v.str
 }
 

@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -35,6 +36,7 @@ const (
 	TypeRunes
 	TypeMap
 	TypeReflectVal
+	TypeDuration
 
 	signed   = true
 	unsigned = false
@@ -229,6 +231,10 @@ func NewTypedValue(val string, vtype Type) (Value, error) {
 		raw = uintptr(raw.(uint64))
 	case TypeBytes:
 		raw, v, err = parseBytes(val)
+	case TypeDuration:
+		raw, err = time.ParseDuration(val)
+		// we keep uint64 rep
+		v = fmt.Sprintf("%d", raw)
 	}
 
 	return Value{
