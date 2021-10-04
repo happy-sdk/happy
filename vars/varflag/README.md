@@ -12,7 +12,11 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
 
 ## Usage
 
+> note that major version ensures compatibility with
+> https://github.com/mkungla/vars package
+
 `go get github.com/mkungla/varflag/v5`
+
 
 
 ### Simple string flag
@@ -82,6 +86,32 @@ func main() {
   // var         some value
   // required    false
 }
+```
+
+### Duration flag
+
+```go
+os.Args = []string{"/bin/app", "--duration", "1h30s"}
+dur, _ := varflag.Duration("duration", 1*time.Second, "")
+dur.Parse(os.Args)
+
+fmt.Printf("%-12s%d\n", "duration", dur.Value())
+fmt.Printf("%-12s%s\n", "duration", dur.Value())
+fmt.Printf("%-12s%s\n", "string", dur.String())
+fmt.Printf("%-12s%d\n", "int", dur.Var().Int())
+fmt.Printf("%-12s%d\n", "int64", dur.Var().Int64())
+fmt.Printf("%-12s%d\n", "uint", dur.Var().Uint())
+fmt.Printf("%-12s%d\n", "uint64", dur.Var().Uint64())
+fmt.Printf("%-12s%f\n", "float64", dur.Var().Float64())
+// Output:
+// duration    3630000000000
+// duration    1h0m30s
+// string      1h0m30s
+// int         3630000000000
+// int64       3630000000000
+// uint        3630000000000
+// uint64      3630000000000
+// float64     3630000000000.000000
 ```
 
 **test**

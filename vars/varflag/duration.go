@@ -28,12 +28,12 @@ func Duration(name string, value time.Duration, usage string, aliases ...string)
 func (f *DurationFlag) Parse(args []string) (bool, error) {
 	return f.parse(args, func(vv []vars.Variable) (err error) {
 		if len(vv) > 0 {
-			f.variable = vv[0]
-			val, err := time.ParseDuration(vv[0].String())
+			val, err := vars.NewTyped(f.name, vv[0].String(), vars.TypeDuration)
 			if err != nil {
 				return fmt.Errorf("%w: %s", ErrInvalidValue, err)
 			}
-			f.val = val
+			f.variable = val
+			f.val = time.Duration(val.Int64())
 		}
 		return err
 	})
