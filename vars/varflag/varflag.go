@@ -119,6 +119,7 @@ type (
 	OptionFlag struct {
 		Common
 		opts map[string]bool
+		val  []string
 	}
 
 	// BoolFlag is boolean flag type with default value "false".

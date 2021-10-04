@@ -6,6 +6,7 @@ package varflag
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/mkungla/vars/v5"
@@ -64,6 +65,8 @@ func (f *OptionFlag) Parse(args []string) (ok bool, err error) {
 			f.opts[o.String()] = true
 			str = append(str, o.String())
 		}
+		sort.Strings(str)
+		f.val = str
 		f.mu.Lock()
 		f.variable = vars.New(f.name, strings.Join(str, "|"))
 		f.mu.Unlock()
@@ -75,11 +78,5 @@ func (f *OptionFlag) Parse(args []string) (ok bool, err error) {
 func (f *OptionFlag) Value() []string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	opts := []string{}
-	for o, set := range f.opts {
-		if set {
-			opts = append(opts, o)
-		}
-	}
-	return opts
+	return f.val
 }
