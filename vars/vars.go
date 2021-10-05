@@ -47,6 +47,58 @@ const (
 	nilAngleString = "<nil>"
 )
 
+func (t Type) String() string {
+	switch t {
+	case TypeUnknown:
+		return "unknown"
+	case TypeString:
+		return "string"
+	case TypeBool:
+		return "bool"
+	case TypeFloat32:
+		return "float32"
+	case TypeFloat64:
+		return "float64"
+	case TypeComplex64:
+		return "complex64"
+	case TypeComplex128:
+		return "complex128"
+	case TypeInt:
+		return "int"
+	case TypeInt8:
+		return "int8"
+	case TypeInt16:
+		return "int16"
+	case TypeInt32:
+		return "int32"
+	case TypeInt64:
+		return "int64"
+	case TypeUint:
+		return "uint"
+	case TypeUint8:
+		return "uint8"
+	case TypeUint16:
+		return "uint16"
+	case TypeUint32:
+		return "uint32"
+	case TypeUint64:
+		return "uint64"
+	case TypeUintptr:
+		return "uint64"
+	case TypeBytes:
+		return "bytes"
+	case TypeRunes:
+		return "runes"
+	case TypeMap:
+		return "map"
+	case TypeReflectVal:
+		return "reflect"
+	case TypeDuration:
+		return "duration"
+	}
+	return ""
+}
+
 var (
 
 	// ErrVariableKeyEmpty is used when variable key is empty string.

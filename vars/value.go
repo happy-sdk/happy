@@ -93,7 +93,7 @@ func (v Value) Int32() int32 {
 // Int64 returns int64 representation of the Value.
 func (v Value) Int64() int64 {
 	val, _, _ := parseInt(v.str, 10, 64)
-	return int64(val)
+	return val
 }
 
 // Uint returns uint representation of the Value.
