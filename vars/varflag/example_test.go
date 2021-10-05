@@ -63,6 +63,80 @@ func ExampleParse() {
 	// found "str2" with value "some other value", (true) - it was global flag (true) in position 7
 }
 
+func ExampleFlagSet() {
+	os.Args = []string{
+		"/bin/app", "cmd1", "--flag1", "val1", "--flag2", "flag2-value", "arg1", "--flag3=on",
+		"-v",                                                          // global flag can be any place
+		"subcmd", "--flag4", "val 4 flag", "arg2", "arg3", "-x", "on", // global flag can be any place
+	}
+
+	// Global app flags
+	global, _ := varflag.NewFlagSet(os.Args[0], 0)
+
+	v, _ := varflag.Bool("verbose", false, "increase verbosity", "v")
+	x, _ := varflag.Bool("x", false, "print commands")
+	r, _ := varflag.Bool("random", false, "random flag")
+	global.Add(v, x, r)
+
+	flag1, _ := varflag.New("flag1", "", "first flag for first cmd")
+	flag2, _ := varflag.New("flag2", "", "another flag for first cmd")
+	flag3, _ := varflag.Bool("flag3", false, "bool flag for first command")
+	cmd1, _ := varflag.NewFlagSet("cmd1", 1)
+	cmd1.Add(flag1, flag2, flag3)
+
+	cmd2, _ := varflag.NewFlagSet("cmd2", 0)
+	flag5, _ := varflag.New("flag5", "", "flag5 for second cmd")
+	cmd2.Add(flag5)
+
+	subcmd, _ := varflag.NewFlagSet("subcmd", 1)
+	flag4, _ := varflag.New("flag4", "", "flag4 for sub command")
+	subcmd.Add(flag4)
+	cmd1.AddSet(subcmd)
+
+	global.AddSet(cmd1, cmd2)
+	global.Parse(os.Args)
+
+	// result
+	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "verbose", v.Present(), v.IsGlobal(), v.String(), v.CommandName())
+	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "x", x.Present(), x.IsGlobal(), x.String(), x.CommandName())
+	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "random", r.Present(), r.IsGlobal(), r.String(), r.CommandName())
+	fmt.Printf("%-12s %v\n", "gloabal args", global.Args())
+
+	fmt.Printf("\n%-12s%t\n", "cmd1", cmd1.Present())
+	fmt.Printf("%-12s%t (%t) - %s\n", "flag1", flag1.Present(), flag1.IsGlobal(), flag1.String())
+	fmt.Printf("%-12s%t (%t) - %s\n", "flag2", flag2.Present(), flag2.IsGlobal(), flag2.String())
+	fmt.Printf("%-12s%t (%t) - %s\n", "flag3", flag3.Present(), flag3.IsGlobal(), flag3.String())
+	fmt.Printf("%-12s %v\n", "cmd1 args", cmd1.Args())
+
+	fmt.Printf("\n%-12s%t\n", "subcmd", subcmd.Present())
+	fmt.Printf("%-12s%t (%t) - %s\n", "flag4", flag4.Present(), flag4.IsGlobal(), flag4.String())
+	fmt.Printf("%-12s %v\n", "subcmd args", subcmd.Args())
+
+	fmt.Printf("\n%-12s%t\n", "cmd2", cmd2.Present())
+
+	// flag3 will not be present since it belongs to cmd 2
+	fmt.Printf("%-12s%t (%t)\n", "flag5", flag5.Present(), flag5.IsGlobal())
+
+	// Output:
+	// verbose     true (true) - true (/)
+	// x           true (true) - true (/)
+	// random      false (false) - false (/)
+	// gloabal args []
+
+	// cmd1        true
+	// flag1       true (false) - val1
+	// flag2       true (false) - flag2-value
+	// flag3       true (false) - true
+	// cmd1 args    [arg1]
+
+	// subcmd      true
+	// flag4       true (false) - val 4 flag
+	// subcmd args  [arg2 arg3]
+
+	// cmd2        false
+	// flag5       false (false)
+}
+
 func ExampleNew() {
 	os.Args = []string{
 		"/bin/app",

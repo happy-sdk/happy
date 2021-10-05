@@ -7,6 +7,7 @@ package varflag
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -209,7 +210,7 @@ func TestGlobal(t *testing.T) {
 			}
 
 			flag2, _ := New(tt.name, "", "")
-			flag2.Parse([]string{"/bin/app", "--" + tt.name, "some-value"})
+			flag2.Parse([]string{os.Args[0], "--" + tt.name, "some-value"})
 			if !flag2.IsGlobal() {
 				t.Error("flag should be global after parsing from os args")
 			}
@@ -236,9 +237,9 @@ func TestNotGlobal(t *testing.T) {
 
 			flag2, _ := New(tt.name, "", "")
 			flag2.BelongsTo("*")
-			flag2.Parse([]string{"/bin/app", "--" + tt.name, "some-value"})
-			if !flag2.IsGlobal() {
-				t.Error("flag should be global after parsing from os args not containing any cmds")
+			flag2.Parse([]string{os.Args[0], "--" + tt.name, "some-value"})
+			if flag2.IsGlobal() {
+				t.Error("flag should not be global with BelongsTo(\"*\")")
 			}
 
 			flag3, _ := New(tt.name, "", "")

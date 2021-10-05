@@ -9,6 +9,7 @@ package varflag
 import (
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -43,19 +44,15 @@ var (
 type (
 	// Flag is howi/cli/flags.Flags interface.
 	Flag interface {
-		// Parse value for the flag from given string. It returns true if flag
-		// was found in provided args string and false if not.
-		// error is returned when flag was set but had invalid value.
-		Parse([]string) (bool, error)
 		// Get primary name for the flag. Usually that is long option
 		Name() string
+		// Set flag default value
+		Default() vars.Variable
 		// Usage returns a usage description for that flag
 		Usage() string
 		// Flag returns flag with leading - or --
 		// useful for help menus
 		Flag() string
-		// Hide flag from help menu.
-		Hide()
 		// Return flag aliases
 		Aliases() []string
 		// AliasesString returns string representing flag aliases.
@@ -63,8 +60,16 @@ type (
 		AliasesString() string
 		// IsHidden reports whether to show that flag in help menu or not.
 		IsHidden() bool
+		// Hide flag from help menu.
+		Hide()
 		// IsGlobal reports whether this flag was global and was set before any command or arg
 		IsGlobal() bool
+		// BelongsTo marks flag non global and belonging to provided named command.
+		BelongsTo(cmdname string)
+		// CommandName returns empty string if command is not set with .BelongsTo
+		// When BelongsTo is set to wildcard "*" then this function will return
+		// name of the command which triggered this flag to be parsed.
+		CommandName() string
 		// Pos returns flags position after command. In case of mulyflag first position is reported
 		Pos() int
 		// Unset unsets the value for the flag if it was parsed, handy for cases where
@@ -79,10 +84,34 @@ type (
 		Required()
 		// IsRequired returns true if this flag is required
 		IsRequired() bool
-		// Set flag default value
-		Default() vars.Variable
+		// Parse value for the flag from given string. It returns true if flag
+		// was found in provided args string and false if not.
+		// error is returned when flag was set but had invalid value.
+		Parse([]string) (bool, error)
 		// String calls Value().String()
 		String() string
+
+		input() []string
+		setCommandName(string)
+	}
+
+	// Flags provides interface for flag set.
+	Flags interface {
+		// Add flag to flag set
+		Add(...Flag)
+		// Add sub set of flags to flag set
+		AddSet(...Flags)
+		// Parse all flags and sub sets
+		Parse(args []string) error
+		// Was flagset (sub command present)
+		Present() bool
+		// Name of the flag set
+		Name() string
+		// Position of flag set
+		Pos() int
+		// GetActiveSetName returns name or
+		// sub set name if one of sub sets was present.
+		GetActiveSetName() string
 	}
 
 	// Common is default string flag. Common flag ccan be used to
@@ -113,6 +142,21 @@ type (
 		parsed bool
 		// potential command after which this flag was found
 		command string
+		// arg or args based on which this flag was parsed
+		in []string
+	}
+
+	// FlagSet holds collection of flags for parsing
+	// e.g. global, sub command or custom flag collection.
+	FlagSet struct {
+		mu      sync.RWMutex
+		name    string
+		argsn   uint
+		present bool
+		flags   []Flag
+		sets    []Flags
+		args    []vars.Value
+		pos     int
 	}
 
 	// OptionFlag is string flag type which can have value of one of the options.
@@ -191,6 +235,21 @@ func Parse(flags []Flag, args []string) error {
 	return errs
 }
 
+// NewFlagSet is wrapper to parse flags together.
+// e.g. under specific command. Where "name" is command name
+// to search before parsing the flags under this set.
+// argsn is number of command line arguments allowed within this set.
+// If argsn is -gt 0 then parser will stop after finding argsn+1 argument
+// which is not a flag.
+func NewFlagSet(name string, argsn uint) (*FlagSet, error) {
+	if name == "/" || (len(os.Args) > 0 && name == os.Args[0]) {
+		name = "/"
+	} else if !ValidFlagName(name) {
+		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
+	}
+	return &FlagSet{name: name, argsn: argsn}, nil
+}
+
 // ValidFlagName returns true if s is string which is valid flag name.
 func ValidFlagName(s string) bool {
 	if len(s) == 1 {
@@ -198,4 +257,19 @@ func ValidFlagName(s string) bool {
 	}
 	re := regexp.MustCompile(FlagRe)
 	return re.MatchString(s)
+}
+
+// returns elements in a which are not in b.
+func slicediff(a, b []string) []string {
+	mb := make(map[string]struct{}, len(b))
+	for _, x := range b {
+		mb[x] = struct{}{}
+	}
+	var diff []string
+	for _, x := range a {
+		if _, found := mb[x]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
 }

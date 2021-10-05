@@ -90,6 +90,7 @@ func (f *Common) IsGlobal() bool {
 // e.g. verbose flag:
 // you can define 2 BoolFlag's with name "verbose" and alias "v"
 // and mark one of these with BelongsTo("*").
+// BelongsTo(os.Args[0] | "/") are same as global and will be.
 func (f *Common) BelongsTo(cmdname string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -182,6 +183,18 @@ func (f *Common) String() string {
 	return f.variable.String()
 }
 
+func (f *Common) input() []string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return f.in
+}
+
+func (f *Common) setCommandName(cmdname string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.command = cmdname
+}
+
 // Parse value for the flag from given string.
 // It returns true if flag has been parsed
 // and error if flag has been already parsed.
@@ -228,15 +241,20 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (err
 	}
 
 	// what was before the flag including flag it self
-	pre := pargs[:poses[0]]
 
-	// default is globale
-	f.global = true
+	// default is global
+	f.global = f.command == "" || f.command == "/"
+	if len(pargs) < poses[0] {
+		return nil
+	}
+
+	pre := pargs[:poses[0]]
 	if f.command != "" {
 		var cmd string
+
 		opts := 0
 		for _, arg := range pre {
-			if arg[0] == '-' {
+			if len(arg) == 0 || arg[0] == '-' {
 				opts = 0
 				continue
 			}
@@ -247,7 +265,6 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (err
 			// found portential command
 			if len(cmd) > 0 && (f.command == "*" || cmd == f.command) {
 				f.command = cmd
-				f.global = false
 				break
 			}
 		}
@@ -260,16 +277,23 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, erro
 	values := []vars.Variable{}
 
 	for _, pose := range poses {
+		if f.pos == 0 {
+			f.pos = pose
+		}
+
 		// handle bool flags
 		if f.variable.Type() == vars.TypeBool {
 			var value vars.Variable
-			falsestr := "false"
-			bval := "true"
+			falsestr := "false" //nolint: goconst
+			bval := "true"      //nolint: goconst
 			if len(pargs) > pose {
-				switch pargs[pose] {
+				val := pargs[pose]
+				switch val {
 				case falsestr, "0", "off":
 					bval = falsestr
-					// case "true", "1", "on":
+					f.in = append(f.in, val)
+				case "true", "1", "on":
+					f.in = append(f.in, val)
 				}
 			}
 			// no need for err check since we only pass valid strings
@@ -278,19 +302,19 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, erro
 			values = append(values, value)
 			continue
 		}
-
 		if len(pargs) == pose {
 			return values, fmt.Errorf("%w: %s", ErrMissingValue, f.name)
 		}
+
 		// update pose only once for first occourance
-		if f.pos == 0 {
-			f.pos = pose
-		}
+
 		f.isPresent = true
 		value := pargs[pose]
+		f.in = append(f.in, pargs[pose])
 		// if we get other flags we can validate is value a flag or not
 		values = append(values, vars.New(f.name, value))
 	}
+
 	return values, nil
 }
 
@@ -305,7 +329,6 @@ func (f *Common) normalize(args []string) (pos []int, pargs []string, err error)
 
 	for _, arg := range args {
 		rpos++
-
 		if len(arg) == 0 || arg[0] != '-' {
 			pargs = append(pargs, arg)
 			continue
@@ -332,11 +355,13 @@ func (f *Common) normalize(args []string) (pos []int, pargs []string, err error)
 		// is our flag?
 		if currflag == f.name {
 			pos = append(pos, rpos)
+			f.in = append(f.in, arg)
 		} else {
 			// or is one of aliases
 			for _, alias := range f.aliases {
 				if currflag == alias {
 					pos = append(pos, rpos)
+					f.in = append(f.in, arg)
 					break
 				}
 			}
@@ -345,6 +370,7 @@ func (f *Common) normalize(args []string) (pos []int, pargs []string, err error)
 		// not this one
 		if split {
 			rpos++
+			split = false
 		}
 	}
 	return pos, pargs, err

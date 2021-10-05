@@ -8,6 +8,8 @@ github.com/mkungla/vars/v5 v5.1.3 h1:EfvFBya1i8IYHgKiAf0xq3J+qZsXxj23XD3oP2kSbcg
 github.com/mkungla/vars/v5 v5.1.3/go.mod h1:VdtKwH3QSrZhWSavGjfBlxAw8x0WTSVWQbR2iIEywnU=
 github.com/mkungla/vars/v5 v5.1.4 h1:W0BP/kRIoHGFTMrvBnFiH67LtKIhkOwlrgxTDD3ioVI=
 github.com/mkungla/vars/v5 v5.1.4/go.mod h1:VdtKwH3QSrZhWSavGjfBlxAw8x0WTSVWQbR2iIEywnU=
+github.com/mkungla/vars/v5 v5.1.5 h1:lip+RrgLS/vtqdJn/TG7peD0mZ+k+CiOSK0zOo5g3EQ=
+github.com/mkungla/vars/v5 v5.1.5/go.mod h1:VdtKwH3QSrZhWSavGjfBlxAw8x0WTSVWQbR2iIEywnU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

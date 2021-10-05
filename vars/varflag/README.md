@@ -11,7 +11,7 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
 [![benchmarks](https://img.shields.io/badge/benchmark-result-green)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fmkungla%varflag.git)
 
 - [varflag](#varflag)
-- [Usage](#usage)
+- [Flags](#flags)
   - [String flag](#string-flag)
   - [Duration flag](#duration-flag)
   - [Float flag](#float-flag)
@@ -20,8 +20,11 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
   - [Bool Flag](#bool-flag)
   - [Option Flag](#option-flag)
   - [Bash Brace Expansion Flag](#bash-brace-expansion-flag)
+- [Parsing](#parsing)
+  - [Parse individual flags](#parse-individual-flags)
+  - [Parse all flags at once](#parse-all-flags-at-once)
 
-# Usage
+# Flags
 
 > note that major version ensures compatibility with
 > https://github.com/mkungla/vars package
@@ -250,6 +253,31 @@ fmt.Printf("%-12s%#v\n", "value", f.Value())
 // Output:
 // string      image-0.jpg|image-1.jpg|image-2.jpg
 // value       []string{"image-0.jpg", "image-1.jpg", "image-2.jpg"}
+```
+
+# Parsing
+
+## Parse individual flags
+
+```go
+str1, _ := varflag.New("str1", ".", "some string")
+str2, _ := varflag.New("str2", "", "some other string")
+
+str1.Parse(os.Args)
+str2.Parse(os.Args)
+
+```
+
+## Parse all flags at once
+
+```go
+var flags []varflag.Flag
+
+str1, _ := varflag.New("str1", ".", "some string")
+str2, _ := varflag.New("str2", "", "some other string")
+
+flags = append(flags, srt1, srt2)
+varflag.Parse(flags, os.Args)
 ```
 
 **test**
