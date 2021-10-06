@@ -9,6 +9,7 @@ import (
 	"testing"
 )
 
+//nolint: funlen, cyclop
 func TestFlagSet(t *testing.T) {
 	args := []string{
 		os.Args[0], "cmd1", "--flag1", "val1", "--flag2", "flag2-value", "arg1", "--flag3=on",
@@ -106,5 +107,4 @@ func TestFlagSet(t *testing.T) {
 	if len(subcmd.Args()) != 2 {
 		t.Error("expected subcmd to have 2 arg got ", subcmd.Args())
 	}
-
 }
