@@ -5,9 +5,7 @@
 package varflag
 
 import (
-	"fmt"
 	"os"
-	"strings"
 
 	"github.com/mkungla/vars/v5"
 )
@@ -135,7 +133,6 @@ func (s *FlagSet) Parse(args []string) error {
 	return s.extractArgs(currargs)
 }
 
-//nolint: gocognit, cyclop, nestif
 func (s *FlagSet) extractArgs(args []string) error {
 	if len(args) == 0 {
 		return nil
@@ -163,37 +160,37 @@ includessubset:
 	if args[0] == s.name {
 		used = append(used, s.name)
 	}
-	for _, flag := range s.flags {
-		if !flag.Present() {
-			// get the flag arg
-			// we can not use flag pos since flag was positioned after argument
-			if flag.Pos() == 0 {
-				return fmt.Errorf("%w: flag %s position was 0", ErrParse, flag.Name())
-			}
-			pose := flag.Pos() - 1
-			arg := args[pose]
-			// is flag key=val
-			if strings.Contains(arg, "=") {
-				used = append(used, args[pose])
-				continue
-			}
-			// bool flag
-			if _, ok := flag.(*BoolFlag); ok {
-				used = append(used, args[pose])
-				if len(args) > pose {
-					val := args[pose+1]
-					if val == "true" || val == "1" || val == "on" || val == "false" || val == "0" || val == "off" {
-						used = append(used, val)
-					}
-				}
-			} else {
-				// flag with value
-				// should be safe to use index +1 since
-				// flag was parsed correctly
-				used = append(used, args[pose], args[pose+1])
-			}
-		}
-	}
+	// for _, flag := range s.flags {
+	// 	if !flag.Present() {
+	// 		// get the flag arg
+	// 		// we can not use flag pos since flag was positioned after argument
+	// 		if flag.Pos() == 0 {
+	// 			return fmt.Errorf("%w: flag %s position was 0", ErrParse, flag.Name())
+	// 		}
+	// 		pose := flag.Pos() - 1
+	// 		arg := args[pose]
+	// 		// is flag key=val
+	// 		if strings.Contains(arg, "=") {
+	// 			used = append(used, args[pose])
+	// 			continue
+	// 		}
+	// 		// bool flag
+	// 		if _, ok := flag.(*BoolFlag); ok {
+	// 			used = append(used, args[pose])
+	// 			if len(args) > pose {
+	// 				val := args[pose+1]
+	// 				if val == "true" || val == "1" || val == "on" || val == "false" || val == "0" || val == "off" {
+	// 					used = append(used, val)
+	// 				}
+	// 			}
+	// 		} else {
+	// 			// flag with value
+	// 			// should be safe to use index +1 since
+	// 			// flag was parsed correctly
+	// 			used = append(used, args[pose], args[pose+1])
+	// 		}
+	// 	}
+	// }
 	sargs := slicediff(args, used)
 	for _, arg := range sargs {
 		s.args = append(s.args, vars.NewValue(arg))

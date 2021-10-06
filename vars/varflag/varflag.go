@@ -245,7 +245,7 @@ func NewFlagSet(name string, argsn uint) (*FlagSet, error) {
 	if name == "/" || (len(os.Args) > 0 && name == os.Args[0]) {
 		name = "/"
 	} else if !ValidFlagName(name) {
-		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
+		return nil, fmt.Errorf("%w: name %q is not valid for flag set", ErrFlag, name)
 	}
 	return &FlagSet{name: name, argsn: argsn}, nil
 }

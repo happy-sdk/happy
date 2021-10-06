@@ -107,4 +107,33 @@ func TestFlagSet(t *testing.T) {
 	if len(subcmd.Args()) != 2 {
 		t.Error("expected subcmd to have 2 arg got ", subcmd.Args())
 	}
+	if subcmd.GetActiveSetName() != "subcmd" {
+		t.Error("expected active cmd/set to be subcmd got ", subcmd.GetActiveSetName())
+	}
+	if subcmd.Pos() != 2 {
+		t.Error("expected subcmd pos to be 2 got ", subcmd.Pos())
+	}
+}
+
+func TestFlagSetName(t *testing.T) {
+	for _, tt := range testflags() {
+		t.Run(tt.name, func(t *testing.T) {
+			flag, err := NewFlagSet(tt.name, 0)
+			if tt.valid {
+				if err != nil {
+					t.Errorf("valid flag set name %q did not expect error got %q", tt.name, err)
+				}
+				if n := flag.Name(); n != tt.name {
+					t.Errorf("flag set name should be %q got %q", tt.name, n)
+				}
+				return
+			}
+			if err == nil {
+				t.Errorf("invalid flag set %q expected error got <nil>", tt.name)
+			}
+			if flag != nil {
+				t.Errorf("invalid flag set %q should be <nil> got %#v", tt.name, flag)
+			}
+		})
+	}
 }

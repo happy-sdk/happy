@@ -284,8 +284,8 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, erro
 		// handle bool flags
 		if f.variable.Type() == vars.TypeBool {
 			var value vars.Variable
-			falsestr := "false" //nolint: goconst
-			bval := "true"      //nolint: goconst
+			falsestr := "false"
+			bval := "true" //nolint: goconst
 			if len(pargs) > pose {
 				val := pargs[pose]
 				switch val {
