@@ -107,7 +107,7 @@ func (s *FlagSet) Parse(args []string) error {
 			return err
 		}
 		// this flag need to be removed from sub command args
-		if s.name == "/" && gflag.Present() {
+		if gflag.Present() {
 			currargs = slicediff(currargs, gflag.input())
 		}
 	}

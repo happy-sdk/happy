@@ -261,9 +261,10 @@ func ValidFlagName(s string) bool {
 
 // returns elements in a which are not in b.
 func slicediff(a, b []string) []string {
+	var noop = struct{}{}
 	mb := make(map[string]struct{}, len(b))
 	for _, x := range b {
-		mb[x] = struct{}{}
+		mb[x] = noop
 	}
 	var diff []string
 	for _, x := range a {
