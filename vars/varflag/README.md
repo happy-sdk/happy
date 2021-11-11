@@ -23,6 +23,7 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
 - [Parsing](#parsing)
   - [Parse individual flags](#parse-individual-flags)
   - [Parse all flags at once](#parse-all-flags-at-once)
+  - [Use flag set](#use-flag-set)
 
 # Flags
 
@@ -278,6 +279,16 @@ str2, _ := varflag.New("str2", "", "some other string")
 
 flags = append(flags, srt1, srt2)
 varflag.Parse(flags, os.Args)
+```
+
+## Use flag set
+
+```go
+str1, err := varflag.New("str1", "", "")
+str2, err := varflag.New("str2", "", "")
+flags,err := varflag.NewFlagSet("/", 0)
+flags.Add(str1, str2)
+err := flags.Parse(os.Args)
 ```
 
 **test**

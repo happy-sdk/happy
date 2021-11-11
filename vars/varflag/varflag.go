@@ -196,6 +196,7 @@ type (
 		val uint
 	}
 
+	// BexpFlag expands flag args with bash brace expansion
 	BexpFlag struct {
 		Common
 		val []string
