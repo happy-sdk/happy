@@ -6,7 +6,6 @@ package varflag
 
 import (
 	"errors"
-	"os"
 
 	"github.com/mkungla/vars/v5"
 )
@@ -123,9 +122,6 @@ func (s *FlagSet) Sets() []Flags {
 func (s *FlagSet) Parse(args []string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(args) > 0 && args[0] == os.Args[0] {
-		args = args[1:]
-	}
 
 	var currargs []string
 	if s.name != "/" && s.name != "*" {
