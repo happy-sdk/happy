@@ -79,6 +79,8 @@ func (f *Common) Hide() {
 // By default all flags are global flags. You can mark flag non-global
 // by calling .BelongsTo(cmdname string).
 func (f *Common) IsGlobal() bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.global
 }
 
@@ -204,7 +206,7 @@ func (f *Common) parse(args []string, read func([]vars.Variable) error) (bool, e
 	}
 
 	if len(args) == 0 {
-		return false, fmt.Errorf("%w: no arguments", ErrParse)
+		return false, fmt.Errorf("%s, %w: no arguments", f.name, ErrParse)
 	}
 
 	f.mu.Lock()

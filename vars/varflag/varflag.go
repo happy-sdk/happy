@@ -39,6 +39,8 @@ var (
 	ErrMissingRequired = errors.New("missing required flag")
 	// ErrMissingOptions is returned when option flag parser does not find options.
 	ErrMissingOptions = errors.New("missing options")
+	// ErrNoNamedFlag is returned when flag lookup can not find named flag.
+	ErrNoNamedFlag = errors.New("no such flag")
 )
 
 type (
@@ -46,48 +48,65 @@ type (
 	Flag interface {
 		// Get primary name for the flag. Usually that is long option
 		Name() string
+
 		// Set flag default value
 		Default() vars.Variable
+
 		// Usage returns a usage description for that flag
 		Usage() string
+
 		// Flag returns flag with leading - or --
 		// useful for help menus
 		Flag() string
+
 		// Return flag aliases
 		Aliases() []string
+
 		// AliasesString returns string representing flag aliases.
 		// e.g. used in help menu
 		AliasesString() string
+
 		// IsHidden reports whether to show that flag in help menu or not.
 		IsHidden() bool
+
 		// Hide flag from help menu.
 		Hide()
+
 		// IsGlobal reports whether this flag was global and was set before any command or arg
 		IsGlobal() bool
+
 		// BelongsTo marks flag non global and belonging to provided named command.
 		BelongsTo(cmdname string)
+
 		// CommandName returns empty string if command is not set with .BelongsTo
 		// When BelongsTo is set to wildcard "*" then this function will return
 		// name of the command which triggered this flag to be parsed.
 		CommandName() string
+
 		// Pos returns flags position after command. In case of mulyflag first position is reported
 		Pos() int
 		// Unset unsets the value for the flag if it was parsed, handy for cases where
 		// one flag cancels another like --debug cancels --verbose
 		Unset()
+
 		// Present reports whether flag was set in commandline
 		Present() bool
+
 		// Var returns vars.Variable for this flag.
 		// where key is flag and Value flags value.
 		Var() vars.Variable
+
 		// Required sets this flag as required
 		Required()
+
 		// IsRequired returns true if this flag is required
 		IsRequired() bool
+
 		// Parse value for the flag from given string. It returns true if flag
 		// was found in provided args string and false if not.
 		// error is returned when flag was set but had invalid value.
 		Parse([]string) (bool, error)
+
 		// String calls Value().String()
 		String() string
 
@@ -99,19 +118,41 @@ type (
 	Flags interface {
 		// Add flag to flag set
 		Add(...Flag)
+
 		// Add sub set of flags to flag set
 		AddSet(...Flags)
+
 		// Parse all flags and sub sets
 		Parse(args []string) error
+
 		// Was flagset (sub command present)
 		Present() bool
+
 		// Name of the flag set
 		Name() string
+
 		// Position of flag set
 		Pos() int
+
 		// GetActiveSetName returns name or
 		// sub set name if one of sub sets was present.
 		GetActiveSetName() string
+
+		// Get named flag
+		Get(name string) (Flag, error)
+
+		// Len returns number of flags in this set
+		// not including subset flags.
+		Len() int
+
+		// AcceptsArgs returns true if set accepts any arguments.
+		AcceptsArgs() bool
+
+		// Flags returns slice of flags in this set
+		Flags() []Flag
+
+		// Sets retruns subsets of flags under this flagset.
+		Sets() []Flags
 	}
 
 	// Common is default string flag. Common flag ccan be used to
@@ -196,7 +237,7 @@ type (
 		val uint
 	}
 
-	// BexpFlag expands flag args with bash brace expansion
+	// BexpFlag expands flag args with bash brace expansion.
 	BexpFlag struct {
 		Common
 		val []string

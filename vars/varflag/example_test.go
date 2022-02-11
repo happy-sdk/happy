@@ -122,17 +122,17 @@ func ExampleFlagSet() {
 	// x           true (true) - true (/)
 	// random      false (false) - false (/)
 	// gloabal args []
-
+	//
 	// cmd1        true
 	// flag1       true (false) - val1
 	// flag2       true (false) - flag2-value
 	// flag3       true (false) - true
 	// cmd1 args    [arg1]
-
+	//
 	// subcmd      true
 	// flag4       true (false) - val 4 flag
 	// subcmd args  [arg2 arg3]
-
+	//
 	// cmd2        false
 	// flag5       false (false)
 }

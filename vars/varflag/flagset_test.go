@@ -12,8 +12,8 @@ import (
 //nolint: funlen, cyclop
 func TestFlagSet(t *testing.T) {
 	args := []string{
-		os.Args[0], "cmd1", "--flag1", "val1", "--flag2", "flag2-value", "arg1", "--flag3=on",
-		"-v",                                                          // global flag can be any place
+		os.Args[0], "cmd1", "--flag1", "val1", "--flag2", "flag2-value",
+		"arg1", "--flag3=on", "-v", // global flag can be any place
 		"subcmd", "--flag4", "val 4 flag", "arg2", "arg3", "-x", "on", // global flag can be any place
 	}
 
@@ -107,8 +107,8 @@ func TestFlagSet(t *testing.T) {
 	if len(subcmd.Args()) != 2 {
 		t.Error("expected subcmd to have 2 arg got ", subcmd.Args())
 	}
-	if subcmd.GetActiveSetName() != "subcmd" {
-		t.Error("expected active cmd/set to be subcmd got ", subcmd.GetActiveSetName())
+	if global.GetActiveSetName() != "subcmd" {
+		t.Error("expected active cmd/set to be subcmd got ", global.GetActiveSetName())
 	}
 	if subcmd.Pos() != 2 {
 		t.Error("expected subcmd pos to be 2 got ", subcmd.Pos())
@@ -135,5 +135,65 @@ func TestFlagSetName(t *testing.T) {
 				t.Errorf("invalid flag set %q should be <nil> got %#v", tt.name, flag)
 			}
 		})
+	}
+}
+
+func TestShaddowFlags(t *testing.T) {
+	args := []string{
+		os.Args[0], "cmd2", "--flag", "val2",
+	}
+
+	global, err := NewFlagSet(args[0], 0)
+	if err != nil {
+		t.Error("did not expect error got ", err)
+	}
+	cmd1, err := NewFlagSet("cmd1", 1)
+	if err != nil {
+		t.Error("did not expect error got ", err)
+	}
+	cmd2, err := NewFlagSet("cmd2", 1)
+	if err != nil {
+		t.Error("did not expect error got ", err)
+	}
+
+	f1, _ := New("flag", "", "")
+	cmd1.Add(f1)
+	f2, _ := New("flag", "", "")
+	cmd2.Add(f2)
+
+	global.AddSet(cmd1, cmd2)
+	if err := global.Parse(args); err != nil {
+		t.Error("did not expect error got ", err)
+	}
+
+	if cmd1.Name() != "cmd1" {
+		t.Error("expected cmd name cmd1 got ", cmd1.Name())
+	}
+
+	if cmd2.Name() != "cmd2" {
+		t.Error("expected cmd name cmd2 got ", cmd2.Name())
+	}
+
+	if cmd1.Present() {
+		t.Error("expected cmd1 not to be present", cmd1.Present())
+	}
+
+	if !cmd2.Present() {
+		t.Error("expected cmd2 to be present", cmd2.Present())
+	}
+
+	if !f2.Present() {
+		t.Error("expected cmd2 flag present: ", f2.Present(), f2.Value())
+	}
+
+	if f1.Present() {
+		t.Error("did not expect cmd1 flag to be present :", f1.Present(), f1.Value())
+	}
+
+	if f1.Value() != "" {
+		t.Error("f1 value should be empty got", f1.Value())
+	}
+	if f2.Value() != "val2" {
+		t.Error("f2 value should val2 got", f2.Value())
 	}
 }

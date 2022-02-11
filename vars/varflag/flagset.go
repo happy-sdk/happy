@@ -5,6 +5,7 @@
 package varflag
 
 import (
+	"errors"
 	"os"
 
 	"github.com/mkungla/vars/v5"
@@ -17,6 +18,13 @@ func (s *FlagSet) Name() string {
 	return s.name
 }
 
+// Len returns nuber of flags in set.
+func (s *FlagSet) Len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.flags)
+}
+
 // Add flag to flag set.
 func (s *FlagSet) Add(flag ...Flag) {
 	s.mu.Lock()
@@ -25,6 +33,18 @@ func (s *FlagSet) Add(flag ...Flag) {
 		f.BelongsTo(s.name)
 	}
 	s.flags = append(s.flags, flag...)
+}
+
+// Get flag of current set.
+func (s *FlagSet) Get(name string) (Flag, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, f := range s.flags {
+		if f.Name() == name {
+			return f, nil
+		}
+	}
+	return nil, ErrNoNamedFlag
 }
 
 // AddSet adds flag set.
@@ -40,10 +60,11 @@ func (s *FlagSet) GetActiveSetName() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	var name string
+
 	if s.Present() {
 		name = s.name
 		for _, set := range s.sets {
-			if s.Present() {
+			if set.Present() {
 				name = set.GetActiveSetName()
 			}
 		}
@@ -72,6 +93,27 @@ func (s *FlagSet) Args() []vars.Value {
 	return s.args
 }
 
+// Args returns parsed arguments for this flag set.
+func (s *FlagSet) AcceptsArgs() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.argsn > 0
+}
+
+// Flags returns slice of flags in this set.
+func (s *FlagSet) Flags() []Flag {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.flags
+}
+
+// Sets retruns subsets of flags under this flagset.
+func (s *FlagSet) Sets() []Flags {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.sets
+}
+
 // ////////////////////////////////////////////////////////////////////////////
 // some shameful cognitive complexity
 // ////////////////////////////////////////////////////////////////////////////
@@ -96,12 +138,19 @@ func (s *FlagSet) Parse(args []string) error {
 		}
 	} else {
 		currargs = args
+		// root cmd is always considered as present
+		s.present = true
+	}
+
+	// if set is not present it is not an error
+	if !s.present {
+		return nil
 	}
 
 	// first parse flags for current set
 	for _, gflag := range s.flags {
 		_, err := gflag.Parse(currargs)
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrFlagAlreadyParsed) {
 			return err
 		}
 		// this flag need to be removed from sub command args
@@ -134,7 +183,7 @@ func (s *FlagSet) Parse(args []string) error {
 }
 
 func (s *FlagSet) extractArgs(args []string) error {
-	if len(args) == 0 {
+	if len(args) == 0 || s.argsn == 0 {
 		return nil
 	}
 	// rm subcmds
