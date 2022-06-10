@@ -25,7 +25,6 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/logrusorgru/aurora/v3"
 	"github.com/mkungla/happy"
 )
 
@@ -189,7 +188,9 @@ func (l *Logger) write(lvl happy.LogLevel, args ...any) {
 	durr := now.Sub(l.last)
 	l.last = now
 
-	prefix, plen := colorPrefix(lvl)
+	prefix := fmt.Sprintf(" %-8s", lvl.ShortString())
+	plen := len(prefix)
+
 	suffix := fmt.Sprintf(" +%s %s\n", durr.String(), now.Format("15:04:05.000000"))
 
 	var entry bytes.Buffer
@@ -197,7 +198,7 @@ func (l *Logger) write(lvl happy.LogLevel, args ...any) {
 
 	if !l.isTerminal {
 		entry.WriteString(fmt.Sprint(args...))
-		entry.WriteString(aurora.Gray(16-1, suffix).String())
+		entry.WriteString(suffix)
 	} else {
 		width, _, err := term.GetSize(0)
 		if err != nil {
@@ -208,7 +209,7 @@ func (l *Logger) write(lvl happy.LogLevel, args ...any) {
 
 		if strings.Contains(fullmsg, "\n") {
 			entry.WriteString(strings.Repeat("-", linelen))
-			entry.WriteString(aurora.Gray(16-1, suffix).String())
+			entry.WriteString(suffix)
 
 			entry.WriteString(fullmsg)
 			if !strings.HasSuffix(fullmsg, "\n") {
@@ -217,7 +218,7 @@ func (l *Logger) write(lvl happy.LogLevel, args ...any) {
 		} else if len(fullmsg) <= linelen {
 			entry.WriteString(fullmsg)
 			entry.WriteString(strings.Repeat(" ", linelen-len(fullmsg)))
-			entry.WriteString(aurora.Gray(16-1, suffix).String())
+			entry.WriteString(suffix)
 		}
 	}
 
@@ -229,36 +230,3 @@ func (l *Logger) write(lvl happy.LogLevel, args ...any) {
 func (l *Logger) writef(lvl happy.LogLevel, template string, args ...any) {
 	l.write(lvl, fmt.Sprintf(template, args...))
 }
-
-func colorPrefix(lvl happy.LogLevel) (string, int) {
-	pfx := fmt.Sprintf(" %-8s", lvl.ShortString())
-	plen := len(pfx)
-
-	switch lvl {
-	case happy.LevelSystemDebug, happy.LevelDebug:
-		return aurora.Gray(15, pfx).BgGray(3).Bold().String(), plen
-	case happy.LevelVerbose:
-		return aurora.White(pfx).BgBrightBlue().Bold().String(), plen
-	case happy.LevelNotice:
-		return aurora.White(pfx).BgBlue().Bold().String(), plen
-	case happy.LevelOk:
-		return aurora.White(pfx).BgGreen().Bold().String(), plen
-	case happy.LevelIssue:
-		return aurora.White(pfx).BgBrightBlack().Bold().String(), plen
-	case happy.LevelTask:
-		return aurora.White(pfx).BgBlack().Bold().String(), plen
-	case happy.LevelWarn:
-		return aurora.Black(pfx).BgYellow().Bold().String(), plen
-	case happy.LevelDeprecated, happy.LevelNotImplemented:
-		return aurora.Black(pfx).BgBrightYellow().Bold().String(), plen
-	case happy.LevelError:
-		return aurora.White(pfx).BgRed().Bold().String(), plen
-	case happy.LevelCritical, happy.LevelAlert, happy.LevelEmergency:
-		return aurora.Black(pfx).BgBrightRed().Bold().String(), plen
-	case happy.LevelOut:
-		return aurora.White(pfx).Bold().String(), plen
-	default:
-		return pfx, plen
-	}
-}
-fmt.P

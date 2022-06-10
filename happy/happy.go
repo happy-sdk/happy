@@ -64,10 +64,15 @@ type (
 		AfterAlways(action Action)
 		Stats() Stats
 		Config() config.Config
+		ServiceManager() ServiceManager
+		AddonManager() AddonManager
 	}
 
+	ServiceManager interface{}
+	AddonManager   interface{}
+
 	Stats interface {
-		Close()
+		Dispose()
 	}
 	Command interface {
 		String() string

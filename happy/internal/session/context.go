@@ -24,7 +24,7 @@ import (
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/config"
-	"github.com/mkungla/happy/settings"
+	"github.com/mkungla/happy/internal/settings"
 	"github.com/mkungla/vars/v5"
 )
 

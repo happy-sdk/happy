@@ -23,11 +23,10 @@ import (
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/cli"
 	"github.com/mkungla/happy/config"
-	"github.com/mkungla/happy/internal"
+	"github.com/mkungla/happy/internal/session"
+	"github.com/mkungla/happy/internal/stats"
 	"github.com/mkungla/happy/internal/stdlog"
 	"github.com/mkungla/happy/internal/version"
-	"github.com/mkungla/happy/session"
-	"github.com/mkungla/happy/stats"
 	"github.com/mkungla/varflag/v5"
 	"github.com/mkungla/vars/v5"
 )
@@ -46,8 +45,8 @@ type Application struct {
 	rootCmd     happy.Command
 	setupAction happy.Action
 
-	sm *internal.ServiceManager
-	am *internal.AddonManager
+	sm happy.ServiceManager
+	am happy.AddonManager
 
 	errors *list.List
 

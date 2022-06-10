@@ -41,6 +41,6 @@ func New() *Stats {
 	}
 }
 
-func (s *Stats) Close() {
+func (s *Stats) Dispose() {
 	close(s.updated)
 }
