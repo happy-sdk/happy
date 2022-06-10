@@ -4,6 +4,8 @@ github.com/logrusorgru/aurora/v3 v3.0.0 h1:R6zcoZZbvVcGMvDCKo45A9U/lzYyzl5NfYIvz
 github.com/logrusorgru/aurora/v3 v3.0.0/go.mod h1:vsR12bk5grlLvLXAYrBsb5Oc/N+LxAlxggSjiwMnCUc=
 github.com/mkungla/bexp/v3 v3.0.0 h1:jTMGx7Ubb0vkpYMEn5Nm+HmnIpYs/rkJQEOnnWxbrtU=
 github.com/mkungla/bexp/v3 v3.0.0/go.mod h1:N7hOxKewg9kbyZojP07ktemtrwF6flzNUInMv5TBx34=
+github.com/mkungla/happy v0.0.0-20220610172929-c858161de10c h1:HQdmjsSmYwFNPlb2CWtG0PYg1rI5WcDfpWoK7fHXm54=
+github.com/mkungla/happy v0.0.0-20220610172929-c858161de10c/go.mod h1:ZDYtKAJ6wHY8UR09MmjtRa0UZmoxPaga+Qybp86CgZ4=
 github.com/mkungla/varflag/v5 v5.1.1 h1:JeSOmM2NeAhXEVYzSdjXhiyxI7swVuqR0yobnBYz+7Q=
 github.com/mkungla/varflag/v5 v5.1.1/go.mod h1:L/ls49QT5bn9lskyer67jihdr/164cmKuctBp3Cb5Cs=
 github.com/mkungla/vars/v5 v5.1.5 h1:lip+RrgLS/vtqdJn/TG7peD0mZ+k+CiOSK0zOo5g3EQ=
@@ -15,6 +17,8 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 golang.org/x/exp v0.0.0-20220609121020-a51bd0440498 h1:TF0FvLUGEq/8wOt/9AV1nj6D4ViZGUIGCMQfCv7VRXY=
 golang.org/x/exp v0.0.0-20220609121020-a51bd0440498/go.mod h1:yh0Ynu2b5ZUe3MQfp2nM0ecK7wsgouWTDN0FNeJuIys=
+golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 h1:kQgndtyPBW/JIYERgdxfwMYh3AVStj88WQTlNDi2a+o=
+golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3/go.mod h1:3p9vT2HGsQu2K1YbXdKPJLVgG5VJdoTa1poYQBtP1AY=
 golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 h1:id054HUawV2/6IGm2IV8KZQjqtwAOo2CYlOToYqa0d0=
 golang.org/x/sys v0.0.0-20211019181941-9d821ace8654/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 h1:CBpWXWQpIRjzmkkA+M7q9Fqnwd2mZr3AFqexg8YTfoM=

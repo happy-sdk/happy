@@ -261,3 +261,4 @@ func colorPrefix(lvl happy.LogLevel) (string, int) {
 		return pfx, plen
 	}
 }
+fmt.P

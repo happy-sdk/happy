@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package create provides sdk and api's with idiomatic approach
+// Package sdk provides api's with idiomatic approach
 // to satisfy all interfaces of github.com/mkungla/happy package.
-package create
+package sdk
 
 import (
 	"github.com/mkungla/happy"
