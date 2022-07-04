@@ -17,6 +17,8 @@
 package happy
 
 import (
+	"context"
+	"errors"
 	"os"
 	"time"
 
@@ -49,11 +51,16 @@ const (
 	LevelQuiet
 )
 
+var (
+	ErrMissingImplementation = errors.New("missing implementation")
+)
+
 type (
 	Application interface {
 		AddCommand(cmd Command)
 		AddCommandFn(fn func() (Command, error))
-		Exit(code int, err ...error)
+		Dispose(code int)
+		Exit(code int, err error)
 		Flag(name string) varflag.Flag
 		Run()
 		Setup(action Action)
@@ -66,13 +73,55 @@ type (
 		Config() config.Config
 		ServiceManager() ServiceManager
 		AddonManager() AddonManager
+		Set(key string, val any) error
+		AddExitFunc(exitFn func(code int, ctx Session))
+		RegisterAddons(addonFns ...func() (Addon, error))
+		RegisterServices(serviceFns ...func() (Service, error))
 	}
 
-	ServiceManager interface{}
-	AddonManager   interface{}
+	ServiceManager interface {
+		Register(services ...Service) error
+		Initialize(ctx Session, log Logger, keepAlive bool) error
+		Stop() error
+		Len() int
+	}
+
+	Service interface {
+		Name() string
+		Slug() string
+		Description() string
+		Version() Version
+		Multiple() bool
+	}
+
+	AddonManager interface {
+		Register(addons ...Addon) error
+		Addons() []Addon
+	}
+
+	Addon interface {
+		Name() string
+		Slug() string
+		Description() string
+		Version() Version
+		DefaultSettings(ctx Session) config.Settings
+		// Configured returning false
+		// prevents addon and it's services to be loaded.
+		// expecting user to configure the addon.
+		Configured(ctx Session) bool
+		Services() []Service
+		Commands() ([]Command, error)
+	}
 
 	Stats interface {
 		Dispose()
+		Elapsed() time.Duration
+		Start() context.CancelFunc
+		Next() <-chan struct{}
+		Now() time.Time
+		FPS() int
+		MaxFPS() int
+		Frame()
 	}
 	Command interface {
 		String() string
@@ -83,6 +132,18 @@ type (
 		AfterSuccess(action Action)
 		AfterFailure(action Action)
 		AfterAlways(action Action)
+		Verify() error
+		Flags() varflag.Flags
+		GetSubCommand(name string) (cmd Command, exists bool)
+		Args() []vars.Value
+
+		ExecuteBeforeFn(ctx Session) error
+		ExecuteDoFn(ctx Session) error
+		ExecuteAfterSuccessFn(ctx Session) error
+		ExecuteAfterFailureFn(ctx Session) error
+		ExecuteAfterAlwaysFn(ctx Session) error
+		SetParents(parents []string)
+		AddSubCommand(cmd Command)
 	}
 
 	Session interface {
@@ -94,6 +155,13 @@ type (
 		Done() <-chan struct{}
 		Err() error
 		Value(key any) any
+		Destroy(err error)
+		Args() []vars.Value
+		Arg(pos int) vars.Value
+		Flags() varflag.Flags
+		Flag(name string) varflag.Flag
+		Out(response any)
+		Start(cmd string, args []vars.Value, flags varflag.Flags) error
 	}
 
 	Settings interface {
@@ -157,6 +225,12 @@ type (
 		Write(data []byte) (n int, err error)
 	}
 
+	Plugin interface {
+		Name() string
+		Slug() string
+		Enabled() bool
+	}
+
 	// Action represents user callable function
 	Action  func(ctx Session) error
 	Options interface {
@@ -181,4 +255,8 @@ type (
 
 	// Level for logger.
 	LogLevel int8
+
+	Version interface {
+		String() string
+	}
 )

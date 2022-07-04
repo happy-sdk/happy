@@ -12,7 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+// Package happy makes developers happy by providing simple and and powerful
+// sdk to build cross-platform cli, gui and mobile applications.
+package addon
 
-type ServiceManager struct {
+import (
+	"errors"
+)
+
+type (
+	Version struct{}
+)
+
+var (
+	ErrAddonRegister = errors.New("failed to register addon")
+)
+
+func (v Version) String() string {
+	return "v0.0.0+addon"
 }

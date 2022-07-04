@@ -12,4 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+//go:build android || js
+
+package cli
+
+import "os/exec"
+
+func execCommandRaw(cmd *exec.Cmd) ([]byte, error) {
+	a.Log().NotImplemented("ExecCommandRaw disabled for this build")
+	return nil, happy.ErrMissingImplementation
+}
+
+func runCommand(cmd *exec.Cmd) error {
+	a.Log().NotImplemented("RunCommand disabled for this build")
+	return happy.ErrMissingImplementation
+}

@@ -16,6 +16,8 @@ package session
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -24,13 +26,15 @@ import (
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/config"
+	"github.com/mkungla/happy/internal/jsonlog"
 	"github.com/mkungla/happy/internal/settings"
+	"github.com/mkungla/varflag/v5"
 	"github.com/mkungla/vars/v5"
 )
 
 type Context struct {
 	ctx            context.Context
-	mu             sync.Mutex
+	mu             sync.RWMutex
 	cancelFromExit bool
 	settings       happy.Settings
 	done           chan struct{}
@@ -44,14 +48,18 @@ type Context struct {
 	ready   bool
 
 	deadline time.Time
+
+	args  []vars.Value
+	flags varflag.Flags
 }
 
-func New() *Context {
+func New(logger happy.Logger) *Context {
 	return &Context{
 		ctx:      context.Background(),
 		data:     new(vars.Collection),
 		events:   &sync.Map{},
 		settings: settings.New(),
+		logger:   logger,
 	}
 }
 
@@ -169,4 +177,60 @@ func (ctx *Context) Destroy(err error) {
 
 func (ctx *Context) String() string {
 	return "happy.Session"
+}
+
+func (ctx *Context) Args() []vars.Value {
+	ctx.mu.RLock()
+	defer ctx.mu.RUnlock()
+	return ctx.args
+}
+func (ctx *Context) Arg(pos int) vars.Value {
+	ctx.mu.RLock()
+	defer ctx.mu.RUnlock()
+	if len(ctx.args) == 0 || len(ctx.args) < pos {
+		return vars.NewValue("")
+	}
+	return ctx.args[pos]
+}
+
+func (ctx *Context) Flags() varflag.Flags {
+	ctx.mu.RLock()
+	defer ctx.mu.RUnlock()
+	return ctx.flags
+}
+
+func (ctx *Context) Flag(name string) varflag.Flag {
+	f, err := ctx.flags.Get(name)
+	if err != nil && !errors.Is(err, varflag.ErrNoNamedFlag) {
+		ctx.Log().Error(err)
+	}
+
+	if err == nil {
+		return f
+	}
+
+	// thes could be predefined
+	f, err = varflag.Bool(config.CreateSlug(name), false, "")
+	if err != nil {
+		ctx.Log().Error(err)
+	}
+	return f
+}
+
+func (ctx *Context) Start(cmd string, args []vars.Value, flags varflag.Flags) error {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+	ctx.args = args
+	ctx.flags = flags
+	return nil
+}
+
+func (ctx *Context) Out(response any) {
+	if f, err := ctx.flags.Get("json"); err == nil && f.Present() {
+		if log, ok := ctx.logger.(*jsonlog.Logger); ok {
+			log.SetResponse(response)
+		}
+	} else {
+		fmt.Println(response)
+	}
 }

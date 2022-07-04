@@ -15,7 +15,13 @@
 // Package cli provides sdk to add cli commands to happy application.
 package cli
 
-import "errors"
+import (
+	"bytes"
+	"errors"
+	"os/exec"
+
+	"github.com/mkungla/happy"
+)
 
 var (
 	ErrCommand        = errors.New("command error")
@@ -23,4 +29,25 @@ var (
 	ErrCommandArgs    = errors.New("command arguments error")
 	ErrCommandFlags   = errors.New("command flags error")
 	ErrCommandExec    = errors.New("command execution error")
+	ErrPanic          = errors.New("there was panic, check logs for more info")
 )
+
+// ExecCommand wraps ExecCommandRaw to return output as string.
+func ExecCommand(ctx happy.Session, cmd *exec.Cmd) (string, error) {
+	out, err := ExecCommandRaw(ctx, cmd)
+	return string(bytes.TrimSpace(out)), err
+}
+
+// ExecCommandRaw wraps and executes provided command and returns its
+// CombinedOutput. It ensures that -x flag is taken into account and
+// Command is RuntimeContext aware.
+func ExecCommandRaw(ctx happy.Session, cmd *exec.Cmd) ([]byte, error) {
+	return execCommandRaw(ctx, cmd)
+}
+
+// RunCommand wraps and executes provided command and prints
+// its Stdin and Stdout with logger.Line. It ensures that -x flag is taken
+// into account and Command is RuntimeContext aware.
+func RunCommand(ctx happy.Session, cmd *exec.Cmd) error {
+	return runCommand(ctx, cmd)
+}

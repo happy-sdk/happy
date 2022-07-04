@@ -15,20 +15,27 @@
 package app
 
 import (
-	"bytes"
 	"container/list"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/addon"
 	"github.com/mkungla/happy/cli"
 	"github.com/mkungla/happy/config"
-	"github.com/mkungla/happy/internal/session"
+	"github.com/mkungla/happy/internal/jsonlog"
 	"github.com/mkungla/happy/internal/stats"
 	"github.com/mkungla/happy/internal/stdlog"
-	"github.com/mkungla/happy/internal/version"
+	"github.com/mkungla/happy/service"
+	"github.com/mkungla/happy/version"
 	"github.com/mkungla/varflag/v5"
-	"github.com/mkungla/vars/v5"
+)
+
+var (
+	ErrInitialization = errors.New("app initialization failed")
+	ErrAppOption      = errors.New("invalid app option")
 )
 
 type Application struct {
@@ -45,14 +52,17 @@ type Application struct {
 	rootCmd     happy.Command
 	setupAction happy.Action
 
-	sm happy.ServiceManager
-	am happy.AddonManager
+	sm *service.Manager
+	am *addon.Manager
 
 	errors *list.List
 
 	stats *stats.Stats
 
 	version version.Version
+
+	disposed bool
+	started  bool
 }
 
 func New(options ...happy.Option) happy.Application {
@@ -67,20 +77,23 @@ func New(options ...happy.Option) happy.Application {
 	// and try to log these errors to appropriate logger.
 	defer func() {
 		if a.errors.Len() > 0 {
-			a.Exit(2)
+			a.Exit(2, ErrInitialization)
 		}
 		a.Log().SystemDebugf("%s %s initialized", a.config.Slug, a.version)
 	}()
 
-	a.session = session.New()
-
-	if !a.applyOptions(options...) || !a.initFlags() {
+	if !a.initFlags() {
 		return nil
 	}
 
-	a.loadVersion()
+	if !a.applyOptions(options...) {
+		return nil
+	}
+
+	a.loadModuleInfo()
 
 	if a.Flag("version").Present() {
+		a.Log().SetLevel(happy.LevelQuiet)
 		fmt.Fprintln(os.Stdout, a.version.String())
 		a.Exit(0, nil)
 	}
@@ -98,17 +111,6 @@ func New(options ...happy.Option) happy.Application {
 		return nil
 	}
 
-	a.Log().SystemDebugf("init service manager")
-	a.Log().SystemDebugf("init addon manager")
-
-	var env bytes.Buffer
-	env.WriteString("SESSION\n")
-
-	a.session.Range(func(key string, val vars.Value) bool {
-		env.WriteString(fmt.Sprintf("%-25s %10s = %s\n", key, "("+val.Type().String()+")", val.String()))
-		return true
-	})
-	a.Log().SystemDebug(env.String())
 	return a
 }
 
@@ -132,38 +134,122 @@ func (a *Application) AddCommandFn(fn func() (happy.Command, error)) {
 	a.AddCommand(cmd)
 }
 
+// Log returns logger.
 func (a *Application) Log() happy.Logger {
+	// bug when app fails early e.g. failed flag parser
 	if a.logger == nil {
-		a.logger = stdlog.New()
+		a.logger = stdlog.New(happy.LevelError)
 	}
 	return a.logger
 }
 
-func (a *Application) Dispose(code int, errs ...error) {
-	a.Log().SystemDebug("a.Dispose: ")
-	if len(errs) > 0 {
-		for _, err := range errs {
-			a.Log().Error(err)
-		}
+func (a *Application) Dispose(code int) {
+	if a.disposed {
+		a.Log().SystemDebug("dispose called multiple times")
+		return
 	}
+	a.disposed = true
+	a.Log().SystemDebug("app disposing")
 
 	if a.errors.Len() > 0 {
 		for e := a.errors.Front(); e != nil; e = e.Next() {
 			a.Log().Error(e.Value)
 		}
 	}
-	a.Stats().Close()
+
+	if len(a.exitFns) > 0 {
+		for _, exitFn := range a.exitFns {
+			exitFn(code, a.session)
+		}
+		a.Log().SystemDebug("exit funcs completed")
+	}
+
+	if a.sm != nil {
+		a.Log().SystemDebug("stopping services...")
+		a.sm.Stop()
+	}
+
+	if a.session != nil {
+		tmpDir := a.session.Get("host.path.tmp").String()
+		if _, err := os.Stat(tmpDir); len(tmpDir) > 0 && err == nil {
+			if err := a.removeDir("tmp", tmpDir); err != nil {
+				a.Log().Error(err)
+			}
+		}
+
+		a.session.Destroy(nil)
+		// <-a.session.Done()
+	}
+
+	if a.stats != nil {
+		elapsed := a.Stats().Elapsed()
+		a.Stats().Dispose()
+
+		a.Log().SystemDebugf("shut down complete - uptime was %s", elapsed)
+	}
+
+	_ = a.Log().Sync()
+	if a.Flag("json").Present() {
+		log, ok := a.logger.(*jsonlog.Logger)
+		if ok {
+			res := log.GetOutput(nil)
+			var (
+				pl  []byte
+				err error
+			)
+
+			if a.Flag("json").String() == "pretty" {
+				pl, err = json.MarshalIndent(res, "", "  ")
+			} else {
+				pl, err = json.Marshal(res)
+			}
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			fmt.Println(string(pl))
+		}
+	}
+
 }
 
-func (a *Application) Exit(code int, errs ...error) {
-	a.Log().SystemDebug("a.Exit: ")
-	a.Dispose(code, errs...)
+func (a *Application) Exit(code int, err error) {
+	a.Log().SystemDebug("shutting down")
+	if err != nil {
+		a.Log().Error(err)
+	}
+	a.Dispose(code)
+	if a.Flag("json").Present() {
+		os.Exit(0)
+	}
 	os.Exit(code)
 }
 
 // Run executes instance based on it's configuration.
 func (a *Application) Run() {
-	a.Log().SystemDebug("a.Run: ")
+	// initialize and configure localhost
+	a.initLocalhost()
+
+	if a.errors.Len() > 0 {
+		a.Exit(1, errors.New("failed to start the app"))
+	}
+
+	if a.Flag("services-keep-alive").Present() && a.sm == nil {
+		a.Log().Warn("flag --services-keep-alive has no effect! there are no background services")
+		a.Flag("services-keep-alive").Unset()
+	}
+
+	if err := a.start(); err != nil {
+		if !a.Flag("json").Present() {
+			cli.Banner(a.session)
+		}
+
+		if errors.Is(err, cli.ErrCommand) {
+			a.Exit(127, err)
+		} else {
+			a.Exit(1, err)
+		}
+	}
 }
 
 // Setup function enables you add pre hook for application.
@@ -204,13 +290,17 @@ func (a *Application) AfterAlways(action happy.Action) {
 // If no flag was found empty bool flag will be returned.
 // Instead of returning error you can check returned flags .IsPresent.
 func (a *Application) Flag(name string) varflag.Flag {
-	if f, err := a.flags.Get(name); err != nil {
+	f, err := a.flags.Get(name)
+	if err != nil && !errors.Is(err, varflag.ErrNoNamedFlag) {
 		a.Log().Error(err)
+	}
+
+	if err == nil {
 		return f
 	}
 
 	// thes could be predefined
-	f, err := varflag.Bool(config.CreateSlug(name), false, "")
+	f, err = varflag.Bool(config.CreateSlug(name), false, "")
 	if err != nil {
 		a.Log().Error(err)
 	}
@@ -225,4 +315,60 @@ func (a *Application) Stats() happy.Stats {
 // Config returns application config.
 func (a *Application) Config() config.Config {
 	return a.config
+}
+
+func (a *Application) ServiceManager() happy.ServiceManager {
+	if a.sm == nil {
+		a.sm = service.NewManager()
+	}
+
+	return a.sm
+}
+
+func (a *Application) RegisterServices(serviceFns ...func() (happy.Service, error)) {
+	for _, serviceFn := range serviceFns {
+		service, err := serviceFn()
+		a.addAppErr(err)
+		if err == nil {
+			a.addAppErr(a.ServiceManager().Register(service))
+		}
+	}
+}
+
+func (a *Application) AddonManager() happy.AddonManager {
+	if a.am == nil {
+		a.am = addon.NewManager()
+	}
+	return a.am
+}
+
+func (a *Application) RegisterAddons(addonFns ...func() (happy.Addon, error)) {
+	for _, addonFn := range addonFns {
+		addon, err := addonFn()
+		a.addAppErr(err)
+		if err == nil {
+			a.addAppErr(a.AddonManager().Register(addon))
+		}
+	}
+}
+
+func (a *Application) Set(key string, val any) error {
+	switch key {
+	case "logger":
+		if logger, ok := val.(happy.Logger); ok {
+			if a.Flag("json").Present() {
+				a.logger.SetLevel(logger.Level())
+			} else {
+				a.logger = logger
+			}
+		} else {
+			return fmt.Errorf("%w: %x", ErrAppOption, val)
+		}
+	}
+	return nil
+}
+
+// AddExitFunc append exit function called before application exits.
+func (a *Application) AddExitFunc(exitFn func(code int, ctx happy.Session)) {
+	a.exitFns = append(a.exitFns, exitFn)
 }

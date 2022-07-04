@@ -12,25 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+package cli
 
 import "github.com/mkungla/happy"
 
-func (a *Application) addCommand(c happy.Command) {
-	if c == nil {
-		return
-	}
-
-	if a.commands == nil {
-		a.commands = make(map[string]happy.Command)
-	}
-
-	// Can only check command name here since nothing stops you to add possible
-	// shadow flags after this command was added.
-	if _, exists := a.commands[c.String()]; exists {
-		a.logger.Errorf("command (%s) is already in use, can not add command", c.String())
-		return
-	}
-
-	a.commands[c.String()] = c
+func Help(s happy.Session) {
+	s.Log().NotImplemented("help not implemented")
 }

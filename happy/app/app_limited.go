@@ -12,15 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sdk provides api's with idiomatic approach
-// to satisfy all interfaces of github.com/mkungla/happy package.
-package sdk
+//go:build android || js
+
+package app
 
 import (
+	"os/exec"
+
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/app"
 )
 
-func App(options ...happy.Option) happy.Application {
-	return app.New(options...)
+func (a *Application) addCommand(c *Command) {
+	a.Log().NotImplemented("AddCommand disabled for this build")
 }
+
+// Skip for modes where nothing besides app main is allowed
+func (a *Application) prepareCommand() (err error) {
+	return happy.ErrMissingImplementation
+}
+
+// Disable help for these targets
+func (a *Application) help() {}

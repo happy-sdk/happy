@@ -22,14 +22,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mkungla/happy/internal/version"
+	"github.com/mkungla/happy/version"
 )
 
 // loadVersion sets application version
 //
 // additional context
 // https://github.com/golang/go/issues/37475
-func (a *Application) loadVersion() {
+func (a *Application) loadModuleInfo() {
 	var (
 		ver string
 		err error
@@ -46,7 +46,7 @@ func (a *Application) loadVersion() {
 				if err == nil {
 					major = fmt.Sprintf("v%d", majorint+1)
 				}
-				a.handleInitErr(err)
+				a.addAppErr(err)
 			}
 			ver = fmt.Sprintf("%s.0.0-alpha+%d", major, time.Now().UnixMilli())
 		} else {
@@ -61,5 +61,5 @@ func (a *Application) loadVersion() {
 
 	a.version, err = version.Parse(ver)
 	a.session.Set("app.version", a.version.String())
-	a.handleInitErr(err)
+	a.addAppErr(err)
 }

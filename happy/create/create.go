@@ -12,7 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+// Package sdk provides api's with idiomatic approach
+// to satisfy all interfaces of github.com/mkungla/happy package.
+package create
 
-type AddonManager struct {
+import (
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/app"
+	"github.com/mkungla/happy/cli"
+)
+
+func App(options ...happy.Option) happy.Application {
+	return app.New(options...)
+}
+
+func Command(name string, argsn uint) (happy.Command, error) {
+	return cli.NewCommand(name, argsn)
 }

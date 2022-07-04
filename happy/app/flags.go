@@ -18,7 +18,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/cli"
+	"github.com/mkungla/happy/internal/jsonlog"
 	"github.com/mkungla/varflag/v5"
 )
 
@@ -26,7 +28,7 @@ import (
 // prevents application to stacli.
 func (a *Application) AddFlag(f varflag.Flag) {
 	if f == nil {
-		a.handleInitErr(fmt.Errorf("%w: %s", cli.ErrCommandFlags, "adding <nil> flag"))
+		a.addAppErr(fmt.Errorf("%w: %s", cli.ErrCommandFlags, "adding <nil> flag"))
 		return
 	}
 
@@ -40,7 +42,7 @@ func (a *Application) initFlags() bool {
 	// background jobs or frontend behaviour
 	var err error
 	if a.flags, err = varflag.NewFlagSet(os.Args[0], 0); err != nil {
-		a.handleInitErr(err)
+		a.addAppErr(err)
 		return false
 	}
 
@@ -49,14 +51,14 @@ func (a *Application) initFlags() bool {
 		bashCompletion.Hide()
 		a.AddFlag(bashCompletion)
 	}
-	a.handleInitErr(err)
+	a.addAppErr(err)
 
 	debug, err := varflag.Bool(
 		"debug",
 		false,
 		"enable debug log level. when debug flag is after the command then debugging will be enabled only for that command",
 	)
-	a.handleInitErr(err)
+	a.addAppErr(err)
 
 	if err == nil {
 		a.AddFlag(debug)
@@ -68,7 +70,7 @@ func (a *Application) initFlags() bool {
 		"enable verbose log level",
 		"v",
 	)
-	a.handleInitErr(err)
+	a.addAppErr(err)
 	if err == nil {
 		a.AddFlag(verbose)
 	}
@@ -79,7 +81,7 @@ func (a *Application) initFlags() bool {
 		"display help or help for the command. [...command --help]",
 		"h",
 	)
-	a.handleInitErr(err)
+	a.addAppErr(err)
 	if err == nil {
 		a.AddFlag(help)
 	}
@@ -89,7 +91,7 @@ func (a *Application) initFlags() bool {
 		false,
 		"display application version",
 	)
-	a.handleInitErr(err)
+	a.addAppErr(err)
 	if err == nil {
 		a.AddFlag(version)
 	}
@@ -99,18 +101,18 @@ func (a *Application) initFlags() bool {
 		false,
 		"if services are defined then ones with 'KeepAlive() true' alive when UI exits with 0 status until os interrupt or other kill signal is received.", //nolint:lll
 	)
-	a.handleInitErr(err)
+	a.addAppErr(err)
 	if err == nil {
 		a.AddFlag(bgka)
 	}
 
 	jsonflag, err := varflag.Option(
 		"json",
-		[]string{},
+		[]string{"compact"},
 		"if json flag is set app will not log anything to sdtout and sdterr, It will exit on first call to ctx.JSON() or with auto response", //nolint:lll
 		[]string{"compact", "pretty"},
 	)
-	a.handleInitErr(err)
+	a.addAppErr(err)
 	if err == nil {
 		a.AddFlag(jsonflag)
 	}
@@ -123,9 +125,13 @@ func (a *Application) initFlags() bool {
 	if err == nil {
 		a.AddFlag(x)
 	}
-	a.handleInitErr(err)
+	a.addAppErr(err)
 
 	// we can ignore err??
-	a.handleInitErr(a.flags.Parse(os.Args))
+	a.addAppErr(a.flags.Parse(os.Args))
+	if a.Flag("json").Present() {
+		a.logger = jsonlog.New(happy.LevelTask)
+	}
+
 	return a.errors.Len() == 0
 }

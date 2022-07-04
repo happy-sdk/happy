@@ -82,3 +82,12 @@ func License(license string) Option {
 		return opts.Set("app.license", license)
 	}
 }
+
+func WithLogger(logger Logger) Option {
+	return func(opts OptionSetter) error {
+		if app, ok := opts.(Application); ok {
+			return app.Set("logger", logger)
+		}
+		return opts.Set("logger", logger)
+	}
+}

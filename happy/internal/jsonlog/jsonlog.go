@@ -12,38 +12,72 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stdlog
+package jsonlog
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
-	"io"
-	"os"
-	"strings"
 	"sync"
 	"time"
-	"unicode/utf8"
-
-	"golang.org/x/term"
 
 	"github.com/mkungla/happy"
 )
 
+type Entry struct {
+	Type    string        `json:"type"`
+	SS      time.Duration `json:"ss"`
+	Message string        `json:"message"`
+}
+
 type Logger struct {
-	mu         sync.Mutex
-	level      happy.LogLevel
-	writer     io.Writer
-	isTerminal bool
-	last       time.Time
+	mu      sync.Mutex
+	level   happy.LogLevel
+	last    time.Time
+	logs    []Entry
+	started time.Time
+	err     string
+	res     any
+}
+
+type Output struct {
+	Time  time.Time `json:"time"`
+	Logs  []Entry   `json:"logs,omitempty"`
+	Error string    `json:"error,omitempty"`
+	Data  any       `json:"data,omitempty"`
 }
 
 func New(lvl happy.LogLevel) *Logger {
-	return &Logger{
-		level:      lvl,
-		writer:     os.Stdout,
-		isTerminal: term.IsTerminal(0),
-		last:       time.Now(),
+	if lvl < happy.LevelError {
+		lvl = happy.LevelError
 	}
+	return &Logger{
+		level:   lvl,
+		last:    time.Now(),
+		started: time.Now(),
+	}
+}
+
+func (l *Logger) SetResponse(response any) {
+	if l.res != nil {
+		l.Error("json response set multiple times")
+		return
+	}
+	l.res = response
+}
+
+func (l *Logger) GetOutput(data any) Output {
+	o := Output{
+		Time:  l.started,
+		Logs:  l.logs,
+		Error: l.err,
+	}
+	if len(o.Error) > 0 && len(o.Logs) == 1 {
+		o.Logs = nil
+	}
+	if len(o.Error) == 0 {
+		o.Data = l.res
+	}
+	return o
 }
 
 func (l *Logger) SystemDebug(args ...any) {
@@ -173,13 +207,16 @@ func (l *Logger) Level() happy.LogLevel {
 }
 
 func (l *Logger) SetLevel(lvl happy.LogLevel) {
+	if lvl < happy.LevelError {
+		return
+	}
 	l.level = lvl
 }
 
 func (l *Logger) Sync() error { return nil }
 
 func (l *Logger) Write(data []byte) (n int, err error) {
-	return l.writer.Write(data)
+	return 0, errors.New("json logger does not support Write")
 }
 
 func (l *Logger) write(lvl happy.LogLevel, args ...any) {
@@ -188,68 +225,18 @@ func (l *Logger) write(lvl happy.LogLevel, args ...any) {
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
-
 	now := time.Now()
 	durr := now.Sub(l.last)
 	l.last = now
-
-	prefix := fmt.Sprintf("[ %-8s ]", lvl.ShortString())
-	plen := len(prefix)
-
-	suffix := fmt.Sprintf(" +%s %s\n", durr.String(), now.Format("15:04:05.000000"))
-
-	var entry bytes.Buffer
-	entry.WriteString(prefix + " ")
-
-	if !l.isTerminal {
-		entry.WriteString(fmt.Sprint(args...))
-		entry.WriteString(suffix)
-	} else {
-		width, _, err := term.GetSize(0)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-		linelen := width - plen - len(suffix) + 1
-		fullmsg := fmt.Sprint(args...)
-
-		if strings.Contains(fullmsg, "\n") {
-			entry.WriteString(strings.Repeat("-", linelen))
-			entry.WriteString(suffix)
-
-			entry.WriteString(fullmsg)
-			if !strings.HasSuffix(fullmsg, "\n") {
-				entry.WriteRune('\n')
-			}
-		} else if len(fullmsg) <= linelen {
-			entry.WriteString(fullmsg)
-			entry.WriteString(strings.Repeat(" ", linelen-len(fullmsg)))
-			entry.WriteString(suffix)
-		} else {
-			var chunks []string
-			for len(fullmsg) > linelen {
-				i := linelen
-				for i >= linelen-utf8.UTFMax && !utf8.RuneStart(fullmsg[i]) {
-					i--
-				}
-				chunks = append(chunks, fullmsg[:i])
-				fullmsg = fullmsg[i:]
-			}
-			if len(fullmsg) > 0 {
-				chunks = append(chunks, fullmsg)
-			}
-			for i, chunk := range chunks {
-				if i == 0 {
-					entry.WriteString(chunk + suffix)
-					continue
-				} else {
-					entry.WriteString(chunk + "\n")
-				}
-			}
-		}
+	e := Entry{
+		Type:    lvl.ShortString(),
+		SS:      durr,
+		Message: fmt.Sprint(args...),
 	}
+	l.logs = append(l.logs, e)
 
-	if _, err := l.Write(entry.Bytes()); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	if lvl >= happy.LevelError {
+		l.err = e.Message
 	}
 }
 

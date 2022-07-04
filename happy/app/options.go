@@ -20,26 +20,40 @@ import (
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/config"
 	"github.com/mkungla/happy/internal"
+	"github.com/mkungla/happy/internal/session"
+	"github.com/mkungla/happy/internal/stdlog"
 )
 
 func (a *Application) applyOptions(options ...happy.Option) bool {
 	conf := config.New()
 
 	for _, opt := range options {
+		a.addAppErr(applyOptionToOptions(opt, a))
+	}
+
+	if a.logger == nil {
+		a.logger = stdlog.New(happy.LevelTask)
+	}
+
+	if a.session == nil {
+		a.session = session.New(a.logger)
+	}
+
+	for _, opt := range options {
 		var key internal.OptionKey
 
-		a.handleInitErr(opt(&key))
+		a.addAppErr(opt(&key))
 
 		var opts happy.OptionSetter
 		if strings.HasPrefix(string(key), "app.") {
 			opts = &conf
-			a.handleInitErr(applyOptionToOptions(opt, a.session))
-		}
-		if strings.HasPrefix(string(key), "settings.") {
+			a.addAppErr(applyOptionToOptions(opt, a.session))
+		} else if strings.HasPrefix(string(key), "settings.") {
 			opts = a.session.Settings()
+		} else {
+			opts = a
 		}
-
-		a.handleInitErr(applyOptionToOptions(opt, opts))
+		a.addAppErr(applyOptionToOptions(opt, opts))
 	}
 
 	a.config = conf

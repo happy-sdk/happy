@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package app
+// Package happy makes developers happy by providing simple and and powerful
+// sdk to build cross-platform cli, gui and mobile applications.
+package service
 
-func (a *Application) handleInitErr(err error) {
-	if err == nil {
-		return
-	}
-	a.errors.PushBack(err)
-}
+import "errors"
+
+var (
+	ErrServiceRegister = errors.New("failed to register service")
+)

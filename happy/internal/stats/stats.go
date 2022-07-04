@@ -16,6 +16,7 @@
 package stats
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -43,4 +44,91 @@ func New() *Stats {
 
 func (s *Stats) Dispose() {
 	close(s.updated)
+}
+
+func (s *Stats) Elapsed() time.Duration {
+	return time.Since(s.started)
+}
+
+// Start the timer goroutine and return a cancel func that
+// that can be used to stop it.
+func (s *Stats) Start() context.CancelFunc {
+	// initialize the timer state.
+	now := time.Now()
+	time.Sleep(time.Duration(999999999 - now.Nanosecond()))
+	s.prev = now
+
+	// we use done to signal stopping the goroutine.
+	// a context.Context could be also used.
+	done := make(chan struct{})
+	go s.run(done)
+	return func() { close(done) }
+}
+
+func (s *Stats) Next() <-chan struct{} {
+	return s.updated
+}
+
+func (s *Stats) Now() time.Time {
+	return s.prev
+}
+
+func (s *Stats) FPS() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.fps
+}
+
+func (s *Stats) MaxFPS() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.maxfps
+}
+
+func (s *Stats) Frame() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.frames++
+}
+
+// run is the main loop for the timer.
+func (s *Stats) run(done chan struct{}) {
+	// we use a time.Ticker to update the state,
+	tick := time.NewTicker(100 * time.Microsecond)
+	defer tick.Stop()
+
+	for {
+		select {
+		case now := <-tick.C:
+			s.update(now)
+		case <-done:
+			return
+		}
+	}
+}
+
+func (s *Stats) update(now time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.prev.Second() != now.Second() {
+		s.invalidate()
+		s.fps = s.frames
+		if s.fps > s.maxfps {
+			s.maxfps = s.fps
+		}
+		s.frames = 0
+	}
+	s.prev = now
+}
+
+// invalidate sends a signal to the UI that
+// the internal state has changed.
+func (s *Stats) invalidate() {
+	// we use a non-blocking send, that way the Timer
+	// can continue updating internally.
+
+	select {
+	case s.updated <- struct{}{}:
+	default:
+	}
 }
