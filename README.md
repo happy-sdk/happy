@@ -10,7 +10,7 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
 ![tests](https://github.com/mkungla/bexp/workflows/tests/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/bexp)](https://goreportcard.com/report/github.com/mkungla/bexp)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/bexp/v3)](https://goreportcard.com/report/github.com/mkungla/bexp/v3)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
 
 [![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fmkungla%bexp.git)
