@@ -109,6 +109,9 @@ func (c Config) Get(key string) vars.Value {
 func (c Config) Set(key string, val any) error {
 	return ErrSetConfigOpt
 }
+func (c Config) Store(key string, val any) error {
+	return ErrSetConfigOpt
+}
 
 func (c Config) Has(key string) bool {
 	return slices.Contains(Keys, key)

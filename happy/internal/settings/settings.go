@@ -51,6 +51,13 @@ func (m *Map) Get(key string) (val vars.Value) {
 // Set updates key value pair in settings collection.
 // If key does not exist then sets key with given value.
 func (m *Map) Set(key string, val any) error {
+	m.data.Set(key, val)
+	return nil
+}
+
+// Set updates key value pair in settings collection.
+// If key does not exist then sets key with given value.
+func (m *Map) Store(key string, val any) error {
 	m.data.Store(key, val)
 	return nil
 }

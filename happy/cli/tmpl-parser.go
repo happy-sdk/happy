@@ -23,21 +23,21 @@ import (
 )
 
 // TmplParser enables to parse templates for cli apps.
-type TmplParser struct {
+type cliTmplParser struct {
 	tmpl   string
 	buffer bytes.Buffer
 	t      *template.Template
 }
 
 // SetTemplate sets template to be parsed.
-func (t *TmplParser) SetTemplate(tmpl string) {
+func (t *cliTmplParser) SetTemplate(tmpl string) {
 	t.tmpl = tmpl
 }
 
 // ParseTmpl parses template for cli application
 // arg name is template name, arg info is common passed to template
 // and elapsed is time duration used by specific type of templates and can usually set to "0".
-func (t *TmplParser) ParseTmpl(name string, h interface{}, elapsed time.Duration) error {
+func (t *cliTmplParser) ParseTmpl(name string, h interface{}, elapsed time.Duration) error {
 	t.t = template.New(name)
 	t.t.Funcs(template.FuncMap{
 		"funcTextBold":    t.textBold,
@@ -60,25 +60,25 @@ func (t *TmplParser) ParseTmpl(name string, h interface{}, elapsed time.Duration
 }
 
 // String returns parsed template as string.
-func (t *TmplParser) String() string {
+func (t *cliTmplParser) String() string {
 	return t.buffer.String()
 }
 
-func (t *TmplParser) cmdCategory(s string) string {
+func (t *cliTmplParser) cmdCategory(s string) string {
 	if s == "" {
 		return s
 	}
 	return strings.ToUpper(s)
 }
 
-func (t *TmplParser) cmdName(s string) string {
+func (t *cliTmplParser) cmdName(s string) string {
 	if s == "" {
 		return s
 	}
 	return fmt.Sprintf("\033[1m %-20s\033[0m", s)
 }
 
-func (t *TmplParser) flagName(s string, a string) string {
+func (t *cliTmplParser) flagName(s string, a string) string {
 	if s == "" {
 		return s
 	}
@@ -88,18 +88,18 @@ func (t *TmplParser) flagName(s string, a string) string {
 	return fmt.Sprintf("%-25s", s)
 }
 
-func (t *TmplParser) textBold(s string) string {
+func (t *cliTmplParser) textBold(s string) string {
 	if s == "" {
 		return s
 	}
 	return fmt.Sprintf("\033[1m%s\033[0m", s)
 }
 
-func (t *TmplParser) dateOnly(ts time.Time) string {
+func (t *cliTmplParser) dateOnly(ts time.Time) string {
 	y, m, d := ts.Date()
 	return fmt.Sprintf("%.2d-%.2d-%d", d, m, y)
 }
 
-func (t *TmplParser) year() int {
+func (t *cliTmplParser) year() int {
 	return time.Now().Year()
 }

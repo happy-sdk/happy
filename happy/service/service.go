@@ -16,8 +16,19 @@
 // sdk to build cross-platform cli, gui and mobile applications.
 package service
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	ErrServiceRegister = errors.New("failed to register service")
 )
+
+type Status struct {
+	URL         string
+	Registered  int64
+	Initialized int64
+	Started     int64
+	Restarts    int64
+	Running     bool
+}

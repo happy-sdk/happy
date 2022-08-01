@@ -141,9 +141,10 @@ func (a *Application) start() error {
 				a.AddCommand(cmd)
 			}
 
-			if err := a.ServiceManager().Register(addon.Services()...); err != nil {
+			if err := a.ServiceManager().Register("addon."+addon.Slug(), addon.Services()...); err != nil {
 				a.Exit(1, err)
 			}
+
 		} else {
 			a.Log().SystemDebugf("addon %s is not configured", addon.Slug())
 		}
@@ -152,14 +153,16 @@ func (a *Application) start() error {
 	// verify configuration of commands
 	for _, cmd := range a.commands {
 		if err := cmd.Verify(); err != nil {
-			a.addAppErr(err)
+			a.addAppErr(fmt.Errorf("%s %w", cmd.String(), err))
 		} else {
 			a.flags.AddSet(cmd.Flags())
 		}
 	}
 
 	if err := a.flags.Parse(os.Args); err != nil && !errors.Is(err, varflag.ErrFlagAlreadyParsed) {
-		return err
+		if errors.Is(err, varflag.ErrMissingRequired) && !a.Flag("help").Present() {
+			return err
+		}
 	}
 
 	a.Log().Issue(28, "Check for invalid global flags")
@@ -176,16 +179,27 @@ func (a *Application) start() error {
 	}
 
 	// Shall we display default help if so print it and exit with 0
-	cli.Help(a.session)
+	cli.Help(a)
 
 	if a.currentCmd == nil {
 		return errors.New("no command, see (--help) for available commands")
 	}
 
+	curflags := a.flags
+	curflags.Add(a.currentCmd.Flags().Flags()...)
+
+	for p := a.currentCmd.Parent(); p != nil; p = p.Parent() {
+		for _, f := range p.Flags().Flags() {
+			if f.CommandName() == "*" {
+				curflags.Add(f)
+			}
+		}
+	}
+
 	if err := a.session.Start(
 		a.currentCmd.String(),
 		a.currentCmd.Args(),
-		a.flags,
+		curflags,
 	); err != nil {
 		return err
 	}
@@ -214,7 +228,7 @@ func (a *Application) prepareCommand() {
 					return
 				}
 			} else {
-				cmd, exists = cmd.GetSubCommand(set.Name())
+				cmd, exists = cmd.SubCommand(set.Name())
 				if !exists {
 					a.addAppErr(fmt.Errorf("%w: unknown subcommand (%s) for %s", cli.ErrCommand, name, cmd.String()))
 					return
@@ -236,23 +250,52 @@ func (a *Application) prepareCommand() {
 func (a *Application) execute() {
 
 	// initialize services
+	a.Log().Experimentalf("initialize %d services", a.ServiceManager().Len())
 	if a.ServiceManager().Len() > 0 {
-		a.Log().NotImplemented("service manager not implemented")
-	} else {
-		a.Log().SystemDebugf("initialize %d services", a.ServiceManager().Len())
-		err := a.ServiceManager().Initialize(a.session, a.logger, a.Flag("services-keep-alive").Present())
+		err := a.ServiceManager().Initialize(
+			a.session,
+			a.Flag("services-keep-alive").Present(),
+		)
 		if err != nil {
 			a.Exit(1, err)
 		}
 	}
 
+	a.session.TaskAdd("start services if needed")
+
+	cancelStats := a.Stats().Start()
+	defer cancelStats()
+
+	go func() {
+		a.ServiceManager().Start(a.session, a.currentCmd.ServiceLoaders()...)
+		a.session.TaskDone()
+
+		a.Log().Experimental("starting service manager runtime")
+	serviceTicker:
+		for {
+			select {
+			case <-a.session.Done():
+				a.Log().Experimental("stopping service manager runtime")
+				break serviceTicker
+			case <-a.Stats().Next():
+				a.ServiceManager().Tick(a.session)
+			}
+		}
+	}()
+
+	// app before runs always
+	a.executeBeforeFn()
+
+	// block
+	a.session.Ready()
+
 	// log env if
 	if a.Log().Level() == happy.LevelSystemDebug && !a.Flag("json").Present() {
 		a.printEnv()
 	}
-
-	// app before runs always
-	a.executeBeforeFn()
+	if a.session.Err() != nil {
+		a.Exit(1, a.session.Err())
+	}
 
 	var code int
 	isRootCmd := a.currentCmd == a.rootCmd

@@ -53,6 +53,17 @@ func (a *Application) initFlags() bool {
 	}
 	a.addAppErr(err)
 
+	systemDebug, err := varflag.Bool(
+		"system-debug",
+		false,
+		"enable system debug log level (very verbose)",
+	)
+	a.addAppErr(err)
+
+	if err == nil {
+		a.AddFlag(systemDebug)
+	}
+
 	debug, err := varflag.Bool(
 		"debug",
 		false,

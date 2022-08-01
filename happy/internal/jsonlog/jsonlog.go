@@ -138,6 +138,13 @@ func (l *Logger) Taskf(template string, args ...any) {
 	l.writef(happy.LevelTask, template, args...)
 }
 
+func (l *Logger) Experimental(args ...any) {
+	l.write(happy.LevelWarn, args...)
+}
+
+func (l *Logger) Experimentalf(template string, args ...any) {
+	l.writef(happy.LevelWarn, template, args...)
+}
 func (l *Logger) Warn(args ...any) {
 	l.write(happy.LevelWarn, args...)
 }

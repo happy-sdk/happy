@@ -90,6 +90,15 @@ func New(options ...happy.Option) happy.Application {
 		return nil
 	}
 
+	// change log level after user potenially added own logger
+	if a.Flag("verbose").Present() {
+		a.Log().SetLevel(happy.LevelVerbose)
+	} else if a.Flag("debug").Present() {
+		a.Log().SetLevel(happy.LevelDebug)
+	} else if a.Flag("system-debug").Present() {
+		a.Log().SetLevel(happy.LevelSystemDebug)
+	}
+
 	a.loadModuleInfo()
 
 	if a.Flag("version").Present() {
@@ -112,6 +121,10 @@ func New(options ...happy.Option) happy.Application {
 	}
 
 	return a
+}
+
+func (a *Application) Session() happy.Session {
+	return a.session
 }
 
 // AddCommand to application.
@@ -138,7 +151,7 @@ func (a *Application) AddCommandFn(fn func() (happy.Command, error)) {
 func (a *Application) Log() happy.Logger {
 	// bug when app fails early e.g. failed flag parser
 	if a.logger == nil {
-		a.logger = stdlog.New(happy.LevelError)
+		a.logger = stdlog.New(happy.LevelWarn)
 	}
 	return a.logger
 }
@@ -307,6 +320,18 @@ func (a *Application) Flag(name string) varflag.Flag {
 	return f
 }
 
+func (a *Application) Flags() varflag.Flags {
+	return a.flags
+}
+
+func (a *Application) Commands() map[string]happy.Command {
+	return a.commands
+}
+
+func (a *Application) Command() happy.Command {
+	return a.currentCmd
+}
+
 // Stats returns application runtime statistics.
 func (a *Application) Stats() happy.Stats {
 	return a.stats
@@ -325,12 +350,15 @@ func (a *Application) ServiceManager() happy.ServiceManager {
 	return a.sm
 }
 
+// RegisterServices allows you to register individual services to application.
 func (a *Application) RegisterServices(serviceFns ...func() (happy.Service, error)) {
+	a.Log().Experimental("RegisterServices: services (%d)", len(serviceFns))
 	for _, serviceFn := range serviceFns {
 		service, err := serviceFn()
 		a.addAppErr(err)
 		if err == nil {
-			a.addAppErr(a.ServiceManager().Register(service))
+			a.addAppErr(a.ServiceManager().Register(a.Session().Get("app.slug").String(), service))
+			a.Log().Experimental("RegisterServices: registered (%s)", service.Slug())
 		}
 	}
 }
@@ -350,6 +378,11 @@ func (a *Application) RegisterAddons(addonFns ...func() (happy.Addon, error)) {
 			a.addAppErr(a.AddonManager().Register(addon))
 		}
 	}
+}
+
+func (a *Application) Store(key string, val any) error {
+	a.Log().NotImplementedf("can not set key on app", key)
+	return nil
 }
 
 func (a *Application) Set(key string, val any) error {

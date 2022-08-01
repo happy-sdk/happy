@@ -42,6 +42,8 @@ func (l LogLevel) String() string {
 		return "deprecated"
 	case LevelNotImplemented:
 		return "not-impl"
+	case LevelExperimental:
+		return "experimental"
 
 	case LevelError:
 		return "error"
@@ -90,6 +92,8 @@ func (l LogLevel) ShortString() string {
 		return "depr"
 	case LevelNotImplemented:
 		return "notimpl"
+	case LevelExperimental:
+		return "exp"
 
 	case LevelError:
 		return "error"

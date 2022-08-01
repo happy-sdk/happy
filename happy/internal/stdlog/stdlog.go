@@ -112,6 +112,14 @@ func (l *Logger) Warnf(template string, args ...any) {
 	l.writef(happy.LevelWarn, template, args...)
 }
 
+func (l *Logger) Experimental(args ...any) {
+	l.write(happy.LevelWarn, args...)
+}
+
+func (l *Logger) Experimentalf(template string, args ...any) {
+	l.writef(happy.LevelWarn, template, args...)
+}
+
 func (l *Logger) Deprecated(args ...any) {
 	l.write(happy.LevelDeprecated, args...)
 }

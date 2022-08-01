@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -35,6 +36,7 @@ import (
 type Context struct {
 	ctx            context.Context
 	mu             sync.RWMutex
+	tasks          int64
 	cancelFromExit bool
 	settings       happy.Settings
 	done           chan struct{}
@@ -64,10 +66,18 @@ func New(logger happy.Logger) *Context {
 }
 
 func (c *Context) Set(key string, val any) error {
-	if c.ready && strings.HasPrefix(key, "app.") {
+	if c.ready && (strings.HasPrefix(key, "app.") || strings.HasPrefix(key, "service.")) {
 		return config.ErrSetConfigOpt
 	}
 	c.data.Set(key, val)
+	return nil
+}
+
+func (c *Context) Store(key string, val any) error {
+	if c.ready && (strings.HasPrefix(key, "app.") || strings.HasPrefix(key, "service.")) {
+		return config.ErrSetConfigOpt
+	}
+	c.data.Store(key, val)
 	return nil
 }
 
@@ -128,9 +138,9 @@ func (c *Context) Done() <-chan struct{} {
 }
 
 func (c *Context) Err() error {
-	c.mu.Lock()
+	c.mu.RLock()
 	err := c.err
-	c.mu.Unlock()
+	c.mu.RUnlock()
 	return err
 }
 
@@ -233,4 +243,116 @@ func (ctx *Context) Out(response any) {
 	} else {
 		fmt.Println(response)
 	}
+}
+
+func (ctx *Context) Ready() {
+ticker:
+	for {
+		select {
+		case <-ctx.Done():
+			break ticker
+		default:
+			if ctx.tasks == 0 {
+				break ticker
+			}
+		}
+	}
+}
+
+func (ctx *Context) TaskDone() {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+	ctx.tasks--
+}
+
+func (ctx *Context) TaskAddf(format string, args ...any) {
+	ctx.TaskAdd(fmt.Sprintf(format, args...))
+}
+func (ctx *Context) TaskAdd(msg string) {
+	ctx.Log().SystemDebugf("session: %s", msg)
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+	ctx.tasks++
+}
+
+func (ctx *Context) RequireService(serviceURL string) {
+	err := ctx.Dispatch("happy.services.enable", vars.New(serviceURL, true))
+	if err != nil {
+		ctx.Log().Error(err)
+		ctx.done <- struct{}{}
+		return
+	}
+
+	u, err := url.Parse(serviceURL)
+	if err != nil {
+		ctx.Log().Error(err)
+		ctx.done <- struct{}{}
+		return
+	}
+	u.RawQuery = ""
+
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+
+	ctx.Log().Experimental("service load deadline is 30 seconds")
+	deadline, deadlineCancel := context.WithTimeout(ctx.ctx, time.Second*30)
+	defer deadlineCancel()
+
+	key := "service." + u.String()
+servicedep:
+	for {
+		select {
+		case <-ticker.C:
+			if !ctx.Has(key) {
+				ctx.mu.Lock()
+				ctx.err = fmt.Errorf("require.service: no such service - %s", serviceURL)
+				ctx.mu.Unlock()
+				return
+			}
+
+			if ctx.Get(key).Bool() {
+				return
+			}
+		case <-deadline.Done():
+			ctx.mu.Lock()
+			ctx.err = fmt.Errorf("require.service: ctx cancelled or deadline reached - %s", serviceURL)
+			ctx.mu.Unlock()
+			break servicedep
+		}
+	}
+}
+
+func (ctx *Context) Dispatch(ev string, val ...vars.Variable) error {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+	if _, ok := ctx.events.Load(ev); ok {
+		return fmt.Errorf("event %q already queued", ev) //nolint: goerr113
+	}
+
+	ctx.Log().SystemDebugf("store event: %s", ev)
+	ctx.events.Store(ev, val)
+	return nil
+}
+
+func (ctx *Context) Events() []string {
+	ctx.mu.RLock()
+	defer ctx.mu.RUnlock()
+	var events []string
+	ctx.events.Range(func(k, v any) bool {
+		events = append(events, fmt.Sprint(k))
+		return true
+	})
+	return events
+}
+
+func (ctx *Context) GetEventPayload(ev string) ([]vars.Variable, error) {
+	payload, loaded := ctx.events.LoadAndDelete(ev)
+	if !loaded {
+		return nil, fmt.Errorf("failed to load event %q", ev)
+	}
+	args, ok := payload.([]vars.Variable)
+	if !ok {
+		return nil, fmt.Errorf("invalid event payload for %q", ev)
+	}
+	return args, nil
 }

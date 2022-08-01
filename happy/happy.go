@@ -41,6 +41,7 @@ const (
 	LevelWarn
 	LevelDeprecated
 	LevelNotImplemented
+	LevelExperimental
 
 	LevelError
 	LevelCritical
@@ -59,9 +60,13 @@ type (
 	Application interface {
 		AddCommand(cmd Command)
 		AddCommandFn(fn func() (Command, error))
+		Commands() map[string]Command
+		Command() Command
+		Session() Session
 		Dispose(code int)
 		Exit(code int, err error)
 		Flag(name string) varflag.Flag
+		Flags() varflag.Flags
 		Run()
 		Setup(action Action)
 		Before(action Action)
@@ -74,16 +79,21 @@ type (
 		ServiceManager() ServiceManager
 		AddonManager() AddonManager
 		Set(key string, val any) error
+		Store(key string, val any) error
 		AddExitFunc(exitFn func(code int, ctx Session))
 		RegisterAddons(addonFns ...func() (Addon, error))
 		RegisterServices(serviceFns ...func() (Service, error))
 	}
 
 	ServiceManager interface {
-		Register(services ...Service) error
-		Initialize(ctx Session, log Logger, keepAlive bool) error
+		Register(ns string, services ...Service) error
+		Initialize(ctx Session, keepAlive bool) error
+		Start(ctx Session, srvurls ...string)
 		Stop() error
 		Len() int
+		Tick(ctx Session)
+		OnEvent(ctx Session, ev string, payload []vars.Variable)
+		StartService(ctx Session, id string)
 	}
 
 	Service interface {
@@ -92,6 +102,14 @@ type (
 		Description() string
 		Version() Version
 		Multiple() bool
+
+		// service
+		Initialize(ctx Session) error
+		Start(ctx Session) error
+		Stop(ctx Session) error
+		Tick(ctx Session, ts time.Time, delta time.Duration) error
+		OnEvent(ctx Session, ev string, payload vars.Collection)
+		Call(fn string) (any, error)
 	}
 
 	AddonManager interface {
@@ -123,27 +141,48 @@ type (
 		MaxFPS() int
 		Frame()
 	}
+
 	Command interface {
 		String() string
 		SetCategory(category string)
+		Category() string
 		SetShortDesc(description string)
+		ShortDesc() string
+		LongDesc(desc ...string) string
+		Usage(usage ...string) string
+
 		Before(action Action)
 		Do(action Action)
 		AfterSuccess(action Action)
 		AfterFailure(action Action)
 		AfterAlways(action Action)
-		Verify() error
+
+		AddFlag(f varflag.Flag) error
 		Flags() varflag.Flags
-		GetSubCommand(name string) (cmd Command, exists bool)
+		AcceptsFlags() bool
 		Args() []vars.Value
+		AcceptsArgs() bool
+
+		SetParents(parents []string)
+		Parents() []string
+		Parent() Command
+		SetParent(Command)
+
+		AddSubCommand(cmd Command)
+		SubCommand(name string) (cmd Command, exists bool)
+		HasSubcommands() bool
+		Subcommands() (scmd []Command)
+
+		Verify() error
 
 		ExecuteBeforeFn(ctx Session) error
 		ExecuteDoFn(ctx Session) error
 		ExecuteAfterSuccessFn(ctx Session) error
 		ExecuteAfterFailureFn(ctx Session) error
 		ExecuteAfterAlwaysFn(ctx Session) error
-		SetParents(parents []string)
-		AddSubCommand(cmd Command)
+
+		RequireServices(...string) // services to enable before the command
+		ServiceLoaders() []string
 	}
 
 	Session interface {
@@ -162,6 +201,19 @@ type (
 		Flag(name string) varflag.Flag
 		Out(response any)
 		Start(cmd string, args []vars.Value, flags varflag.Flags) error
+
+		// TaskAdd adds task to session
+		TaskAdd(string)
+		TaskAddf(string, ...any)
+		// TaskDone decrements the internal WaitGroup counter by one.
+		TaskDone()
+		// Ready blocks until the internal  WaitGroup counter is zero.
+		Ready()
+
+		RequireService(string)
+		Dispatch(ev string, val ...vars.Variable) error
+		Events() []string
+		GetEventPayload(ev string) ([]vars.Variable, error)
 	}
 
 	Settings interface {
@@ -196,6 +248,9 @@ type (
 		Warn(args ...any)
 		Warnf(template string, args ...any)
 
+		Experimental(args ...any)
+		Experimentalf(template string, args ...any)
+
 		Deprecated(args ...any)
 		Deprecatedf(template string, args ...any)
 
@@ -229,6 +284,7 @@ type (
 		Name() string
 		Slug() string
 		Enabled() bool
+		Command(cmd string, args ...any) (string, error)
 	}
 
 	// Action represents user callable function
@@ -241,6 +297,7 @@ type (
 	}
 	OptionSetter interface {
 		Set(key string, val any) error
+		Store(key string, val any) error
 	}
 	OptionGetter interface {
 		Get(key string) vars.Value

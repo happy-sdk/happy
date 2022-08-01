@@ -23,7 +23,7 @@ import (
 )
 
 type banner struct {
-	TmplParser
+	cliTmplParser
 	Vars struct {
 		Title          string
 		CopyrightBy    string

@@ -24,5 +24,9 @@ func (o *OptionKey) Set(key string, val any) error {
 	*o = OptionKey(key)
 	return nil
 }
+func (o *OptionKey) Store(key string, val any) error {
+	*o = OptionKey(key)
+	return nil
+}
 func (o OptionKey) Get(key string) vars.Value { return EmptyValue }
 func (o OptionKey) Has(key string) bool       { return false }

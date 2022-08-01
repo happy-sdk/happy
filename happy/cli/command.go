@@ -31,7 +31,7 @@ type Command struct {
 	shortDesc string
 	longDesc  string
 	usage     string
-	subCmd    *Command // set if subcommand was called
+	subCmd    happy.Command // set if subcommand was called
 
 	beforeFn       happy.Action
 	doFn           happy.Action
@@ -47,6 +47,8 @@ type Command struct {
 
 	isWrapperCommand bool
 	errs             error
+
+	services []string
 }
 
 // NewCommand returns new command constructor.
@@ -76,38 +78,77 @@ func (c *Command) SetCategory(category string) {
 	c.category = strings.TrimSpace(category)
 }
 
+func (c *Command) Category() string {
+	return c.category
+}
+
 // SetShortDesc sets commands short description
 // used when describing command within list.
-func (c *Command) SetShortDesc(description string) {
-	c.shortDesc = description
+func (c *Command) SetShortDesc(desc string) {
+	c.shortDesc = desc
+}
+
+func (c *Command) ShortDesc() string {
+	return c.shortDesc
+}
+
+// Before is first function called if it is set.
+// It will continue executing worker queue set within this function until first
+// failure occurs which is not allowed to continue.
+func (c *Command) Before(action happy.Action) {
+	c.beforeFn = action
 }
 
 // Do should contain main of this command
 // This function is called when:
 //   - BeforeFunc is not set
 //   - BeforeFunc succeeds
-func (c *Command) Before(action happy.Action) {
-	c.beforeFn = action
-}
-
+//   - BeforeFunc fails but failed tasks have status "allow failure"
 func (c *Command) Do(action happy.Action) {
 	c.doFn = action
 }
 
+// AfterSuccess is called when AfterFailure states that there has been no failures.
+// This function is called when:
+//   - AfterFailure states that there has been no fatal errors
 func (c *Command) AfterSuccess(action happy.Action) {
 	c.afterSuccessFn = action
 }
 
+// AfterFailure is called when DoFunc fails.
+// This function is called when:
+//   - DoFunc is not set (this case default AfterFailure function is called)
+//   - DoFunc task fails which has no mark "allow failure"
 func (c *Command) AfterFailure(action happy.Action) {
 	c.afterFailureFn = action
 }
 
+// AfterAlways is final function called and is waiting until all tasks whithin
+// AfterFailure and/or AfterSuccess functions are done executing.
+// If this function if set then it is called always regardless what was the final state of
+// any previous phase.
 func (c *Command) AfterAlways(action happy.Action) {
 	c.afterAlwaysFn = action
 }
 
+// AddFlag adds provided flag to command or subcommand.
+// Invalid flag will add error to multierror and prevents application to start.
+func (c *Command) AddFlag(f varflag.Flag) error {
+	// Add flag if there was no errors while verifying the flag
+	c.flags.Add(f)
+	return nil
+}
+
 func (c *Command) Flags() varflag.Flags {
 	return c.flags
+}
+
+// AcceptsFlags returns true if command accepts any flags.
+func (c *Command) AcceptsFlags() bool {
+	if c.subCmd != nil {
+		return c.subCmd.AcceptsFlags()
+	}
+	return c.flags != nil && c.flags.Len() > 0
 }
 
 // Verify ranges over command flags and the sub commands
@@ -128,7 +169,7 @@ func (c *Command) Verify() error {
 		// Wrpper prints help by default
 		if c.isWrapperCommand { //nolint: gocritic
 			c.doFn = func(ctx happy.Session) error {
-				Help(ctx)
+				HelpCommand(ctx)
 				return nil
 			}
 		} else if c.subCommands != nil {
@@ -150,11 +191,19 @@ SubCommands:
 	return nil
 }
 
-func (c *Command) GetSubCommand(name string) (cmd happy.Command, exists bool) {
+func (c *Command) SubCommand(name string) (cmd happy.Command, exists bool) {
 	if cmd, exists := c.subCommands[name]; exists {
 		return cmd, exists
 	}
 	return
+}
+
+// HasSubcommands returns true if command has any subcommands.
+func (c *Command) HasSubcommands() bool {
+	if c.subCmd != nil {
+		return c.subCmd.HasSubcommands()
+	}
+	return c.subCommands != nil && len(c.subCommands) > 0
 }
 
 func (c *Command) ExecuteBeforeFn(ctx happy.Session) error {
@@ -234,6 +283,11 @@ func (c *Command) Args() []vars.Value {
 	return fs.Args()
 }
 
+// AcceptsArgs returns true if command accepts any arguments.
+func (c *Command) AcceptsArgs() bool {
+	return c.flags.AcceptsArgs()
+}
+
 // AddSubcommand to application which are verified in application startup.
 func (c *Command) AddSubCommand(cmd happy.Command) {
 	if cmd == nil {
@@ -251,9 +305,73 @@ func (c *Command) AddSubCommand(cmd happy.Command) {
 	c.subCommands[cmd.String()] = cmd
 
 	c.flags.AddSet(cmd.Flags())
+	cmd.SetParent(c)
+}
+func (c *Command) SetParent(parent happy.Command) {
+	c.parent = parent
+}
+
+// GetSubcommands returns slice with all subcommands for the command.
+func (c *Command) Subcommands() (scmd []happy.Command) {
+	if c.subCmd != nil {
+		return c.subCmd.Subcommands()
+	}
+	for _, cmd := range c.subCommands {
+		scmd = append(scmd, cmd)
+	}
+	return scmd
 }
 
 // SetParents sets command parent cmds.
 func (c *Command) SetParents(parents []string) {
 	c.parents = parents
+}
+
+// GetParents return slice with names of parent commands.
+func (c *Command) Parents() []string {
+	if c.subCmd != nil {
+		return c.subCmd.Parents()
+	}
+	return c.parents
+}
+
+func (c *Command) Parent() happy.Command {
+	return c.parent
+}
+
+// Usage adds extra usage string following the (app-name cmd-name ...)
+// auto generated usage string would be something like:
+//   `app-name cmd-name [flags] [subcommand] [flags] [args]`
+// this text would appear next line
+// Usage returns commands usage string.
+func (c *Command) Usage(usage ...string) string {
+	if c.subCmd != nil {
+		return c.subCmd.Usage(usage...)
+	}
+	if len(usage) > 0 {
+		c.usage = strings.TrimSpace(usage[0])
+	}
+	if c.usage != "" {
+		return c.usage
+	}
+	return ""
+}
+
+// LongDesc returns commands long description.
+func (c *Command) LongDesc(desc ...string) string {
+	if c.subCmd != nil {
+		return c.subCmd.LongDesc(desc...)
+	}
+	if len(desc) > 0 {
+		c.longDesc = desc[0]
+	}
+	return c.longDesc
+}
+
+func (c *Command) RequireServices(srvs ...string) {
+	c.services = append(c.services, srvs...)
+}
+
+func (c *Command) ServiceLoaders() (urls []string) {
+	return c.services
 }
