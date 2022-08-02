@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"sort"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 func ExampleValue() {

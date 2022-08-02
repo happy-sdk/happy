@@ -1,7 +1,7 @@
 # VARS
 
 ![license](https://img.shields.io/github/license/mkungla/vars)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v5)](https://pkg.go.dev/github.com/mkungla/vars/v5)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v6)](https://pkg.go.dev/github.com/mkungla/vars/v6)
 ![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg?branch=main)](https://coveralls.io/github/mkungla/vars?branch=main)
@@ -15,19 +15,19 @@ Package vars provides the API to parse variables from various input formats/type
 ## Install
 
 ```
-go get github.com/mkungla/vars/v5
+go get github.com/mkungla/vars/v6
 ```
 
 ## Usage
 
-**working with [vars.Value](https://pkg.go.dev/github.com/mkungla/vars/v5#Value)**
+**working with [vars.Value](https://pkg.go.dev/github.com/mkungla/vars/v6#Value)**
 
 ```go
 package main
 
 import (
   "fmt"
-  "github.com/mkungla/vars/v5"
+  "github.com/mkungla/vars/v6"
 )
 
 func main() {
@@ -66,7 +66,7 @@ func main() {
 }
 ```
 
-**working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v5#Collection)**
+**working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v6#Collection)**
 
 > Because of underlying `sync.Map` it is meant to be populated once and read many times
 > read thoroughly sync.Map docs to understand where .Collection may not me right for you!
@@ -76,7 +76,7 @@ package main
 
 import (
   "fmt"
-  "github.com/mkungla/vars/v5"
+  "github.com/mkungla/vars/v6"
 )
 
 func main() {
@@ -121,7 +121,7 @@ package main
 import (
   "fmt"
   "io/ioutil"
-  "github.com/mkungla/vars/v5"
+  "github.com/mkungla/vars/v6"
 )
 
 func main() {

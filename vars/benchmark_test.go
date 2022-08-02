@@ -21,6 +21,7 @@ const (
 	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 )
 
+//nolint: gochecknoglobals
 var src = rand.NewSource(time.Now().UnixNano())
 
 func randString(n int) string {
@@ -44,6 +45,7 @@ func randString(n int) string {
 
 // Benchmark
 // go test -bench BenchmarkNew -benchmem.
+//nolint: goconst
 func BenchmarkNew(b *testing.B) {
 	// cached var
 	b.Run("string:repeat", func(b *testing.B) {
@@ -72,6 +74,7 @@ func BenchmarkNew(b *testing.B) {
 	})
 }
 
+//nolint: funlen, cyclop
 func parseFmt(key string, val interface{}) Variable {
 	var vtype Type
 	switch val.(type) {
@@ -128,6 +131,7 @@ func parseFmt(key string, val interface{}) Variable {
 
 // Benchmark
 // go test -bench BenchmarkParse -benchmem.
+//nolint: gocognit
 func BenchmarkParse(b *testing.B) {
 	// cached var
 	b.Run("string:cached:pkg", func(b *testing.B) {
@@ -203,9 +207,9 @@ func BenchmarkParse(b *testing.B) {
 func BenchmarkBool(b *testing.B) {
 	b.Run("strconv", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			bool, _ := strconv.ParseBool("true")
-			if bool != true {
-				b.Errorf("Unexpected result: %t", bool)
+			val, _ := strconv.ParseBool("true")
+			if val != true {
+				b.Errorf("Unexpected result: %t", val)
 			}
 		}
 	})

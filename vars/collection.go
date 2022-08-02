@@ -6,6 +6,7 @@ package vars
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -83,13 +84,13 @@ func (c *Collection) ToBytes() []byte {
 }
 
 // Store stores the variable for a variable.Key().
-func (c *Collection) Store(key string, value interface{}) {
-	k := strings.TrimSpace(key)
+func (c *Collection) Store(key string, value any) {
+	key = strings.TrimSpace(key)
 	if vv, ok := value.(Value); ok {
-		c.m.Store(k, vv)
+		c.m.Store(key, vv)
 	} else {
 		v := NewValue(value)
-		c.m.Store(k, v)
+		c.m.Store(key, v)
 	}
 	atomic.AddInt64(&c.len, 1)
 }
@@ -155,6 +156,18 @@ func (c *Collection) Delete(key string) {
 // false after a constant number of calls.
 func (c *Collection) Range(f func(key string, value Value) bool) {
 	c.m.Range(func(k, v interface{}) bool {
-		return f(k.(string), v.(Value))
+		key, _ := k.(string)
+		value, _ := v.(Value)
+		return f(key, value)
 	})
+}
+
+func (c *Collection) MarshalJSON() ([]byte, error) {
+	pl := make(map[string]any)
+	c.Range(func(key string, value Value) bool {
+		pl[key] = value.raw
+		return true
+	})
+
+	return json.Marshal(pl)
 }

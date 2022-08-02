@@ -2,6 +2,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
+//nolint: lll,gochecknoglobals
 package vars_test
 
 import (
@@ -132,11 +133,11 @@ func checkUintString(t *testing.T, expected uint64, str string) {
 
 func checkErrors(t *testing.T, val string, flags uint, flag uint, err error) {
 	if (flags&errNone != 0 || flags&flag == 0) && err != nil {
-		t.Errorf("did not expect error got %#v", err)
+		t.Errorf("%s: did not expect error got %#v", val, err)
 	}
 
 	if flags&flag != 0 && !errors.Is(err, strconv.ErrSyntax) && !errors.Is(err, strconv.ErrRange) {
-		t.Errorf("expected strconv.ErrRange got %#v", err)
+		t.Errorf("%s: expected strconv.ErrRange got %#v", val, err)
 	}
 }
 

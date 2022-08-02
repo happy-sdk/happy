@@ -2,6 +2,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
+//nolint: gocognit
 package vars_test
 
 import (
@@ -11,8 +12,9 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/mkungla/vars/v5"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mkungla/vars/v6"
 )
 
 func TestNew(t *testing.T) {
@@ -162,6 +164,7 @@ func TestNewValueComplex128(t *testing.T) {
 	}
 }
 
+//nolint: funlen
 func TestNewValueInt(t *testing.T) {
 	for _, test := range intTests {
 		t.Run(fmt.Sprintf("%s(int): %q", test.key, test.val), func(t *testing.T) {
@@ -261,6 +264,7 @@ func TestNewValueInt(t *testing.T) {
 	}
 }
 
+//nolint: funlen
 func TestNewValueUint(t *testing.T) {
 	for _, test := range uintTests {
 		t.Run(fmt.Sprintf("%s(uint): %q", test.key, test.val), func(t *testing.T) {

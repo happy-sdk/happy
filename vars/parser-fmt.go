@@ -40,6 +40,7 @@ func (f *parserFmt) boolean(v bool) {
 // is specified as last argument in the call to fmt_float.
 // Float formats a float64. It assumes that verb is a valid format specifier
 // for strconv.AppendFloat and therefore fits into a byte.
+//nolint: unparam
 func (f *parserFmt) float(v float64, size int, verb rune, prec int) {
 	// Format number, reserving space for leading + sign if needed.
 	num := strconv.AppendFloat(f.intbuf[:1], v, byte(verb), prec, size)
@@ -80,6 +81,7 @@ func (f *parserFmt) complex(v complex128, size int) {
 }
 
 // fmtInteger formats signed and unsigned integers.
+//nolint: unparam
 func (f *parserFmt) integer(u uint64, base int, isSigned bool, verb rune, digits string) {
 	buf := f.intbuf[0:]
 	// Because printing is easier right-to-left: format u into buf, ending at buf[i].
@@ -106,7 +108,7 @@ func (f *parserFmt) string(s string) {
 }
 
 // bytes formats bytes slice.
-func (f *parserFmt) bytes(v []byte, typeString string) {
+func (f *parserFmt) bytes(v []byte) {
 	f.buf.writeByte('[')
 	for i, c := range v {
 		if i > 0 {

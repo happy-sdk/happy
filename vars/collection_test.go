@@ -17,10 +17,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/mkungla/vars/v5"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/mkungla/vars/v6"
 )
 
+//nolint: gochecknoglobals
 var tests = []struct {
 	k       string
 	defVal  string
@@ -258,7 +260,7 @@ func TestConcurrentRange(t *testing.T) {
 
 	m := new(vars.Collection)
 	for n := int64(1); n <= mapSize; n++ {
-		m.Store(strconv.Itoa(int(n)), int64(n))
+		m.Store(strconv.Itoa(int(n)), n)
 	}
 
 	done := make(chan struct{})

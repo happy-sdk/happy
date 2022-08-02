@@ -37,6 +37,7 @@ const (
 	TypeMap
 	TypeReflectVal
 	TypeDuration
+	TypeArray
 
 	signed   = true
 	unsigned = false
@@ -47,6 +48,7 @@ const (
 	nilAngleString = "<nil>"
 )
 
+//nolint: funlen, cyclop
 func (t Type) String() string {
 	switch t {
 	case TypeUnknown:
@@ -95,6 +97,8 @@ func (t Type) String() string {
 		return "reflect"
 	case TypeDuration:
 		return "duration"
+	case TypeArray:
+		return "array"
 	}
 	return ""
 }
@@ -105,9 +109,10 @@ var (
 	ErrVariableKeyEmpty = errors.New("variable key can not be empty")
 
 	// EmptyVar variable.
-	EmptyVar = Variable{}
+	EmptyVar = Variable{} //nolint: gochecknoglobals
 
 	// parserPool is cached parser.
+	//nolint: gochecknoglobals
 	parserPool = sync.Pool{
 		New: func() interface{} { return new(parser) },
 	}
@@ -126,7 +131,7 @@ type (
 	// Value describes the variable value.
 	Value struct {
 		vtype Type
-		raw   interface{}
+		raw   any
 		str   string
 	}
 
@@ -184,7 +189,7 @@ func New(key string, val interface{}) Variable {
 
 // NewValue return Value, If error occurred while parsing
 // VAR represents default 0, nil value.
-func NewValue(val interface{}) Value {
+func NewValue(val any) Value {
 	if vv, ok := val.(Value); ok {
 		return vv
 	}
@@ -252,6 +257,7 @@ func NewTyped(key string, val string, vtype Type) (Variable, error) {
 }
 
 // NewTypedValue tries to parse value to given type.
+//nolint: cyclop
 func NewTypedValue(val string, vtype Type) (Value, error) {
 	var v string
 	var err error
@@ -266,8 +272,9 @@ func NewTypedValue(val string, vtype Type) (Value, error) {
 	case TypeBool:
 		raw, v, err = parseBool(val)
 	case TypeFloat32:
-		raw, v, err = parseFloat(val, 32)
-		raw = float32(raw.(float64))
+		var rawd float64
+		rawd, v, err = parseFloat(val, 32)
+		raw = float32(rawd)
 	case TypeFloat64:
 		raw, v, err = parseFloat(val, 64)
 	case TypeComplex64:
@@ -279,14 +286,23 @@ func NewTypedValue(val string, vtype Type) (Value, error) {
 	case TypeUint, TypeUint8, TypeUint16, TypeUint32, TypeUint64:
 		raw, v, err = parseUints(val, vtype)
 	case TypeUintptr:
-		raw, v, err = parseUint(val, 10, 64)
-		raw = uintptr(raw.(uint64))
+		var rawd uint64
+		rawd, v, err = parseUint(val, 10, 64)
+		raw = uintptr(rawd)
 	case TypeBytes:
 		raw, v, err = parseBytes(val)
 	case TypeDuration:
 		raw, err = time.ParseDuration(val)
 		// we keep uint64 rep
 		v = fmt.Sprintf("%d", raw)
+	case TypeMap:
+	case TypeReflectVal:
+	case TypeRunes:
+	case TypeString:
+	case TypeUnknown:
+		fallthrough
+	default:
+		v = val
 	}
 
 	return Value{

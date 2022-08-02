@@ -11,8 +11,8 @@ import (
 )
 
 // getParser allocates a new parser struct or grabs a cached one.
-func getParser() *parser {
-	p := parserPool.Get().(*parser)
+func getParser() (p *parser) {
+	p, _ = parserPool.Get().(*parser)
 	p.erroring = false
 	p.fmt.init(&p.buf)
 	return p
@@ -48,7 +48,8 @@ func (p *parser) free() {
 	}
 }
 
-func (p *parser) printArg(arg interface{}) (vtype Type, raw interface{}) {
+//nolint: funlen, cyclop
+func (p *parser) printArg(arg any) (vtype Type, raw any) {
 	p.arg = arg
 	if arg == nil {
 		p.fmt.padString(nilAngleString)
@@ -99,7 +100,7 @@ func (p *parser) printArg(arg interface{}) (vtype Type, raw interface{}) {
 		p.fmt.integer(uint64(f), 10, unsigned, 'v', udigits)
 		vtype = TypeUint32
 	case uint64:
-		p.fmt.integer(uint64(f), 10, unsigned, 'v', udigits)
+		p.fmt.integer(f, 10, unsigned, 'v', udigits)
 		vtype = TypeUint64
 	case uintptr:
 		p.fmt.integer(uint64(f), 10, unsigned, 'v', udigits)
@@ -108,7 +109,7 @@ func (p *parser) printArg(arg interface{}) (vtype Type, raw interface{}) {
 		p.fmt.string(f)
 		vtype = TypeString
 	case []byte:
-		p.fmt.bytes(f, "[]byte")
+		p.fmt.bytes(f)
 		vtype = TypeBytes
 	case []rune:
 		p.fmt.runes(f)
@@ -162,7 +163,7 @@ func parseComplex64(str string) (r complex64, s string, e error) {
 	}
 	f2 = float32(rf2)
 	s = s1 + " " + s2
-	r = complex64(complex(f1, f2))
+	r = complex(f1, f2)
 	return r, s, e
 }
 
@@ -178,58 +179,63 @@ func parseComplex128(str string) (r complex128, s string, e error) {
 	if err != nil {
 		return complex128(0), "", err
 	}
-	f1 = float64(lf1)
+	f1 = lf1
 
 	rf2, s2, err := parseFloat(fields[1], 64)
 	if err != nil {
 		return complex128(0), "", err
 	}
-	f2 = float64(rf2)
+	f2 = rf2
 	s = s1 + " " + s2
-	r = complex128(complex(f1, f2))
+	r = complex(f1, f2)
 	return r, s, e
 }
 
+//nolint: exhaustive
 func parseInts(val string, vtype Type) (raw interface{}, v string, err error) {
+	var rawd int64
 	switch vtype {
 	case TypeInt:
-		raw, v, err = parseInt(val, 10, 0)
-		raw = int(raw.(int64))
+		rawd, v, err = parseInt(val, 10, 0)
+		raw = int(rawd)
 	case TypeInt8:
-		raw, v, err = parseInt(val, 10, 8)
-		raw = int8(raw.(int64))
+		rawd, v, err = parseInt(val, 10, 8)
+		raw = int8(rawd)
 	case TypeInt16:
-		raw, v, err = parseInt(val, 10, 16)
-		raw = int16(raw.(int64))
+		rawd, v, err = parseInt(val, 10, 16)
+		raw = int16(rawd)
 	case TypeInt32:
-		raw, v, err = parseInt(val, 10, 32)
-		raw = int32(raw.(int64))
+		rawd, v, err = parseInt(val, 10, 32)
+		raw = int32(rawd)
 	case TypeInt64:
 		raw, v, err = parseInt(val, 10, 64)
 	}
 	return
 }
 
+//nolint: unparam
 func parseInt(str string, base, bitSize int) (r int64, s string, e error) {
 	r, e = strconv.ParseInt(str, base, bitSize)
 	s = strconv.Itoa(int(r))
 	return r, s, e
 }
 
+//nolint: exhaustive
 func parseUints(val string, vtype Type) (raw interface{}, v string, err error) {
+	var rawd uint64
 	switch vtype {
 	case TypeUint:
-		raw, v, err = parseUint(val, 10, 0)
-		raw = uint(raw.(uint64))
+		rawd, v, err = parseUint(val, 10, 0)
+		raw = uint(rawd)
 	case TypeUint8:
-		raw, v, err = parseUint(val, 10, 8)
-		raw = uint8(raw.(uint64))
+		rawd, v, err = parseUint(val, 10, 8)
+		raw = uint8(rawd)
 	case TypeUint16:
-		raw, v, err = parseUint(val, 10, 16)
-		raw = uint16(raw.(uint64))
+		rawd, v, err = parseUint(val, 10, 16)
+		raw = uint16(rawd)
 	case TypeUint32:
-		raw, v, err = parseUint(val, 10, 32)
-		raw = uint32(raw.(uint64))
+		rawd, v, err = parseUint(val, 10, 32)
+		raw = uint32(rawd)
 	case TypeUint64:
 		raw, v, err = parseUint(val, 10, 64)
 	}
@@ -237,6 +243,7 @@ func parseUints(val string, vtype Type) (raw interface{}, v string, err error) {
 	return
 }
 
+//nolint: unparam
 func parseUint(str string, base, bitSize int) (r uint64, s string, e error) {
 	r, e = strconv.ParseUint(str, base, bitSize)
 	s = strconv.FormatUint(r, base)

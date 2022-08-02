@@ -18,7 +18,9 @@ func (v Value) Type() Type {
 // Bool returns boolean representation of the var Value.
 func (v Value) Bool() bool {
 	if v.vtype == TypeBool {
-		return v.raw.(bool)
+		if v, ok := v.raw.(bool); ok {
+			return v
+		}
 	}
 	val, _, _ := parseBool(v.str)
 	return val
@@ -27,7 +29,9 @@ func (v Value) Bool() bool {
 // Float32 returns Float32 representation of the Value.
 func (v Value) Float32() float32 {
 	if v.vtype == TypeFloat32 {
-		return v.raw.(float32)
+		if v, ok := v.raw.(float32); ok {
+			return v
+		}
 	}
 	val, _, _ := parseFloat(v.str, 32)
 	return float32(val)
@@ -36,7 +40,9 @@ func (v Value) Float32() float32 {
 // Float64 returns float64 representation of Value.
 func (v Value) Float64() float64 {
 	if v.vtype == TypeFloat64 {
-		return v.raw.(float64)
+		if v, ok := v.raw.(float64); ok {
+			return v
+		}
 	}
 	val, _, _ := parseFloat(v.str, 64)
 	return val
@@ -45,7 +51,9 @@ func (v Value) Float64() float64 {
 // Complex64 returns complex64 representation of the Value.
 func (v Value) Complex64() complex64 {
 	if v.vtype == TypeComplex64 {
-		return v.raw.(complex64)
+		if v, ok := v.raw.(complex64); ok {
+			return v
+		}
 	}
 	val, _, _ := parseComplex64(v.str)
 	return val
@@ -54,7 +62,9 @@ func (v Value) Complex64() complex64 {
 // Complex128 returns complex128 representation of the Value.
 func (v Value) Complex128() complex128 {
 	if v.vtype == TypeComplex128 {
-		return v.raw.(complex128)
+		if v, ok := v.raw.(complex128); ok {
+			return v
+		}
 	}
 	val, _, _ := parseComplex128(v.str)
 	return val
@@ -63,7 +73,9 @@ func (v Value) Complex128() complex128 {
 // Int returns int representation of the Value.
 func (v Value) Int() int {
 	if v.vtype == TypeInt {
-		return v.raw.(int)
+		if v, ok := v.raw.(int); ok {
+			return v
+		}
 	}
 	val, _, _ := parseInt(v.str, 10, 0)
 	return int(val)
@@ -72,7 +84,9 @@ func (v Value) Int() int {
 // Int8 returns int8 representation of the Value.
 func (v Value) Int8() int8 {
 	if v.vtype == TypeInt8 {
-		return v.raw.(int8)
+		if v, ok := v.raw.(int8); ok {
+			return v
+		}
 	}
 	val, _, _ := parseInt(v.str, 10, 8)
 	return int8(val)
@@ -99,7 +113,9 @@ func (v Value) Int64() int64 {
 // Uint returns uint representation of the Value.
 func (v Value) Uint() uint {
 	if v.vtype == TypeUint {
-		return v.raw.(uint)
+		if v, ok := v.raw.(uint); ok {
+			return v
+		}
 	}
 	val, _, _ := parseUint(v.str, 10, 0)
 	return uint(val)
@@ -108,7 +124,9 @@ func (v Value) Uint() uint {
 // Uint8 returns uint8 representation of the Value.
 func (v Value) Uint8() uint8 {
 	if v.vtype == TypeUint8 {
-		return v.raw.(uint8)
+		if v, ok := v.raw.(uint8); ok {
+			return v
+		}
 	}
 	val, _, _ := parseUint(v.str, 10, 8)
 	return uint8(val)
@@ -117,7 +135,9 @@ func (v Value) Uint8() uint8 {
 // Uint16 returns uint16 representation of the Value.
 func (v Value) Uint16() uint16 {
 	if v.vtype == TypeUint16 {
-		return v.raw.(uint16)
+		if v, ok := v.raw.(uint16); ok {
+			return v
+		}
 	}
 	val, _, _ := parseUint(v.str, 10, 16)
 	return uint16(val)
@@ -126,7 +146,9 @@ func (v Value) Uint16() uint16 {
 // Uint32 returns uint32 representation of the Value.
 func (v Value) Uint32() uint32 {
 	if v.vtype == TypeUint32 {
-		return v.raw.(uint32)
+		if v, ok := v.raw.(uint32); ok {
+			return v
+		}
 	}
 	val, _, _ := parseUint(v.str, 10, 32)
 	return uint32(val)
@@ -135,7 +157,9 @@ func (v Value) Uint32() uint32 {
 // Uint64 returns uint64 representation of the Value.
 func (v Value) Uint64() uint64 {
 	if v.vtype == TypeUint64 {
-		return v.raw.(uint64)
+		if v, ok := v.raw.(uint64); ok {
+			return v
+		}
 	}
 	val, _, _ := parseUint(v.str, 10, 64)
 	return val
@@ -144,7 +168,9 @@ func (v Value) Uint64() uint64 {
 // Uintptr returns uintptr representation of the Value.
 func (v Value) Uintptr() uintptr {
 	if v.vtype == TypeUintptr {
-		return v.raw.(uintptr)
+		if v, ok := v.raw.(uintptr); ok {
+			return v
+		}
 	}
 	val, _, _ := parseUint(v.str, 10, 64)
 	return uintptr(val)
@@ -153,15 +179,20 @@ func (v Value) Uintptr() uintptr {
 // String returns string representation of the Value.
 func (v Value) String() string {
 	if v.vtype == TypeDuration {
-		return fmt.Sprint(v.raw.(time.Duration))
+		if v, ok := v.raw.(time.Duration); ok {
+			return fmt.Sprint(v)
+		}
 	}
+
 	return v.str
 }
 
 // Bytes returns []bytes representation of the Value.
 func (v Value) Bytes() []byte {
 	if v.vtype == TypeBytes {
-		return v.raw.([]byte)
+		if v, ok := v.raw.([]byte); ok {
+			return v
+		}
 	}
 	return []byte(v.str)
 }
@@ -184,4 +215,7 @@ func (v Value) Empty() bool {
 // Fields calls strings.Fields on Value string.
 func (v Value) Fields() []string {
 	return strings.Fields(v.str)
+}
+func (v Value) Raw() any {
+	return v.raw
 }
