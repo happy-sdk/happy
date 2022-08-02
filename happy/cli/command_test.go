@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sdk provides api's with idiomatic approach
-// to satisfy all interfaces of github.com/mkungla/happy package.
-package create
+package cli_test
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/app"
 	"github.com/mkungla/happy/cli"
+	"github.com/mkungla/happy/internal/session"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-func App(options ...happy.Option) happy.Application {
-	return app.New(options...)
-}
-
-func Command(name string, argsn uint) (happy.Command, error) {
-	return cli.NewCommand(name, argsn)
+func TestExecuteDoFn(t *testing.T) {
+	cmd, err := cli.NewCommand("exec-do", 0)
+	if err != nil {
+		t.Error(err)
+	}
+	cmd.Do(func(c happy.Session) error {
+		panic("test panic")
+		return nil
+	})
+	ctx := &session.Context{}
+	assert.ErrorContains(t, cmd.ExecuteDoFn(ctx), "test panic")
 }

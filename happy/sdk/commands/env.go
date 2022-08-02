@@ -25,7 +25,7 @@ import (
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/cli"
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 	"golang.org/x/exp/slices"
 )
 
@@ -62,8 +62,6 @@ func Env() (happy.Command, error) {
 		var err error
 		if ctx.Args()[0].String() == "settings" {
 			err = envSettingAction(ctx, ctx.Args()[1].String(), ctx.Args()[2].String())
-		} else {
-
 		}
 
 		return err

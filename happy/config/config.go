@@ -23,7 +23,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 const (

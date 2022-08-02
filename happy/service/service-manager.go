@@ -24,8 +24,7 @@ import (
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/config"
-	"github.com/mkungla/vars/v5"
-	// "github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 type Manager struct {
@@ -94,7 +93,9 @@ func (sm *Manager) Initialize(ctx happy.Session, keepAlive bool) error {
 			}
 			s, _ := status.(*Status)
 			s.Initialized = time.Now().UnixNano()
-			ctx.Set(fmt.Sprintf("service.%s", s.URL), false)
+			if err := ctx.Set(fmt.Sprintf("service.%s", s.URL), false); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -115,10 +116,10 @@ func (sm *Manager) Start(ctx happy.Session, srvurls ...string) {
 
 	for _, serviceURL := range srvurls {
 		ctx.TaskAddf("require service: %s", serviceURL)
-		go func() {
+		go func(u string) {
 			defer ctx.TaskDone()
-			ctx.RequireService(serviceURL)
-		}()
+			ctx.RequireService(u)
+		}(serviceURL)
 	}
 }
 
@@ -230,7 +231,10 @@ func (sm *Manager) StartService(ctx happy.Session, id string) {
 			default:
 				ts := time.Now()
 				delta := ts.Sub(prevts)
-				service.Tick(ctx, ts, delta)
+				if err := service.Tick(ctx, ts, delta); err != nil {
+					ctx.Log().Error(err)
+					break bgticker
+				}
 				prevts = ts
 				time.Sleep(time.Microsecond * 100)
 			}
@@ -238,7 +242,7 @@ func (sm *Manager) StartService(ctx happy.Session, id string) {
 
 		ctx.Log().Debugf("stopping service %q ", service.Slug())
 		if err := service.Stop(ctx); err != nil {
-			ctx.Log().Error(err.Error())
+			ctx.Log().Error(err)
 		}
 	}(ctx, service)
 }

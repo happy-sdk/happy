@@ -16,12 +16,13 @@ package cli
 
 import (
 	"fmt"
-	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/config"
-	"github.com/mkungla/varflag/v5"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/config"
+	"github.com/mkungla/varflag/v6"
 )
 
 func Help(a happy.Application) {

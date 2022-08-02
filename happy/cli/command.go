@@ -21,8 +21,8 @@ import (
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/config"
-	"github.com/mkungla/varflag/v5"
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/varflag/v6"
+	"github.com/mkungla/vars/v6"
 )
 
 type Command struct {

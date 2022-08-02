@@ -30,7 +30,7 @@ import (
 	"github.com/mkungla/happy/internal/stdlog"
 	"github.com/mkungla/happy/service"
 	"github.com/mkungla/happy/version"
-	"github.com/mkungla/varflag/v5"
+	"github.com/mkungla/varflag/v6"
 )
 
 var (
@@ -179,7 +179,9 @@ func (a *Application) Dispose(code int) {
 
 	if a.sm != nil {
 		a.Log().SystemDebug("stopping services...")
-		a.sm.Stop()
+		if err := a.sm.Stop(); err != nil {
+			a.Log().Error(err)
+		}
 	}
 
 	if a.session != nil {

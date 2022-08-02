@@ -53,13 +53,13 @@ func (a *Application) loadModuleInfo() {
 			ver = bi.Main.Version
 		}
 
-		a.session.Set("app.go.version", bi.GoVersion)
-		a.session.Set("app.module.path", bi.Path)
-		a.session.Set("app.module.sum", bi.Main.Sum)
-		a.session.Set("app.module.version", bi.Main.Version)
+		a.addAppErr(a.session.Set("app.go.version", bi.GoVersion))
+		a.addAppErr(a.session.Set("app.module.path", bi.Path))
+		a.addAppErr(a.session.Set("app.module.sum", bi.Main.Sum))
+		a.addAppErr(a.session.Set("app.module.version", bi.Main.Version))
 	}
 
 	a.version, err = version.Parse(ver)
-	a.session.Set("app.version", a.version.String())
+	a.addAppErr(a.session.Set("app.version", a.version.String()))
 	a.addAppErr(err)
 }

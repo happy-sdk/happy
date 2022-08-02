@@ -25,8 +25,8 @@ import (
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/cli"
 	"github.com/mkungla/happy/config"
-	"github.com/mkungla/varflag/v5"
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/varflag/v6"
+	"github.com/mkungla/vars/v6"
 )
 
 func (a *Application) addAppErr(err error) {
@@ -120,14 +120,16 @@ func (a *Application) start() error {
 	for _, addon := range a.AddonManager().Addons() {
 		a.Log().SystemDebugf("loading addon %s %s", addon.Slug(), addon.Version())
 		settings := addon.DefaultSettings(a.session)
-		for _, setting := range settings.General.Settings {
-			key := strings.Join([]string{"addon", addon.Slug(), setting.Key}, ".")
+		for i := range settings.General.Settings {
+			key := strings.Join([]string{"addon", addon.Slug(), settings.General.Settings[i].Key}, ".")
 			if !config.ValidSettingKey(key) {
 				a.Exit(1, fmt.Errorf("%w: %s", config.ErrInvalidSettingsKey, key))
 			}
 			if !a.session.Settings().Has(key) {
 				a.Log().SystemDebugf("setting default for %s", key)
-				a.session.Settings().Set(key, setting.Default())
+				if err := a.session.Settings().Set(key, settings.General.Settings[i].Default()); err != nil {
+					return err
+				}
 			}
 
 		}

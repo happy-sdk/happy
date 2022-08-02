@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+// Package sdk provides api's with idiomatic approach
+// to satisfy all interfaces of github.com/mkungla/happy package.
+package create
 
-import "github.com/mkungla/vars/v6"
+import (
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/app"
+	"github.com/mkungla/happy/cli"
+)
 
-type OptionKey string
-
-var EmptyValue = vars.Value{}
-
-func (o *OptionKey) Set(key string, val any) error {
-	*o = OptionKey(key)
-	return nil
+// App is alias of app.New(options...)
+func App(options ...happy.Option) happy.Application {
+	return app.New(options...)
 }
-func (o *OptionKey) Store(key string, val any) error {
-	*o = OptionKey(key)
-	return nil
+
+// Command is alias of cli.NewCommand(name, argsn)
+func Command(name string, argsn uint) (happy.Command, error) {
+	return cli.NewCommand(name, argsn)
 }
-func (o OptionKey) Get(key string) vars.Value { return EmptyValue }
-func (o OptionKey) Has(key string) bool       { return false }

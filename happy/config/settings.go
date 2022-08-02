@@ -17,9 +17,8 @@ package config
 import (
 	"errors"
 	"regexp"
-	"sync"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 var (
@@ -42,7 +41,7 @@ type (
 	}
 
 	Setting struct {
-		once        sync.Once
+		// once        sync.Once
 		FieldType   string
 		Once        func() error
 		Key         string

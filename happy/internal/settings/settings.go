@@ -18,7 +18,7 @@ package settings
 import (
 	"errors"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 type Map struct {
@@ -82,7 +82,7 @@ func (m *Map) Default(key string, val any) {
 	m.defaults[key] = v
 
 	if !m.data.Has(key) {
-		m.Set(key, val)
+		_ = m.Set(key, val)
 	}
 }
 

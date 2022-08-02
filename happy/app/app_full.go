@@ -50,7 +50,7 @@ func (a *Application) initLocalhost() {
 		a.addAppErr(err)
 		return
 	}
-	a.session.Set("host.path.home", homeDir)
+	a.addAppErr(a.session.Set("host.path.home", homeDir))
 
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
@@ -62,7 +62,7 @@ func (a *Application) initLocalhost() {
 		a.addAppErr(err)
 		return
 	}
-	a.session.Set("host.path.cache", cachepath)
+	a.addAppErr(a.session.Set("host.path.cache", cachepath))
 
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -74,14 +74,14 @@ func (a *Application) initLocalhost() {
 		a.addAppErr(err)
 		return
 	}
-	a.session.Set("host.path.config", configpath)
+	a.addAppErr(a.session.Set("host.path.config", configpath))
 
 	tempDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%d", a.Config().Slug, time.Now().UnixMilli()))
 	if err = os.Mkdir(tempDir, 0700); err != nil {
 		a.addAppErr(err)
 		return
 	}
-	a.session.Set("host.path.tmp", tempDir)
+	a.addAppErr(a.session.Set("host.path.tmp", tempDir))
 }
 
 func (a *Application) removeDir(logId, dir string) error {

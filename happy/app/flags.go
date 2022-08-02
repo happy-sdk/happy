@@ -21,7 +21,7 @@ import (
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/cli"
 	"github.com/mkungla/happy/internal/jsonlog"
-	"github.com/mkungla/varflag/v5"
+	"github.com/mkungla/varflag/v6"
 )
 
 // AddFlag to application. Invalid flag will add error to multierror and

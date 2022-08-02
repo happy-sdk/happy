@@ -29,27 +29,27 @@ import (
 	"github.com/mkungla/happy/config"
 	"github.com/mkungla/happy/internal/jsonlog"
 	"github.com/mkungla/happy/internal/settings"
-	"github.com/mkungla/varflag/v5"
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/varflag/v6"
+	"github.com/mkungla/vars/v6"
 )
 
 type Context struct {
-	ctx            context.Context
-	mu             sync.RWMutex
-	tasks          int64
-	cancelFromExit bool
-	settings       happy.Settings
-	done           chan struct{}
-	data           *vars.Collection
-	err            error
-	logger         happy.Logger
-	sig            context.Context
+	ctx   context.Context
+	mu    sync.RWMutex
+	tasks int64
+	// cancelFromExit bool
+	settings happy.Settings
+	done     chan struct{}
+	data     *vars.Collection
+	err      error
+	logger   happy.Logger
+	sig      context.Context
 	// payload        *sync.Map
-	tempDir string
-	events  *sync.Map
-	ready   bool
+	// tempDir string
+	events *sync.Map
+	ready  bool
 
-	deadline time.Time
+	// deadline time.Time
 
 	args  []vars.Value
 	flags varflag.Flags
