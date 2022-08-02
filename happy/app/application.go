@@ -111,9 +111,9 @@ func New(options ...happy.Option) happy.Application {
 	a.stats = stats.New()
 
 	// Add NotifyContext only if services-keep-alive is not present
-	if !a.Flag("services-keep-alive").Present() {
-		a.session.NotifyContext(os.Interrupt, os.Kill)
-	}
+	// when services-keep-alive flag is present then this enables
+	// you to kill te services e.g. ctrl+c
+	a.session.NotifyContext(os.Interrupt, os.Kill)
 
 	if a.rootCmd, lasterr = cli.NewCommand(a.config.Slug, 0); lasterr != nil {
 		a.errors.PushBack(lasterr)

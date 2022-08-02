@@ -354,9 +354,7 @@ func (a *Application) executeAfterAlwaysFn(code int) {
 	if a.Flag("services-keep-alive").Present() && code == 0 {
 		a.Flag("services-keep-alive").Unset()
 		a.Log().SystemDebug("UI exited with code(0), but service is in keep-alive mode, continue exec")
-		a.Log().NotImplemented("executeAfterAlwaysFn services-keep-alive not implemented")
-		// a.ctx.sig, _ = signal.NotifyContext(a.session, os.Interrupt, os.Kill)
-		// <-a.Session().Done()
+		<-a.Session().Done()
 	}
 	a.Exit(code, nil)
 }

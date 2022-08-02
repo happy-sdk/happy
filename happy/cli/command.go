@@ -216,6 +216,10 @@ func (c *Command) ExecuteBeforeFn(ctx happy.Session) error {
 	return c.beforeFn(ctx)
 }
 
+// ExecuteDoFn executes the command Do function.
+// It always returns an error or nil even on panic,
+// which determines whether AfterSuccess or AfterFailure
+// is next in the execution chain.
 func (c *Command) ExecuteDoFn(ctx happy.Session) error {
 
 	if c.subCmd != nil {
@@ -230,12 +234,16 @@ func (c *Command) ExecuteDoFn(ctx happy.Session) error {
 		err error
 	)
 
+	// Also return error in case when .Do function panics
+	// so that AfterFailure could be triggered
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if r := recover(); r != nil {
-			err = fmt.Errorf("%w: %s", ErrPanic, fmt.Sprint(r))
-		}
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("%w: %s", ErrPanic, fmt.Sprint(r))
+			}
+		}()
 		err = c.doFn(ctx)
 	}()
 	wg.Wait()

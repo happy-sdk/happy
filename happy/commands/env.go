@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package config enables you to configure happy application instance.
-package cmd
+// Package commands provides ready to use application commands
+// you can plug into your application without any external dependencies.
+package commands
 
 import (
 	"bytes"

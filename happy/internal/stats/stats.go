@@ -126,7 +126,6 @@ func (s *Stats) update(now time.Time) {
 func (s *Stats) invalidate() {
 	// we use a non-blocking send, that way the Timer
 	// can continue updating internally.
-
 	select {
 	case s.updated <- struct{}{}:
 	default:

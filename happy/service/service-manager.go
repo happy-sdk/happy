@@ -43,6 +43,9 @@ func NewManager() *Manager {
 }
 
 func (sm *Manager) Stop() error {
+	if !sm.running {
+		return nil
+	}
 	sm.running = false
 	sm.cancel()
 	sm.exitwg.Wait()
