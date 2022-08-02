@@ -229,6 +229,7 @@ func (sm *Manager) StartService(ctx happy.Session, id string) {
 				delta := ts.Sub(prevts)
 				service.Tick(ctx, ts, delta)
 				prevts = ts
+				time.Sleep(time.Microsecond * 100)
 			}
 		}
 
