@@ -9,7 +9,8 @@ import (
 	"strings"
 
 	"github.com/mkungla/bexp/v3"
-	"github.com/mkungla/vars/v5"
+
+	"github.com/mkungla/vars/v6"
 )
 
 // Bexp returns new Bash Brace Expansion flag.
@@ -52,6 +53,9 @@ func (f *BexpFlag) Parse(args []string) (ok bool, err error) {
 func (f *BexpFlag) Value() []string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
+	if f.isPresent {
+		return f.val
+	}
 	return f.val
 }
 

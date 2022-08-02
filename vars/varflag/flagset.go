@@ -6,8 +6,9 @@ package varflag
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 // Name returns name of the flag set.
@@ -39,6 +40,7 @@ func (s *FlagSet) Get(name string) (Flag, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, f := range s.flags {
+
 		if f.Name() == name {
 			return f, nil
 		}
@@ -53,22 +55,21 @@ func (s *FlagSet) AddSet(set ...Flags) {
 	s.sets = append(s.sets, set...)
 }
 
-// GetActiveSetName return last known command
-// which was present while parsing. e.g subcommand.
-func (s *FlagSet) GetActiveSetName() string {
+// GetSetTree
+func (s *FlagSet) GetActiveSetTree() []Flags {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	var name string
 
+	var tree []Flags
+	tree = append(tree, s)
 	if s.Present() {
-		name = s.name
 		for _, set := range s.sets {
 			if set.Present() {
-				name = set.GetActiveSetName()
+				tree = append(tree, set.GetActiveSetTree()...)
 			}
 		}
 	}
-	return name
+	return tree
 }
 
 // Pos returns flagset position from it's parent.
@@ -147,7 +148,7 @@ func (s *FlagSet) Parse(args []string) error {
 	for _, gflag := range s.flags {
 		_, err := gflag.Parse(currargs)
 		if err != nil && !errors.Is(err, ErrFlagAlreadyParsed) {
-			return err
+			return fmt.Errorf("%s %w", s.name, err)
 		}
 		// this flag need to be removed from sub command args
 		if gflag.Present() {

@@ -5,11 +5,12 @@
 package varflag
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 // Option returns new string flag. Argument "opts" is string slice
@@ -38,16 +39,21 @@ func Option(name string, value []string, usage string, opts []string, aliases ..
 
 // Parse the OptionFlag.
 func (f *OptionFlag) Parse(args []string) (ok bool, err error) {
+	if f.parsed {
+		return false, ErrFlagAlreadyParsed
+	}
 	var opts []vars.Variable
 
 	if !f.defval.Empty() {
 		defval := strings.Split(f.defval.String(), "|")
 		for _, dd := range defval {
-			opts = append(opts, vars.New(f.name+":default", dd))
+			opts = append(opts, vars.New(f.name, dd))
+			// opts = append(opts, vars.New(f.name+":default", dd))
 		}
 	}
 
 	_, err = f.parse(args, func(v []vars.Variable) (err error) {
+
 		opts = v
 		return err
 	})
@@ -68,9 +74,16 @@ func (f *OptionFlag) Parse(args []string) (ok bool, err error) {
 		sort.Strings(str)
 		f.val = str
 		f.mu.Lock()
+		f.parsed = true
 		f.variable = vars.New(f.name, strings.Join(str, "|"))
 		f.mu.Unlock()
 	}
+
+	if !f.defval.Empty() && errors.Is(err, ErrMissingValue) {
+		f.isPresent = true
+		return f.isPresent, nil
+	}
+
 	return f.isPresent, err
 }
 

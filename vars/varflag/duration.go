@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 // Duration returns new duration flag. Argument "a" can be any nr of aliases.

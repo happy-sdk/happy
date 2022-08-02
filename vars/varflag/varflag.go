@@ -16,7 +16,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 const (
@@ -49,7 +49,7 @@ type (
 		// Get primary name for the flag. Usually that is long option
 		Name() string
 
-		// Set flag default value
+		// Get flag default value
 		Default() vars.Variable
 
 		// Usage returns a usage description for that flag
@@ -134,9 +134,8 @@ type (
 		// Position of flag set
 		Pos() int
 
-		// GetActiveSetName returns name or
-		// sub set name if one of sub sets was present.
-		GetActiveSetName() string
+		// GetActiveSetTree.
+		GetActiveSetTree() []Flags
 
 		// Get named flag
 		Get(name string) (Flag, error)

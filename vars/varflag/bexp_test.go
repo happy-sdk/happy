@@ -19,6 +19,10 @@ func TestBexpFlag(t *testing.T) {
 		t.Error("expected option value to be \"file0.jpg|file1.jpg|file2.jpg\" got ", flag.String())
 	}
 
+	if len(flag.Value()) != 3 {
+		t.Error("expected option value len to be \"3\" got ", len(flag.Value()))
+	}
+
 	if flag.Default().String() != "file-{a,b,c}.jpg" {
 		t.Errorf("expected default to be file-{a,b,c}.jpg got %q", flag.Default().String())
 	}
@@ -26,7 +30,8 @@ func TestBexpFlag(t *testing.T) {
 		t.Errorf("expected option value to be \"file0.jpg|file1.jpg|file2.jpg\" got %q", flag.String())
 	}
 	flag.Unset()
-	if flag.String() != "file-a.jpg|file-b.jpg|file-c.jpg" {
+
+	if flag.String() != "file-{a,b,c}.jpg" {
 		t.Errorf("expected option value to be \"file-a.jpg|file-b.jpg|file-c.jpg\" got %q", flag.String())
 	}
 }
@@ -37,8 +42,8 @@ func TestBexpFlagDefaults(t *testing.T) {
 		t.Error("expected option flag parser to return ok, ", ok, err)
 	}
 
-	if flag.String() != "file-a.jpg|file-b.jpg|file-c.jpg" {
-		t.Errorf("expected option value to be \"file-a.jpg|file-b.jpg|file-c.jpg\" got %q", flag.String())
+	if flag.String() != "file-{a,b,c}.jpg" {
+		t.Errorf("expected option value to be \"file-{a,b,c}.jpg\" got %q", flag.String())
 	}
 
 	flag2, _ := Bexp("some-flag", "file-{x,y,z}.jpg", "expand path", "")
@@ -46,7 +51,7 @@ func TestBexpFlagDefaults(t *testing.T) {
 		t.Error("expected option flag parser to return ok, ", ok, err)
 	}
 
-	if flag2.String() != "file-x.jpg|file-y.jpg|file-z.jpg" {
+	if flag2.String() != "file-{x,y,z}.jpg" {
 		t.Errorf("expected option value to be \"file-a.jpg|file-b.jpg|file-c.jpg\" got %q", flag2.String())
 	}
 }

@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mkungla/varflag/v5"
+	"github.com/mkungla/varflag/v6"
 )
 
 func ExampleParse() {
@@ -39,7 +39,7 @@ func ExampleParse() {
 		return
 	}
 
-	varflag.Parse([]varflag.Flag{str1, str2}, os.Args)
+	_ = varflag.Parse([]varflag.Flag{str1, str2}, os.Args)
 
 	fmt.Printf(
 		"found %q with value %q, (%t) - it was global flag (%t) in position %d\n",
@@ -94,7 +94,7 @@ func ExampleFlagSet() {
 	cmd1.AddSet(subcmd)
 
 	global.AddSet(cmd1, cmd2)
-	global.Parse(os.Args)
+	_ = global.Parse(os.Args)
 
 	// result
 	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "verbose", v.Present(), v.IsGlobal(), v.String(), v.CommandName())
@@ -202,7 +202,7 @@ func ExampleNew() {
 func ExampleDuration() {
 	os.Args = []string{"/bin/app", "--duration", "1h30s"}
 	dur, _ := varflag.Duration("duration", 1*time.Second, "")
-	dur.Parse(os.Args)
+	_, _ = dur.Parse(os.Args)
 
 	fmt.Printf("%-12s%d\n", "duration", dur.Value())
 	fmt.Printf("%-12s%s\n", "duration", dur.Value())
@@ -228,7 +228,7 @@ func ExampleDuration() {
 func ExampleFloat64() {
 	os.Args = []string{"/bin/app", "--float", "1.001000023"}
 	f, _ := varflag.Float64("float", 1.0, "")
-	f.Parse(os.Args)
+	_, _ = f.Parse(os.Args)
 
 	fmt.Printf("%-12s%.10f\n", "float", f.Value())
 	fmt.Printf("%-12s%s\n", "string", f.String())
@@ -244,7 +244,7 @@ func ExampleFloat64() {
 func ExampleInt() {
 	os.Args = []string{"/bin/app", "--int", fmt.Sprint(math.MinInt64), "int64"}
 	f, _ := varflag.Int("int", 1, "")
-	f.Parse(os.Args)
+	_, _ = f.Parse(os.Args)
 
 	fmt.Printf("%-12s%s\n", "string", f.String())
 	fmt.Printf("%-12s%d\n", "value", f.Value())
@@ -268,7 +268,7 @@ func ExampleInt() {
 func ExampleUint() {
 	os.Args = []string{"/bin/app", "--uint", strconv.FormatUint(math.MaxUint64, 10), "uint64"}
 	f, _ := varflag.Uint("uint", 1, "")
-	f.Parse(os.Args)
+	_, _ = f.Parse(os.Args)
 
 	fmt.Printf("%-12s%s\n", "string", f.String())
 	fmt.Printf("%-12s%d\n", "value", f.Value())
@@ -292,7 +292,7 @@ func ExampleUint() {
 func ExampleBool() {
 	os.Args = []string{"/bin/app", "--bool"}
 	f, _ := varflag.Bool("bool", false, "")
-	f.Parse(os.Args)
+	_, _ = f.Parse(os.Args)
 
 	fmt.Printf("%-12s%s\n", "string", f.String())
 	fmt.Printf("%-12s%t\n", "value", f.Value())
@@ -306,7 +306,7 @@ func ExampleBool() {
 func ExampleOption() {
 	os.Args = []string{"/bin/app", "--option", "opt1", "--option", "opt2"}
 	f, _ := varflag.Option("option", []string{"defaultOpt"}, "", []string{"opt1", "opt2", "opt3", "defaultOpt"})
-	f.Parse(os.Args)
+	_, _ = f.Parse(os.Args)
 
 	fmt.Printf("%-12s%s\n", "string", f.String())
 	fmt.Printf("%-12s%#v\n", "value", f.Value())
@@ -319,7 +319,7 @@ func ExampleOption() {
 func ExampleBexp() {
 	os.Args = []string{"/bin/app", "--images", "image-{0..2}.jpg"}
 	f, _ := varflag.Bexp("images", "image-{a,b,c}.jpg", "expand path", "")
-	f.Parse(os.Args)
+	_, _ = f.Parse(os.Args)
 
 	fmt.Printf("%-12s%s\n", "string", f.String())
 	fmt.Printf("%-12s%#v\n", "value", f.Value())

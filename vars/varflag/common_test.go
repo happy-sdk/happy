@@ -204,13 +204,18 @@ func TestGlobal(t *testing.T) {
 				t.Error("flag should not be global by default")
 			}
 
-			flag.Parse([]string{"--" + tt.name, "some-value"})
+			if _, err := flag.Parse([]string{"--" + tt.name, "some-value"}); err != nil {
+				t.Error(err)
+			}
+
 			if !flag.IsGlobal() {
 				t.Error("flag should be global after parsing from generic string")
 			}
 
 			flag2, _ := New(tt.name, "", "")
-			flag2.Parse([]string{os.Args[0], "--" + tt.name, "some-value"})
+			if _, err := flag2.Parse([]string{os.Args[0], "--" + tt.name, "some-value"}); err != nil {
+				t.Error(err)
+			}
 			if !flag2.IsGlobal() {
 				t.Error("flag should be global after parsing from os args")
 			}
@@ -230,21 +235,29 @@ func TestNotGlobal(t *testing.T) {
 			}
 
 			flag.BelongsTo("target-cmd")
-			flag.Parse([]string{"app", "arg1", "arg2", "target-cmd", "arg", "--" + tt.name, "some-value"})
+			if _, err := flag.Parse([]string{"app", "arg1", "arg2", "target-cmd", "arg", "--" + tt.name, "some-value"}); err != nil {
+				t.Error(err)
+			}
 			if flag.IsGlobal() {
 				t.Error("flag should not be global after parsing from args containing target-cmd")
 			}
 
 			flag2, _ := New(tt.name, "", "")
 			flag2.BelongsTo("*")
-			flag2.Parse([]string{os.Args[0], "--" + tt.name, "some-value"})
+			if _, err := flag2.Parse([]string{os.Args[0], "--" + tt.name, "some-value"}); err != nil {
+				t.Error(err)
+			}
+
 			if flag2.IsGlobal() {
 				t.Error("flag should not be global with BelongsTo(\"*\")")
 			}
 
 			flag3, _ := New(tt.name, "", "")
 			flag3.BelongsTo("*")
-			flag3.Parse([]string{"/bin/app", "sub-cmd", "--" + tt.name, "some-value"})
+
+			if _, err := flag3.Parse([]string{"/bin/app", "sub-cmd", "--" + tt.name, "some-value"}); err != nil {
+				t.Error(err)
+			}
 			if flag3.IsGlobal() {
 				t.Error("flag should not be global after parsing from os args containing cmds")
 			}
@@ -351,7 +364,9 @@ func TestUnset(t *testing.T) {
 			flag, _ := New(tt.name, tt.defval, "")
 
 			args := []string{flag.Flag(), tval}
-			flag.Parse(args)
+			if _, err := flag.Parse(args); err != nil {
+				t.Error(err)
+			}
 
 			if flag.String() != tval {
 				t.Errorf("expected flag var.String() to eq %q got %q", tval, flag.String())

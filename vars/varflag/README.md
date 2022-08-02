@@ -2,7 +2,7 @@
 
 Package flag implements command-line flag parsing into vars.Variables for easy type handling with additional flag types.
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/varflag/v5)](https://pkg.go.dev/github.com/mkungla/varflag/v5)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/varflag/v6)](https://pkg.go.dev/github.com/mkungla/varflag/v6)
 ![license](https://img.shields.io/github/license/mkungla/varflag)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/varflag)
 ![tests](https://github.com/mkungla/varflag/workflows/test/badge.svg)
@@ -30,7 +30,7 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
 > note that major version ensures compatibility with
 > https://github.com/mkungla/vars package
 
-`go get github.com/mkungla/varflag/v5`
+`go get github.com/mkungla/varflag/v6`
 
 ## String flag
 
@@ -41,7 +41,7 @@ import (
   "fmt"
   "log"
   "os"
-  "github.com/mkungla/varflag/v5"
+  "github.com/mkungla/varflag/v6"
 )
 
 func main() {

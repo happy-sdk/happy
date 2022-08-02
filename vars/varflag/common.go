@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mkungla/vars/v5"
+	"github.com/mkungla/vars/v6"
 )
 
 // Name returns primary name for the flag usually that is long option.
@@ -142,14 +142,21 @@ func (f *Common) Present() bool {
 func (f *Common) Var() vars.Variable {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	return f.variable
+	if f.isPresent {
+		return f.variable
+	}
+	return f.defval
 }
 
 // Value returns string value of flag.
 func (f *Common) Value() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	return f.variable.String()
+
+	if f.isPresent {
+		return f.variable.String()
+	}
+	return f.defval.String()
 }
 
 // Required sets this flag as required.
@@ -182,7 +189,11 @@ func (f *Common) Parse(args []string) (bool, error) {
 func (f *Common) String() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	return f.variable.String()
+
+	if f.isPresent {
+		return f.variable.String()
+	}
+	return f.defval.String()
 }
 
 func (f *Common) input() []string {
@@ -212,6 +223,7 @@ func (f *Common) parse(args []string, read func([]vars.Variable) error) (bool, e
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	err := f.parseArgs(args, read)
+
 	return f.isPresent, err
 }
 
