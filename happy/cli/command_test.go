@@ -29,6 +29,7 @@ func TestExecuteDoFn(t *testing.T) {
 	}
 	cmd.Do(func(c happy.Session) error {
 		panic("test panic")
+		//nolint: govet
 		return nil
 	})
 	ctx := &session.Context{}
