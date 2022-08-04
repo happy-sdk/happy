@@ -12,21 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package happy makes developers happy by providing simple and and powerful
-// sdk to build cross-platform cli, gui and mobile applications.
-package service
+package main
 
 import (
-	"errors"
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/examples/pingpong/addons/pingpong"
+	"github.com/mkungla/happy/sdk/create"
 )
 
-var (
-	ErrServiceRegister = errors.New("failed to register service")
-)
+// go run . start
+func main() {
+	app := create.App(
+		happy.Title("Ping Pong Example APP"),
+		happy.Slug("happy-example-pingpong"),
+	)
 
-type Status struct {
-	URL       string
-	Instances uint64
+	// register pinpong addon
+	app.RegisterAddons(pingpong.New)
 
-	Registered int64
+	app.Run()
 }

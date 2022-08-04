@@ -21,6 +21,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/cli"
@@ -161,13 +162,12 @@ func (a *Application) start() error {
 		}
 	}
 
+	// Check for invalid global flags
 	if err := a.flags.Parse(os.Args); err != nil && !errors.Is(err, varflag.ErrFlagAlreadyParsed) {
 		if errors.Is(err, varflag.ErrMissingRequired) && !a.Flag("help").Present() {
 			return err
 		}
 	}
-
-	a.Log().Issue(28, "Check for invalid global flags")
 
 	a.prepareCommand()
 
@@ -252,7 +252,7 @@ func (a *Application) prepareCommand() {
 func (a *Application) execute() {
 
 	// initialize services
-	a.Log().Experimentalf("initialize %d services", a.ServiceManager().Len())
+	a.Log().SystemDebugf("initialize %d services", a.ServiceManager().Len())
 	if a.ServiceManager().Len() > 0 {
 		err := a.ServiceManager().Initialize(
 			a.session,
@@ -272,15 +272,22 @@ func (a *Application) execute() {
 		a.ServiceManager().Start(a.session, a.currentCmd.ServiceLoaders()...)
 		a.session.TaskDone()
 
-		a.Log().Experimental("starting service manager runtime")
+		a.Log().SystemDebug("starting service manager runtime")
+
 	serviceTicker:
 		for {
 			select {
 			case <-a.session.Done():
-				a.Log().Experimental("stopping service manager runtime")
+				a.Log().SystemDebug("stopping service manager runtime")
 				break serviceTicker
 			case <-a.Stats().Next():
+				if err := a.session.Store("app.fps", a.Stats().FPS()); err != nil {
+					a.Exit(1, err)
+					break serviceTicker
+				}
+			default:
 				a.ServiceManager().Tick(a.session)
+				time.Sleep(time.Microsecond * 100)
 			}
 		}
 	}()
@@ -292,7 +299,7 @@ func (a *Application) execute() {
 	a.session.Ready()
 
 	// log env if
-	if a.Log().Level() == happy.LevelSystemDebug && !a.Flag("json").Present() {
+	if a.Flag("env").Present() && !a.Flag("json").Present() {
 		a.printEnv()
 	}
 	if a.session.Err() != nil {

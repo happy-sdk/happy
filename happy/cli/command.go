@@ -169,7 +169,7 @@ func (c *Command) Verify() error {
 		// Wrpper prints help by default
 		if c.isWrapperCommand { //nolint: gocritic
 			c.doFn = func(ctx happy.Session) error {
-				HelpCommand(ctx)
+				HelpCommand(ctx, c)
 				return nil
 			}
 		} else if c.subCommands != nil {
@@ -233,6 +233,10 @@ func (c *Command) ExecuteDoFn(ctx happy.Session) error {
 		wg  sync.WaitGroup
 		err error
 	)
+
+	if pflag := ctx.Flag("panic"); pflag != nil && pflag.Var().Bool() {
+		return c.doFn(ctx)
+	}
 
 	// Also return error in case when .Do function panics
 	// so that AfterFailure could be triggered

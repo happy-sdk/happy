@@ -138,6 +138,26 @@ func (a *Application) initFlags() bool {
 	}
 	a.addAppErr(err)
 
+	panics, err := varflag.Bool(
+		"panic",
+		false,
+		"do not recover panics",
+	)
+	if err == nil {
+		a.AddFlag(panics)
+	}
+	a.addAppErr(err)
+
+	env, err := varflag.Bool(
+		"env",
+		false,
+		"prints env info before execution",
+	)
+	if err == nil {
+		a.AddFlag(env)
+	}
+	a.addAppErr(err)
+
 	// we can ignore err??
 	a.addAppErr(a.flags.Parse(os.Args))
 	if a.Flag("json").Present() {

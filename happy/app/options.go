@@ -36,7 +36,7 @@ func (a *Application) applyOptions(options ...happy.Option) bool {
 	}
 
 	if a.session == nil {
-		a.session = session.New(a.logger)
+		a.session = session.New(a.logger, a.ServiceManager())
 	}
 
 	for _, opt := range options {

@@ -92,8 +92,9 @@ type (
 		Stop() error
 		Len() int
 		Tick(ctx Session)
-		OnEvent(ctx Session, ev string, payload []vars.Variable)
+		OnEvent(ctx Session, ev Event)
 		StartService(ctx Session, id string)
+		ServiceCall(serviceUrl, fnName string, args ...vars.Variable) (any, error)
 	}
 
 	Service interface {
@@ -101,15 +102,14 @@ type (
 		Slug() string
 		Description() string
 		Version() Version
-		Multiple() bool
 
 		// service
 		Initialize(ctx Session) error
 		Start(ctx Session) error
 		Stop(ctx Session) error
 		Tick(ctx Session, ts time.Time, delta time.Duration) error
-		OnEvent(ctx Session, ev string, payload vars.Collection)
-		Call(fn string) (any, error)
+		OnEvent(ctx Session, ev Event)
+		Call(fn string, args ...vars.Variable) (any, error)
 	}
 
 	AddonManager interface {
@@ -211,9 +211,10 @@ type (
 		Ready()
 
 		RequireService(string)
-		Dispatch(ev string, val ...vars.Variable) error
-		Events() []string
-		GetEventPayload(ev string) ([]vars.Variable, error)
+		Dispatch(ev string, args ...vars.Variable) error
+		Events() []Event
+		EventsByType(ev string) []Event
+		ServiceCall(serviceUrl, fnName string, args ...vars.Variable) (any, error)
 	}
 
 	Settings interface {
@@ -315,5 +316,11 @@ type (
 
 	Version interface {
 		String() string
+	}
+
+	Event struct {
+		Time    time.Time
+		Key     string
+		Payload *vars.Collection
 	}
 )

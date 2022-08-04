@@ -33,7 +33,7 @@ const (
 
 type (
 	Config struct {
-		Title          string `happy:""`
+		Title          string
 		Slug           string
 		Namespace      string
 		Description    string

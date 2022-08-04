@@ -25,7 +25,8 @@ import (
 
 type Entry struct {
 	Type    string        `json:"type"`
-	SS      time.Duration `json:"ss"`
+	Dur     time.Duration `json:"dur"`
+	TS      time.Time     `json:"ts"`
 	Message string        `json:"message"`
 }
 
@@ -237,12 +238,13 @@ func (l *Logger) write(lvl happy.LogLevel, args ...any) {
 	l.last = now
 	e := Entry{
 		Type:    lvl.ShortString(),
-		SS:      durr,
+		Dur:     durr,
+		TS:      now,
 		Message: fmt.Sprint(args...),
 	}
 	l.logs = append(l.logs, e)
 
-	if lvl >= happy.LevelError {
+	if lvl >= happy.LevelError && lvl != happy.LevelOut {
 		l.err = e.Message
 	}
 }

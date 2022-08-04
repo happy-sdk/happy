@@ -41,7 +41,7 @@ func (a *Application) loadModuleInfo() {
 		if bi.Main.Version == "(devel)" {
 			moduleVersion := strings.Trim(filepath.Ext(a.config.Namespace), ".")
 			major := "v1"
-			if len(moduleVersion) > 0 {
+			if strings.HasPrefix(moduleVersion, "v") {
 				majorint, err := strconv.Atoi(strings.TrimPrefix(moduleVersion, "v"))
 				if err == nil {
 					major = fmt.Sprintf("v%d", majorint+1)

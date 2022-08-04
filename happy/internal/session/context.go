@@ -25,6 +25,8 @@ import (
 	"sync"
 	"time"
 
+	"container/list"
+
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/config"
 	"github.com/mkungla/happy/internal/jsonlog"
@@ -34,8 +36,10 @@ import (
 )
 
 type Context struct {
-	ctx   context.Context
-	mu    sync.RWMutex
+	mu  sync.RWMutex
+	ctx context.Context
+	sig context.Context
+
 	tasks int64
 	// cancelFromExit bool
 	settings happy.Settings
@@ -43,25 +47,23 @@ type Context struct {
 	data     *vars.Collection
 	err      error
 	logger   happy.Logger
-	sig      context.Context
-	// payload        *sync.Map
-	// tempDir string
-	events *sync.Map
-	ready  bool
 
-	// deadline time.Time
+	events *list.List
+	ready  bool
 
 	args  []vars.Value
 	flags varflag.Flags
+	sm    happy.ServiceManager
 }
 
-func New(logger happy.Logger) *Context {
+func New(logger happy.Logger, sm happy.ServiceManager) *Context {
 	return &Context{
 		ctx:      context.Background(),
 		data:     new(vars.Collection),
-		events:   &sync.Map{},
+		events:   list.New(),
 		settings: settings.New(),
 		logger:   logger,
+		sm:       sm,
 	}
 }
 
@@ -210,6 +212,10 @@ func (ctx *Context) Flags() varflag.Flags {
 }
 
 func (ctx *Context) Flag(name string) varflag.Flag {
+	if ctx.flags == nil {
+		return nil
+	}
+
 	f, err := ctx.flags.Get(name)
 	if err != nil && !errors.Is(err, varflag.ErrNoNamedFlag) {
 		ctx.Log().Error(err)
@@ -294,8 +300,8 @@ func (ctx *Context) RequireService(serviceURL string) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
 
-	ctx.Log().Experimental("service load deadline is 30 seconds")
-	deadline, deadlineCancel := context.WithTimeout(ctx.ctx, time.Second*30)
+	ctx.Log().SystemDebug("service load deadline is 5 seconds")
+	deadline, deadlineCancel := context.WithTimeout(ctx.ctx, time.Second*5)
 	defer deadlineCancel()
 
 	key := "service." + u.String()
@@ -322,37 +328,62 @@ servicedep:
 	}
 }
 
-func (ctx *Context) Dispatch(ev string, val ...vars.Variable) error {
-	ctx.mu.Lock()
-	defer ctx.mu.Unlock()
-	if _, ok := ctx.events.Load(ev); ok {
-		return fmt.Errorf("event %q already queued", ev) //nolint: goerr113
+func (ctx *Context) ServiceCall(serviceUrl, fnName string, args ...vars.Variable) (any, error) {
+	if ctx.sm == nil {
+		return nil, errors.New("can not access services from session")
+	}
+	return ctx.sm.ServiceCall(serviceUrl, fnName, args...)
+}
+
+func (ctx *Context) Dispatch(key string, payload ...vars.Variable) error {
+	ev := happy.Event{
+		Time:    time.Now().UTC(),
+		Key:     key,
+		Payload: new(vars.Collection),
 	}
 
-	ctx.Log().SystemDebugf("store event: %s", ev)
-	ctx.events.Store(ev, val)
+	for _, v := range payload {
+		ev.Payload.Store(v.Key(), v.Value())
+	}
+
+	ctx.Log().SystemDebugf("store event: %s - payload(%d)", ev.Key, ev.Payload.Len())
+
+	ctx.mu.Lock()
+	ctx.events.PushBack(ev)
+	ctx.mu.Unlock()
 	return nil
 }
 
-func (ctx *Context) Events() []string {
-	ctx.mu.RLock()
-	defer ctx.mu.RUnlock()
-	var events []string
-	ctx.events.Range(func(k, v any) bool {
-		events = append(events, fmt.Sprint(k))
-		return true
-	})
+func (ctx *Context) Events() []happy.Event {
+	ctx.mu.Lock()
+	defer ctx.mu.Unlock()
+	var events []happy.Event
+	for e := ctx.events.Front(); e != nil; e = e.Next() {
+		ev, ok := e.Value.(happy.Event)
+		if !ok {
+			ctx.Log().Error("failed to read event, not type of event: ", e.Value)
+		}
+		events = append(events, ev)
+	}
+	_ = ctx.events.Init()
 	return events
 }
 
-func (ctx *Context) GetEventPayload(ev string) ([]vars.Variable, error) {
-	payload, loaded := ctx.events.LoadAndDelete(ev)
-	if !loaded {
-		return nil, fmt.Errorf("failed to load event %q", ev)
+// EventsByTypeLoadAndDelete (internal use)
+// It returns slice of events by event name and removes
+// these events from queue.
+func (ctx *Context) EventsByType(ev string) []happy.Event {
+	ctx.mu.RLock()
+	defer ctx.mu.RUnlock()
+
+	var events []happy.Event
+
+	for e := ctx.events.Front(); e != nil; e = e.Next() {
+		ev, ok := ctx.events.Remove(e).(happy.Event)
+		if !ok {
+			ctx.Log().Error("failed to read event by type, not type of event")
+		}
+		events = append(events, ev)
 	}
-	args, ok := payload.([]vars.Variable)
-	if !ok {
-		return nil, fmt.Errorf("invalid event payload for %q", ev)
-	}
-	return args, nil
+	return events
 }

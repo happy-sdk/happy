@@ -41,16 +41,16 @@ func Help(a happy.Application) {
 			helpCmd := helpCommand{}
 			helpCmd.Print(a.Session(), a.Command())
 		}
+		a.Exit(0, nil)
 	}
 
 	// settree := a.Flags().GetActiveSetTree()
 	// a.Session().Log().NotImplemented("help not implemented")
 }
 
-func HelpCommand(a happy.Session) {
-	fmt.Println("HELP COMMAND")
-	// settree := a.Flags().GetActiveSetTree()
-	// a.Session().Log().NotImplemented("help not implemented")
+func HelpCommand(ctx happy.Session, cmd happy.Command) {
+	helpCmd := helpCommand{}
+	helpCmd.Print(ctx, cmd)
 }
 
 // HelpGlobal used to show help for application.

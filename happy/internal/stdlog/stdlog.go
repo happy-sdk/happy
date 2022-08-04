@@ -113,11 +113,11 @@ func (l *Logger) Warnf(template string, args ...any) {
 }
 
 func (l *Logger) Experimental(args ...any) {
-	l.write(happy.LevelWarn, args...)
+	l.write(happy.LevelExperimental, args...)
 }
 
 func (l *Logger) Experimentalf(template string, args ...any) {
-	l.writef(happy.LevelWarn, template, args...)
+	l.writef(happy.LevelExperimental, template, args...)
 }
 
 func (l *Logger) Deprecated(args ...any) {
@@ -217,7 +217,7 @@ func (l *Logger) write(lvl happy.LogLevel, args ...any) {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
-		linelen := width - plen - len(suffix) + 1
+		linelen := width - plen - len(suffix)
 		fullmsg := fmt.Sprint(args...)
 
 		if strings.Contains(fullmsg, "\n") {
