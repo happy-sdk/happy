@@ -12,315 +12,556 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package happy makes developers happy by providing simple and and powerful
-// sdk to build cross-platform cli, gui and mobile applications.
+// Package happy is the ultimate Go prototyping SDK. This makes developers
+// happy by giving them a great SDK to solve any domain problem and quickly
+// create a working prototype (maybe even MVP). It's a tool for hackers and
+// creators to realize their ideas when a software architect is not at hand
+// or technical knowledge about infrastructure planning is minimal.
 package happy
 
 import (
 	"context"
-	"errors"
-	"os"
+	"fmt"
+	"io"
+	"io/fs"
 	"time"
-
-	"github.com/mkungla/happy/config"
-	"github.com/mkungla/varflag/v6"
-	"github.com/mkungla/vars/v6"
+	// "bytes"
+	// "regexp"
+	// "runtime"
+	// "runtime/debug"
+	// "sort"
+	// "strings"
+	// "time"
+	// "unicode"
+	// "github.com/mkungla/happy/pkg/varflag"
+	// "github.com/mkungla/happy/pkg/vars"
 )
 
 const (
-	LevelSystemDebug LogLevel = iota
-	LevelDebug
-	LevelVerbose
-
-	LevelTask
-
-	LevelNotice
-	LevelOk
-	LevelIssue
-
-	LevelWarn
-	LevelDeprecated
-	LevelNotImplemented
-	LevelExperimental
-
-	LevelError
-	LevelCritical
-	LevelAlert
-	LevelEmergency
-
-	LevelOut
-	LevelQuiet
+	// Same as log/syslog and here since
+	// log/syslog pkg is not available
+	// on windows, plan9, js
+	LOG_EMERG LogPriority = iota
+	LOG_ALERT
+	LOG_CRIT
+	LOG_ERR
+	LOG_WARNING
+	LOG_NOTICE
+	LOG_INFO
+	LOG_DEBUG
+	LOG_SYSTEMDEBUG
 )
 
-var (
-	ErrMissingImplementation = errors.New("missing implementation")
+///////////////////////////////////////////////////////////////////////////////
+// COMMON
+///////////////////////////////////////////////////////////////////////////////
+
+type (
+	LogPriority int
+
+	// Action is common callback in happy framework.
+	ActionFunc func(ctx Session) error
+
+	// ActionWithArgs is common callback in happy framework which has
+	// privides arguments as vars.Collection.
+	ActionWithArgsFunc  func(ctx Session, args Variables) error
+	ActionWithEventFunc func(ctx Session, ev Event) error
+
+	ActionWithArgsAndAssetsFunc func(ctx Session, args Variables, assets FS) error
+
+	// ActionWithError is common callback in happy framework which has
+	// second arguments as previous error id any otherwise nil.
+	ActionWithErrorFunc func(ctx Session, err Error) error
+
+	// TickTock is operation set in given minimal time frame it can be executed.
+	// You can throttle tick/tocks to cap FPS or for [C|G]PU throttling.
+	//
+	// Tock is helper called after each tick to separate
+	// logic processed in tick and do post processing on tick.
+	// Tocks are useful mostly for GPU ops which need to do post proccessing
+	// of frames rendered in tick.
+	ActionTickFunc func(ctx Session, ts time.Time, delta time.Duration) error
+
+	// Event is consumable by local instance of application components.
+	Event interface {
+		// Time is UTC time when event was created.
+		Time() time.Time
+
+		// Scope is event scope it is string matching always.
+		// ^[a-z0-9][a-z0-9.-]*[a-z0-9]$
+		Scope() string
+		// Key is event identifier it is string matching always.
+		// ^[a-z0-9][a-z0-9.-]*[a-z0-9]$
+		Key() string
+
+		// Payload returns of the event
+		Payload() Variables
+	}
+
+	ActionStats interface {
+		Started() time.Time
+		Elapsed() time.Duration
+		Dispose()
+	}
+
+	Logger interface {
+		io.WriteCloser
+		GetPriority() LogPriority
+		SetPriority(LogPriority)
+		RuntimePriority(LogPriority)
+		ResetPriority(LogPriority)
+
+		// LOG_EMERG
+		Emergency(args ...any)
+		Emergencyf(template string, args ...any)
+
+		// LOG_ALERT
+		Alert(args ...any)
+		Alertf(template string, args ...any)
+
+		// LOG_CRIT
+		Critical(args ...any)
+		Criticalf(template string, args ...any)
+		BUG(args ...any)
+		BUGF(template string, args ...any)
+
+		// LOG_ERR
+		Error(args ...any)
+		Errorf(template string, args ...any)
+
+		// LOG_WARNING
+		Warn(args ...any)
+		Warnf(template string, args ...any)
+		Deprecated(args ...any)
+		Deprecatedf(template string, args ...any)
+
+		// LOG_NOTICE
+		Notice(args ...any)
+		Noticef(template string, args ...any)
+		Ok(args ...any)
+		Okf(template string, args ...any)
+		Issue(nr int, args ...any)
+		Issuef(nr int, template string, args ...any)
+
+		// LOG_INFO
+		Info(args ...any)
+		Infof(template string, args ...any)
+		Experimental(args ...any)
+		Experimentalf(template string, args ...any)
+		NotImplemented(args ...any)
+		NotImplementedf(template string, args ...any)
+
+		// LOG_DEBUG
+		Debug(args ...any)
+		Debugf(template string, args ...any)
+		SystemDebug(args ...any)
+		SystemDebugf(template string, args ...any)
+	}
+
+	Error interface {
+		error
+		App() Slug
+		Code() int
+		Time() time.Time
+	}
+
+	Slug interface {
+		fmt.Stringer
+		Valid() bool
+	}
+
+	URL interface {
+		fmt.Stringer
+	}
+
+	Version interface {
+		fmt.Stringer
+	}
+
+	Cron interface {
+		Cron(func(CronScheduler))
+	}
+
+	CronHandler interface {
+		Job() ActionWithErrorFunc
+		Expr() string
+	}
+
+	CronScheduler interface {
+		Job(expr any, cb ActionWithErrorFunc)
+	}
+
+	// FS could be e.g. embed.FS
+	FS interface {
+		fs.FS
+		ReadDir(name string) ([]fs.DirEntry, error)
+		ReadFile(name string) ([]byte, error)
+	}
+
+	TickTocker interface {
+		// OnTick enables you to define func body for operation set
+		// to call in minimal timeframe until session is valid and
+		// service is running.
+		OnTick(ActionTickFunc)
+
+		// OnTock is helper called right after OnTick to separate
+		// your primary operations and post prossesing logic.
+		OnTock(ActionTickFunc)
+	}
+)
+
+///////////////////////////////////////////////////////////////////////////////
+// OPTIONS
+///////////////////////////////////////////////////////////////////////////////
+
+type (
+	// OptionWriteFunc is callback function to apply configurable options.
+	OptionWriteFunc func(opts OptionWriter) Error
+
+	// Options interface enables you to apply configuration options in
+	// different parts of your application.
+	Options interface {
+		// OptionReadCloser's embedded interface allows you to control how your
+		// implementation makes configuration options readable. For example you
+		// can implement your own middleware for option getter.
+		OptionReader
+
+		// OptionWriteCloser's embedded interface allows you to control how your
+		// implementation makes changes to configuration options. For example you
+		// can implement your own middleware for option setter.
+		OptionWriter
+
+		// DeleteOption allows you remove option value and it's key from
+		// your option set. return ErrOption when key dows not exist or
+		// ErrOptionRO if key is read only.
+		DeleteOption(key string) Error
+
+		// ResetOptions clears all options and restores defaults
+		// if defaults have been set
+		ResetOptions() Error
+	}
+
+	// OptionGetter is read only representation of Options
+	OptionReader interface {
+		io.Reader
+
+		// GetOption return option by key or ErrOption,
+		// if non existingOption was requested.
+		GetOption(key string) (Variable, Error)
+
+		// GetOptionOrDefault looks session value and returns
+		// provided default value if key does not exists.
+		// This call does not set that default to session!
+		GetOptionOrDefault(key string, defval ...any) (val Variable)
+
+		// HasOption reports whether option set has option with key.
+		HasOption(key string) bool
+
+		// Range calls f sequentially for each key -> value present in the options.
+		// If f returns false, range stops the iteration.
+		RangeOptions(f func(key string, value Value) bool)
+
+		// Get all options as vars.Collection
+		GetAllOptions() Variables
+	}
+
+	OptionWriter interface {
+		io.Writer
+		SetOption(Variable) Error
+		SetOptionKeyValue(key string, val any) Error
+		SetOptionValue(key string, val Value) Error
+	}
+
+	OptionDefaultsWriter interface {
+		SetOptionDefault(Variable) Error
+		SetOptionDefaultKeyValue(key string, val any) Error
+		SetOptionsDefaultFuncs(vfuncs ...VariableParseFunc) Error
+	}
 )
 
 type (
-	Application interface {
-		AddCommand(cmd Command)
-		AddCommandFn(fn func() (Command, error))
-		Commands() map[string]Command
-		Command() Command
-		Session() Session
-		Dispose(code int)
-		Exit(code int, err error)
-		Flag(name string) varflag.Flag
-		Flags() varflag.Flags
-		Run()
-		Setup(action Action)
-		Before(action Action)
-		Do(action Action)
-		AfterSuccess(action Action)
-		AfterFailure(action Action)
-		AfterAlways(action Action)
-		Stats() Stats
-		Config() config.Config
-		ServiceManager() ServiceManager
-		AddonManager() AddonManager
-		Set(key string, val any) error
-		Store(key string, val any) error
-		AddExitFunc(exitFn func(code int, ctx Session))
-		RegisterAddons(addonFns ...func() (Addon, error))
-		RegisterServices(serviceFns ...func() (Service, error))
-	}
+	VariableParseFunc func() (Variable, Error)
 
-	ServiceManager interface {
-		Register(ns string, services ...Service) error
-		Initialize(ctx Session, keepAlive bool) error
-		Start(ctx Session, srvurls ...string)
-		Stop() error
+	ValueParseFunc func() (Value, Error)
+
+	// Variables are collection of key=value pairs
+	Variables interface {
 		Len() int
-		Tick(ctx Session)
-		OnEvent(ctx Session, ev Event)
-		StartService(ctx Session, id string)
-		ServiceCall(serviceUrl, fnName string, args ...vars.Variable) (any, error)
 	}
 
-	Service interface {
-		Name() string
-		Slug() string
-		Description() string
-		Version() Version
-
-		// service
-		Initialize(ctx Session) error
-		Start(ctx Session) error
-		Stop(ctx Session) error
-		Tick(ctx Session, ts time.Time, delta time.Duration) error
-		OnEvent(ctx Session, ev Event)
-		Call(fn string, args ...vars.Variable) (any, error)
+	// Variable is key=value pair
+	Variable interface {
+		fmt.Stringer // alias to Value().String()
+		Value() Value
+		ReadOnly() bool
 	}
 
-	AddonManager interface {
-		Register(addons ...Addon) error
-		Addons() []Addon
+	Value interface {
+		fmt.Stringer
+	}
+)
+
+///////////////////////////////////////////////////////////////////////////////
+// APPLICATION
+///////////////////////////////////////////////////////////////////////////////
+
+type (
+	Configurator interface {
+		OptionDefaultsWriter // Sets application configuration options
+
+		UseLogger(logger Logger)
+		GetLogger(logger Logger) (Logger, Error)
+
+		UseSession(session Session)
+		GetSession(session Session) (Session, Error)
+
+		UseMonitor(monitor ApplicationMonitor)
+		GetMonitor(ApplicationMonitor) (ApplicationMonitor, Error)
+
+		UseAssets(fs.FS)
+		GetAssets(fs.FS) (fs.FS, Error)
+
+		UseEngine(Engine)
+		GetEngine(Engine) (Engine, Error)
 	}
 
-	Addon interface {
-		Name() string
-		Slug() string
-		Description() string
-		Version() Version
-		DefaultSettings(ctx Session) config.Settings
-		// Configured returning false
-		// prevents addon and it's services to be loaded.
-		// expecting user to configure the addon.
-		Configured(ctx Session) bool
-		Services() []Service
-		Commands() ([]Command, error)
-	}
+	// Application is interface for application runtime.
+	Application interface {
+		Configure(Configurator) Error
 
-	Stats interface {
-		Dispose()
-		Elapsed() time.Duration
-		Start() context.CancelFunc
-		Next() <-chan struct{}
-		Now() time.Time
-		FPS() int
-		MaxFPS() int
-		Frame()
-	}
+		AddAddon(Addon)
+		AddAddons(...AddonCreateFunc)
 
-	Command interface {
-		String() string
-		SetCategory(category string)
-		Category() string
-		SetShortDesc(description string)
-		ShortDesc() string
-		LongDesc(desc ...string) string
-		Usage(usage ...string) string
+		AddService(Service)
+		AddServices(...ServiceCreateFunc)
 
-		Before(action Action)
-		Do(action Action)
-		AfterSuccess(action Action)
-		AfterFailure(action Action)
-		AfterAlways(action Action)
+		Log() Logger
 
-		AddFlag(f varflag.Flag) error
-		Flags() varflag.Flags
-		AcceptsFlags() bool
-		Args() []vars.Value
-		AcceptsArgs() bool
+		Command
+		Cron
+		TickTocker
 
-		SetParents(parents []string)
-		Parents() []string
-		Parent() Command
-		SetParent(Command)
-
-		AddSubCommand(cmd Command)
-		SubCommand(name string) (cmd Command, exists bool)
-		HasSubcommands() bool
-		Subcommands() (scmd []Command)
-
-		Verify() error
-
-		ExecuteBeforeFn(ctx Session) error
-		ExecuteDoFn(ctx Session) error
-		ExecuteAfterSuccessFn(ctx Session) error
-		ExecuteAfterFailureFn(ctx Session) error
-		ExecuteAfterAlwaysFn(ctx Session) error
-
-		RequireServices(...string) // services to enable before the command
-		ServiceLoaders() []string
+		Main()
 	}
 
 	Session interface {
+		// Done() behaves like context.Done and indcates that session was destroyed
+		// Err() returns last error in session
+		context.Context
+
 		Options
+
+		// Ready blocks until the session is ready to use.
+		Ready() <-chan struct{}
+
+		// Destroy session
+		Destroy(err Error)
+
+		// Log returns application logger.
 		Log() Logger
+
 		Settings() Settings
-		NotifyContext(signals ...os.Signal)
-		Deadline() (deadline time.Time, ok bool)
-		Done() <-chan struct{}
-		Err() error
-		Value(key any) any
-		Destroy(err error)
-		Args() []vars.Value
-		Arg(pos int) vars.Value
-		Flags() varflag.Flags
-		Flag(name string) varflag.Flag
-		Out(response any)
-		Start(cmd string, args []vars.Value, flags varflag.Flags) error
 
-		// TaskAdd adds task to session
-		TaskAdd(string)
-		TaskAddf(string, ...any)
-		// TaskDone decrements the internal WaitGroup counter by one.
-		TaskDone()
-		// Ready blocks until the internal  WaitGroup counter is zero.
-		Ready()
+		Dispatch(Event)
 
-		RequireService(string)
-		Dispatch(ev string, args ...vars.Variable) error
-		Events() []Event
-		EventsByType(ev string) []Event
-		ServiceCall(serviceUrl, fnName string, args ...vars.Variable) (any, error)
+		// simple context you can use as parent context
+		// instead of passing session it self
+		// even tho it implements context aswell.
+		Context() context.Context
+
+		RequireServices(svcs ...string) Error
 	}
 
 	Settings interface {
 		Options
-		OptionGetterFallback
-		LoadFile() error
-		SaveFile() error
+		OptionDefaultsWriter
+
+		// Load loads settings from underlying storage driver.
+		Load() Error
+
+		// Save saves settings using underlying storage driver.
+		Save() Error
 	}
 
-	Logger interface {
-		SystemDebug(args ...any)
-		SystemDebugf(template string, args ...any)
+	ApplicationMonitor interface {
+		Start() Error
+		Stop() Error
+		OnEvent(Event)
+		Stats() ActionStats
+	}
+)
 
-		Debug(args ...any)
-		Debugf(template string, args ...any)
+///////////////////////////////////////////////////////////////////////////////
+// CLI
+///////////////////////////////////////////////////////////////////////////////
 
-		Info(args ...any)
-		Infof(template string, args ...any)
+type (
+	CommandCreateFunc func() (Command, Error)
 
-		Notice(args ...any)
-		Noticef(template string, args ...any)
+	CommandCreateFlagFunc func() (CommandFlag, Error)
 
-		Ok(args ...any)
-		Okf(template string, args ...any)
+	Command interface {
+		// String returns command name.
+		fmt.Stringer
+		// RequireServices ensures that services by their URL
+		// will be started before Command.Main call. These services will be started
+		// in parallel with Command.Init. If you need to have services ready
+		// inside Command.Before then you can call ctx.Ready which will block
+		// until all services are running.
+		RequireServices(svcs ...string)
 
-		Issue(nr int, args ...any)
-		Issuef(nr int, template string, args ...any)
+		AddFlag(CommandFlag)
+		AddFlagFuncs(flags ...CommandCreateFlagFunc)
 
-		Task(args ...any)
-		Taskf(template string, args ...any)
+		AddSubCommand(Command)
+		AddSubCommands(...CommandCreateFunc)
 
-		Warn(args ...any)
-		Warnf(template string, args ...any)
+		// Before is optional action to execute before Main.
+		// Useful to check preconidtion for your command Main.
+		// Since any required services by command will be initialized in parallel
+		// with this action you can call ctx.Ready if you need to use services
+		// inside the Init.
+		Before(ActionWithArgsAndAssetsFunc)
 
-		Experimental(args ...any)
-		Experimentalf(template string, args ...any)
+		// Main is action where your commands main logic should live.
+		// Main function body is required unless it is wrapper (parent) command
+		// for it's subcommand you want to have your application logic.
+		Do(ActionWithArgsAndAssetsFunc)
 
-		Deprecated(args ...any)
-		Deprecatedf(template string, args ...any)
+		// AfterSuccess is optional callback called when Main returns without error.
+		AfterSuccess(action ActionFunc)
 
-		NotImplemented(args ...any)
-		NotImplementedf(template string, args ...any)
+		// AfterFailure is optional callback when Main returns error.
+		// Second argument will be error returned.
+		AfterFailure(action ActionWithErrorFunc)
 
-		Error(args ...any)
-		Errorf(template string, args ...any)
-
-		Critical(args ...any)
-		Criticalf(template string, args ...any)
-
-		Alert(args ...any)
-		Alertf(template string, args ...any)
-
-		Emergency(args ...any)
-		Emergencyf(template string, args ...any)
-
-		Out(args ...any)
-		Outf(template string, args ...any)
-
-		Sync() error
-
-		Level() LogLevel
-		SetLevel(LogLevel)
-
-		Write(data []byte) (n int, err error)
+		// AfterAlways is optional callback to execute reqardless did Main
+		// succeed or not.
+		AfterAlways(action ActionWithErrorFunc)
 	}
 
-	Plugin interface {
+	CommandFlag interface{}
+)
+
+///////////////////////////////////////////////////////////////////////////////
+// ADDON
+///////////////////////////////////////////////////////////////////////////////
+
+type (
+	// AddonCreateFunc implementation is function used to register
+	// addons to your application.
+	AddonCreateFunc func() (Addon, Error)
+	// Addon enables you to bundle set of commands, services and other features
+	// into single package and make it sharable accross applications and domains.
+	Addon interface {
+		Cronjobs()
 		Name() string
-		Slug() string
-		Enabled() bool
-		Command(cmd string, args ...any) (string, error)
+		Slug() Slug
+		Version() Version
+		Options() OptionDefaultsWriter
+		Commands(...Command)
+		Services(...Service)
 	}
 
-	// Action represents user callable function
-	Action  func(ctx Session) error
-	Options interface {
-		OptionSetter
-		OptionGetter
-		Delete(key string)
-		Range(f func(key string, value vars.Value) bool)
+	AddonFactory interface {
+		Addon() (Addon, Error)
 	}
-	OptionSetter interface {
-		Set(key string, val any) error
-		Store(key string, val any) error
-	}
-	OptionGetter interface {
-		Get(key string) vars.Value
-		Has(key string) bool
+)
+
+///////////////////////////////////////////////////////////////////////////////
+// SERVICE
+///////////////////////////////////////////////////////////////////////////////
+
+type (
+	ServiceCreateFunc func() (Service, Error)
+	// ServiceHandler is callback to be called when Service recieves a Request.
+	ServiceHandler func(ctx Session, req ServiceRequest) ServiceResponse
+
+	// Service interface
+	Service interface {
+		TickTocker
+
+		Slug() Slug
+
+		// OnInitialize is called when app is preparing runtime and attaching
+		// services.
+		OnInitialize(ActionFunc)
+
+		// OnStart is called when service is requested to be started.
+		// For instace when command is requiring this service or whenever
+		// service is required on runtime via ctx.RequireService call.
+		//
+		// Start can be called multiple times in case of service restarts.
+		// If you do not want to allow service restarts you should implement
+		// your logic in OnStop when it's called first time and check that
+		// state OnStart.
+		OnStart(ActionWithArgsFunc)
+
+		// OnStop is called once application exits, session is destroyed or
+		// when service restart is requested.
+		OnStop(ActionFunc)
+
+		// OnEvent is simple local event system
+		OnEvent(ActionWithEventFunc)
+
+		// OnRequest enables you to define routes for your
+		// service to respond when it is requested inernally or by some of
+		// tthe connected peers.
+		OnRequest(r ServiceRouter)
 	}
 
-	OptionGetterFallback interface {
-		Getd(key string, defval ...any) (val vars.Value)
+	// Engine is application runtime managing services etc.
+	Engine interface {
+		// Register enables you to sergiste individual services
+		// to application when having Addon would be too much overhead
+		// in design.
+		Register(...Service)
+
+		Start() Error
+		Stop() Error
+
+		// ResolvePeerTo adds record into
+		// internal name resolution registry
+		//
+		ResolvePeerTo(ns, ipport string)
 	}
 
-	Option func(opts OptionSetter) error
-
-	// Level for logger.
-	LogLevel int8
-
-	Version interface {
-		String() string
+	// ServiceRouter is managing how your services communicate with each other.
+	ServiceRouter interface {
+		Handle(path string, handler ServiceHandler)
 	}
 
-	Event struct {
-		Time    time.Time
-		Key     string
-		Payload *vars.Collection
+	// ServiceResponse response returned by service.
+	ServiceResponse interface {
+		// Duration returns time.Duration representing the time it took reciever
+		// to fulfill the request.
+		Duration() time.Duration
+
+		// Payload is retuns fully read concrete type representing
+		// response payload.
+		Payload() any
+	}
+
+	ServiceRequest interface {
+		// Payload returns request payload.
+		Payload() any
+
+		// URL specifies either the URI being requested (for service
+		// requests) or the URL to access (for client requests).
+		//
+		// For server requests, the URL is parsed from the URI
+		// supplied on the Request-Line as stored in RequestURI.  For
+		// most requests, fields other than Path and RawQuery will be
+		// empty. (See RFC 7230, Section 5.3)
+		//
+		// For client requests, the URL's Host specifies the server to
+		// connect to, while the Request's Host field optionally
+		// specifies the Host header value to send in the HTTP
+		// request.
+		URL() URL
+	}
+
+	ServiceFactory interface {
+		Service() (Service, Error)
 	}
 )
