@@ -49,6 +49,8 @@ const (
 	LOG_NOTICE
 	LOG_INFO
 	LOG_DEBUG
+	// Level used by implementations
+	// to separate debug logs of application from implementation debug logs.
 	LOG_SYSTEMDEBUG
 )
 
@@ -60,18 +62,18 @@ type (
 	LogPriority int
 
 	// Action is common callback in happy framework.
-	ActionFunc func(ctx Session) error
+	ActionFunc func(sess Session) error
 
 	// ActionWithArgs is common callback in happy framework which has
 	// privides arguments as vars.Collection.
-	ActionWithArgsFunc  func(ctx Session, args Variables) error
-	ActionWithEventFunc func(ctx Session, ev Event) error
+	ActionWithArgsFunc  func(sess Session, args Variables) error
+	ActionWithEventFunc func(sess Session, ev Event) error
 
-	ActionWithArgsAndAssetsFunc func(ctx Session, args Variables, assets FS) error
+	ActionWithArgsAndAssetsFunc func(sess Session, args Variables, assets FS) error
 
 	// ActionWithError is common callback in happy framework which has
 	// second arguments as previous error id any otherwise nil.
-	ActionWithErrorFunc func(ctx Session, err Error) error
+	ActionWithErrorFunc func(sess Session, err Error) error
 
 	// TickTock is operation set in given minimal time frame it can be executed.
 	// You can throttle tick/tocks to cap FPS or for [C|G]PU throttling.
@@ -80,7 +82,11 @@ type (
 	// logic processed in tick and do post processing on tick.
 	// Tocks are useful mostly for GPU ops which need to do post proccessing
 	// of frames rendered in tick.
-	ActionTickFunc func(ctx Session, ts time.Time, delta time.Duration) error
+	ActionTickFunc func(sess Session, ts time.Time, delta time.Duration) error
+
+	ActionCronSchedulerSetup func(CronScheduler)
+
+	ActionCronFunc func(sess Session, ctx context.Context, err Error) error
 
 	// Event is consumable by local instance of application components.
 	Event interface {
@@ -98,18 +104,50 @@ type (
 		Payload() Variables
 	}
 
-	ActionStats interface {
+	ApplicationStats interface {
 		Started() time.Time
 		Elapsed() time.Duration
-		Dispose()
+		TotalEvents()
 	}
 
 	Logger interface {
-		io.WriteCloser
 		GetPriority() LogPriority
 		SetPriority(LogPriority)
-		RuntimePriority(LogPriority)
-		ResetPriority(LogPriority)
+
+		// RuntimePriority sets priority to priority.
+		// You can call ResetPriority to reset it back to
+		// initial priority. Or last lpriority set with SetPriority.
+		SetRuntimePriority(LogPriority)
+
+		// ResetPriority resets priority back to initial priority.
+		ResetPriority()
+
+		// Writer returns the output destination for the logger.
+		Writer() io.Writer
+
+		// SetOutput sets the output destination for the logger.
+		SetOutput(w io.Writer)
+
+		// Print calls Output to print to the standard logger.
+		// Arguments are handled in the manner of fmt.Print.
+		Print(v ...any)
+
+		// Printf calls Output to print to the standard logger.
+		// Arguments are handled in the manner of fmt.Printf.
+		Printf(format string, v ...any)
+
+		// Println calls Output to print to the standard logger.
+		// Arguments are handled in the manner of fmt.Println.
+		Println(v ...any)
+
+		// Output writes the output for a logging event. The string s contains
+		// the text to print after the prefix specified by the flags of the
+		// Logger. A newline is appended if the last character of s is not
+		// already a newline. Calldepth is the count of the number of
+		// frames to skip when computing the file name and line number
+		// if Llongfile or Lshortfile is set; a value of 1 will print the details
+		// for the caller of Output.
+		Output(calldepth int, s string) error
 
 		// LOG_EMERG
 		Emergency(args ...any)
@@ -140,8 +178,6 @@ type (
 		Noticef(template string, args ...any)
 		Ok(args ...any)
 		Okf(template string, args ...any)
-		Issue(nr int, args ...any)
-		Issuef(nr int, template string, args ...any)
 
 		// LOG_INFO
 		Info(args ...any)
@@ -154,15 +190,15 @@ type (
 		// LOG_DEBUG
 		Debug(args ...any)
 		Debugf(template string, args ...any)
+
+		// LOG_SYSTEMDEBUG
 		SystemDebug(args ...any)
 		SystemDebugf(template string, args ...any)
 	}
 
 	Error interface {
 		error
-		App() Slug
 		Code() int
-		Time() time.Time
 	}
 
 	Slug interface {
@@ -179,7 +215,7 @@ type (
 	}
 
 	Cron interface {
-		Cron(func(CronScheduler))
+		Cron(ActionCronSchedulerSetup)
 	}
 
 	CronHandler interface {
@@ -188,7 +224,7 @@ type (
 	}
 
 	CronScheduler interface {
-		Job(expr any, cb ActionWithErrorFunc)
+		Job(expr any, cb ActionCronFunc)
 	}
 
 	// FS could be e.g. embed.FS
@@ -198,7 +234,7 @@ type (
 		ReadFile(name string) ([]byte, error)
 	}
 
-	TickTocker interface {
+	TickerFuncs interface {
 		// OnTick enables you to define func body for operation set
 		// to call in minimal timeframe until session is valid and
 		// service is running.
@@ -207,6 +243,11 @@ type (
 		// OnTock is helper called right after OnTick to separate
 		// your primary operations and post prossesing logic.
 		OnTock(ActionTickFunc)
+	}
+
+	EventListener interface {
+		OnEvent(key string, cb ActionWithEventFunc)
+		OnAnyEvent(ActionWithEventFunc)
 	}
 )
 
@@ -221,6 +262,15 @@ type (
 	// Options interface enables you to apply configuration options in
 	// different parts of your application.
 	Options interface {
+		// DeleteOption allows you remove option value and it's key from
+		// your option set. return ErrOption when key dows not exist or
+		// ErrOptionRO if key is read only.
+		DeleteOption(key string) Error
+
+		// ResetOptions clears all options and restores defaults
+		// if defaults have been set
+		ResetOptions() Error
+
 		// OptionReadCloser's embedded interface allows you to control how your
 		// implementation makes configuration options readable. For example you
 		// can implement your own middleware for option getter.
@@ -230,15 +280,6 @@ type (
 		// implementation makes changes to configuration options. For example you
 		// can implement your own middleware for option setter.
 		OptionWriter
-
-		// DeleteOption allows you remove option value and it's key from
-		// your option set. return ErrOption when key dows not exist or
-		// ErrOptionRO if key is read only.
-		DeleteOption(key string) Error
-
-		// ResetOptions clears all options and restores defaults
-		// if defaults have been set
-		ResetOptions() Error
 	}
 
 	// OptionGetter is read only representation of Options
@@ -307,22 +348,22 @@ type (
 
 type (
 	Configurator interface {
-		OptionDefaultsWriter // Sets application configuration options
+		UseLogger(Logger)
+		GetLogger() (Logger, Error)
 
-		UseLogger(logger Logger)
-		GetLogger(logger Logger) (Logger, Error)
+		UseSession(Session)
+		GetSession() (Session, Error)
 
-		UseSession(session Session)
-		GetSession(session Session) (Session, Error)
+		UseMonitor(ApplicationMonitor)
+		GetMonitor() (ApplicationMonitor, Error)
 
-		UseMonitor(monitor ApplicationMonitor)
-		GetMonitor(ApplicationMonitor) (ApplicationMonitor, Error)
-
-		UseAssets(fs.FS)
-		GetAssets(fs.FS) (fs.FS, Error)
+		UseAssets(FS)
+		GetAssets() (FS, Error)
 
 		UseEngine(Engine)
-		GetEngine(Engine) (Engine, Error)
+		GetEngine() (Engine, Error)
+
+		OptionDefaultsWriter // Sets application configuration options
 	}
 
 	// Application is interface for application runtime.
@@ -330,26 +371,21 @@ type (
 		Configure(Configurator) Error
 
 		AddAddon(Addon)
-		AddAddons(...AddonCreateFunc)
+		AddAddonCreateFuncs(...AddonCreateFunc)
 
 		AddService(Service)
-		AddServices(...ServiceCreateFunc)
+		AddServiceCreateFuncs(...ServiceCreateFunc)
 
 		Log() Logger
 
-		Command
-		Cron
-		TickTocker
-
 		Main()
+
+		Command
+		TickerFuncs
+		Cron
 	}
 
 	Session interface {
-		// Done() behaves like context.Done and indcates that session was destroyed
-		// Err() returns last error in session
-		context.Context
-
-		Options
 
 		// Ready blocks until the session is ready to use.
 		Ready() <-chan struct{}
@@ -370,6 +406,12 @@ type (
 		Context() context.Context
 
 		RequireServices(svcs ...string) Error
+
+		// Done() behaves like context.Done and indcates that session was destroyed
+		// Err() returns last error in session
+		context.Context
+
+		Options
 	}
 
 	Settings interface {
@@ -386,8 +428,8 @@ type (
 	ApplicationMonitor interface {
 		Start() Error
 		Stop() Error
-		OnEvent(Event)
-		Stats() ActionStats
+		Stats() ApplicationStats
+		EventListener
 	}
 )
 
@@ -398,28 +440,22 @@ type (
 type (
 	CommandCreateFunc func() (Command, Error)
 
-	CommandCreateFlagFunc func() (CommandFlag, Error)
+	FlagCreateFunc func() (Flag, Error)
 
 	Command interface {
-		// String returns command name.
-		fmt.Stringer
-		// RequireServices ensures that services by their URL
-		// will be started before Command.Main call. These services will be started
-		// in parallel with Command.Init. If you need to have services ready
-		// inside Command.Before then you can call ctx.Ready which will block
-		// until all services are running.
-		RequireServices(svcs ...string)
+		// Slug String returns command name.
+		Slug() Slug
 
-		AddFlag(CommandFlag)
-		AddFlagFuncs(flags ...CommandCreateFlagFunc)
+		AddFlag(Flag)
+		AddFlagCreateFunc(flags ...FlagCreateFunc)
 
 		AddSubCommand(Command)
-		AddSubCommands(...CommandCreateFunc)
+		AddSubCommandCreateFunc(...CommandCreateFunc)
 
 		// Before is optional action to execute before Main.
 		// Useful to check preconidtion for your command Main.
 		// Since any required services by command will be initialized in parallel
-		// with this action you can call ctx.Ready if you need to use services
+		// with this action you can call sess.Ready if you need to use services
 		// inside the Init.
 		Before(ActionWithArgsAndAssetsFunc)
 
@@ -438,9 +474,16 @@ type (
 		// AfterAlways is optional callback to execute reqardless did Main
 		// succeed or not.
 		AfterAlways(action ActionWithErrorFunc)
+
+		// RequireServices ensures that services by their URL
+		// will be started before Command.Main call. These services will be started
+		// in parallel with Command.Init. If you need to have services ready
+		// inside Command.Before then you can call sess.Ready which will block
+		// until all services are running.
+		RequireServices(svcs ...string)
 	}
 
-	CommandFlag interface{}
+	Flag interface{}
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -475,13 +518,13 @@ type (
 type (
 	ServiceCreateFunc func() (Service, Error)
 	// ServiceHandler is callback to be called when Service recieves a Request.
-	ServiceHandler func(ctx Session, req ServiceRequest) ServiceResponse
+	ServiceHandler func(sess Session, req ServiceRequest) ServiceResponse
 
 	// Service interface
 	Service interface {
-		TickTocker
-
 		Slug() Slug
+
+		URL() URL
 
 		// OnInitialize is called when app is preparing runtime and attaching
 		// services.
@@ -489,7 +532,7 @@ type (
 
 		// OnStart is called when service is requested to be started.
 		// For instace when command is requiring this service or whenever
-		// service is required on runtime via ctx.RequireService call.
+		// service is required on runtime via sess.RequireService call.
 		//
 		// Start can be called multiple times in case of service restarts.
 		// If you do not want to allow service restarts you should implement
@@ -501,13 +544,14 @@ type (
 		// when service restart is requested.
 		OnStop(ActionFunc)
 
-		// OnEvent is simple local event system
-		OnEvent(ActionWithEventFunc)
-
 		// OnRequest enables you to define routes for your
 		// service to respond when it is requested inernally or by some of
 		// tthe connected peers.
 		OnRequest(r ServiceRouter)
+
+		TickerFuncs
+
+		EventListener
 	}
 
 	// Engine is application runtime managing services etc.
@@ -522,7 +566,7 @@ type (
 
 		// ResolvePeerTo adds record into
 		// internal name resolution registry
-		//
+		// API not confirmed
 		ResolvePeerTo(ns, ipport string)
 	}
 

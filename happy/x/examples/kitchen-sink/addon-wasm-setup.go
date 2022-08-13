@@ -16,7 +16,7 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/contrib/addons/wasm"
+	"github.com/mkungla/happy/x/sdk/addons/wasm"
 )
 
 func wasmAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {

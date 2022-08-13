@@ -12,14 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package monitor
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/sdk/logging/services/fileloggerservice"
+	"github.com/mkungla/happy/x/happyx"
 )
 
-func fileloggerserviceServiceSetup(options ...happy.OptionWriteFunc) happy.ServiceCreateFunc {
-	svc := fileloggerservice.New(options...)
-	return svc.Service
+type Monitor struct {
 }
+
+func New(opts ...happy.OptionWriteFunc) *Monitor {
+	return &Monitor{}
+}
+
+func (m *Monitor) Start() happy.Error {
+	return happyx.Errorf("Monitor.Start: %w", happyx.ErrNotImplemented)
+}
+
+func (m *Monitor) Stop() happy.Error {
+	return happyx.Errorf("Monitor.Stop: %w", happyx.ErrNotImplemented)
+}
+
+func (m *Monitor) Stats() happy.ApplicationStats { return nil }
+
+// happy.EventListener interface
+func (m *Monitor) OnAnyEvent(cb happy.ActionWithEventFunc)          {}
+func (m *Monitor) OnEvent(key string, cb happy.ActionWithEventFunc) {}

@@ -13,23 +13,3 @@
 // limitations under the License.
 
 package sdk
-
-import "github.com/mkungla/happy"
-
-func OptionFunc(vfunc happy.VariableParseFunc) happy.OptionWriteFunc {
-	return func(opts happy.OptionWriter) happy.Error {
-		v, err := vfunc()
-		if err != nil {
-			return err
-		}
-		return opts.SetOption(v)
-	}
-}
-
-func Option(k string, v any) happy.OptionWriteFunc {
-	return OptionFunc(nil)
-}
-
-func ReadOnlyOption(k string, v any) happy.OptionWriteFunc {
-	return OptionFunc(nil)
-}

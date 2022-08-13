@@ -16,7 +16,7 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/contrib/addons/docs"
+	"github.com/mkungla/happy/x/sdk/addons/docs"
 )
 
 func docsAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {

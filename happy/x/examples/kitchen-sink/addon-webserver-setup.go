@@ -16,7 +16,7 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/contrib/addons/servers/webserver"
+	"github.com/mkungla/happy/x/sdk/addons/servers/webserver"
 )
 
 func webserverAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {

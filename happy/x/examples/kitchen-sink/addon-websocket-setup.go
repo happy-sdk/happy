@@ -16,7 +16,7 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/contrib/addons/servers/websocket"
+	"github.com/mkungla/happy/x/sdk/addons/servers/websocket"
 )
 
 func websocketAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {

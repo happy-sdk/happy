@@ -16,6 +16,36 @@ package main
 
 import "github.com/mkungla/happy"
 
+type CustomService struct {
+}
+
 func customService() happy.Service {
+	svc := &CustomService{}
+
+	return svc
+}
+
+// API
+func (svc *CustomService) AfterAlwaysMessaage() string {
+	return "this is AfterAlways message from CustomService"
+}
+
+// SERVICE IMPLEMENTATION
+func (svc *CustomService) Slug() happy.Slug {
 	return nil
 }
+
+func (svc *CustomService) URL() happy.URL {
+	return nil
+}
+
+func (svc *CustomService) OnInitialize(cb happy.ActionFunc)    {}
+func (svc *CustomService) OnStart(cb happy.ActionWithArgsFunc) {}
+func (svc *CustomService) OnStop(cb happy.ActionFunc)          {}
+func (svc *CustomService) OnRequest(r happy.ServiceRouter)     {}
+func (svc *CustomService) OnTick(cb happy.ActionTickFunc)      {}
+func (svc *CustomService) OnTock(cb happy.ActionTickFunc)      {}
+
+// happy.EventListener interface
+func (svc *CustomService) OnAnyEvent(cb happy.ActionWithEventFunc)          {}
+func (svc *CustomService) OnEvent(key string, cb happy.ActionWithEventFunc) {}

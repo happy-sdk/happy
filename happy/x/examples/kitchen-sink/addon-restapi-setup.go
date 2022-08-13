@@ -16,7 +16,7 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/contrib/addons/servers/restapi"
+	"github.com/mkungla/happy/x/sdk/addons/servers/restapi"
 )
 
 func restapiAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {

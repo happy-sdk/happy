@@ -12,12 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stdlog
+package engine
 
 import (
 	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/happyx"
 )
 
-func New(options ...happy.OptionWriteFunc) happy.Logger {
-	return nil
+type Engine struct {
 }
+
+func New(opts ...happy.OptionWriteFunc) *Engine {
+	return &Engine{}
+}
+
+func (e *Engine) Register(...happy.Service) {}
+func (e *Engine) Start() happy.Error {
+	return happyx.Errorf("Engine.Start: %w", happyx.ErrNotImplemented)
+}
+func (e *Engine) Stop() happy.Error {
+	return happyx.Errorf("Engine.Stop: %w", happyx.ErrNotImplemented)
+}
+func (e *Engine) ResolvePeerTo(ns, ipport string) {}
