@@ -14,13 +14,6 @@
 
 package vars
 
-import (
-	"fmt"
-	"strconv"
-	"strings"
-	"sync"
-)
-
 type (
 	// parseBuffer is simple []byte instead of bytes.Buffer to avoid large dependency.
 	parserBuffer []byte
@@ -62,14 +55,6 @@ const (
 	udigits        = "0123456789ABCDEFX"
 )
 
-var (
-	// parserPool is cached parser.
-	//nolint: gochecknoglobals
-	parserPool = sync.Pool{
-		New: func() interface{} { return new(parser) },
-	}
-)
-
 // getParser allocates a new parser struct or grabs a cached one.
 func getParser() (p *parser) {
 	p, _ = parserPool.Get().(*parser)
@@ -94,202 +79,203 @@ func (p *parser) free() {
 	}
 }
 
-func (p *parser) parseValue(val any) (typ Type, err error) {
+func (p *parser) parseValue(val any) (typ Kind, err error) {
 	p.val = val
 
 	if val == nil {
 		p.fmt.string(nilAngleString)
-		kind := ValueTypeFor(val)
-		if kind == TypeInvalid {
-			err = fmt.Errorf("%w: invalid value %v", ErrValue, val)
+		kind := ValueKindOf(val)
+		if kind == KindInvalid {
+			err = wrapError(ErrValue, "invalid value")
 		}
 		return kind, err
 	}
 
 	switch v := val.(type) {
 	case bool:
-		typ = TypeBool
+		typ = KindBool
 		p.fmt.boolean(v)
 	case int:
-		typ = TypeInt
+		typ = KindInt
 		p.fmt.integer(uint64(v), 10, signed, sdigits)
 	case int8:
-		typ = TypeInt8
+		typ = KindInt8
 		p.fmt.integer(uint64(v), 10, signed, sdigits)
 	case int16:
-		typ = TypeInt16
+		typ = KindInt16
 		p.fmt.integer(uint64(v), 10, signed, sdigits)
 	case int32:
-		typ = TypeInt32
+		typ = KindInt32
 		p.fmt.integer(uint64(v), 10, signed, sdigits)
 	case int64:
-		typ = TypeInt64
+		typ = KindInt64
 		p.fmt.integer(uint64(v), 10, signed, sdigits)
 	case uint:
-		typ = TypeUint
+		typ = KindUint
 		p.fmt.integer(uint64(v), 10, unsigned, udigits)
 	case uint8:
-		typ = TypeUint8
+		typ = KindUint8
 		p.fmt.integer(uint64(v), 10, unsigned, udigits)
 	case uint16:
-		typ = TypeUint16
+		typ = KindUint16
 		p.fmt.integer(uint64(v), 10, unsigned, udigits)
 	case uint32:
-		typ = TypeUint32
+		typ = KindUint32
 		p.fmt.integer(uint64(v), 10, unsigned, udigits)
 	case uint64:
-		typ = TypeUint64
+		typ = KindUint64
 		p.fmt.integer(v, 10, unsigned, udigits)
 	case uintptr:
-		typ = TypeUintptr
+		typ = KindUintptr
 		p.fmt.integer(uint64(v), 10, unsigned, udigits)
 	case float32:
-		typ = TypeFloat32
+		typ = KindFloat32
 		p.fmt.float(float64(v), 32, 'g', -1)
 	case float64:
-		typ = TypeFloat64
+		typ = KindFloat64
 		p.fmt.float(v, 64, 'g', -1)
 	case complex64:
-		typ = TypeComplex64
+		typ = KindComplex64
 		p.fmt.complex(complex128(v), 64)
 	case complex128:
-		typ = TypeComplex128
+		typ = KindComplex128
 		p.fmt.complex(v, 128)
 	case string:
-		typ = TypeString
+		typ = KindString
 		p.fmt.string(v)
 	default:
-		typ, err = p.parseUnderlyingAsType(val)
+		typ, err = p.parseUnderlyingAsKind(val)
 	}
 	return typ, err
 }
 
-// parseUnderlyingAsType is unsafe function.
-// it takes non builtin arg and to parses it to given Type.
-// Before calling you must be sure that val can be casted into Type.
-func (p *parser) parseUnderlyingAsType(val any) (Type, error) {
+// parseUnderlyingAsKind is unsafe function.
+// it takes non builtin arg and to parses it to given Kind.
+// Before calling you must be sure that val can be casted into Kind.
+func (p *parser) parseUnderlyingAsKind(val any) (Kind, error) {
 	pval, typ := underlyingValueOf(val, true)
 	// first check does type implment stringer.
 	// so that we can write string representation of value
 	// to buffer directly.
 	var implStringer bool
-	if str, ok := val.(fmt.Stringer); ok {
+	if str, ok := val.(stringer); ok {
 		p.fmt.string(str.String())
 		implStringer = true
 	}
 
 	var (
 		underlying any
-		localtype  Type
+		localtype  Kind
 	)
 	switch v := pval.(type) {
 	case bool:
 		underlying = v
-		localtype = TypeBool
+		localtype = KindBool
 		if !implStringer {
 			p.fmt.boolean(v)
 		}
 	case int:
 		underlying = v
-		localtype = TypeInt
+		localtype = KindInt
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, signed, sdigits)
 		}
 	case int8:
 		underlying = v
-		localtype = TypeInt8
+		localtype = KindInt8
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, signed, sdigits)
 		}
 	case int16:
 		underlying = v
-		localtype = TypeInt16
+		localtype = KindInt16
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, signed, sdigits)
 		}
 	case int32:
 		underlying = v
-		localtype = TypeInt32
+		localtype = KindInt32
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, signed, sdigits)
 		}
 	case int64:
 		underlying = v
-		localtype = TypeInt64
+		localtype = KindInt64
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, signed, sdigits)
 		}
 	case uint:
 		underlying = v
-		localtype = TypeUint
+		localtype = KindUint
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, unsigned, udigits)
 		}
 	case uint8:
 		underlying = v
-		localtype = TypeUint8
+		localtype = KindUint8
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, unsigned, udigits)
 		}
 	case uint16:
 		underlying = v
-		localtype = TypeUint16
+		localtype = KindUint16
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, unsigned, udigits)
 		}
 	case uint32:
 		underlying = v
-		localtype = TypeUint32
+		localtype = KindUint32
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, unsigned, udigits)
 		}
 	case uint64:
 		underlying = v
-		localtype = TypeUint64
+		localtype = KindUint64
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, unsigned, udigits)
 		}
 	case uintptr:
 		underlying = v
-		localtype = TypeUintptr
+		localtype = KindUintptr
 		if !implStringer {
 			p.fmt.integer(uint64(v), 10, unsigned, udigits)
 		}
 	case float32:
 		underlying = v
-		localtype = TypeFloat32
+		localtype = KindFloat32
 		if !implStringer {
 			p.fmt.float(float64(v), 32, 'g', -1)
 		}
 	case float64:
 		underlying = v
-		localtype = TypeFloat64
+		localtype = KindFloat64
 		if !implStringer {
 			p.fmt.float(v, 64, 'g', -1)
 		}
 	case complex64:
 		underlying = v
-		localtype = TypeComplex64
+		localtype = KindComplex64
 		if !implStringer {
 			p.fmt.complex(complex128(v), 64)
 		}
 	case complex128:
 		underlying = v
-		localtype = TypeComplex128
+		localtype = KindComplex128
 		if !implStringer {
 			p.fmt.complex(v, 128)
 		}
 	case string:
 		underlying = v
-		localtype = TypeString
+		localtype = KindString
 		if !implStringer {
 			p.fmt.string(v)
 		}
 	default:
 		return typ,
-			fmt.Errorf(
-				"%w: underliying type parser to parse %#T(%v) as [%s] local [%s] is not implemented",
-				ErrValue, val, val, typ, localtype)
+			wrapError(
+				ErrValue,
+				"type parser to parse "+typ.String()+" is not implemented",
+			)
 	}
 	// we mark it custom only if value
 	// is implements Stringerr so we know that
@@ -354,7 +340,7 @@ func (f *parserFmt) boolean(v bool) {
 // nolint: unparam
 func (f *parserFmt) float(v float64, size int, verb rune, prec int) {
 	// Format number, reserving space for leading + sign if needed.
-	num := strconv.AppendFloat(f.intbuf[:1], v, byte(verb), prec, size)
+	num := strconvAppendFloat(f.intbuf[:1], v, byte(verb), prec, size)
 	if num[1] == '-' || num[1] == '+' {
 		num = num[1:]
 	} else {
@@ -409,21 +395,6 @@ func (b *parserBuffer) writeByte(c byte) {
 	*b = append(*b, c)
 }
 
-// func (b *parserBuffer) writeRune(r rune) {
-// 	if r < utf8.RuneSelf {
-// 		*b = append(*b, byte(r))
-// 		return
-// 	}
-
-// 	bb := *b
-// 	n := len(bb)
-// 	for n+utf8.UTFMax > cap(bb) {
-// 		bb = append(bb, 0)
-// 	}
-// 	w := utf8.EncodeRune(bb[n:n+utf8.UTFMax], r)
-// 	*b = bb[:n+w]
-// }
-
 func parseBool(str string) (r bool, s string, e error) {
 	switch str {
 	case "1", "t", "T", "true", "TRUE", "True":
@@ -431,27 +402,27 @@ func parseBool(str string) (r bool, s string, e error) {
 	case "0", "f", "F", "false", "FALSE", "False":
 		r, s = false, "false"
 	default:
-		r, s, e = false, "", fmt.Errorf("%w: can not parse %q as bool", ErrValueConv, str)
+		r, s, e = false, "", wrapError(ErrValueConv, "can not "+str+" as bool")
 	}
 	return r, s, e
 }
 
-func parseInts(val string, t Type) (raw interface{}, v string, err error) {
+func parseInts(val string, t Kind) (raw interface{}, v string, err error) {
 	var rawd int64
 	switch t {
-	case TypeInt:
+	case KindInt:
 		rawd, v, err = parseInt(val, 10, 0)
 		raw = int(rawd)
-	case TypeInt8:
+	case KindInt8:
 		rawd, v, err = parseInt(val, 10, 8)
 		raw = int8(rawd)
-	case TypeInt16:
+	case KindInt16:
 		rawd, v, err = parseInt(val, 10, 16)
 		raw = int16(rawd)
-	case TypeInt32:
+	case KindInt32:
 		rawd, v, err = parseInt(val, 10, 32)
 		raw = int32(rawd)
-	case TypeInt64:
+	case KindInt64:
 		raw, v, err = parseInt(val, 10, 64)
 	}
 	return
@@ -464,30 +435,30 @@ func parseInt(str string, base, bitSize int) (r int64, s string, err error) {
 	if str == "false" {
 		return 0, "0", nil
 	}
-	r, e := strconv.ParseInt(str, base, bitSize)
-	s = strconv.Itoa(int(r))
+	r, e := strconvParseInt(str, base, bitSize)
+	s = strconvItoa(int(r))
 	if e != nil {
-		err = fmt.Errorf("%w: %s", ErrValueConv, e)
+		err = wrapError(ErrValueConv, e.Error())
 	}
 	return r, s, err
 }
 
-func parseUints(val string, t Type) (raw interface{}, v string, err error) {
+func parseUints(val string, t Kind) (raw interface{}, v string, err error) {
 	var rawd uint64
 	switch t {
-	case TypeUint:
+	case KindUint:
 		rawd, v, err = parseUint(val, 10, 0)
 		raw = uint(rawd)
-	case TypeUint8:
+	case KindUint8:
 		rawd, v, err = parseUint(val, 10, 8)
 		raw = uint8(rawd)
-	case TypeUint16:
+	case KindUint16:
 		rawd, v, err = parseUint(val, 10, 16)
 		raw = uint16(rawd)
-	case TypeUint32:
+	case KindUint32:
 		rawd, v, err = parseUint(val, 10, 32)
 		raw = uint32(rawd)
-	case TypeUint64:
+	case KindUint64:
 		raw, v, err = parseUint(val, 10, 64)
 	}
 
@@ -501,10 +472,10 @@ func parseUint(str string, base, bitSize int) (r uint64, s string, err error) {
 	if str == "false" {
 		return 0, "0", nil
 	}
-	r, e := strconv.ParseUint(str, base, bitSize)
-	s = strconv.FormatUint(r, base)
+	r, e := strconvParseUint(str, base, bitSize)
+	s = strconvFormatUint(r, base)
 	if e != nil {
-		err = fmt.Errorf("%w: %s", ErrValueConv, e)
+		err = wrapError(ErrValueConv, e.Error())
 	}
 	return r, s, err
 }
@@ -516,15 +487,10 @@ func parseFloat(str string, bitSize int) (r float64, s string, err error) {
 	if str == "false" {
 		return 0, "0", nil
 	}
-	r, e := strconv.ParseFloat(str, bitSize)
-	if bitSize == 32 {
-		s = fmt.Sprintf("%v", float32(r))
-	} else {
-		s = fmt.Sprintf("%v", r)
-	}
-
+	r, e := strconvParseFloat(str, bitSize)
+	s = str
 	if e != nil {
-		err = fmt.Errorf("%w: %s", ErrValueConv, e)
+		err = wrapError(ErrValueConv, e.Error())
 	}
 
 	return r, s, err
@@ -537,12 +503,12 @@ func parseComplex64(str string) (r complex64, s string, e error) {
 	if str == "false" {
 		str = "0"
 	}
-	if c, err := strconv.ParseComplex(str, 64); err == nil {
-		return complex64(c), fmt.Sprintf("%f %f", real(c), imag(c)), nil
+	if c, err := strconvParseComplex(str, 64); err == nil {
+		return complex64(c), str, nil
 	}
-	fields := strings.Fields(str)
+	fields := stringsFields(str)
 	if len(fields) != 2 {
-		return complex64(0), "", fmt.Errorf("%w: value %s can not parsed as complex64", ErrValueConv, str)
+		return complex64(0), "", wrapError(ErrValueConv, str+" can not parsed as complex64")
 	}
 	var err error
 	var f1, f2 float32
@@ -570,12 +536,12 @@ func parseComplex128(str string) (r complex128, s string, e error) {
 	if str == "false" {
 		str = "0"
 	}
-	if c, err := strconv.ParseComplex(str, 128); err == nil {
-		return c, fmt.Sprintf("%f %f", real(c), imag(c)), nil
+	if c, err := strconvParseComplex(str, 128); err == nil {
+		return c, str, nil
 	}
-	fields := strings.Fields(str)
+	fields := stringsFields(str)
 	if len(fields) != 2 {
-		return complex128(0), "", fmt.Errorf("%w: value %s can not parsed as complex64", ErrValueConv, str)
+		return complex128(0), "", wrapError(ErrValueConv, str+" can not parsed as complex64")
 	}
 	var err error
 	var f1, f2 float64

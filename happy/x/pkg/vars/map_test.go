@@ -17,8 +17,7 @@ package vars_test
 import (
 	"fmt"
 	"github.com/mkungla/happy/x/pkg/vars"
-	"github.com/mkungla/happy/x/pkg/vars/testdata"
-	"github.com/stretchr/testify/assert"
+	"github.com/mkungla/happy/x/pkg/vars/internal/testutils"
 	"math"
 	"math/rand"
 	"os"
@@ -44,8 +43,9 @@ var tests = []struct {
 	{"", "", 0},
 }
 
-func TestCollectionParseFields(t *testing.T) {
-	collection := vars.ParseFromBytes([]byte{})
+func TestMapParseFields(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes([]byte{})
+	testutils.NoError(t, err)
 
 	for _, tt := range tests {
 		val, _ := collection.LoadOrDefault(tt.k, tt.defVal)
@@ -56,46 +56,51 @@ func TestCollectionParseFields(t *testing.T) {
 	}
 }
 
-func TestCollectionSet(t *testing.T) {
-	collection := vars.Collection{}
+func TestMapSet(t *testing.T) {
+	collection := vars.Map{}
 	for _, tt := range tests {
+		if tt.wantLen == 0 {
+			continue
+		}
 		v := fmt.Sprintf("%v", tt.defVal)
 		collection.Store(tt.k, v)
-		assert.Equal(t, v, collection.Get(tt.k).String())
-		assert.True(t, collection.Has(tt.k))
+		testutils.Equal(t, v, collection.Get(tt.k).String())
+		testutils.True(t, collection.Has(tt.k))
 	}
 }
 
-func TestCollectionEnvFile(t *testing.T) {
+func TestMapEnvFile(t *testing.T) {
 	content, err := os.ReadFile("testdata/dot_env")
 	if err != nil {
 		t.Error(err)
 	}
-	collection := vars.ParseFromBytes(content)
+	collection, err := vars.ParseMapFromBytes(content)
+	testutils.NoError(t, err)
 	if val := collection.Get("GOARCH"); val.String() != "amd64" {
 		t.Errorf("expected GOARCH to equal amd64 got %s", val)
 	}
 }
 
-func TestCollectionKeyNoSpaces(t *testing.T) {
-	collection := vars.Collection{}
+func TestMapKeyNoSpaces(t *testing.T) {
+	collection := vars.Map{}
 	collection.Store("valid", true)
 	collection.Store(" invalid", true)
 
 	invalid := collection.Get(" invalid")
 	valid := collection.Get("valid")
 
-	if invalid.Bool() {
-		t.Errorf("Collection key should not accept pfx/sfx  spaces ")
+	if !invalid.Bool() {
+		t.Error("Map key should correct pfx/sfx spaces")
 	}
 	if !valid.Bool() {
-		t.Errorf("Collection key should be true")
+		t.Error("Map key should be true")
 	}
 }
 
-func TestCollectionParseInt64(t *testing.T) {
-	collection := vars.ParseFromBytes(testdata.GenAtoi64TestBytes())
-	for _, test := range testdata.GetIntTests() {
+func TestMapParseInt64(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes(testutils.GenAtoi64TestBytes())
+	testutils.NoError(t, err)
+	for _, test := range testutils.GetIntTests() {
 		val := collection.Get(test.Key)
 		out := val.Int64()
 		if out != test.Int64 {
@@ -105,9 +110,10 @@ func TestCollectionParseInt64(t *testing.T) {
 	}
 }
 
-func TestCollectionParseUint64(t *testing.T) {
-	collection := vars.ParseFromBytes(testdata.GenAtoui64TestBytes())
-	for _, test := range testdata.GetUintTests() {
+func TestMapParseUint64(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes(testutils.GenAtoui64TestBytes())
+	testutils.NoError(t, err)
+	for _, test := range testutils.GetUintTests() {
 		val := collection.Get(test.Key)
 		out := val.Uint64()
 		if out != test.Uint64 {
@@ -117,9 +123,11 @@ func TestCollectionParseUint64(t *testing.T) {
 	}
 }
 
-func TestCollectionParseFloat32(t *testing.T) {
-	collection := vars.ParseFromBytes(testdata.GenAtof32TestBytes())
-	for _, test := range testdata.GetFloat32Tests() {
+func TestMapParseFloat32(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes(testutils.GenAtof32TestBytes())
+	testutils.NoError(t, err)
+
+	for _, test := range testutils.GetFloat32Tests() {
 		val := collection.Get(test.Key)
 		out := val.Float32()
 		if out != test.WantFloat32 {
@@ -132,9 +140,10 @@ func TestCollectionParseFloat32(t *testing.T) {
 	}
 }
 
-func TestCollectionParseFloat(t *testing.T) {
-	collection := vars.ParseFromBytes(testdata.GenAtofTestBytes())
-	for _, test := range testdata.GetFloat64Tests() {
+func TestMapParseFloat(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes(testutils.GenAtofTestBytes())
+	testutils.NoError(t, err)
+	for _, test := range testutils.GetFloat64Tests() {
 		val := collection.Get(test.Key)
 		out := val.Float64()
 
@@ -153,9 +162,10 @@ func TestCollectionParseFloat(t *testing.T) {
 	}
 }
 
-func TestCollectionParseBool(t *testing.T) {
-	collection := vars.ParseFromBytes(testdata.GenAtobTestBytes())
-	for _, test := range testdata.GetBoolTests() {
+func TestMapParseBool(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes(testutils.GenAtobTestBytes())
+	testutils.NoError(t, err)
+	for _, test := range testutils.GetBoolTests() {
 		val := collection.Get(test.Key)
 
 		if b := val.Bool(); b != test.Want {
@@ -164,17 +174,19 @@ func TestCollectionParseBool(t *testing.T) {
 	}
 }
 
-func TestCollectionGetWithPrefix(t *testing.T) {
-	collection := vars.ParseFromBytes(testdata.GenStringTestBytes())
+func TestMapGetWithPrefix(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes(testutils.GenStringTestBytes())
+	testutils.NoError(t, err)
 	p := collection.LoadWithPrefix("CGO")
 
 	if p.Len() != 6 {
-		t.Errorf("Collection.GetsWithPrefix(\"CGO\") = %d, want (6)", p.Len())
+		t.Errorf("Map.GetsWithPrefix(\"CGO\") = %d, want (6)", p.Len())
 	}
 }
 
-func TestCollectionGetOrDefault(t *testing.T) {
-	collection := vars.ParseFromBytes([]byte{})
+func TestMapGetOrDefault(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes([]byte{})
+	testutils.NoError(t, err)
 	tests := []struct {
 		k      string
 		defVal string
@@ -188,52 +200,55 @@ func TestCollectionGetOrDefault(t *testing.T) {
 	}
 	for _, tt := range tests {
 		if actual, _ := collection.LoadOrDefault(tt.k, tt.defVal); actual.String() != tt.want {
-			t.Errorf("Collection.GetOrDefaultTo(%q, %q) = %q, want %q", tt.k, tt.defVal, actual, tt.want)
+			t.Errorf("Map.GetOrDefaultTo(%q, %q) = %q, want %q", tt.k, tt.defVal, actual, tt.want)
 		}
 	}
 }
 
-func TestCollectionGetOrDefaultValue(t *testing.T) {
-	collection := vars.ParseFromBytes([]byte{})
+func TestMapGetOrDefaultValue(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes([]byte{})
+	testutils.NoError(t, err)
 	tests := []struct {
 		k      string
 		defVal vars.Value
 		want   string
 	}{
-		{"STRING_1", testdata.NewUnsafeValue("some-string"), "some-string"},
-		{"STRING_2", testdata.NewUnsafeValue("some-string with space "), "some-string with space "},
-		{"STRING_3", testdata.NewUnsafeValue(" some-string with space"), " some-string with space"},
-		{"STRING_4", testdata.NewUnsafeValue("1234567"), "1234567"},
-		{"", testdata.NewUnsafeValue("1234567"), ""},
+		{"STRING_1", testutils.NewUnsafeValue("some-string"), "some-string"},
+		{"STRING_2", testutils.NewUnsafeValue("some-string with space "), "some-string with space "},
+		{"STRING_3", testutils.NewUnsafeValue(" some-string with space"), " some-string with space"},
+		{"STRING_4", testutils.NewUnsafeValue("1234567"), "1234567"},
+		{"", testutils.NewUnsafeValue("1234567"), ""},
 	}
 	for _, tt := range tests {
 		if actual, _ := collection.LoadOrDefault(tt.k, tt.defVal); actual.String() != tt.want {
-			t.Errorf("Collection.LoadOrDefault(%q, %q) = %q, want %q got ", tt.k, tt.defVal, actual, tt.want)
+			t.Errorf("Map.LoadOrDefault(%q, %q) = %q, want %q got ", tt.k, tt.defVal, actual, tt.want)
 		}
 	}
 }
 
-func TestCollectionParseFromBytes(t *testing.T) {
-	bytes := testdata.GenStringTestBytes()
-	collection := vars.ParseFromBytes(bytes)
-	for _, test := range testdata.GetStringTests() {
+func TestMapParseMapFromBytes(t *testing.T) {
+	bytes := testutils.GenStringTestBytes()
+	collection, err := vars.ParseMapFromBytes(bytes)
+	testutils.NoError(t, err)
+	for _, test := range testutils.GetStringTests() {
 		if actual := collection.Get(test.Key); actual.String() != test.Val || actual.Underlying() != test.Val {
-			t.Errorf("Collection.Get(%q) = %q, want %q", test.Key, actual.String(), test.Val)
+			t.Errorf("Map.Get(%q) = %q, want %q", test.Key, actual.String(), test.Val)
 		}
 	}
 
 	sort.Slice(bytes, func(i int, j int) bool { return bytes[i] < bytes[j] })
 	bytes2 := collection.ToBytes()
 	sort.Slice(bytes2, func(i int, j int) bool { return bytes2[i] < bytes2[j] })
-	assert.Equal(t, bytes, bytes2)
+	testutils.EqualAny(t, bytes, bytes2)
 }
 
-func TestCollectionParseFromString(t *testing.T) {
-	slice := strings.Split(string(testdata.GenStringTestBytes()), "\n")
-	collection := vars.ParseKeyValSlice(slice)
-	for _, test := range testdata.GetStringTests() {
+func TestMapParseFromString(t *testing.T) {
+	slice := strings.Split(string(testutils.GenStringTestBytes()), "\n")
+	collection, err := vars.ParseMapFromSlice(slice)
+	testutils.NoError(t, err)
+	for _, test := range testutils.GetStringTests() {
 		if actual := collection.Get(test.Key); actual.String() != test.Val || actual.Underlying() != test.Val {
-			t.Errorf("Collection.Get(%q) = %q, want %q", test.Key, actual.String(), test.Val)
+			t.Errorf("Map.Get(%q) = %q, want %q", test.Key, actual.String(), test.Val)
 		}
 	}
 
@@ -241,25 +256,26 @@ func TestCollectionParseFromString(t *testing.T) {
 	slice2 := collection.ToKeyValSlice()
 	slice2 = append(slice2, "")
 	sort.Strings(slice2)
-	assert.Equal(t, slice, slice2)
+	testutils.EqualAny(t, slice, slice2)
 
-	collection2 := vars.ParseKeyValSlice([]string{"X"})
+	collection2, err := vars.ParseMapFromSlice([]string{"X"})
+	testutils.NoError(t, err)
 	if actual := collection2.Get("x"); actual.String() != "" {
-		t.Errorf("Collection.Get(\"X\") = %q, want \"\"", actual.String())
+		t.Errorf("Map.Get(\"X\") = %q, want \"\"", actual.String())
 	}
 
-	collection3 := vars.ParseKeyValSlice([]string{})
+	collection3, err := vars.ParseMapFromSlice([]string{})
 	if l := collection3.Len(); l != 0 {
-		t.Errorf("Collection.Len() == %d, want \"0\"", l)
+		t.Errorf("Map.Len() == %d, want \"0\"", l)
 	}
 }
 
 func TestConcurrentRange(t *testing.T) {
 	const mapSize = 1 << 10
 
-	m := vars.Collection{}
+	m := vars.Map{}
 	for n := int64(1); n <= mapSize; n++ {
-		m.Store(strconv.Itoa(int(n)), n)
+		m.Store("k"+strconv.Itoa(int(n)), n)
 	}
 
 	done := make(chan struct{})
@@ -280,7 +296,7 @@ func TestConcurrentRange(t *testing.T) {
 				default:
 				}
 				for n := int64(1); n < mapSize; n++ {
-					key := strconv.Itoa(int(n))
+					key := "k" + strconv.Itoa(int(n))
 					if r.Int63n(mapSize) == 0 {
 						m.Store(strconv.Itoa(int(n)), n*i*g)
 					} else {
@@ -296,20 +312,20 @@ func TestConcurrentRange(t *testing.T) {
 		iters = 16
 	}
 	for n := iters; n > 0; n-- {
-		seen := make(map[int64]bool, mapSize)
+		seen := make(map[string]bool, mapSize)
 
 		m.Range(func(vi vars.Variable) bool {
-			pk, err := strconv.Atoi(vi.Key())
+			pk, err := strconv.Atoi(vi.Key()[1:])
 			k := int64(pk)
-			assert.NoError(t, err)
+			testutils.NoError(t, err)
 			v := vi.Int64()
 			if v%k != 0 {
 				t.Fatalf("while Storing multiples of %v, Range saw value %v", k, v)
 			}
-			if seen[k] {
+			if seen[vi.Key()] {
 				t.Fatalf("Range visited key %v twice", k)
 			}
-			seen[k] = true
+			seen[vi.Key()] = true
 			return true
 		})
 
@@ -320,7 +336,7 @@ func TestConcurrentRange(t *testing.T) {
 }
 
 func TestMissCounting(t *testing.T) {
-	m := vars.Collection{}
+	m := vars.Map{}
 
 	// Since the miss-counting in missLocked (via Delete)
 	// compares the miss count with len(m.dirty),
@@ -344,8 +360,8 @@ func TestMissCounting(t *testing.T) {
 	}
 }
 
-func TestCollectionRangeNestedCall(t *testing.T) {
-	var c vars.Collection
+func TestMapRangeNestedCall(t *testing.T) {
+	var c vars.Map
 	for i, v := range [3]string{"hello", "world", "Go"} {
 		c.Store(fmt.Sprint(i), v)
 	}
@@ -365,10 +381,10 @@ func TestCollectionRangeNestedCall(t *testing.T) {
 			}
 
 			// Try to Store then LoadAndDelete the corresponding value with the key
-			// 42 to the Collection. In this case, the key 42 and associated value should be
-			// removed from the Collection. Therefore any future range won't observe key 42
+			// 42 to the Map. In this case, the key 42 and associated value should be
+			// removed from the Map. Therefore any future range won't observe key 42
 			// as we checked in above.
-			val := "vars.Collection"
+			val := "vars.Map"
 			c.Store("42", val)
 			if vv, loaded := c.LoadAndDelete("42"); !loaded || !reflect.DeepEqual(vv.Underlying(), val) {
 				t.Fatalf("Nested Range loads unexpected value, got %v, want %v", vv, val)
@@ -379,7 +395,6 @@ func TestCollectionRangeNestedCall(t *testing.T) {
 		c.Delete(v.Key())
 		return true
 	})
-
 	// After a Range of Delete, all keys should be removed and any
 	// further Range won't invoke the callback. Hence length remains 0.
 	length := 0
@@ -388,16 +403,16 @@ func TestCollectionRangeNestedCall(t *testing.T) {
 		return true
 	})
 	if length != 0 {
-		t.Fatalf("Unexpected vars.Collection size, got %v want %v", length, 0)
+		t.Fatalf("Unexpected vars.Map size, got %v want %v", length, 0)
 	}
 }
 
 func TestExpectedEmptyVars(t *testing.T) {
-	var c vars.Collection
-	if v, loaded := c.Load("test"); loaded || v.Type() != vars.TypeInvalid {
+	var c vars.Map
+	if v, loaded := c.Load("test"); loaded || v.Kind() != vars.KindInvalid {
 		t.Fatalf("Load: did not expect value in new collection got %q", v)
 	}
-	if v, loaded := c.LoadAndDelete("test"); loaded || v.Type() != vars.TypeInvalid {
+	if v, loaded := c.LoadAndDelete("test"); loaded || v.Kind() != vars.KindInvalid {
 		t.Fatalf("LoadAndDelete: did not expect value in new collection got %q", v)
 	}
 
@@ -410,8 +425,21 @@ func TestExpectedEmptyVars(t *testing.T) {
 	if v, loaded := c.LoadOrDefault("test2", c.Get("test")); loaded {
 		t.Fatalf("LoadOrDefault: unexpected value %q", v)
 	}
+	c.Store("test2", c.Get("test"))
 
+	c.Delete("test2")
+	c.Delete(" ")
+	if c.Has("test2") {
+		t.Error("var with key test2 was not deleted")
+	}
 	if v, loaded := c.LoadOrStore("test", "test3"); !loaded {
 		t.Fatalf("LoadOrStore: unexpected value %q", v)
+	}
+
+	if c.Has(" ") {
+		t.Fatal("empty key lookup returned true")
+	}
+	if v := c.Get(" "); !v.Empty() {
+		t.Fatal("empty value lookup returned value")
 	}
 }

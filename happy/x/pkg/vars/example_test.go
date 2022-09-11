@@ -24,13 +24,13 @@ import (
 
 func ExampleValue() {
 	vnil, _ := vars.NewValue(nil)
-	fmt.Printf("%t\n", vnil.Type() == vars.TypeInvalid)
+	fmt.Printf("%t\n", vnil.Kind() == vars.KindInvalid)
 	fmt.Println(vnil.String())
 	fmt.Println("")
 
 	v, _ := vars.NewVariable("eg", 123456, false)
 
-	fmt.Printf("%T %t\n", v.Type(), v.Type() == vars.TypeInt)
+	fmt.Printf("%T %t\n", v.Kind(), v.Kind() == vars.KindInt)
 	fmt.Println(v.String())
 	fmt.Println(v.Underlying())
 	fmt.Println(v.Empty())
@@ -58,7 +58,7 @@ func ExampleValue() {
 	// true
 	// <nil>
 	//
-	// vars.Type true
+	// vars.Kind true
 	// 123456
 	// 123456
 	// false
@@ -83,7 +83,7 @@ func ExampleValue() {
 }
 
 func ExampleCollection() {
-	collection := vars.ParseKeyValSlice([]string{
+	collection, err := vars.ParseMapFromSlice([]string{
 		"key1=val1",
 		"key2=2",
 		"_key31=true",
@@ -91,6 +91,9 @@ func ExampleCollection() {
 		"_key33=true",
 		"_key34=true",
 	})
+	if err != nil {
+		panic("did not expect error: " + err.Error())
+	}
 	collection.Store("other4", "1.001")
 
 	set := collection.LoadWithPrefix("_key3")
@@ -122,7 +125,10 @@ func ExampleCollection_envfile() {
 		return
 	}
 
-	collection := vars.ParseFromBytes(content)
+	collection, err := vars.ParseMapFromBytes(content)
+	if err != nil {
+		panic("did not expect error: " + err.Error())
+	}
 	goarch := collection.Get("GOARCH")
 	fmt.Printf("GOARCH = %s\n", goarch)
 

@@ -41,9 +41,9 @@ func (v Variable) String() string {
 	return v.val.String()
 }
 
-// Type of value.
-func (v Variable) Type() Type {
-	return v.val.typ
+// Kind of value.
+func (v Variable) Kind() Kind {
+	return v.val.kind
 }
 
 func (v Variable) Underlying() any {

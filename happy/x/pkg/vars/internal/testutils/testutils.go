@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testdata
+package testutils
 
 import (
 	"errors"
@@ -23,20 +23,71 @@ import (
 	"strings"
 )
 
-const (
-	ErrNone = 1 << iota
-	ErrInt
-	ErrInt8
-	ErrInt16
-	ErrInt32
-	ErrInt64
-	ErrUint
-	ErrUint8
-	ErrUint16
-	ErrUint32
-	ErrUint64
-	ErrUintptr
-)
+type KindTest struct {
+	Key string
+	In  string
+	// expected
+	Bool       bool
+	Float32    float32
+	Float64    float64
+	Complex64  complex64
+	Complex128 complex128
+	Int        int
+	Int8       int8
+	Int16      int16
+	Int32      int32
+	Int64      int64
+	Uint       uint
+	Uint8      uint8
+	Uint16     uint16
+	Uint32     uint32
+	Uint64     uint64
+	Uintptr    uintptr
+	String     string
+	Bytes      []byte
+	Runes      []rune
+}
+
+func GetKindTests() []KindTest {
+	return []KindTest{
+		{"INT_1", "1", true, 1, 1, complex(1, 0i), complex(1, 0i), 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, "1", []byte{49}, []rune{49}},
+		{"INT_2", "2147483647", false, 2.1474836e+09, 2.147483647e+09, complex(2.147483647e+09, 0i), complex(2.147483647e+09, 0i), 2147483647, 127, 32767, 2147483647, 2147483647, 2147483647, 255, 65535, 2147483647, 2147483647, 2147483647, "2147483647", []byte{50, 49, 52, 55, 52, 56, 51, 54, 52, 55}, []rune{'2', '1', '4', '7', '4', '8', '3', '6', '4', '7'}},
+		{"STRING_1", "asdf", false, 0, 0, complex(0, 0i), complex(0, 0i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "asdf", []byte{97, 115, 100, 102}, []rune{'a', 's', 'd', 'f'}},
+		{"FLOAT_1", "2." + strings.Repeat("2", 40) + "e+1", false, 22.222221, 22.22222222222222, complex(22.22222222222222, 0i), complex(22.22222222222222, 0i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "2.2222222222222222222222222222222222222222e+1", []byte("2.2222222222222222222222222222222222222222e+1"), []rune("2.2222222222222222222222222222222222222222e+1")},
+		{"COMPLEX128_1", "123456700 1e-100", false, 0, 0, complex(1.234567e+08, 0i), complex(1.234567e+08, 1e-100), 0, 127, 32767, 0, 0, 0, 255, 65535, 0, 0, 0, "123456700 1e-100", []byte("123456700 1e-100"), []rune("123456700 1e-100")},
+	}
+}
+
+type NewTest struct {
+	Key string
+	Val any
+}
+
+func GetNewTests() []NewTest {
+	return []NewTest{
+		{"key", "<nil>"},
+		{"key", nil},
+		{"key", "val"},
+		{"bool", true},
+		{"float32", float32(32)},
+		{"float64", float64(64)},
+		{"complex64", complex64(complex(64, 64))},
+		{"complex128", complex128(complex(128, 128))},
+		{"int", int(1)},
+		{"int8", int8(8)},
+		{"int16", int16(16)},
+		{"int32", int32(32)},
+		{"int64", int64(64)},
+		{"uint", uint(1)},
+		{"uint8", uint8(8)},
+		{"uint16", uint16(16)},
+		{"uint32", uint32(32)},
+		{"uint64", uint64(64)},
+		{"uintptr", uintptr(10)},
+		{"string", "string"},
+		// {"byte_arr", []byte{1, 2, 3}},
+	}
+}
 
 type KeyValueParseTest struct {
 	Key      string
@@ -48,34 +99,6 @@ type KeyValueParseTest struct {
 	Fuzz     bool
 }
 
-func NormalizeExpKey(k string) string {
-	// reg := regexp.MustCompile(`"([^"]*)"`)
-	// k = reg.ReplaceAllString(k, "${1}")
-	k = strings.Trim(k, " ")
-	k = strings.Trim(k, "\"")
-	k = strings.Trim(k, "\\\"")
-	k = strings.ReplaceAll(k, `\`, "")
-	k = strings.Trim(k, " ")
-	return k
-}
-
-func NormalizeExpValue(val string) string {
-	val = strings.Trim(val, " ")
-
-	if len(val) > 0 && val[0] == '"' {
-		val = val[1:]
-		if i := len(val) - 1; i >= 0 && val[i] == '"' {
-			val = val[:i]
-		}
-	}
-
-	return val
-}
-
-func NewUnsafeValue(val any) vars.Value {
-	v, _ := vars.NewValue(val)
-	return v
-}
 func GetKeyValueParseTests() []KeyValueParseTest {
 	return []KeyValueParseTest{
 		// keys
@@ -84,20 +107,22 @@ func GetKeyValueParseTests() []KeyValueParseTest {
 		{" key", "key", "value", "value", "value", nil, true},
 		{"key ", "key", "value", "value", "value", nil, true},
 		{" key ", "key", "value", "value", "value", nil, true},
-		{" k e y ", "", "", "", "", vars.ErrKey, true},
+		{" k e y ", "k e y", "", "", "", nil, true},
 		// values
 		{"key", "key", " value ", "value", " value ", nil, true},
 		{"key", "key", " value", "value", " value", nil, true},
 		{"key", "key", "value ", "value", "value ", nil, true},
 		{"key", "key", `expected" value`, `expected" value`, `expected\" value`, nil, true},
 		{`"`, "", "", "", "", vars.ErrKey, false},
-		{" ", "", "", "", "", vars.ErrKeyEmpty, false},
-		{"key", "key", "\x93", "\x93", "\\x93", nil, true},
-		{"key", "key", "\x00", "\x00", "\\x00", nil, true},
-		{"key", "key", "\xff", "\xff", "\\xff", nil, true},
+		{" ", "", "", "", "", vars.ErrKey, false},
+		// {"key", "key", "\x93", "\\x93", "\\x93", nil, true},
+		// {"key", "key", "\x00", "", "", nil, true},
+		// {"key", "key", "\xff", "\xff", "\xff", nil, false},
 		{"key=", "key", "", "=", "=", nil, false},
 		{"=key", "", "", "", "", vars.ErrKey, false},
 		{"key", "key", "=", "=", "=", nil, false},
+		{"###", "###", "value", "value", "value", nil, true},
+		{"key=", "key", "value", "=value", "=value", nil, false},
 	}
 }
 
@@ -325,6 +350,21 @@ func GetComplex128Tests() []Complex128Test {
 	}
 }
 
+const (
+	ErrNone = 1 << iota
+	ErrInt
+	ErrInt8
+	ErrInt16
+	ErrInt32
+	ErrInt64
+	ErrUint
+	ErrUint8
+	ErrUint16
+	ErrUint32
+	ErrUint64
+	ErrUintptr
+)
+
 type IntTest struct {
 	Key   string
 	Val   string
@@ -355,6 +395,7 @@ func GetIntTests() []IntTest {
 		{"INT_4", "1", 1, 1, 1, 1, 1, ErrNone},
 		{"INT_5", "-1", -1, -1, -1, -1, -1, ErrNone},
 		{"INT_6", "12345", 12345, 127, 12345, 12345, 12345, ErrInt8},
+		{"INT_6", "12345", 12_345, 12_7, 12_345, 12_345, 12_345, ErrInt8},
 		{"INT_6", "+12345", 12345, 127, 12345, 12345, 12345, ErrInt8},
 		{"INT_7", "-12345", -12345, -128, -12345, -12345, -12345, ErrInt8},
 		{"INT_8", "012345", 12345, 127, 12345, 12345, 12345, ErrInt8},
@@ -455,72 +496,6 @@ func GetStringTests() []StringTest {
 	}
 }
 
-type TypeTest struct {
-	Key string
-	In  string
-	// expected
-	Bool       bool
-	Float32    float32
-	Float64    float64
-	Complex64  complex64
-	Complex128 complex128
-	Int        int
-	Int8       int8
-	Int16      int16
-	Int32      int32
-	Int64      int64
-	Uint       uint
-	Uint8      uint8
-	Uint16     uint16
-	Uint32     uint32
-	Uint64     uint64
-	Uintptr    uintptr
-	String     string
-	Bytes      []byte
-	Runes      []rune
-}
-
-func GetTypeTests() []TypeTest {
-	return []TypeTest{
-		{"INT_1", "1", true, 1, 1, complex(1, 0i), complex(1, 0i), 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, "1", []byte{49}, []rune{49}},
-		{"INT_2", "2147483647", false, 2.1474836e+09, 2.147483647e+09, complex(2.147483647e+09, 0i), complex(2.147483647e+09, 0i), 2147483647, 127, 32767, 2147483647, 2147483647, 2147483647, 255, 65535, 2147483647, 2147483647, 2147483647, "2147483647", []byte{50, 49, 52, 55, 52, 56, 51, 54, 52, 55}, []rune{'2', '1', '4', '7', '4', '8', '3', '6', '4', '7'}},
-		{"STRING_1", "asdf", false, 0, 0, complex(0, 0i), complex(0, 0i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "asdf", []byte{97, 115, 100, 102}, []rune{'a', 's', 'd', 'f'}},
-		{"FLOAT_1", "2." + strings.Repeat("2", 40) + "e+1", false, 22.222221, 22.22222222222222, complex(22.22222222222222, 0i), complex(22.22222222222222, 0i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "2.2222222222222222222222222222222222222222e+1", []byte("2.2222222222222222222222222222222222222222e+1"), []rune("2.2222222222222222222222222222222222222222e+1")},
-		{"COMPLEX128_1", "123456700 1e-100", false, 0, 0, complex(1.234567e+08, 0i), complex(1.234567e+08, 1e-100), 0, 127, 32767, 0, 0, 0, 255, 65535, 0, 0, 0, "123456700 1e-100", []byte("123456700 1e-100"), []rune("123456700 1e-100")},
-	}
-}
-
-type NewTest struct {
-	Key string
-	Val any
-}
-
-func GetNewTests() []NewTest {
-	return []NewTest{
-		{"key", "<nil>"},
-		{"key", nil},
-		{"key", "val"},
-		{"bool", true},
-		{"float32", float32(32)},
-		{"float64", float64(64)},
-		{"complex64", complex64(complex(64, 64))},
-		{"complex128", complex128(complex(128, 128))},
-		{"int", int(1)},
-		{"int8", int8(8)},
-		{"int16", int16(16)},
-		{"int32", int32(32)},
-		{"int64", int64(64)},
-		{"uint", uint(1)},
-		{"uint8", uint8(8)},
-		{"uint16", uint16(16)},
-		{"uint32", uint32(32)},
-		{"uint64", uint64(64)},
-		{"uintptr", uintptr(10)},
-		{"string", "string"},
-		// {"byte_arr", []byte{1, 2, 3}},
-	}
-}
-
 func OnErrorMsg(key string, val any) string {
 	return fmt.Sprintf("key(%v) = val(%v)", key, val)
 }
@@ -579,4 +554,9 @@ func GenStringTestBytes() []byte {
 	// add empty line
 	out = append(out, []byte("")...)
 	return out
+}
+
+func NewUnsafeValue(val any) vars.Value {
+	v, _ := vars.NewValue(val)
+	return v
 }

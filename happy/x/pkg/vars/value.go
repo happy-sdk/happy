@@ -14,31 +14,49 @@
 
 package vars
 
-import (
-	"fmt"
-	"strings"
-)
-
-// Value describes the value.
-type Value struct {
-	typ Type
-	str string
-	raw any
-	// marks that underlying type was custom type.
-	// Custom Value may have its str set with Stringer
-	// so converion between types must be made from undelying value.
-	// Take for e.g time.Duration(123456) which is int64 while
-	// it's string value will be 123.456µs which means we can not parse
-	// another types from that string.
-	isCustom bool
-}
-
-func (v Value) AsType(typ Type) (Value, error) {
-	if v.raw == nil {
-		return EmptyValue, fmt.Errorf("%w: underlying value is <nil>", ErrValue)
+type (
+	// Value describes the arbitrary value.
+	// Value can be typed when value Kind is detected or forced when parsing.
+	// All composite types and type alias values are converted into basic type.
+	// Since Value holds its raw value and cached sting representation then.
+	// All non basic types which successfully convert into basic type and
+	// implement fmt.Stringer will have their string value set to value returned
+	// by val.String().
+	// Value is not modifiable after created and is safe for concurrent use.
+	Value struct {
+		// kind represents underlying value type. It is KindInvalid when parsing
+		// initial value fails or source value is not one of the supported Kind's.
+		kind Kind
+		// str holds cached string representation for underlying value.
+		str string
+		// raw is original value type. It can only be builtin type.
+		// That side effect should be taken into account, that .Underlying()
+		// may return builtin type of original instead of value
+		// what was initially provided.
+		raw any
+		// isCustom marks that underlying type was custom type.
+		// Custom Value may have its str set with Stringer
+		// so converion between types must be made from undelying value.
+		// Take for e.g time.Duration(123456) which is int64 while
+		// it's string value will be 123.456µs which means we can not parse
+		// another types from that string.
+		isCustom bool
 	}
 
-	return NewTypedValue(v.raw, typ)
+	// ValueIface is minimal interface for Value to implement by thirtparty libraries.
+	ValueIface interface {
+		// String MUST return string value Value
+		String() string
+		// Underlying MUST return original value from what this
+		// Value was created.
+		Underlying() any
+	}
+)
+
+// CloneAs takes argument Kind and tries to create new typed value from this value.
+// Error returned would be same as calling NewTypedValue(v.Underlying())
+func (v Value) CloneAs(kind Kind) (Value, error) {
+	return NewValueAs(v.raw, kind)
 }
 
 // String returns string representation of the Value.
@@ -46,11 +64,13 @@ func (v Value) String() string {
 	return v.str
 }
 
-// Type of value.
-func (v Value) Type() Type {
-	return v.typ
+// Kind of value is reporting current Values Kind and may not reflect
+// original underlying values type.
+func (v Value) Kind() Kind {
+	return v.kind
 }
 
+// Underlying returns value from what this Value was created.
 func (v Value) Underlying() any {
 	return v.raw
 }
@@ -63,21 +83,21 @@ func (v Value) Empty() bool {
 // Len returns the length of the string representation of the Value.
 func (v Value) Len() int {
 	if v.isCustom {
-		return len(fmt.Sprint(v.raw))
+		return len(v.str)
 	}
 	return len(v.str)
 }
 
-// Bool returns boolean representation of the var Value.
+// Bool returns boolean representation of the Value.
 func (v Value) Bool() (bool, error) {
-	if v.typ == TypeBool {
+	if v.kind == KindBool {
 		if vv, ok := v.raw.(bool); ok {
 			return vv, nil
 		}
 	}
 
 	if v.isCustom {
-		vv, err := v.AsType(TypeBool)
+		vv, err := v.CloneAs(KindBool)
 		if err != nil {
 			return false, err
 		}
@@ -89,13 +109,13 @@ func (v Value) Bool() (bool, error) {
 
 // Int returns int representation of the Value.
 func (v Value) Int() (int, error) {
-	if v.typ == TypeInt {
+	if v.kind == KindInt {
 		if vv, ok := v.raw.(int); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeInt)
+		vv, err := v.CloneAs(KindInt)
 		if err != nil {
 			return 0, err
 		}
@@ -107,13 +127,13 @@ func (v Value) Int() (int, error) {
 
 // Int8 returns int8 representation of the Value.
 func (v Value) Int8() (int8, error) {
-	if v.typ == TypeInt8 {
+	if v.kind == KindInt8 {
 		if vv, ok := v.raw.(int8); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeInt8)
+		vv, err := v.CloneAs(KindInt8)
 		if err != nil {
 			return 0, err
 		}
@@ -125,7 +145,7 @@ func (v Value) Int8() (int8, error) {
 
 // Int16 returns int16 representation of the Value.
 func (v Value) Int16() (int16, error) {
-	if v.typ == TypeInt16 {
+	if v.kind == KindInt16 {
 		if vv, ok := v.raw.(int16); ok {
 			return vv, nil
 		}
@@ -136,12 +156,12 @@ func (v Value) Int16() (int16, error) {
 		err error
 	)
 
-	if v.typ == TypeInt8 {
+	if v.kind == KindInt8 {
 		var vi int8
 		vi, err = v.Int8()
 		return int16(vi), err
 	} else if v.isCustom {
-		vv, err := v.AsType(TypeInt16)
+		vv, err := v.CloneAs(KindInt16)
 		if err != nil {
 			return 0, err
 		}
@@ -155,7 +175,7 @@ func (v Value) Int16() (int16, error) {
 
 // Int32 returns int32 representation of the Value.
 func (v Value) Int32() (int32, error) {
-	if v.typ == TypeInt32 {
+	if v.kind == KindInt32 {
 		if vv, ok := v.raw.(int32); ok {
 			return vv, nil
 		}
@@ -166,22 +186,22 @@ func (v Value) Int32() (int32, error) {
 		err error
 	)
 
-	switch v.typ {
-	case TypeInt:
+	switch v.kind {
+	case KindInt:
 		var vi int
 		vi, err = v.Int()
 		i = int32(vi)
-	case TypeInt8:
+	case KindInt8:
 		var vi int8
 		vi, err = v.Int8()
 		i = int32(vi)
-	case TypeInt16:
+	case KindInt16:
 		var vi int16
 		vi, err = v.Int16()
 		i = int32(vi)
 	default:
 		if v.isCustom {
-			vv, err := v.AsType(TypeInt32)
+			vv, err := v.CloneAs(KindInt32)
 			if err != nil {
 				return 0, err
 			}
@@ -196,7 +216,7 @@ func (v Value) Int32() (int32, error) {
 
 // Int64 returns int64 representation of the Value.
 func (v Value) Int64() (int64, error) {
-	if v.typ == TypeInt64 {
+	if v.kind == KindInt64 {
 		if vv, ok := v.raw.(int64); ok {
 			return vv, nil
 		}
@@ -207,26 +227,26 @@ func (v Value) Int64() (int64, error) {
 		err error
 	)
 
-	switch v.typ {
-	case TypeInt:
+	switch v.kind {
+	case KindInt:
 		var vi int
 		vi, err = v.Int()
 		i = int64(vi)
-	case TypeInt8:
+	case KindInt8:
 		var vi int8
 		vi, err = v.Int8()
 		i = int64(vi)
-	case TypeInt16:
+	case KindInt16:
 		var vi int16
 		vi, err = v.Int16()
 		i = int64(vi)
-	case TypeInt32:
+	case KindInt32:
 		var vi int32
 		vi, err = v.Int32()
 		i = int64(vi)
 	default:
 		if v.isCustom {
-			vv, err := v.AsType(TypeInt64)
+			vv, err := v.CloneAs(KindInt64)
 			if err != nil {
 				return 0, err
 			}
@@ -239,13 +259,13 @@ func (v Value) Int64() (int64, error) {
 
 // Uint returns uint representation of the Value.
 func (v Value) Uint() (uint, error) {
-	if v.typ == TypeUint {
+	if v.kind == KindUint {
 		if vv, ok := v.raw.(uint); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeUint)
+		vv, err := v.CloneAs(KindUint)
 		if err != nil {
 			return 0, err
 		}
@@ -257,13 +277,13 @@ func (v Value) Uint() (uint, error) {
 
 // Uint8 returns uint8 representation of the Value.
 func (v Value) Uint8() (uint8, error) {
-	if v.typ == TypeUint8 {
+	if v.kind == KindUint8 {
 		if vv, ok := v.raw.(uint8); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeUint8)
+		vv, err := v.CloneAs(KindUint8)
 		if err != nil {
 			return 0, err
 		}
@@ -275,7 +295,7 @@ func (v Value) Uint8() (uint8, error) {
 
 // Uint16 returns uint16 representation of the Value.
 func (v Value) Uint16() (uint16, error) {
-	if v.typ == TypeUint16 {
+	if v.kind == KindUint16 {
 		if vv, ok := v.raw.(uint16); ok {
 			return vv, nil
 		}
@@ -286,12 +306,12 @@ func (v Value) Uint16() (uint16, error) {
 		err error
 	)
 
-	if v.typ == TypeInt8 {
+	if v.kind == KindInt8 {
 		var vi uint8
 		vi, err = v.Uint8()
 		return uint16(vi), err
 	} else if v.isCustom {
-		vv, err := v.AsType(TypeUint16)
+		vv, err := v.CloneAs(KindUint16)
 		if err != nil {
 			return 0, err
 		}
@@ -305,7 +325,7 @@ func (v Value) Uint16() (uint16, error) {
 
 // Uint32 returns uint32 representation of the Value.
 func (v Value) Uint32() (uint32, error) {
-	if v.typ == TypeUint32 {
+	if v.kind == KindUint32 {
 		if vv, ok := v.raw.(uint32); ok {
 			return vv, nil
 		}
@@ -316,22 +336,22 @@ func (v Value) Uint32() (uint32, error) {
 		err error
 	)
 
-	switch v.typ {
-	case TypeInt:
+	switch v.kind {
+	case KindInt:
 		var vi uint
 		vi, err = v.Uint()
 		i = uint32(vi)
-	case TypeInt8:
+	case KindInt8:
 		var vi uint8
 		vi, err = v.Uint8()
 		i = uint32(vi)
-	case TypeInt16:
+	case KindInt16:
 		var vi uint16
 		vi, err = v.Uint16()
 		i = uint32(vi)
 	default:
 		if v.isCustom {
-			vv, err := v.AsType(TypeUint32)
+			vv, err := v.CloneAs(KindUint32)
 			if err != nil {
 				return 0, err
 			}
@@ -346,7 +366,7 @@ func (v Value) Uint32() (uint32, error) {
 
 // Uint64 returns uint64 representation of the Value.
 func (v Value) Uint64() (uint64, error) {
-	if v.typ == TypeUint64 {
+	if v.kind == KindUint64 {
 		if vv, ok := v.raw.(uint64); ok {
 			return vv, nil
 		}
@@ -356,26 +376,26 @@ func (v Value) Uint64() (uint64, error) {
 		err error
 	)
 
-	switch v.typ {
-	case TypeInt:
+	switch v.kind {
+	case KindInt:
 		var vi uint
 		vi, err = v.Uint()
 		i = uint64(vi)
-	case TypeInt8:
+	case KindInt8:
 		var vi uint8
 		vi, err = v.Uint8()
 		i = uint64(vi)
-	case TypeInt16:
+	case KindInt16:
 		var vi uint16
 		vi, err = v.Uint16()
 		i = uint64(vi)
-	case TypeInt32:
+	case KindInt32:
 		var vi uint32
 		vi, err = v.Uint32()
 		i = uint64(vi)
 	default:
 		if v.isCustom {
-			vv, err := v.AsType(TypeUint64)
+			vv, err := v.CloneAs(KindUint64)
 			if err != nil {
 				return 0, err
 			}
@@ -386,15 +406,15 @@ func (v Value) Uint64() (uint64, error) {
 	return i, err
 }
 
-// Float32 returns Float32 representation of the Value.
+// Float32 returns float32 representation of the Value.
 func (v Value) Float32() (float32, error) {
-	if v.typ == TypeFloat32 {
+	if v.kind == KindFloat32 {
 		if vv, ok := v.raw.(float32); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeFloat32)
+		vv, err := v.CloneAs(KindFloat32)
 		if err != nil {
 			return 0, err
 		}
@@ -406,13 +426,13 @@ func (v Value) Float32() (float32, error) {
 
 // Float64 returns float64 representation of Value.
 func (v Value) Float64() (float64, error) {
-	if v.typ == TypeFloat64 {
+	if v.kind == KindFloat64 {
 		if vv, ok := v.raw.(float64); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeFloat64)
+		vv, err := v.CloneAs(KindFloat64)
 		if err != nil {
 			return 0, err
 		}
@@ -424,13 +444,13 @@ func (v Value) Float64() (float64, error) {
 
 // Complex64 returns complex64 representation of the Value.
 func (v Value) Complex64() (complex64, error) {
-	if v.typ == TypeComplex64 {
+	if v.kind == KindComplex64 {
 		if vv, ok := v.raw.(complex64); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeComplex64)
+		vv, err := v.CloneAs(KindComplex64)
 		if err != nil {
 			return 0, err
 		}
@@ -442,13 +462,13 @@ func (v Value) Complex64() (complex64, error) {
 
 // Complex128 returns complex128 representation of the Value.
 func (v Value) Complex128() (complex128, error) {
-	if v.typ == TypeComplex128 {
+	if v.kind == KindComplex128 {
 		if vv, ok := v.raw.(complex128); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeComplex128)
+		vv, err := v.CloneAs(KindComplex128)
 		if err != nil {
 			return 0, err
 		}
@@ -460,13 +480,13 @@ func (v Value) Complex128() (complex128, error) {
 
 // Uintptr returns uintptr representation of the Value.
 func (v Value) Uintptr() (uintptr, error) {
-	if v.typ == TypeUintptr {
+	if v.kind == KindUintptr {
 		if vv, ok := v.raw.(uintptr); ok {
 			return vv, nil
 		}
 	}
 	if v.isCustom {
-		vv, err := v.AsType(TypeUintptr)
+		vv, err := v.CloneAs(KindUintptr)
 		if err != nil {
 			return 0, err
 		}
@@ -476,7 +496,75 @@ func (v Value) Uintptr() (uintptr, error) {
 	return uintptr(val), err
 }
 
-// Fields calls strings.Fields on Value string.
+// Fields is like calling strings.Fields on Value.String().
+// It returns slice of strings (words) found in Value string representation.
 func (v Value) Fields() []string {
-	return strings.Fields(v.str)
+	return stringsFields(v.str)
+}
+
+var valueAsciiStripAround = [256]uint8{
+	'\t': 1, '\n': 1, '\v': 1, '\f': 1, '\r': 1, ' ': 1,
+}
+
+var asciiQuotes = [256]uint8{
+	'"': 1, '\'': 1, '`': 1, '\\': 1,
+}
+
+func trimAndUnquoteValue(str string) string {
+	// Fast path for ASCII: look for the first ASCII allwed byte.
+	start := 0
+
+	for ; start < len(str); start++ {
+		c := str[start]
+		if c >= utf8RuneSelf {
+			// If we run into a non-ASCII byte, fall back to the
+			// slower unicode-aware method on the remaining bytes
+			return stringsTrimFunc(str[start:], valueUnicodeIsNotAllowedAround)
+		}
+		if asciiQuotes[c] == 1 {
+			start++
+			break
+		}
+		if c > 32 && valueAsciiStripAround[c] == 0 {
+			break
+		}
+	}
+
+	// Now look for the first ASCII allwed byte from the end.
+	stop := len(str)
+	for ; stop > start; stop-- {
+		c := str[stop-1]
+		if c >= utf8RuneSelf {
+			// start has been already trimmed above, should trim end only
+			return stringsTrimRightFunc(str[start:stop], valueUnicodeIsNotAllowedAround)
+		}
+		if asciiQuotes[c] == 1 {
+			stop--
+			c2 := str[stop-1]
+			if c2 == '\\' {
+				stop--
+			}
+			break
+		}
+		if c > 32 && valueAsciiStripAround[c] == 0 {
+			break
+		}
+	}
+
+	return str[start:stop]
+}
+
+func valueUnicodeIsNotAllowedAround(r rune) bool {
+	// This property isn't the same as Z; special-case it.
+	if uint32(r) <= unicodeMaxLatin1 {
+		switch r {
+		// spaces
+		case '\t', '\n', '\v', '\f', '\r', ' ', 0x85, 0xA0:
+		case '\\':
+		case '"', '\'', '`':
+			return true
+		}
+		return false
+	}
+	return unicodeIsExcludingLatin(unicodeWhiteSpace, r)
 }

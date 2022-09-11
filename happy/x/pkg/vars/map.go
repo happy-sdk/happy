@@ -15,29 +15,29 @@
 package vars
 
 import (
-	"bytes"
-	"fmt"
-	"strings"
 	"sync"
-	"sync/atomic"
 )
 
 // Collection is collection of Variables safe for concurrent use.
-type Collection struct {
+type Map struct {
 	mu  sync.RWMutex
 	len int64
 	db  map[string]Variable
 }
 
 // Delete deletes the value for a key.
-func (c *Collection) Delete(key string) {
+func (c *Map) Delete(key string) {
 	_, _ = c.LoadAndDelete(key)
 }
 
 // Get retrieves the value of the variable named by the key.
 // It returns the value, which will be empty string if the variable is not set
 // or value was empty.
-func (c *Collection) Get(k string) (v Variable) {
+func (c *Map) Get(key string) (v Variable) {
+	k, err := parseKey(key)
+	if err != nil {
+		return
+	}
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -49,8 +49,8 @@ func (c *Collection) Get(k string) (v Variable) {
 }
 
 // GetWithPrefix return all variables with prefix if any as map[].
-func (c *Collection) LoadWithPrefix(prfx string) *Collection {
-	vars := new(Collection)
+func (c *Map) LoadWithPrefix(prfx string) *Map {
+	vars := new(Map)
 	c.Range(func(v Variable) bool {
 		key := v.Key()
 		if len(key) >= len(prfx) && key[0:len(prfx)] == prfx {
@@ -62,15 +62,21 @@ func (c *Collection) LoadWithPrefix(prfx string) *Collection {
 }
 
 // Has reprts whether given variable  exists.
-func (c *Collection) Has(k string) bool {
+func (c *Map) Has(key string) bool {
+	k, err := parseKey(key)
+	if err != nil {
+		return false
+	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
 	_, ok := c.db[k]
 	return ok
 }
 
 // Len of collection.
-func (c *Collection) Len() int {
+func (c *Map) Len() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return int(c.len)
@@ -79,7 +85,7 @@ func (c *Collection) Len() int {
 // Load returns the variable stored in the Collection for a key,
 // or EmptyVar if no value is present.
 // The ok result indicates whether variable was found in the Collection.
-func (c *Collection) Load(key string) (v Variable, ok bool) {
+func (c *Map) Load(key string) (v Variable, ok bool) {
 	if !c.Has(key) {
 		return EmptyVariable, false
 	}
@@ -88,7 +94,7 @@ func (c *Collection) Load(key string) (v Variable, ok bool) {
 
 // LoadAndDelete deletes the value for a key, returning the previous value if any.
 // The loaded result reports whether the key was present.
-func (c *Collection) LoadAndDelete(key string) (v Variable, loaded bool) {
+func (c *Map) LoadAndDelete(key string) (v Variable, loaded bool) {
 	if !c.Has(key) {
 		return EmptyVariable, false
 	}
@@ -96,8 +102,8 @@ func (c *Collection) LoadAndDelete(key string) (v Variable, loaded bool) {
 	v = c.Get(key)
 	loaded = true
 	c.mu.Lock()
-	delete(c.db, key)
-	atomic.AddInt64(&c.len, -1)
+	delete(c.db, v.Key())
+	syncAtomicAddInt64(&c.len, -1)
 	c.mu.Unlock()
 	return
 }
@@ -105,34 +111,40 @@ func (c *Collection) LoadAndDelete(key string) (v Variable, loaded bool) {
 // LoadOrDefault returns the existing value for the key if present.
 // Much like LoadOrStore, but second argument willl be returned as
 // Value whithout being stored into Collection.
-func (c *Collection) LoadOrDefault(key string, value any) (v Variable, loaded bool) {
+func (c *Map) LoadOrDefault(key string, value any) (v Variable, loaded bool) {
+	k, err := parseKey(key)
+	if err != nil {
+		return EmptyVariable, false
+	}
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	// existing
-	if val, ok := c.db[key]; ok {
+	if val, ok := c.db[k]; ok {
 		return val, true
 	}
-	if len(key) > 0 {
+	if len(k) > 0 {
 		if def, ok := value.(Variable); ok {
 			return def, false
 		}
 	}
-	v, _ = NewVariable(key, value, false)
+	v, _ = NewVariable(k, value, false)
 	return v, false
 }
 
 // LoadOrStore returns the existing value for the key if present.
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
-func (c *Collection) LoadOrStore(key string, value any) (actual Variable, loaded bool) {
-	k := strings.TrimSpace(key)
-	if c.Has(k) {
-		return c.Get(key), true
-	} else {
+func (c *Map) LoadOrStore(key string, value any) (actual Variable, loaded bool) {
+	k, err := parseKey(key)
+	if err != nil {
+		return EmptyVariable, false
+	}
+	loaded = c.Has(k)
+	if !loaded {
 		c.Store(k, value)
 	}
-	return c.Get(key), false
+	return c.Get(k), loaded
 }
 
 // func (c *Collection) MarshalJSON() ([]byte, error) {
@@ -154,7 +166,7 @@ func (c *Collection) LoadOrStore(key string, value any) (actual Variable, loaded
 //
 // Range may be O(N) with the number of elements in the map even if f returns
 // false after a constant number of calls.
-func (c *Collection) Range(f func(v Variable) bool) {
+func (c *Map) Range(f func(v Variable) bool) {
 	c.mu.RLock()
 	for _, v := range c.db {
 		c.mu.RUnlock()
@@ -168,8 +180,11 @@ func (c *Collection) Range(f func(v Variable) bool) {
 // If it fails to parse val then key will be set to
 // EmptyValue with TypeInvalid. Safest would be to
 // store Value which error has been already checked.
-func (c *Collection) Store(key string, value any) {
-	key = strings.TrimSpace(key)
+func (c *Map) Store(k string, value any) {
+	key, err := parseKey(k)
+	if err != nil {
+		return
+	}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -184,27 +199,30 @@ func (c *Collection) Store(key string, value any) {
 		c.db[key], _ = NewVariable(key, value, false)
 	}
 
-	atomic.AddInt64(&c.len, 1)
+	syncAtomicAddInt64(&c.len, 1)
 }
 
 // ToBytes returns []byte containing
 // key = "value"\n.
-func (c *Collection) ToBytes() []byte {
+func (c *Map) ToBytes() []byte {
 	s := c.ToKeyValSlice()
-	b := bytes.Buffer{}
+
+	p := getParser()
+	defer p.free()
+
 	for _, line := range s {
-		b.WriteString(line + "\n")
+		p.fmt.string(line + "\n")
 	}
-	return b.Bytes()
+	return p.buf
 }
 
 // ToKeyValSlice produces []string slice of strings in format key = "value".
-func (c *Collection) ToKeyValSlice() []string {
+func (c *Map) ToKeyValSlice() []string {
 	r := []string{}
 	c.Range(func(v Variable) bool {
 		// we can do it directly on interface value since they all are Values
 		// implementing Stringer
-		r = append(r, fmt.Sprintf("%s=%q", v.Key(), v.String()))
+		r = append(r, v.Key()+"=\""+v.String()+"\"")
 		return true
 	})
 	return r
