@@ -16,10 +16,10 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/sdk/addons/servers/eventsource"
+	"github.com/mkungla/happy/x/contrib/addons/servers/eventsource"
 )
 
 func eventsourceAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {
 	srv := eventsource.New(options...)
-	return srv.Addon
+	return srv.GetAddonCreateFunc()
 }

@@ -16,10 +16,10 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/sdk/addons/wasm"
+	"github.com/mkungla/happy/x/contrib/addons/wasm"
 )
 
 func wasmAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {
 	srv := wasm.New(options...)
-	return srv.Addon
+	return srv.GetAddonCreateFunc()
 }

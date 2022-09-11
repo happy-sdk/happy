@@ -25,8 +25,6 @@ import (
 
 	"github.com/mkungla/happy"
 
-	"github.com/mkungla/happy/x/sdk/addons/servers/fileserver"
-	"github.com/mkungla/happy/x/sdk/addons/servers/proxyserver"
 	"github.com/mkungla/happy/x/sdk/commands"
 	"github.com/mkungla/happy/x/sdk/flags"
 	"github.com/mkungla/happy/x/sdk/logging/loggers/devlog"
@@ -37,13 +35,16 @@ import (
 	"github.com/mkungla/happy/x/happyx"
 	"github.com/mkungla/happy/x/monitor"
 	"github.com/mkungla/happy/x/session"
+
+	"github.com/mkungla/happy/x/contrib/addons/servers/fileserver"
+	"github.com/mkungla/happy/x/contrib/addons/servers/proxyserver"
 )
 
 //go:embed assets/*
 var assets embed.FS
 
 func main() {
-	conf := configurator.New(
+	conf, err := configurator.New(
 		// Option for configurator should have one of the following prefixes
 		// "app."       application config options
 		// "log."       logger options
@@ -52,17 +53,19 @@ func main() {
 		// "addon[<addon-slug>]." addon specific default options
 		happyx.Option("app.slug", "kitchen-sink"),
 		happyx.Option("app.title", "Happy SDK Kitchen Sink"),
-		happyx.Option("log.level", happy.LOG_DEBUG),
+		happyx.Option("log.level", happy.LOG_SYSTEMDEBUG),
 	)
 
+	// here we set
 	logger := devlog.New(
 		os.Stderr,
-		happyx.Option("colors", true),
+		happyx.Option("level", happy.LOG_SYSTEMDEBUG),
+		happyx.Option("colors", false),
+		happyx.Option("prefix", "happy"),
 		// following marks option as readonly however behaviour still depends
 		// in on underlying implementation do respect readonly values.
 		// This is good example why you should use github.com/mkungla/happy/x/testsuite
 		// to test your implementations, since that will test against such things.
-		happyx.ReadOnlyOption("prefix", "happy"),
 		happyx.ReadOnlyOption("filenames.level", happy.LOG_NOTICE),
 		happyx.ReadOnlyOption("filenames.long", false),
 		happyx.ReadOnlyOption("ts.date", true),
@@ -70,6 +73,12 @@ func main() {
 		happyx.ReadOnlyOption("ts.microseconds", true),
 		happyx.ReadOnlyOption("ts.utc", false), // utc true will show UTC time instead
 	)
+
+	// check configurator here so that we can log it.
+	if err != nil {
+		logger.Error(err)
+		return
+	}
 
 	// Logger to be used
 	conf.UseLogger(logger)
@@ -97,10 +106,9 @@ func main() {
 
 	conf.UseEngine(e)
 
-	// Create application instance
+	// Create application instance and
+	// apply configuration to application
 	app, err := application.New(conf)
-
-	// Apply configuration to application
 	if err != nil {
 		logger.Emergencyf("failed to apply configuration: %s", err)
 		return
@@ -109,20 +117,19 @@ func main() {
 	// ORDER OF FOLLOWING SETUP CALS DOES NOT MATTER
 
 	// Add single custom addon
-	app.AddAddon(customAddon())
+	app.RegisterAddon(customAddon())
+	app.RegisterAddon( // simple static file server
+		fileserver.New(
+			happyx.ReadOnlyOption("directory", "./public/files"),
+			happyx.ReadOnlyOption("port", 9501),
+			happyx.ReadOnlyOption("fileloggerservice.level", happy.LOG_INFO),
+		))
 
-	app.AddAddonCreateFuncs(
+	app.RegisterAddons(
 		// simple proxy server to serve all services
 		// under one port
 		proxyserver.New(
 			happyx.ReadOnlyOption("port", 9500),
-			happyx.ReadOnlyOption("fileloggerservice.level", happy.LOG_INFO),
-		),
-
-		// simple static file server
-		fileserver.New(
-			happyx.ReadOnlyOption("directory", "./public/files"),
-			happyx.ReadOnlyOption("port", 9501),
 			happyx.ReadOnlyOption("fileloggerservice.level", happy.LOG_INFO),
 		),
 
@@ -201,7 +208,7 @@ func main() {
 	app.AddFlag(flags.XFlag())       // -x (prints commands as they are executed)
 	app.AddFlag(flags.HelpFlag())    // -h, --help (help for app and comands)
 
-	app.AddFlagCreateFunc(
+	app.AddFlags(
 		// Add common log verbosity flags provided by SDK
 		// -v -verbose, --debug, --system-debug
 		flags.LoggerFlags()...,
@@ -210,10 +217,10 @@ func main() {
 	app.AddSubCommand(commands.BashCompletion()) // adds bash completion support
 	app.AddSubCommand(commands.Env())            // prints application env invormation
 
-	app.AddSubCommandCreateFunc(nil)
+	app.AddSubCommands(nil)
 
 	// application
-	app.AddService(customService())
+	app.RegisterService(customService())
 
 	// mark that service to be required always
 	// regardless of sub command
@@ -221,7 +228,7 @@ func main() {
 
 	// behaves like AddService but enables you to add services in one go
 	// using slice of happy.ServiceCreateFunc's
-	app.AddServiceCreateFuncs(
+	app.RegisterServices(
 		// Example passive logging service
 		// Other services can direct logs to this service.
 		fileloggerserviceServiceSetup(

@@ -16,10 +16,13 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/sdk/addons/servers/webserver"
+	"github.com/mkungla/happy/x/contrib/addons/servers/webserver"
 )
 
 func webserverAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {
-	srv := webserver.New(options...)
-	return srv.Addon
+	return func() (happy.Addon, happy.Error) {
+		srv := webserver.New(options...)
+
+		return srv, nil
+	}
 }

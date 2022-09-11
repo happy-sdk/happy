@@ -16,10 +16,10 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/sdk/addons/servers/restapi"
+	"github.com/mkungla/happy/x/contrib/addons/servers/restapi"
 )
 
 func restapiAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {
 	srv := restapi.New(options...)
-	return srv.Addon
+	return srv.GetAddonCreateFunc()
 }

@@ -14,8 +14,11 @@
 
 package main
 
-import "github.com/mkungla/happy"
+import (
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/sdk"
+)
 
 func customAddon() happy.Addon {
-	return nil
+	return sdk.NewAddonSkeleton("custom", "0.0.1")
 }

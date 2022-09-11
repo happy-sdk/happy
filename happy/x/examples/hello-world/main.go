@@ -14,42 +14,42 @@
 
 package main
 
-import (
-	"fmt"
+// import (
+// 	"fmt"
 
-	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/sdk/application"
-)
+// 	"github.com/mkungla/happy"
+// 	"github.com/mkungla/happy/x/sdk/application"
+// )
 
-func main() {
-	// Create application instance
-	// With this minimal example we do not provide Configurator
-	// and expect application implementation auto configure it for us.
-	app, err := application.New(nil)
+// func main() {
+// 	// Create application instance
+// 	// With this minimal example we do not provide Configurator
+// 	// and expect application implementation auto configure it for us.
+// 	app, err := application.New(nil)
 
-	// Apply configuration to application
-	if err != nil {
-		app.Log().Error(err)
-		return
-	}
+// 	// Apply configuration to application
+// 	if err != nil {
+// 		app.Log().Error(err)
+// 		return
+// 	}
 
-	// Minimal example what is available by default
-	app.Do(func(ctx happy.Session, args happy.Variables, assets happy.FS) error {
+// 	// Minimal example what is available by default
+// 	app.Do(func(ctx happy.Session, args happy.Variables, assets happy.FS) error {
 
-		fmt.Println("SESSION")
-		ctx.RangeOptions(func(key string, value happy.Value) bool {
-			fmt.Println("key: ", key, " value: ", value)
-			return true
-		})
+// 		fmt.Println("SESSION")
+// 		ctx.RangeOptions(func(key string, value happy.Value) bool {
+// 			fmt.Println("key: ", key, " value: ", value)
+// 			return true
+// 		})
 
-		fmt.Println("SETTINGS")
-		ctx.Settings().RangeOptions(func(key string, value happy.Value) bool {
-			fmt.Println("key: ", key, " value: ", value)
-			return true
-		})
+// 		fmt.Println("SETTINGS")
+// 		ctx.Settings().RangeOptions(func(key string, value happy.Value) bool {
+// 			fmt.Println("key: ", key, " value: ", value)
+// 			return true
+// 		})
 
-		return nil
-	})
+// 		return nil
+// 	})
 
-	app.Main()
-}
+// 	app.Main()
+// }

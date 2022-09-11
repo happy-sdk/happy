@@ -16,10 +16,10 @@ package main
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/sdk/addons/servers/websocket"
+	"github.com/mkungla/happy/x/contrib/addons/servers/websocket"
 )
 
 func websocketAddonSetup(options ...happy.OptionWriteFunc) happy.AddonCreateFunc {
 	srv := websocket.New(options...)
-	return srv.Addon
+	return srv.GetAddonCreateFunc()
 }
