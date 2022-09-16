@@ -111,6 +111,11 @@ type (
 	}
 
 	Logger interface {
+		// LogInitialization should be called once
+		// and log all log entries matchin LogPriority.
+		// e.g. Used in Application after setting LogPriority from flag.
+		LogInitialization()
+
 		GetPriority() LogPriority
 		SetPriority(LogPriority)
 

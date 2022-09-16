@@ -15,6 +15,7 @@
 package application
 
 import (
+	"fmt"
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/pkg/varflag"
 	"os"
@@ -42,6 +43,12 @@ func (a *APP) setup() happy.Error {
 		a.Log().SetPriority(happy.LOG_DEBUG)
 	} else if a.flag("system-debug").Present() {
 		a.Log().SetPriority(happy.LOG_SYSTEMDEBUG)
+	}
+	a.Log().LogInitialization() // logs init log entires if needed
+
+	if a.flag("version").Present() {
+		fmt.Println("version")
+		a.Exit(0)
 	}
 
 	dur := time.Since(a.initialized)

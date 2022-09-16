@@ -73,6 +73,10 @@ type Logger struct {
 	tsutc          bool
 
 	last time.Time
+
+	initialized       bool
+	logInitialization sync.Once
+	initEntries       []entry
 }
 
 func Default() happy.Logger { return std }
@@ -117,6 +121,28 @@ func New(out io.Writer, options ...happy.OptionWriteFunc) happy.Logger {
 		l.filenamesPre = wd
 	}
 	return l
+}
+
+type entry struct {
+	lvl       happy.LogPriority
+	ltype     string
+	calldepth int
+	s         string
+	fg, bg    color
+}
+
+func (l *Logger) LogInitialization() {
+	l.mu.Lock()
+	if l.initialized {
+		return
+	}
+	l.initialized = true
+	l.mu.Unlock()
+	l.logInitialization.Do(func() {
+		for _, e := range l.initEntries {
+			l.output(e.lvl, e.ltype, e.calldepth, e.s, e.fg, e.bg)
+		}
+	})
 }
 
 // API
@@ -367,6 +393,9 @@ func (l *Logger) output(lvl happy.LogPriority, ltype string, calldepth int, s st
 
 	// log priority not satisfied
 	if lvl >= 0 && lvl > l.lvl {
+		if !l.initialized {
+			l.initEntries = append(l.initEntries, entry{lvl, ltype, calldepth, s, fg, bg})
+		}
 		return nil
 	}
 
