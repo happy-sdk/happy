@@ -33,7 +33,8 @@ type APP struct {
 
 	opts happy.Variables
 
-	flags happy.Flags
+	flags   happy.Flags
+	version happy.Version
 }
 
 // happy.Application interface

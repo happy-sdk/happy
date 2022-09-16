@@ -15,10 +15,16 @@
 package application
 
 import (
+	"errors"
 	"fmt"
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/pkg/varflag"
+	"github.com/mkungla/happy/x/pkg/version"
 	"os"
+	"path/filepath"
+	"runtime/debug"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -46,8 +52,11 @@ func (a *APP) setup() happy.Error {
 	}
 	a.Log().LogInitialization() // logs init log entires if needed
 
+	if err := a.loadModuleInfo(); err != nil {
+		return ErrApplication.Wrap(err)
+	}
 	if a.flag("version").Present() {
-		fmt.Println("version")
+		a.printVersion()
 		a.Exit(0)
 	}
 
@@ -89,4 +98,80 @@ func (a *APP) exit(code int) {
 	}
 	a.logger.SystemDebugf("uptime: %s", a.monitor.Stats().Elapsed())
 	os.Exit(code)
+}
+
+func (a *APP) loadModuleInfo() error {
+	var (
+		ver string
+		err error
+	)
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		ver = fmt.Sprintf("0.0.1-devel+%d", time.Now().UnixMilli())
+	} else {
+		a.opts.Store("go.version", bi.GoVersion)
+		a.opts.Store("go.path", bi.Path)
+
+		// The module containing the main package
+		a.opts.Store("go.module.path", bi.Main.Path)
+		a.opts.Store("go.module.version", bi.Main.Version)
+		a.opts.Store("go.module.sum", bi.Main.Sum)
+
+		if bi.Main.Replace != nil {
+			a.opts.Store("go.module.replace.path", bi.Main.Replace.Path)
+			a.opts.Store("go.module.replace.version", bi.Main.Replace.Version)
+			a.opts.Store("go.module.replace.sum", bi.Main.Replace.Sum)
+		} else {
+			a.opts.Store("go.module.replace", nil)
+		}
+		if bi.Deps != nil {
+			for _, dep := range bi.Deps {
+				key := "go.module.deps.[" + dep.Path + "]"
+				a.opts.Store(key+".path", dep.Path)
+				a.opts.Store(key+".version", dep.Version)
+				a.opts.Store(key+".sum", dep.Sum)
+			}
+		} else {
+			a.opts.Store("go.module.deps", nil)
+		}
+
+		if bi.Settings != nil {
+			for _, setting := range bi.Settings {
+				a.opts.Store(fmt.Sprintf("go.module.settings.%s", setting.Key), setting.Value)
+			}
+		} else {
+			a.opts.Store("go.module.settings", nil)
+		}
+
+		// version
+		if bi.Main.Version == "(devel)" {
+			slug, ok := a.opts.LoadOrDefault("slug", "happy-app")
+			if !ok {
+				return errors.New("APP.loadModuleInfo slug not set")
+			}
+			moduleVersion := strings.Trim(filepath.Ext(slug.String()), ".")
+			major := "v1"
+			if strings.HasPrefix(moduleVersion, "v") {
+				majorint, err := strconv.Atoi(strings.TrimPrefix(moduleVersion, "v"))
+				if err != nil {
+					return err
+				}
+				major = fmt.Sprintf("v%d", majorint+1)
+			}
+			ver = fmt.Sprintf("%s.0.0-alpha.%d", major, time.Now().UnixMilli())
+		} else {
+			ver = bi.Main.Version
+		}
+	}
+
+	a.version, err = version.Parse(ver)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *APP) printVersion() {
+	fmt.Println(a.version)
 }
