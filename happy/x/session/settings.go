@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package eventsource
+package session
 
 import (
 	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/happyx"
 )
 
-func New(options ...happy.OptionWriteFunc) happy.AddonFactory {
-	return nil
+type Settings struct {
+	happy.Variables
+}
+
+func (s *Settings) Save() happy.Error {
+	return happyx.NotImplementedError("session.Settings.Save")
 }

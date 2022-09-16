@@ -14,6 +14,147 @@
 
 package vars
 
+type VariableIface[V ValueIface] interface {
+	Value() V
+	Key() string
+	Len() int
+	ReadOnly() bool
+	String() string
+	Underlying() any
+	Bool() bool
+	Int() int
+	Int8() int8
+	Int16() int16
+	Int32() int32
+	Int64() int64
+	Uint() uint
+	Uint8() uint8
+	Uint16() uint16
+	Uint32() uint32
+	Uint64() uint64
+	Float32() float32
+	Float64() float64
+	Complex64() complex64
+	Complex128() complex128
+	Uintptr() uintptr
+	Fields() []string
+}
+
+type GenericVariable[V ValueIface] struct {
+	ro  bool
+	key string
+	val ValueIface
+}
+
+func (gvar GenericVariable[V]) Value() V {
+	return gvar.val.(V)
+}
+
+func (gvar GenericVariable[V]) Key() string {
+	return gvar.key
+}
+
+// Len returns the length of the string representation of the Value.
+func (gvar GenericVariable[V]) Len() int {
+	return gvar.val.Len()
+}
+
+func (gvar GenericVariable[V]) ReadOnly() bool {
+	return gvar.ro
+}
+
+func (gvar GenericVariable[V]) String() string {
+	return gvar.val.String()
+}
+
+func (gvar GenericVariable[V]) Underlying() any {
+	return gvar.val.Underlying()
+}
+
+func (gvar GenericVariable[V]) Bool() bool {
+	v, _ := gvar.val.Bool()
+	return v
+}
+
+func (gvar GenericVariable[V]) Int() int {
+	v, _ := gvar.val.Int()
+	return v
+}
+
+func (gvar GenericVariable[V]) Int8() int8 {
+	v, _ := gvar.val.Int8()
+	return v
+}
+
+func (gvar GenericVariable[V]) Int16() int16 {
+	v, _ := gvar.val.Int16()
+	return v
+}
+
+func (gvar GenericVariable[V]) Int32() int32 {
+	v, _ := gvar.val.Int32()
+	return v
+}
+
+func (gvar GenericVariable[V]) Int64() int64 {
+	v, _ := gvar.val.Int64()
+	return v
+}
+
+func (gvar GenericVariable[V]) Uint() uint {
+	v, _ := gvar.val.Uint()
+	return v
+}
+
+func (gvar GenericVariable[V]) Uint8() uint8 {
+	v, _ := gvar.val.Uint8()
+	return v
+}
+
+func (gvar GenericVariable[V]) Uint16() uint16 {
+	v, _ := gvar.val.Uint16()
+	return v
+}
+
+func (gvar GenericVariable[V]) Uint32() uint32 {
+	v, _ := gvar.val.Uint32()
+	return v
+}
+
+func (gvar GenericVariable[V]) Uint64() uint64 {
+	v, _ := gvar.val.Uint64()
+	return v
+}
+
+func (gvar GenericVariable[V]) Float32() float32 {
+	v, _ := gvar.val.Float32()
+	return v
+}
+
+func (gvar GenericVariable[V]) Float64() float64 {
+	v, _ := gvar.val.Float64()
+	return v
+}
+
+func (gvar GenericVariable[V]) Complex64() complex64 {
+	v, _ := gvar.val.Complex64()
+	return v
+}
+
+func (gvar GenericVariable[V]) Complex128() complex128 {
+	v, _ := gvar.val.Complex128()
+	return v
+}
+
+func (gvar GenericVariable[V]) Uintptr() uintptr {
+	v, _ := gvar.val.Uintptr()
+	return v
+}
+
+func (gvar GenericVariable[V]) Fields() []string {
+	return gvar.val.Fields()
+}
+
 // Variable is universal representation of key val pair.
 type Variable struct {
 	ro  bool

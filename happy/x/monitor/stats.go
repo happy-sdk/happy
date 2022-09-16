@@ -12,12 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package wasm
+package monitor
 
 import (
-	"github.com/mkungla/happy"
+	"time"
 )
 
-func New(options ...happy.OptionWriteFunc) happy.AddonFactory {
-	return nil
+type Stats struct {
+	started time.Time
+	stopped time.Time
+	evs     int
+}
+
+func (s *Stats) Started() time.Time {
+	return s.started
+}
+
+func (s *Stats) Elapsed() time.Duration {
+	if s.stopped.IsZero() {
+		return time.Since(s.started)
+	}
+	return s.stopped.Sub(s.started)
+}
+
+func (s *Stats) TotalEvents() int {
+	return s.evs
 }

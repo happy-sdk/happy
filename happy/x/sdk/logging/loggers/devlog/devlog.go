@@ -62,10 +62,11 @@ type Logger struct {
 	buf       []byte     // for accumulating text to write
 	isDiscard int32      // atomic boolean: whether out == io.Discard
 
+	scope          string
 	filenamesLvl   happy.LogPriority
 	filenamesLong  bool
 	filenamesPre   string
-	color          bool
+	colors         bool
 	tsdate         bool
 	tstime         bool
 	tsmicroseconds bool
@@ -79,12 +80,13 @@ func Default() happy.Logger { return std }
 func New(out io.Writer, options ...happy.OptionWriteFunc) happy.Logger {
 	l := &Logger{
 		out:            out,
-		dlvl:           happy.LOG_NOTICE,
+		dlvl:           happy.LOG_NOTICE, // default level
 		lvl:            happy.LOG_SYSTEMDEBUG,
-		filenamesLvl:   happy.LOG_SYSTEMDEBUG,
+		scope:          "",
+		filenamesLvl:   happy.LOG_NOTICE,
 		filenamesLong:  true,
 		filenamesPre:   "",
-		color:          true,
+		colors:         true,
 		tsdate:         false,
 		tstime:         true,
 		tsmicroseconds: false,
@@ -95,13 +97,25 @@ func New(out io.Writer, options ...happy.OptionWriteFunc) happy.Logger {
 		l.isDiscard = 1
 	}
 	if len(options) > 0 {
-		l.NotImplementedf("logger recieved %d options", len(options))
+		for _, opt := range options {
+			v, err := happyx.OptionParseFuncFor(opt)()
+			if err != nil {
+				l.Emergencyf("error while reading provided devlog options")
+				continue
+			}
+
+			if err := l.SetOptionDefault(v); err != nil {
+				l.Emergency(err)
+			}
+		}
 	}
-	wd, err := os.Getwd()
-	if err != nil {
-		l.Error(err)
+	if len(l.filenamesPre) == 0 {
+		wd, err := os.Getwd()
+		if err != nil {
+			l.Error(err)
+		}
+		l.filenamesPre = wd
 	}
-	l.filenamesPre = wd
 	return l
 }
 
@@ -298,6 +312,42 @@ func (l *Logger) SystemDebugf(template string, args ...any) {
 	l.output(happy.LOG_SYSTEMDEBUG, "system  ", 2, fmt.Sprintf(template, args...), blueFg, 0)
 }
 
+func (l *Logger) SetOptionDefault(o happy.Variable) happy.Error {
+	switch o.Key() {
+	case "colors":
+		l.colors = o.Bool()
+	case "scope":
+		l.scope = o.String()
+	case "level":
+		l.SetPriority(happy.LogPriority(o.Int()))
+	case "filenames.level":
+		l.filenamesLvl = happy.LogPriority(o.Int())
+	case "filenames.long":
+		l.filenamesLong = o.Bool()
+	case "filenames.pre":
+		l.filenamesPre = o.String()
+	case "ts.date":
+		l.tsdate = o.Bool()
+	case "ts.time":
+		l.tstime = o.Bool()
+	case "ts.microseconds":
+		l.tsmicroseconds = o.Bool()
+	case "ts.utc":
+		l.tsutc = o.Bool()
+	default:
+		return happyx.InvalidOptionError("devlog", o.Key())
+	}
+	return nil
+}
+
+func (l *Logger) SetOptionDefaultKeyValue(key string, val any) happy.Error {
+	return happyx.Errorf("%w: devlog.SetOptionDefaultKeyValue", happyx.ErrNotImplemented)
+}
+
+func (l *Logger) SetOptionsDefaultFuncs(vfuncs ...happy.VariableParseFunc) happy.Error {
+	return happyx.Errorf("%w: devlog.SetOptionsDefaultFuncs", happyx.ErrNotImplemented)
+}
+
 func (l *Logger) handleHappyErrors(args []any) {
 	for _, a := range args {
 		if e, ok := a.(error); ok {
@@ -308,7 +358,7 @@ func (l *Logger) handleHappyErrors(args []any) {
 	}
 }
 
-func (l *Logger) output(lvl happy.LogPriority, prefix string, calldepth int, s string, fg, bg color) error {
+func (l *Logger) output(lvl happy.LogPriority, ltype string, calldepth int, s string, fg, bg color) error {
 	now := time.Now() // get this early.
 	var file string
 	var line int
@@ -323,7 +373,7 @@ func (l *Logger) output(lvl happy.LogPriority, prefix string, calldepth int, s s
 	durr := now.Sub(l.last)
 	l.last = now
 
-	if l.color {
+	if l.colors {
 		// Set color based on time from last log entry
 		var durcolor color
 
@@ -350,11 +400,15 @@ func (l *Logger) output(lvl happy.LogPriority, prefix string, calldepth int, s s
 		}
 		l.mu.Lock()
 	}
-	l.buf = l.buf[:0]
-	if l.color && (fg+bg) > 0 {
-		prefix = colorize(prefix, fg, bg, 1)
+	if len(l.scope) > 0 {
+		l.buf = append([]byte(l.scope[0:]), ' ')
+	} else {
+		l.buf = l.buf[:0]
 	}
-	l.formatHeader(prefix, lvl, &l.buf, now, file, line)
+	if l.colors && (fg+bg) > 0 {
+		ltype = colorize(ltype, fg, bg, 1)
+	}
+	l.formatHeader(ltype, lvl, &l.buf, now, file, line)
 	l.buf = append(l.buf, s...)
 
 	if len(s) == 0 || s[len(s)-1] != '\n' {
@@ -364,16 +418,16 @@ func (l *Logger) output(lvl happy.LogPriority, prefix string, calldepth int, s s
 	return err
 }
 
-func (l *Logger) formatHeader(prefix string, lvl happy.LogPriority, buf *[]byte, t time.Time, file string, line int) {
-	if len(prefix) > 0 {
-		*buf = append(*buf, prefix...)
+func (l *Logger) formatHeader(ltype string, lvl happy.LogPriority, buf *[]byte, t time.Time, file string, line int) {
+	if len(ltype) > 0 {
+		*buf = append(*buf, ltype...)
 	}
 
 	if l.tsdate || l.tstime || l.tsmicroseconds {
 		if l.tsutc {
 			t = t.UTC()
 		}
-		if l.color {
+		if l.colors {
 			*buf = append(*buf, '\033', '[', '2', 'm')
 		}
 		if l.tsdate {
@@ -398,13 +452,13 @@ func (l *Logger) formatHeader(prefix string, lvl happy.LogPriority, buf *[]byte,
 			}
 			*buf = append(*buf, ' ')
 		}
-		if l.color {
+		if l.colors {
 			*buf = append(*buf, '\033', '[', '0', 'm')
 		}
 	}
 
 	if l.filenamesLvl != -1 && lvl <= l.filenamesLvl {
-		if l.color {
+		if l.colors {
 			*buf = append(*buf, '\033', '[', '3', '3', 'm')
 		}
 		if !l.filenamesLong {
@@ -423,7 +477,7 @@ func (l *Logger) formatHeader(prefix string, lvl happy.LogPriority, buf *[]byte,
 		*buf = append(*buf, ':')
 		itoa(buf, line, -1)
 		*buf = append(*buf, ": "...)
-		if l.color {
+		if l.colors {
 			*buf = append(*buf, '\033', '[', '0', 'm')
 		}
 	}

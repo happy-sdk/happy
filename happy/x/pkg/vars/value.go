@@ -50,6 +50,24 @@ type (
 		// Underlying MUST return original value from what this
 		// Value was created.
 		Underlying() any
+		Len() int
+		Bool() (bool, error)
+		Int() (int, error)
+		Int8() (int8, error)
+		Int16() (int16, error)
+		Int32() (int32, error)
+		Int64() (int64, error)
+		Uint() (uint, error)
+		Uint8() (uint8, error)
+		Uint16() (uint16, error)
+		Uint32() (uint32, error)
+		Uint64() (uint64, error)
+		Float32() (float32, error)
+		Float64() (float64, error)
+		Complex64() (complex64, error)
+		Complex128() (complex128, error)
+		Uintptr() (uintptr, error)
+		Fields() []string
 	}
 )
 

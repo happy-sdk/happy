@@ -428,7 +428,7 @@ func TestExpectedEmptyVars(t *testing.T) {
 	c.Store("test2", c.Get("test"))
 
 	c.Delete("test2")
-	c.Delete(" ")
+
 	if c.Has("test2") {
 		t.Error("var with key test2 was not deleted")
 	}

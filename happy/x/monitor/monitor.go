@@ -16,26 +16,32 @@ package monitor
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/happyx"
+	"time"
 )
 
 type Monitor struct {
+	stats *Stats
 }
 
 func New(opts ...happy.OptionWriteFunc) *Monitor {
-	return &Monitor{}
+	return &Monitor{
+		stats: &Stats{},
+	}
 }
 
 func (m *Monitor) Start() happy.Error {
-	return happyx.Errorf("Monitor.Start: %w", happyx.ErrNotImplemented)
+	m.stats.started = time.Now()
+	return nil
 }
 
 func (m *Monitor) Stop() happy.Error {
-	return happyx.Errorf("Monitor.Stop: %w", happyx.ErrNotImplemented)
+	m.stats.stopped = time.Now()
+	return nil
 }
 
-func (m *Monitor) Stats() happy.ApplicationStats { return nil }
+func (m *Monitor) Stats() happy.ApplicationStats { return m.stats }
 
 // happy.EventListener interface
-func (m *Monitor) OnAnyEvent(cb happy.ActionWithEventFunc)          {}
+func (m *Monitor) OnAnyEvent(cb happy.ActionWithEventFunc) {}
+
 func (m *Monitor) OnEvent(key string, cb happy.ActionWithEventFunc) {}

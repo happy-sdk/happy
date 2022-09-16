@@ -107,7 +107,7 @@ type (
 	ApplicationStats interface {
 		Started() time.Time
 		Elapsed() time.Duration
-		TotalEvents()
+		TotalEvents() int
 	}
 
 	Logger interface {
@@ -194,11 +194,15 @@ type (
 		// LOG_SYSTEMDEBUG
 		SystemDebug(args ...any)
 		SystemDebugf(template string, args ...any)
+
+		OptionDefaultsSetter
 	}
 
 	Error interface {
-		error
+		Error() string
 		Code() int
+		Wrap(error) Error
+		WithText(string) Error
 	}
 
 	Slug interface {
@@ -313,7 +317,7 @@ type (
 		SetOptionValue(key string, val Value) Error
 	}
 
-	OptionDefaultsWriter interface {
+	OptionDefaultsSetter interface {
 		SetOptionDefault(Variable) Error
 		SetOptionDefaultKeyValue(key string, val any) Error
 		SetOptionsDefaultFuncs(vfuncs ...VariableParseFunc) Error
@@ -328,17 +332,70 @@ type (
 	// Variables are collection of key=value pairs
 	Variables interface {
 		Len() int
+		Has(key string) bool
+		Delete(key string)
+		Store(key string, value any)
+		Get(key string) (v Variable)
+		LoadWithPrefix(prfx string) Variables
+		ExtractWithPrefix(prfx string) Variables
+		Load(key string) (v Variable, ok bool)
+		LoadAndDelete(key string) (v Variable, loaded bool)
+		LoadOrDefault(key string, value any) (v Variable, loaded bool)
+		LoadOrStore(key string, value any) (actual Variable, loaded bool)
+		Range(f func(v Variable) bool)
 	}
 
 	// Variable is key=value pair
 	Variable interface {
-		fmt.Stringer // alias to Value().String()
+		String() string
+		Key() string
 		Value() Value
 		ReadOnly() bool
+		Underlying() any
+		Len() int
+		Bool() bool
+		Int() int
+		Int8() int8
+		Int16() int16
+		Int32() int32
+		Int64() int64
+		Uint() uint
+		Uint8() uint8
+		Uint16() uint16
+		Uint32() uint32
+		Uint64() uint64
+		Float32() float32
+		Float64() float64
+		Complex64() complex64
+		Complex128() complex128
+		Uintptr() uintptr
+		Fields() []string
 	}
 
 	Value interface {
-		fmt.Stringer
+		// String MUST return string value Value
+		String() string
+		// Underlying MUST return original value
+		// from what this Value was created.
+		Underlying() any
+		Len() int
+		Bool() (bool, error)
+		Int() (int, error)
+		Int8() (int8, error)
+		Int16() (int16, error)
+		Int32() (int32, error)
+		Int64() (int64, error)
+		Uint() (uint, error)
+		Uint8() (uint8, error)
+		Uint16() (uint16, error)
+		Uint32() (uint32, error)
+		Uint64() (uint64, error)
+		Float32() (float32, error)
+		Float64() (float64, error)
+		Complex64() (complex64, error)
+		Complex128() (complex128, error)
+		Uintptr() (uintptr, error)
+		Fields() []string
 	}
 )
 
@@ -363,32 +420,39 @@ type (
 		UseEngine(Engine)
 		GetEngine() (Engine, Error)
 
-		OptionDefaultsWriter // Sets application configuration options
+		GetApplicationOptions() Variables
+
+		OptionDefaultsSetter // Sets application configuration options
 	}
 
 	// Application is interface for application runtime.
 	Application interface {
 		Configure(Configurator) Error
 
-		AddAddon(Addon)
-		AddAddonCreateFuncs(...AddonCreateFunc)
+		RegisterAddon(Addon)
+		RegisterAddons(...AddonCreateFunc)
 
-		AddService(Service)
-		AddServiceCreateFuncs(...ServiceCreateFunc)
+		RegisterService(Service)
+		RegisterServices(...ServiceCreateFunc)
 
 		Log() Logger
 
 		Main()
 
+		Exit(code int)
 		Command
 		TickerFuncs
 		Cron
 	}
 
 	Session interface {
+		fmt.Stringer
 
 		// Ready blocks until the session is ready to use.
 		Ready() <-chan struct{}
+
+		// Start session
+		Start() Error
 
 		// Destroy session
 		Destroy(err Error)
@@ -411,17 +475,13 @@ type (
 		// Err() returns last error in session
 		context.Context
 
-		Options
+		// Options
 	}
 
 	Settings interface {
-		Options
-		OptionDefaultsWriter
+		Variables
 
-		// Load loads settings from underlying storage driver.
-		Load() Error
-
-		// Save saves settings using underlying storage driver.
+		// Save saves settings.
 		Save() Error
 	}
 
@@ -433,10 +493,9 @@ type (
 	}
 )
 
-///////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 // CLI
-///////////////////////////////////////////////////////////////////////////////
-
+// /////////////////////////////////////////////////////////////////////////////
 type (
 	CommandCreateFunc func() (Command, Error)
 
@@ -447,10 +506,10 @@ type (
 		Slug() Slug
 
 		AddFlag(Flag)
-		AddFlagCreateFunc(flags ...FlagCreateFunc)
+		AddFlags(flags ...FlagCreateFunc)
 
 		AddSubCommand(Command)
-		AddSubCommandCreateFunc(...CommandCreateFunc)
+		AddSubCommands(...CommandCreateFunc)
 
 		// Before is optional action to execute before Main.
 		// Useful to check preconidtion for your command Main.
@@ -483,7 +542,109 @@ type (
 		RequireServices(svcs ...string)
 	}
 
-	Flag interface{}
+	Flags interface {
+
+		// Name of the flag set
+		Name() string
+
+		// Len returns number of flags in this set
+		// not including subset flags.
+		Len() int
+
+		// Add flag to flag set
+		Add(...Flag) error
+
+		// Get named flag
+		Get(name string) (Flag, error)
+		// Add sub set of flags to flag set
+		AddSet(...Flags) error
+
+		// GetActiveSets.
+		GetActiveSets() []Flags
+
+		// Position of flag set
+		Pos() int
+
+		// Was flagset (sub command present)
+		Present() bool
+
+		Args() []Value
+		// AcceptsArgs returns true if set accepts any arguments.
+		AcceptsArgs() bool
+
+		// Flags returns slice of flags in this set
+		Flags() []Flag
+
+		// Sets retruns subsets of flags under this flagset.
+		Sets() []Flags
+
+		// Parse all flags and sub sets
+		Parse(args []string) error
+	}
+
+	Flag interface {
+		// Get primary name for the flag. Usually that is long option
+		Name() string
+
+		// Get flag default value
+		Default() Variable
+
+		// Usage returns a usage description for that flag
+		Usage() string
+
+		// Flag returns flag with leading - or --
+		// useful for help menus
+		Flag() string
+
+		// Return flag aliases
+		Aliases() []string
+
+		// IsHidden reports whether to show that flag in help menu or not.
+		IsHidden() bool
+
+		// Hide flag from help menu.
+		Hide()
+
+		// IsGlobal reports whether this flag was global and was set before any command or arg
+		IsGlobal() bool
+
+		// BelongsTo marks flag non global and belonging to provided named command.
+		BelongsTo(cmdname string)
+
+		// CommandName returns empty string if command is not set with .BelongsTo
+		// When BelongsTo is set to wildcard "*" then this function will return
+		// name of the command which triggered this flag to be parsed.
+		CommandName() string
+
+		// Pos returns flags position after command. In case of mulyflag first position is reported
+		Pos() int
+		// Unset unsets the value for the flag if it was parsed, handy for cases where
+		// one flag cancels another like --debug cancels --verbose
+		Unset()
+
+		// Present reports whether flag was set in commandline
+		Present() bool
+
+		// Var returns vars.Variable for this flag.
+		// where key is flag and Value flags value.
+		Var() Variable
+
+		// Required sets this flag as required
+		Required()
+
+		// IsRequired returns true if this flag is required
+		IsRequired() bool
+
+		// Parse value for the flag from given string. It returns true if flag
+		// was found in provided args string and false if not.
+		// error is returned when flag was set but had invalid value.
+		Parse([]string) (bool, error)
+
+		// String calls Value().String()
+		String() string
+
+		Input() []string
+	}
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -497,17 +658,16 @@ type (
 	// Addon enables you to bundle set of commands, services and other features
 	// into single package and make it sharable accross applications and domains.
 	Addon interface {
-		Cronjobs()
 		Name() string
 		Slug() Slug
+		Cronjobs()
 		Version() Version
-		Options() OptionDefaultsWriter
-		Commands(...Command)
-		Services(...Service)
+		Commands() []Command
+		Services() []Service
 	}
 
 	AddonFactory interface {
-		Addon() (Addon, Error)
+		GetAddonCreateFunc() AddonCreateFunc
 	}
 )
 

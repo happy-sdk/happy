@@ -33,18 +33,26 @@ var (
 )
 
 func NewVariable(key string, val any, ro bool) (Variable, error) {
-	key = stringsTrimSpace(key)
-
-	if len(key) == 0 {
-		return EmptyVariable, ErrKey
+	key, err := parseKey(key)
+	if err != nil {
+		return EmptyVariable, err
 	}
-
 	v, err := NewValue(val)
 	return Variable{
 		key: key,
 		ro:  ro,
 		val: v,
 	}, err
+}
+
+func EmptyNamedVariable(key string) (Variable, error) {
+	v := EmptyVariable
+	key, err := parseKey(key)
+	if err != nil {
+		return EmptyVariable, err
+	}
+	v.key = key
+	return v, nil
 }
 
 func NewVariableAs(key string, val any, ro bool, kind Kind) (Variable, error) {
@@ -81,7 +89,7 @@ func NewValue(val any) (Value, error) {
 	return v, err
 }
 
-// ParseKeyValue parses variable from single key=val pair and returns a Variable
+// ParseVariableFromString parses variable from single key=val pair and returns a Variable
 // if parsing is successful. EmptyVariable and error is returned when parsing fails.
 func ParseVariableFromString(kv string) (Variable, error) {
 	if len(kv) == 0 {
@@ -113,7 +121,7 @@ func NewValueAs(val any, kind Kind) (Value, error) {
 	return ParseValueAs(src.String(), kind)
 }
 
-// ParseKinddVariable parses variable and returns parser error for given kinde
+// ParseKinddVariable parses variable and returns parser error for given kind
 // if parsing to requested kinde fails.
 func ParseVariableAs(key, val string, ro bool, kind Kind) (Variable, error) {
 	v, err := ParseValueAs(val, kind)
@@ -215,34 +223,26 @@ func ParseKey(str string) (key string, err error) {
 	return parseKey(str)
 }
 
-type VariableIface[V ValueIface] struct {
-	ro  bool
-	key string
-	val ValueIface
-}
-
-func (gvar VariableIface[V]) Value() V {
-	return gvar.val.(V)
-}
-
-func (gvar VariableIface[V]) Key() string {
-	return gvar.key
-}
-
-func (gvar VariableIface[V]) ReadOnly() bool {
-	return gvar.ro
-}
-
-func (gvar VariableIface[V]) String() string {
-	return gvar.val.String()
-}
-
-func As[VAL ValueIface](in Variable) VariableIface[VAL] {
-	return VariableIface[VAL]{
+func AsVariable[VAR VariableIface[VAL], VAL ValueIface](in Variable) VAR {
+	var v VariableIface[VAL]
+	v = GenericVariable[VAL]{
 		ro:  in.ReadOnly(),
 		key: in.Key(),
 		val: in.Value(),
 	}
+	return v.(VAR)
+}
+
+func AsMap[
+	MAP MapIface[VAR, VAL],
+	VAR VariableIface[VAL],
+	VAL ValueIface,
+](in *Map) MAP {
+	var m MapIface[VAR, VAL]
+	m = &GenericVariableMap[MAP, VAR, VAL]{
+		m: in,
+	}
+	return m.(MAP)
 }
 
 // errorString is a trivial implementation of error.

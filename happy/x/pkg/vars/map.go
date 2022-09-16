@@ -48,13 +48,27 @@ func (c *Map) Get(key string) (v Variable) {
 	return v
 }
 
-// GetWithPrefix return all variables with prefix if any as map[].
+// GetWithPrefix return all variables with prefix if any as new Map.
 func (c *Map) LoadWithPrefix(prfx string) *Map {
 	vars := new(Map)
 	c.Range(func(v Variable) bool {
 		key := v.Key()
 		if len(key) >= len(prfx) && key[0:len(prfx)] == prfx {
 			vars.Store(key, v)
+		}
+		return true
+	})
+	return vars
+}
+
+// GetWithPrefix return all variables with prefix if any as new Map
+// and strip prefix from keys.
+func (c *Map) ExtractWithPrefix(prfx string) *Map {
+	vars := new(Map)
+	c.Range(func(v Variable) bool {
+		key := v.Key()
+		if len(key) >= len(prfx) && key[0:len(prfx)] == prfx {
+			vars.Store(key[len(prfx):], v)
 		}
 		return true
 	})
@@ -226,4 +240,70 @@ func (c *Map) ToKeyValSlice() []string {
 		return true
 	})
 	return r
+}
+
+type MapIface[VAR VariableIface[VAL], VAL ValueIface] interface {
+	Store(key string, value any)
+}
+
+type GenericVariableMap[
+	MAP MapIface[VAR, VAL],
+	VAR VariableIface[VAL],
+	VAL ValueIface,
+] struct {
+	m *Map
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) Len() int {
+	return m.m.Len()
+}
+func (m GenericVariableMap[MAP, VAR, VAL]) Has(key string) bool {
+	return m.m.Has(key)
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) Delete(key string) {
+	m.m.Delete(key)
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) Store(key string, value any) {
+	m.m.Store(key, value)
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) Get(key string) (v VAR) {
+	// v := AsVariable[Value](m.m.Get(key))
+	return v
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) LoadWithPrefix(prfx string) (mm MAP) {
+	return mm
+}
+func (m GenericVariableMap[MAP, VAR, VAL]) ExtractWithPrefix(prfx string) (mm MAP) {
+	return mm
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) Load(key string) (v VAR, ok bool) {
+	// return m.m.Load(key)
+	return v, false
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) LoadAndDelete(key string) (v VAR, loaded bool) {
+	// return m.m.LoadAndDelete(key)
+	return v, false
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) LoadOrDefault(key string, value any) (v VAR, loaded bool) {
+	// return m.m.LoadOrDefault(key, value)
+	return v, false
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) LoadOrStore(key string, value any) (actual VAR, loaded bool) {
+	// return m.m.LoadOrStore(key, value)
+	return actual, false
+}
+
+func (m GenericVariableMap[MAP, VAR, VAL]) Range(f func(v VAR) bool) {
+	m.m.Range(func(orig Variable) bool {
+		v := AsVariable[VAR, VAL](orig)
+		return f(v)
+	})
 }

@@ -16,8 +16,11 @@ package fileloggerservice
 
 import (
 	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/sdk"
 )
 
 func New(options ...happy.OptionWriteFunc) happy.ServiceFactory {
-	return nil
+	s := &sdk.ServiceSkeleton{}
+	f := &sdk.ServiceFactory{Default: s}
+	return f
 }

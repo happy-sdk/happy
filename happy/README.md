@@ -25,11 +25,11 @@ SDK statmens which always must be true:
 - [ ] Revice and finalize API v0 interface only
 - [ ] Revice `x` experimental packages 
 - [ ] Finetune `x/sdk` which would become default implenetation `happy/sdk`
-- [ ] Ensure that interfaces actually enable to replace
+- [ ] Ensure that interfaces actually enable to replace implementations.
 - [ ] Enusre that API is easy to undestand
 - [ ] Prevent deadlocking
 - [ ] Improve performance
-- [ ] Redesign logger and implement telemetry collection
+- [ ] implement telemetry / metrics collection
 - [ ] Add tests and test suite packages to test own interface implemntations.
 - [ ] Add extensive set of examples to showcase different domain use cases
 - [ ] Developemet UI for monitoring, node graph, pipelines/crons etc.??? 

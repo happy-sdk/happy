@@ -30,6 +30,7 @@ func (e *Engine) Register(...happy.Service) {}
 func (e *Engine) Start() happy.Error {
 	return happyx.Errorf("Engine.Start: %w", happyx.ErrNotImplemented)
 }
+
 func (e *Engine) Stop() happy.Error {
 	return happyx.Errorf("Engine.Stop: %w", happyx.ErrNotImplemented)
 }
