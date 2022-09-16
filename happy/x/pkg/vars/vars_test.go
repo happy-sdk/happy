@@ -197,14 +197,14 @@ func TestErrors(t *testing.T) {
 }
 
 func TestVariableIface(t *testing.T) {
-	_ = vars.AsVariable[vars.Variable, vars.Value](vars.EmptyVariable)
-	// testutils.Equal(t, "", v.Key())
-	// testutils.Equal(t, false, v.ReadOnly())
-	// testutils.Equal(t, "", v.String())
-	// testutils.Equal(t, "", v.Value().String())
+	v := vars.AsVariable[vars.VariableIface[vars.Value], vars.Value](vars.EmptyVariable)
+	testutils.Equal(t, "", v.Key())
+	testutils.Equal(t, false, v.ReadOnly())
+	testutils.Equal(t, "", v.String())
+	testutils.Equal(t, "", v.Value().String())
 
-	// vv := vars.ValueOf(v)
-	// testutils.Equal(t, "", vv.String())
+	vv := vars.ValueOf(v)
+	testutils.Equal(t, "", vv.String())
 }
 
 func TestNewVariable(t *testing.T) {
