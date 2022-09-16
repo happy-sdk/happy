@@ -205,6 +205,13 @@ func TestVariableIface(t *testing.T) {
 
 	vv := vars.ValueOf(v)
 	testutils.Equal(t, "", vv.String())
+
+	variable, _ := vars.NewVariable("key", "value", true)
+	v2 := vars.AsVariable[vars.VariableIface[vars.Value], vars.Value](variable)
+	testutils.Equal(t, "key", v2.Key())
+	testutils.Equal(t, true, v2.ReadOnly())
+	testutils.Equal(t, "value", v2.String())
+	testutils.Equal(t, "value", v2.Value().String())
 }
 
 func TestNewVariable(t *testing.T) {
