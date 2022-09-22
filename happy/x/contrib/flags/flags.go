@@ -34,7 +34,7 @@ func XFlag() happy.Flag {
 	f, _ := varflag.Bool(
 		"x",
 		false,
-		"The -x flag prints all the external commands as they are executed by the Application.Exec",
+		"The -x flag prints all the external commands as they are executed.",
 	)
 	flag := varflag.AsFlag[happy.Flag, happy.Variable, happy.Value](f)
 	return flag

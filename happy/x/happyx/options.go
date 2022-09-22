@@ -19,8 +19,8 @@ import (
 	"github.com/mkungla/happy/x/pkg/vars"
 )
 
-func OptionFunc(vfunc happy.VariableParseFunc) happy.OptionWriteFunc {
-	return func(opts happy.OptionWriter) happy.Error {
+func OptionFunc(vfunc happy.VariableParseFunc) happy.OptionSetFunc {
+	return func(opts happy.OptionSetter) happy.Error {
 		if vfunc == nil {
 			return NewError("happyx.OptionFunc got <nil> arg")
 		}
@@ -32,7 +32,7 @@ func OptionFunc(vfunc happy.VariableParseFunc) happy.OptionWriteFunc {
 	}
 }
 
-func Option(k string, v any) happy.OptionWriteFunc {
+func Option(k string, v any) happy.OptionSetFunc {
 	return OptionFunc(func() (happy.Variable, happy.Error) {
 		var err happy.Error
 		vv, e := vars.NewVariable(k, v, false)
@@ -46,7 +46,7 @@ func Option(k string, v any) happy.OptionWriteFunc {
 	})
 }
 
-func ReadOnlyOption(k string, v any) happy.OptionWriteFunc {
+func ReadOnlyOption(k string, v any) happy.OptionSetFunc {
 	return OptionFunc(func() (happy.Variable, happy.Error) {
 		var err happy.Error
 		vv, e := vars.NewVariable(k, v, true)
@@ -70,23 +70,35 @@ func (r *optreader) SetOption(v happy.Variable) happy.Error {
 }
 
 func (r *optreader) SetOptionKeyValue(key string, val any) happy.Error {
-	// r.v = vars.NewVariable(key, val, true)
-	return NotImplementedError("optreader.SetOptionKeyValue")
+	v, err := vars.NewVariable(key, val, true)
+	if err != nil {
+		return ErrOption.Wrap(err)
+	}
+	r.v = vars.AsVariable[happy.Variable, happy.Value](v)
+	return nil
 }
 
 func (r *optreader) SetOptionValue(key string, val happy.Value) happy.Error {
 	// r.v = vars.NewVariable(key, val, true)
-	return NotImplementedError("optreader.SetOptionValue")
-}
-func (r *optreader) Write([]byte) (int, error) {
-	// r.v = vars.NewVariable(key, val, true)
-	return 0, NotImplementedError("optreader.SetOptionValue")
+	return r.SetOptionKeyValue(key, val)
 }
 
-func OptionParseFuncFor(f happy.OptionWriteFunc) happy.VariableParseFunc {
+func OptionParseFuncFor(f happy.OptionSetFunc) happy.VariableParseFunc {
 	return func() (happy.Variable, happy.Error) {
 		r := new(optreader)
 		err := f(r)
 		return r.v, err
 	}
+}
+
+func OptionsToVariables(option ...happy.OptionSetFunc) (happy.Variables, happy.Error) {
+	opts := vars.AsMap[happy.Variables, happy.Variable, happy.Value](new(vars.Map))
+	for _, ofunc := range option {
+		o, err := OptionParseFuncFor(ofunc)()
+		if err != nil {
+			return nil, err
+		}
+		opts.Store(o.Key(), o.Value())
+	}
+	return opts, nil
 }

@@ -21,12 +21,14 @@ import (
 )
 
 var (
+	BUG               = NewError("bug")
 	ErrNotImplemented = NewError("missing implementation")
 	ErrConfiguration  = NewError("configuration error")
 	ErrOption         = NewError("option error")
 )
 
 type Error struct {
+	is  error
 	err error
 	// ts   int64
 	code int
@@ -61,7 +63,14 @@ func NewError(text string) happy.Error {
 }
 
 func (e *Error) Is(target error) bool {
-	return errors.Is(e.err, target)
+	if errors.Is(e.err, target) || errors.Is(e.is, target) {
+		return true
+	}
+	var err *Error
+	if errors.As(target, &err) {
+		return errors.Is(e.err, target) || errors.Is(e.is, target)
+	}
+	return false
 }
 
 func (e *Error) Code() int {
@@ -75,11 +84,16 @@ func (e *Error) Error() string {
 func (e *Error) Wrap(err error) happy.Error {
 	c := *e
 	msg := e.err.Error()
+	c.is = e
 	c.err = fmt.Errorf("%s: %w", msg, err)
 	return &c
 }
 func (e *Error) WithText(text string) happy.Error {
 	c := *e
+	c.is = e
 	c.err = fmt.Errorf("%w: %s", e.err, text)
 	return &c
+}
+func (e *Error) WithTextf(template string, args ...any) happy.Error {
+	return e.WithText(fmt.Sprintf(template, args...))
 }

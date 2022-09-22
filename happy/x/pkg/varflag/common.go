@@ -119,7 +119,7 @@ func (f *Common) Aliases() []string {
 
 // AliasesString returns string representing flag aliases.
 // e.g. used in help menu.
-func (f *Common) AliasesString() string {
+func (f *Common) UsageAliases() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	if len(f.aliases) <= 1 {
@@ -138,7 +138,7 @@ func (f *Common) AliasesString() string {
 }
 
 // IsHidden reports whether flag should be visible in help menu.
-func (f *Common) IsHidden() bool {
+func (f *Common) Hidden() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.hidden
@@ -154,13 +154,13 @@ func (f *Common) Hide() {
 // IsGlobal reports whether this flag is global.
 // By default all flags are global flags. You can mark flag non-global
 // by calling .BelongsTo(cmdname string).
-func (f *Common) IsGlobal() bool {
+func (f *Common) Global() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.global
 }
 
-// BelongsTo marks flag non global and belonging to provided named command.
+// AttachTo marks flag non global and belonging to provided named command.
 // Parsing the flag will only succeed if naemd command was found before the flag.
 // This is useful to have same flag both global and sub command level.
 // Special case is .BelongsTo("*") which marks flag to be parsed
@@ -169,7 +169,7 @@ func (f *Common) IsGlobal() bool {
 // you can define 2 BoolFlag's with name "verbose" and alias "v"
 // and mark one of these with BelongsTo("*").
 // BelongsTo(os.Args[0] | "/") are same as global and will be.
-func (f *Common) BelongsTo(cmdname string) {
+func (f *Common) AttachTo(cmdname string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if len(f.command) == 0 {
@@ -180,7 +180,7 @@ func (f *Common) BelongsTo(cmdname string) {
 // CommandName returns empty string if command is not set with .BelongsTo
 // When BelongsTo is set to wildcard "*" then this function will return
 // name of the command which triggered this flag to be parsed.
-func (f *Common) CommandName() string {
+func (f *Common) BelongsTo() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.command
@@ -236,7 +236,7 @@ func (f *Common) Value() string {
 }
 
 // Required sets this flag as required.
-func (f *Common) Required() {
+func (f *Common) MarkAsRequired() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if !f.required {
@@ -245,7 +245,7 @@ func (f *Common) Required() {
 }
 
 // IsRequired returns true if this flag is required.
-func (f *Common) IsRequired() bool {
+func (f *Common) Required() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.required

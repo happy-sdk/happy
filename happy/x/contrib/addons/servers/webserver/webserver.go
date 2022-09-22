@@ -20,14 +20,29 @@ import (
 )
 
 type WebServerAddon struct {
-	*sdk.AddonSkeleton
+	happy.Addon
 	fs happy.FS
 }
 
-func New(options ...happy.OptionWriteFunc) *WebServerAddon {
-	return &WebServerAddon{
-		AddonSkeleton: sdk.NewAddonSkeleton("webserver", "0.0.1"),
+func New(option ...happy.OptionSetFunc) (*WebServerAddon, happy.Error) {
+	a, err := sdk.NewAddon(
+		"webserver",
+		"Web server",
+		"0.1.0",
+	)
+	if err != nil {
+		return nil, err
 	}
+	addon := &WebServerAddon{
+		Addon: a,
+	}
+	for _, opt := range option {
+		if err := opt(addon); err != nil {
+			return nil, sdk.ErrAddon.Wrap(err)
+		}
+	}
+
+	return addon, nil
 }
 
 func (a *WebServerAddon) Cronjobs() {}

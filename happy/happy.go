@@ -25,16 +25,6 @@ import (
 	"io"
 	"io/fs"
 	"time"
-	// "bytes"
-	// "regexp"
-	// "runtime"
-	// "runtime/debug"
-	// "sort"
-	// "strings"
-	// "time"
-	// "unicode"
-	// "github.com/mkungla/happy/pkg/varflag"
-	// "github.com/mkungla/happy/pkg/vars"
 )
 
 const (
@@ -54,6 +44,40 @@ const (
 	LOG_SYSTEMDEBUG
 )
 
+// A Kind represents the specific kind of kinde that a Value represents.
+// The zero Kind is not a valid kind.
+type ValueKind uint
+
+const (
+	KindInvalid ValueKind = iota
+	KindBool
+	KindInt
+	KindInt8
+	KindInt16
+	KindInt32
+	KindInt64
+	KindUint
+	KindUint8
+	KindUint16
+	KindUint32
+	KindUint64
+	KindUintptr
+	KindFloat32
+	KindFloat64
+	KindComplex64
+	KindComplex128
+	KindArray
+	KindChan
+	KindFunc
+	KindInterface
+	KindMap
+	KindPointer
+	KindSlice
+	KindString
+	KindStruct
+	KindUnsafePointer
+)
+
 ///////////////////////////////////////////////////////////////////////////////
 // COMMON
 ///////////////////////////////////////////////////////////////////////////////
@@ -69,7 +93,7 @@ type (
 	ActionWithArgsFunc  func(sess Session, args Variables) error
 	ActionWithEventFunc func(sess Session, ev Event) error
 
-	ActionWithArgsAndAssetsFunc func(sess Session, args Variables, assets FS) error
+	ActionCommandFunc func(sess Session, flasg Flags, assets FS, status ApplicationStatus) error
 
 	// ActionWithError is common callback in happy framework which has
 	// second arguments as previous error id any otherwise nil.
@@ -102,12 +126,18 @@ type (
 
 		// Payload returns of the event
 		Payload() Variables
+		Err() Error
 	}
 
-	ApplicationStats interface {
+	ApplicationStatus interface {
 		Started() time.Time
 		Elapsed() time.Duration
 		TotalEvents() int
+
+		Addons() []AddonInfo
+		Services() []ServiceInfo
+		Dependencies() []DependencyInfo
+		DebugInfo() Variables
 	}
 
 	Logger interface {
@@ -208,6 +238,7 @@ type (
 		Code() int
 		Wrap(error) Error
 		WithText(string) Error
+		WithTextf(template string, args ...any) Error
 	}
 
 	Slug interface {
@@ -265,14 +296,14 @@ type (
 ///////////////////////////////////////////////////////////////////////////////
 
 type (
-	// OptionWriteFunc is callback function to apply configurable options.
-	OptionWriteFunc func(opts OptionWriter) Error
+	// OptionSetFunc is callback function to apply configurable options.
+	OptionSetFunc func(opts OptionSetter) Error
 
 	// Options interface enables you to apply configuration options in
 	// different parts of your application.
 	Options interface {
 		// DeleteOption allows you remove option value and it's key from
-		// your option set. return ErrOption when key dows not exist or
+		// your option set. return ErrOption when key does not exist or
 		// ErrOptionRO if key is read only.
 		DeleteOption(key string) Error
 
@@ -280,43 +311,43 @@ type (
 		// if defaults have been set
 		ResetOptions() Error
 
-		// OptionReadCloser's embedded interface allows you to control how your
+		// OptionGetter's embedded interface allows you to control how your
 		// implementation makes configuration options readable. For example you
 		// can implement your own middleware for option getter.
-		OptionReader
+		OptionGetter
 
-		// OptionWriteCloser's embedded interface allows you to control how your
+		// OptionSetter's embedded interface allows you to control how your
 		// implementation makes changes to configuration options. For example you
 		// can implement your own middleware for option setter.
-		OptionWriter
+		OptionSetter
 	}
 
 	// OptionGetter is read only representation of Options
-	OptionReader interface {
-		io.Reader
+	OptionGetter interface {
 
 		// GetOption return option by key or ErrOption,
 		// if non existingOption was requested.
 		GetOption(key string) (Variable, Error)
 
-		// GetOptionOrDefault looks session value and returns
+		// GetOptionOrDefault looks option and returns
 		// provided default value if key does not exists.
-		// This call does not set that default to session!
-		GetOptionOrDefault(key string, defval ...any) (val Variable)
+		// This call does not set that default to options!
+		GetOptionOrDefault(key string, defval any) (val Variable)
 
 		// HasOption reports whether option set has option with key.
 		HasOption(key string) bool
 
 		// Range calls f sequentially for each key -> value present in the options.
 		// If f returns false, range stops the iteration.
-		RangeOptions(f func(key string, value Value) bool)
+		RangeOptions(f func(opt Variable) bool)
 
 		// Get all options as vars.Collection
-		GetAllOptions() Variables
+		GetOptions() Variables
+
+		GetOptionSetFunc(srcKey, destKey string) OptionSetFunc
 	}
 
-	OptionWriter interface {
-		io.Writer
+	OptionSetter interface {
 		SetOption(Variable) Error
 		SetOptionKeyValue(key string, val any) Error
 		SetOptionValue(key string, val Value) Error
@@ -341,13 +372,15 @@ type (
 		Delete(key string)
 		Store(key string, value any)
 		Get(key string) (v Variable)
-		LoadWithPrefix(prfx string) Variables
+		LoadWithPrefix(prfx string) (Variables, bool)
+		// ExtractWithPrefix returns Variables with prefix left trimed
 		ExtractWithPrefix(prfx string) Variables
 		Load(key string) (v Variable, ok bool)
 		LoadAndDelete(key string) (v Variable, loaded bool)
 		LoadOrDefault(key string, value any) (v Variable, loaded bool)
 		LoadOrStore(key string, value any) (actual Variable, loaded bool)
 		Range(f func(v Variable) bool)
+		All() []Variable
 	}
 
 	// Variable is key=value pair
@@ -416,8 +449,8 @@ type (
 		UseSession(Session)
 		GetSession() (Session, Error)
 
-		UseMonitor(ApplicationMonitor)
-		GetMonitor() (ApplicationMonitor, Error)
+		UseMonitor(Monitor)
+		GetMonitor() (Monitor, Error)
 
 		UseAssets(FS)
 		GetAssets() (FS, Error)
@@ -445,7 +478,9 @@ type (
 		Main()
 
 		Exit(code int)
-		Command
+		CommandActionSetter
+		CommandSubCommandSetter
+		CommandFlagSetter
 		TickerFuncs
 		Cron
 	}
@@ -467,6 +502,10 @@ type (
 
 		Settings() Settings
 
+		Get(key string) Variable
+		Store(key string, value any)
+		Opts() Variables
+
 		Dispatch(Event)
 
 		// simple context you can use as parent context
@@ -474,7 +513,9 @@ type (
 		// even tho it implements context aswell.
 		Context() context.Context
 
-		RequireServices(svcs ...string) Error
+		RequireServices(urls ...URL) ServiceLoader
+
+		Events() <-chan Event
 
 		// Done() behaves like context.Done and indcates that session was destroyed
 		// Err() returns last error in session
@@ -490,10 +531,14 @@ type (
 		Save() Error
 	}
 
-	ApplicationMonitor interface {
-		Start() Error
+	Monitor interface {
+		Start(Session) Error
 		Stop() Error
-		Stats() ApplicationStats
+		Status() ApplicationStatus
+
+		RegisterAddon(AddonInfo)
+		SetServiceStatus(url, key string, val any)
+
 		EventListener
 	}
 )
@@ -506,27 +551,18 @@ type (
 
 	FlagCreateFunc func() (Flag, Error)
 
-	Command interface {
-		// Slug String returns command name.
-		Slug() Slug
-
-		AddFlag(Flag)
-		AddFlags(flags ...FlagCreateFunc)
-
-		AddSubCommand(Command)
-		AddSubCommands(...CommandCreateFunc)
-
+	CommandActionSetter interface {
 		// Before is optional action to execute before Main.
 		// Useful to check preconidtion for your command Main.
 		// Since any required services by command will be initialized in parallel
 		// with this action you can call sess.Ready if you need to use services
 		// inside the Init.
-		Before(ActionWithArgsAndAssetsFunc)
+		Before(ActionCommandFunc)
 
 		// Main is action where your commands main logic should live.
 		// Main function body is required unless it is wrapper (parent) command
 		// for it's subcommand you want to have your application logic.
-		Do(ActionWithArgsAndAssetsFunc)
+		Do(ActionCommandFunc)
 
 		// AfterSuccess is optional callback called when Main returns without error.
 		AfterSuccess(action ActionFunc)
@@ -538,13 +574,54 @@ type (
 		// AfterAlways is optional callback to execute reqardless did Main
 		// succeed or not.
 		AfterAlways(action ActionWithErrorFunc)
+	}
+
+	CommandSubCommandSetter interface {
+		AddSubCommand(Command)
+		AddSubCommands(...CommandCreateFunc)
+	}
+
+	CommandFlagSetter interface {
+		AddFlag(Flag)
+		AddFlags(flags ...FlagCreateFunc)
+	}
+
+	Command interface {
+		// Slug String returns command name.
+		Slug() Slug
 
 		// RequireServices ensures that services by their URL
 		// will be started before Command.Main call. These services will be started
-		// in parallel with Command.Init. If you need to have services ready
+		// in parallel with Command.Before. If you need to have services ready
 		// inside Command.Before then you can call sess.Ready which will block
 		// until all services are running.
-		RequireServices(svcs ...string)
+		WithServices(urls ...URL)
+
+		AttachParent(parent Command)
+		Parent() Command
+		SubCommands() []Command
+		Flags() Flags
+		Flag(name string) Flag
+		SetParents(parents []string)
+		Parents() (parents []string)
+		Err() Error
+		Verify() Error
+		Category() string
+		HasSubcommands() bool
+		SubCommand(name string) (cmd Command, exists bool)
+
+		Description() string
+		UsageDescription() string
+
+		ExecuteBeforeAction(sess Session, assets FS, status ApplicationStatus) Error
+		ExecuteDoAction(sess Session, assets FS, status ApplicationStatus) Error
+		ExecuteAfterFailureAction(sess Session, err Error) Error
+		ExecuteAfterSuccessAction(sess Session) Error
+		ExecuteAfterAlwaysAction(sess Session, err Error) Error
+
+		CommandActionSetter
+		CommandSubCommandSetter
+		CommandFlagSetter
 	}
 
 	Flags interface {
@@ -596,6 +673,7 @@ type (
 
 		// Usage returns a usage description for that flag
 		Usage() string
+		UsageAliases() string
 
 		// Flag returns flag with leading - or --
 		// useful for help menus
@@ -605,21 +683,21 @@ type (
 		Aliases() []string
 
 		// IsHidden reports whether to show that flag in help menu or not.
-		IsHidden() bool
+		Hidden() bool
 
 		// Hide flag from help menu.
 		Hide()
 
 		// IsGlobal reports whether this flag was global and was set before any command or arg
-		IsGlobal() bool
+		Global() bool
 
 		// BelongsTo marks flag non global and belonging to provided named command.
-		BelongsTo(cmdname string)
+		AttachTo(cmdname string)
 
 		// CommandName returns empty string if command is not set with .BelongsTo
 		// When BelongsTo is set to wildcard "*" then this function will return
 		// name of the command which triggered this flag to be parsed.
-		CommandName() string
+		BelongsTo() string
 
 		// Pos returns flags position after command. In case of mulyflag first position is reported
 		Pos() int
@@ -635,10 +713,10 @@ type (
 		Var() Variable
 
 		// Required sets this flag as required
-		Required()
+		MarkAsRequired()
 
 		// IsRequired returns true if this flag is required
-		IsRequired() bool
+		Required() bool
 
 		// Parse value for the flag from given string. It returns true if flag
 		// was found in provided args string and false if not.
@@ -669,11 +747,34 @@ type (
 		Version() Version
 		Commands() []Command
 		Services() []Service
+
+		Options
 	}
 
-	AddonFactory interface {
-		GetAddonCreateFunc() AddonCreateFunc
+	AddonInfo struct {
+		Name    string
+		Slug    Slug
+		Version Version
 	}
+
+	DependencyInfo struct {
+		Path    string // module path
+		Version string // module version
+		Sum     string // checksum
+	}
+
+	ServiceInfo struct {
+		URL        string
+		Registered bool
+		Running    bool
+		Failed     bool
+		StartedAt  time.Time
+		StoppedAt  time.Time
+		Err        string
+	}
+	// AddonFactory interface {
+	// 	GetAddonCreateFunc() AddonCreateFunc
+	// }
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -688,6 +789,7 @@ type (
 	// Service interface
 	Service interface {
 		Slug() Slug
+		Name() string
 
 		URL() URL
 
@@ -714,9 +816,24 @@ type (
 		// tthe connected peers.
 		OnRequest(r ServiceRouter)
 
+		Register(Session) (BackgroundService, Error)
+
 		TickerFuncs
 
 		EventListener
+	}
+
+	BackgroundService interface {
+		Initialize(Session) Error
+		Start(sess Session, args Variables) Error
+		Stop(Session) Error
+		Tick(sess Session, ts time.Time, delta time.Duration) Error
+		Tock(sess Session, ts time.Time, delta time.Duration) Error
+	}
+
+	ServiceLoader interface {
+		Loaded() <-chan struct{}
+		Err() Error
 	}
 
 	// Engine is application runtime managing services etc.
@@ -724,15 +841,22 @@ type (
 		// Register enables you to sergiste individual services
 		// to application when having Addon would be too much overhead
 		// in design.
-		Register(...Service)
+		Register(...Service) Error
 
-		Start() Error
-		Stop() Error
+		Start(Session) Error
+		Stop(Session) Error
+
+		ListenEvents(<-chan Event)
+
+		AttachMonitor(monitor Monitor) Error
+		Monitor() Monitor
 
 		// ResolvePeerTo adds record into
 		// internal name resolution registry
 		// API not confirmed
-		ResolvePeerTo(ns, ipport string)
+		// ResolvePeerTo(ns, ipport string)
+
+		TickerFuncs
 	}
 
 	// ServiceRouter is managing how your services communicate with each other.
@@ -770,7 +894,7 @@ type (
 		URL() URL
 	}
 
-	ServiceFactory interface {
-		Service() (Service, Error)
-	}
+	// ServiceFactory interface {
+	// 	Service() (Service, Error)
+	// }
 )

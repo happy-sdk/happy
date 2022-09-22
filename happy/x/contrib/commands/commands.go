@@ -12,29 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package application
+package commands
 
 import (
-	"time"
-
 	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/cli"
 	"github.com/mkungla/happy/x/happyx"
 )
 
-var (
-	ErrApplication = happyx.NewError("application error")
-)
-
-func New(conf happy.Configurator) (happy.Application, happy.Error) {
-	app := &APP{
-		initialized: time.Now(),
+func BashCompletion() happy.Command {
+	cmd, err := cli.NewCommand(
+		"bash-completion",
+		happyx.ReadOnlyOption("usage.decription", "bash-completion helper command."),
+		happyx.ReadOnlyOption("category", "internal"),
+		happyx.ReadOnlyOption(
+			"decription",
+			"This command can be called by bash completion mechanism to provide shell completions",
+		),
+	)
+	if err != nil {
+		return nil
 	}
 
-	if conf == nil {
-		return app, nil
-	}
-	if err := app.Configure(conf); err != nil {
-		return nil, err
-	}
-	return app, nil
+	cmd.Do(func(session happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus) error {
+		return happyx.NotImplementedError("bash-completion command do action")
+	})
+
+	return cmd
 }

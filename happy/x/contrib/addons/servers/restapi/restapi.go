@@ -20,23 +20,19 @@ import (
 )
 
 type RestAPIAddon struct {
-	*sdk.AddonSkeleton
+	happy.Addon
 }
 
-func New(options ...happy.OptionWriteFunc) *RestAPIAddon {
-	return &RestAPIAddon{
-		AddonSkeleton: sdk.NewAddonSkeleton("restapi", "0.0.1"),
+func New(options ...happy.OptionSetFunc) (*RestAPIAddon, happy.Error) {
+	a, err := sdk.NewAddon(
+		"restapi",
+		"REST API",
+		"0.0.1",
+	)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func (a *RestAPIAddon) Cronjobs() {}
-
-func (a *RestAPIAddon) Options() happy.OptionDefaultsSetter {
-	return nil
-}
-func (a *RestAPIAddon) Commands() []happy.Command {
-	return nil
-}
-func (a *RestAPIAddon) Services() []happy.Service {
-	return nil
+	return &RestAPIAddon{
+		Addon: a,
+	}, nil
 }

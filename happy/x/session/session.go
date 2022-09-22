@@ -17,32 +17,60 @@ package session
 import (
 	"context"
 	"errors"
+	"os"
+	"os/signal"
 	"sync"
 	"time"
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/happyx"
+	"github.com/mkungla/happy/x/pkg/vars"
+	"github.com/mkungla/happy/x/service"
 )
 
 var ErrSession = happyx.NewError("session error")
 
 type Session struct {
-	mu       sync.RWMutex
-	logger   happy.Logger
-	settings *Settings
+	mu           sync.RWMutex
+	registerOnce sync.Once
+	logger       happy.Logger
+	settings     *Settings
 
-	done      chan struct{}
-	err       error
+	done chan struct{}
+	err  error
+
+	sig        context.Context
+	sigRelease context.CancelFunc
+	opts       happy.Variables
+
 	ready     context.Context
 	readyFunc context.CancelFunc
-	sig       context.Context
+	isReady   bool
+
+	evqueue []happy.Event
+
+	evch chan happy.Event
 }
 
-func New(logger happy.Logger, opts ...happy.OptionWriteFunc) *Session {
+func New(logger happy.Logger, opts ...happy.OptionSetFunc) *Session {
 	return &Session{
 		logger:   logger,
-		settings: &Settings{},
+		settings: &Settings{vars.AsMap[happy.Variables, happy.Variable, happy.Value](new(vars.Map))},
+		evch:     make(chan happy.Event, 100),
+		opts:     vars.AsMap[happy.Variables, happy.Variable, happy.Value](new(vars.Map)),
 	}
+}
+
+func (s *Session) Get(key string) happy.Variable {
+	return s.opts.Get(key)
+}
+
+func (s *Session) Opts() happy.Variables {
+	return s.opts
+}
+
+func (s *Session) Store(key string, value any) {
+	s.opts.Store(key, value)
 }
 
 // API
@@ -55,22 +83,20 @@ func (s *Session) Ready() <-chan struct{} {
 
 func (s *Session) Start() happy.Error {
 	s.ready, s.readyFunc = context.WithCancel(context.Background())
+	s.sig, s.sigRelease = signal.NotifyContext(s, os.Interrupt, os.Kill)
 	return nil
 }
 
 func (s *Session) Destroy(err happy.Error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.err != nil {
-		s.logger.SystemDebugf("%s: already canceled", s.String())
+	if s.Err() != nil {
+		// prevent Destroy to be called multiple times
+		// e.g. by sig release or other contexts.
 		return
 	}
 
+	s.mu.Lock()
 	s.err = err
-	// ensure chan
-	if s.done != nil {
-		close(s.done)
-	}
+
 	if s.readyFunc != nil {
 		s.readyFunc()
 	}
@@ -78,17 +104,54 @@ func (s *Session) Destroy(err happy.Error) {
 	if err := s.settings.Save(); err != nil && !errors.Is(err, happyx.ErrNotImplemented) {
 		s.logger.Errorf("failed to save session settings: %s", err)
 	}
+	if s.err == nil {
+		s.err = ErrSession.WithText("session destroyed")
+	}
+
+	s.mu.Unlock()
+
+	if s.sigRelease != nil {
+		s.sigRelease()
+		s.sigRelease = nil
+	}
+
+	s.mu.Lock()
+
+	if s.evch != nil {
+		close(s.evch)
+	}
+
+	if s.done != nil {
+		close(s.done)
+	}
+
+	s.mu.Unlock()
 }
 
 func (s *Session) Log() happy.Logger {
 	return s.logger
 }
+
 func (s *Session) Settings() happy.Settings {
 	return s.settings
 }
 
-func (s *Session) Dispatch(happy.Event) {
-	s.logger.NotImplemented("Session.Dispatch")
+func (s *Session) Dispatch(ev happy.Event) {
+	if ev == nil {
+		s.Log().Errorf("received <nil> event")
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.isReady && s.readyFunc != nil {
+		if ev.Scope() == "engine" && ev.Key() == "ready" {
+			s.readyFunc()
+			s.isReady = true
+		}
+	}
+	s.evch <- ev
 }
 
 func (s *Session) Context() context.Context {
@@ -96,15 +159,14 @@ func (s *Session) Context() context.Context {
 	return nil
 }
 
-func (s *Session) RequireServices(svcs ...string) happy.Error {
-	return happyx.NotImplementedError("Session.RequireServices")
+func (s *Session) RequireServices(urls ...happy.URL) happy.ServiceLoader {
+	return service.NewServiceLoader(s, urls...)
 }
 
 // Deadline returns the time when work done on behalf of this context
 // should be canceled. Deadline returns ok==false when no deadline is
 // set. Successive calls to Deadline return the same results.
 func (s *Session) Deadline() (deadline time.Time, ok bool) {
-	s.logger.NotImplemented("Session.Deadline")
 	return
 }
 
@@ -152,6 +214,13 @@ func (s *Session) Value(key any) any {
 
 func (s *Session) String() string {
 	return "happyx.Session"
+}
+
+func (s *Session) Events() <-chan happy.Event {
+	s.mu.RLock()
+	ch := s.evch
+	s.mu.RUnlock()
+	return ch
 }
 
 // // happy.Options interface

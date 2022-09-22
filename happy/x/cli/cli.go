@@ -12,29 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitor
+// Package cli is provides implementations of happy.Application
+// command line interfaces
+package cli
 
 import (
-	"time"
+	"github.com/mkungla/happy/x/happyx"
 )
 
-type Stats struct {
-	started time.Time
-	stopped time.Time
-	evs     int
-}
-
-func (s *Stats) Started() time.Time {
-	return s.started
-}
-
-func (s *Stats) Elapsed() time.Duration {
-	if s.stopped.IsZero() {
-		return time.Since(s.started)
-	}
-	return s.stopped.Sub(s.started)
-}
-
-func (s *Stats) TotalEvents() int {
-	return s.evs
-}
+var (
+	ErrCommand        = happyx.NewError("command error")
+	ErrCommandAction  = happyx.NewError("command action error")
+	ErrCommandInvalid = happyx.NewError("invalid command definition")
+	ErrCommandArgs    = happyx.NewError("command arguments error")
+	ErrCommandFlags   = happyx.NewError("command flags error")
+	ErrPanic          = happyx.NewError("there was panic, check logs for more info")
+)

@@ -16,37 +16,23 @@ package sdk
 
 import (
 	"github.com/mkungla/happy"
-	// "github.com/mkungla/happy/x/happyx"
+	"github.com/mkungla/happy/x/addon"
+	"github.com/mkungla/happy/x/application"
+	"github.com/mkungla/happy/x/cli"
+	"github.com/mkungla/happy/x/config"
+	"github.com/mkungla/happy/x/contrib/loggers/console"
+	"github.com/mkungla/happy/x/engine"
+	"github.com/mkungla/happy/x/happyx"
+	"github.com/mkungla/happy/x/monitor"
+	"github.com/mkungla/happy/x/session"
+
+	"os"
+	"time"
 )
 
-type AddonSkeleton struct {
-	name    string
-	version Version
-}
-
-func NewAddonSkeleton(name, version string) *AddonSkeleton {
-	return &AddonSkeleton{
-		name: name,
-		version: Version{
-			s: version,
-		},
-	}
-}
-
-func (a *AddonSkeleton) Cronjobs() {}
-
-func (a *AddonSkeleton) Name() string           { return a.name }
-func (a *AddonSkeleton) Slug() happy.Slug       { return Slug{} }
-func (a *AddonSkeleton) Version() happy.Version { return a.version }
-func (a *AddonSkeleton) Options() happy.OptionDefaultsSetter {
-	return nil
-}
-func (a *AddonSkeleton) Commands() []happy.Command {
-	return nil
-}
-func (a *AddonSkeleton) Services() []happy.Service {
-	return nil
-}
+var (
+	ErrAddon = addon.ErrAddon
+)
 
 type Slug struct {
 	s string
@@ -60,55 +46,76 @@ func (s Slug) String() string {
 	return s.s
 }
 
-type Version struct {
-	s string
+func NewAddon(slug, name, version string, defaultOptions ...happy.OptionSetFunc) (happy.Addon, happy.Error) {
+	return addon.New(slug, name, version, defaultOptions...)
 }
 
-func (v Version) String() string {
-	return v.s
-}
-
-type URL struct {
-	s string
-}
-
-func (u URL) String() string {
-	return u.s
-}
-
-type AddonFactory struct {
-	Addon happy.Addon
-}
-
-func (a *AddonFactory) GetAddonCreateFunc() happy.AddonCreateFunc {
-	return func() (happy.Addon, happy.Error) {
-		return a.Addon, nil
+func NewConfig(opts ...happy.OptionSetFunc) happy.Configurator {
+	conf, err := config.New(opts...)
+	if err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+		return nil
 	}
+
+	// default logger with default options
+	logger := console.New(
+		os.Stderr,
+		happyx.Option("level", happy.LOG_NOTICE),
+		happyx.Option("colors", true),
+		happyx.Option("scope", ""),
+		// following marks option as readonly however behaviour still depends
+		// in on underlying implementation do respect readonly values.
+		// This is good example why you should use github.com/mkungla/happy/x/testsuite
+		// to test your implementations, since that will test against such things.
+		happyx.ReadOnlyOption("filenames.level", happy.LOG_NOTICE),
+		happyx.ReadOnlyOption("filenames.long", false),
+		happyx.ReadOnlyOption("filenames.pre", ""),
+		happyx.ReadOnlyOption("ts.date", false),
+		happyx.ReadOnlyOption("ts.time", true),
+		happyx.ReadOnlyOption("ts.microseconds", false),
+		happyx.ReadOnlyOption("ts.utc", false), // utc true will show UTC time instead
+	)
+
+	// Logger to be used
+	conf.UseLogger(logger)
+
+	// Session (context) manager to be used
+	conf.UseSession(NewSession(logger))
+
+	// Application monitor to be used
+	conf.UseMonitor(NewMonitor())
+
+	// App engine to be used
+	e := NewEngine(
+		happyx.Option("services.discovery.timeout", time.Second*30),
+	)
+
+	conf.UseEngine(e)
+	return conf
 }
 
-type ServiceFactory struct {
-	Default happy.Service
+func NewApplication(conf happy.Configurator) happy.Application {
+	app, err := application.New(conf)
+	if err != nil {
+		os.Stderr.WriteString(err.Error() + "\n")
+		os.Exit(1)
+	}
+	return app
 }
 
-func (a *ServiceFactory) Service() (happy.Service, happy.Error) {
-	return a.Default, nil
+func NewSession(logger happy.Logger, opts ...happy.OptionSetFunc) happy.Session {
+	return session.New(logger, opts...)
 }
 
-type ServiceSkeleton struct {
+func NewEngine(opts ...happy.OptionSetFunc) happy.Engine {
+	return engine.New(opts...)
 }
 
-func (a *ServiceSkeleton) Slug() happy.Slug { return Slug{} }
+func NewMonitor(opts ...happy.OptionSetFunc) happy.Monitor {
+	return monitor.New(opts...)
+}
 
-func (a *ServiceSkeleton) URL() happy.URL { return URL{} }
-
-func (a *ServiceSkeleton) OnInitialize(happy.ActionFunc) {}
-
-func (a *ServiceSkeleton) OnStart(happy.ActionWithArgsFunc) {}
-
-func (a *ServiceSkeleton) OnStop(happy.ActionFunc) {}
-
-func (a *ServiceSkeleton) OnRequest(happy.ServiceRouter)                    {}
-func (a *ServiceSkeleton) OnTick(happy.ActionTickFunc)                      {}
-func (a *ServiceSkeleton) OnTock(happy.ActionTickFunc)                      {}
-func (a *ServiceSkeleton) OnEvent(key string, cb happy.ActionWithEventFunc) {}
-func (a *ServiceSkeleton) OnAnyEvent(happy.ActionWithEventFunc)             {}
+func NewCommand(cmd string, opts ...happy.OptionSetFunc) (happy.Command, happy.Error) {
+	return cli.NewCommand(cmd, opts...)
+}

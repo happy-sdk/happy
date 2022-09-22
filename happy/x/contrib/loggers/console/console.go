@@ -34,13 +34,11 @@
 // filenames.long     default(false)
 //
 //	set option true to show long filenames.
-package devlog
+package console
 
 import (
 	"errors"
 	"fmt"
-	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/happyx"
 	"io"
 	"os"
 	"runtime"
@@ -48,6 +46,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/happyx"
 )
 
 var std = New(os.Stderr)
@@ -81,7 +82,7 @@ type Logger struct {
 
 func Default() happy.Logger { return std }
 
-func New(out io.Writer, options ...happy.OptionWriteFunc) happy.Logger {
+func New(out io.Writer, options ...happy.OptionSetFunc) happy.Logger {
 	l := &Logger{
 		out:            out,
 		dlvl:           happy.LOG_NOTICE, // default level
@@ -287,54 +288,70 @@ func (l *Logger) Deprecatedf(template string, args ...any) {
 
 // LOG_NOTICE
 func (l *Logger) Notice(args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_NOTICE, "notice  ", 2, fmt.Sprint(args...), blackFg, cyanBg)
 }
 
 func (l *Logger) Noticef(template string, args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_NOTICE, "notice  ", 2, fmt.Sprintf(template, args...), blackFg, cyanBg)
 }
 
 func (l *Logger) Ok(args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_NOTICE, "ok      ", 2, fmt.Sprint(args...), greenFg, blackBg)
 }
 func (l *Logger) Okf(template string, args ...any) {
-	l.output(happy.LOG_NOTICE, "ok ", 2, fmt.Sprintf(template, args...), greenFg, blackBg)
+	l.handleHappyErrors(args)
+	l.output(happy.LOG_NOTICE, "ok      ", 2, fmt.Sprintf(template, args...), greenFg, blackBg)
 }
 
 // LOG_INFO
 func (l *Logger) Info(args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_INFO, "info    ", 2, fmt.Sprint(args...), cyanFg, blackBg)
 }
 func (l *Logger) Infof(template string, args ...any) {
-	l.output(happy.LOG_INFO, "info ", 2, fmt.Sprintf(template, args...), 0, 0)
+	l.handleHappyErrors(args)
+	l.output(happy.LOG_INFO, "info    ", 2, fmt.Sprintf(template, args...), cyanFg, blackBg)
 }
+
 func (l *Logger) Experimental(args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_INFO, "exp     ", 2, fmt.Sprint(args...), yellowFg, whiteBg)
 }
+
 func (l *Logger) Experimentalf(template string, args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_INFO, "exp     ", 2, fmt.Sprintf(template, args...), yellowFg, whiteBg)
 }
+
 func (l *Logger) NotImplemented(args ...any) {
 	l.output(happy.LOG_INFO, "notimpl ", 2, fmt.Sprint(args...), blackFg, yellowBg)
 }
+
 func (l *Logger) NotImplementedf(template string, args ...any) {
 	l.output(happy.LOG_INFO, "notimpl ", 2, fmt.Sprintf(template, args...), blackFg, yellowBg)
 }
 
 // LOG_DEBUG
 func (l *Logger) Debug(args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_DEBUG, "debug   ", 2, fmt.Sprint(args...), whiteFg, 0)
 }
 func (l *Logger) Debugf(template string, args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_DEBUG, "debug   ", 2, fmt.Sprintf(template, args...), whiteFg, 0)
 }
 
 // LOG_SYSTEMDEBUG
 func (l *Logger) SystemDebug(args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_SYSTEMDEBUG, "system  ", 2, fmt.Sprint(args...), blueFg, 0)
 }
 
 func (l *Logger) SystemDebugf(template string, args ...any) {
+	l.handleHappyErrors(args)
 	l.output(happy.LOG_SYSTEMDEBUG, "system  ", 2, fmt.Sprintf(template, args...), blueFg, 0)
 }
 
@@ -374,14 +391,20 @@ func (l *Logger) SetOptionsDefaultFuncs(vfuncs ...happy.VariableParseFunc) happy
 	return happyx.Errorf("%w: devlog.SetOptionsDefaultFuncs", happyx.ErrNotImplemented)
 }
 
-func (l *Logger) handleHappyErrors(args []any) {
+func (l *Logger) handleHappyErrors(args []any) bool {
 	for _, a := range args {
 		if e, ok := a.(error); ok {
 			if errors.Is(e, happyx.ErrNotImplemented) {
 				l.output(happy.LOG_INFO, "notimpl ", 3, fmt.Sprint(args...), redFg, blackBg)
+				return true
+			}
+			if errors.Is(e, happyx.BUG) {
+				l.output(happy.LOG_CRIT, "BUG     ", 3, fmt.Sprint(args...), whiteFg, redBg)
+				return true
 			}
 		}
 	}
+	return false
 }
 
 func (l *Logger) output(lvl happy.LogPriority, ltype string, calldepth int, s string, fg, bg color) error {

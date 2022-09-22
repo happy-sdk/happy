@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configurator
+package config
 
 import (
 	"github.com/mkungla/happy"
@@ -23,14 +23,14 @@ import (
 type Configurator struct {
 	logger  happy.Logger
 	session happy.Session
-	monitor happy.ApplicationMonitor
+	monitor happy.Monitor
 	assets  happy.FS
 	engine  happy.Engine
 
 	config *config
 }
 
-func New(opts ...happy.OptionWriteFunc) (*Configurator, happy.Error) {
+func New(opts ...happy.OptionSetFunc) (*Configurator, happy.Error) {
 	c := &Configurator{
 		config: new(config),
 	}
@@ -54,6 +54,7 @@ func (c *Configurator) UseLogger(logger happy.Logger) {
 		}
 		return true
 	})
+
 	c.logger = logger
 }
 
@@ -66,10 +67,10 @@ func (c *Configurator) GetSession() (happy.Session, happy.Error) {
 	return c.session, nil
 }
 
-func (c *Configurator) UseMonitor(monitor happy.ApplicationMonitor) {
+func (c *Configurator) UseMonitor(monitor happy.Monitor) {
 	c.monitor = monitor
 }
-func (c *Configurator) GetMonitor() (happy.ApplicationMonitor, happy.Error) {
+func (c *Configurator) GetMonitor() (happy.Monitor, happy.Error) {
 	return c.monitor, nil
 }
 
@@ -98,18 +99,11 @@ func (c *Configurator) SetOptionsDefaultFuncs(vfuncs ...happy.VariableParseFunc)
 
 func (c *Configurator) GetApplicationOptions() happy.Variables {
 	m := c.config.m.ExtractWithPrefix("app.")
-	if m == nil {
-		return nil
-	}
 	return vars.AsMap[happy.Variables, happy.Variable, happy.Value](m)
 }
 
 type config struct {
 	m vars.Map
-}
-
-func (c *config) Write(p []byte) (int, error) {
-	return 0, happyx.Errorf("%w: configurator .Write", happyx.ErrNotImplemented)
 }
 
 func (c *config) SetOption(v happy.Variable) happy.Error {

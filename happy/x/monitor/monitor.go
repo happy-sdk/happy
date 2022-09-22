@@ -15,33 +15,68 @@
 package monitor
 
 import (
-	"github.com/mkungla/happy"
+	"sync"
 	"time"
+
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/happyx"
 )
 
+var ErrMonitor = happyx.NewError("monitor error")
+
 type Monitor struct {
-	stats *Stats
+	mu     sync.Mutex
+	status *Status
 }
 
-func New(opts ...happy.OptionWriteFunc) *Monitor {
-	return &Monitor{
-		stats: &Stats{},
+func New(opts ...happy.OptionSetFunc) *Monitor {
+	m := &Monitor{
+		status: &Status{},
 	}
+	return m
 }
 
-func (m *Monitor) Start() happy.Error {
-	m.stats.started = time.Now()
+func (m *Monitor) Start(sess happy.Session) happy.Error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if err := m.status.start(); err != nil {
+		return ErrMonitor.Wrap(err)
+	}
+
+	m.status.started = time.Now()
 	return nil
 }
 
 func (m *Monitor) Stop() happy.Error {
-	m.stats.stopped = time.Now()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.status.stopped = time.Now()
 	return nil
 }
 
-func (m *Monitor) Stats() happy.ApplicationStats { return m.stats }
+func (m *Monitor) Status() happy.ApplicationStatus {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.status
+}
 
 // happy.EventListener interface
-func (m *Monitor) OnAnyEvent(cb happy.ActionWithEventFunc) {}
+func (m *Monitor) OnAnyEvent(cb happy.ActionWithEventFunc) {
 
-func (m *Monitor) OnEvent(key string, cb happy.ActionWithEventFunc) {}
+}
+
+func (m *Monitor) OnEvent(key string, cb happy.ActionWithEventFunc) {
+
+}
+
+func (m *Monitor) RegisterAddon(ainfo happy.AddonInfo) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.status.addons = append(m.status.addons, ainfo)
+}
+
+func (m *Monitor) SetServiceStatus(url, key string, val any) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.status.setServiceStatus(url, key, val)
+}

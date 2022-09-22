@@ -28,7 +28,7 @@ import (
 type FlagSet struct {
 	mu      sync.RWMutex
 	name    string
-	argsn   uint
+	argsn   int
 	present bool
 	flags   []Flag
 	sets    []Flags
@@ -42,7 +42,7 @@ type FlagSet struct {
 // argsn is number of command line arguments allowed within this set.
 // If argsn is -gt 0 then parser will stop after finding argsn+1 argument
 // which is not a flag.
-func NewFlagSet(name string, argsn uint) (*FlagSet, error) {
+func NewFlagSet(name string, argsn int) (*FlagSet, error) {
 	if name == "/" || (len(os.Args) > 0 && name == os.Args[0]) {
 		name = "/"
 	} else if !ValidFlagName(name) {
@@ -73,7 +73,7 @@ func (s *FlagSet) Add(flag ...Flag) error {
 		if !errors.Is(err, ErrNoNamedFlag) {
 			return fmt.Errorf("%w: %s", ErrFlagExists, f.Name())
 		}
-		f.BelongsTo(s.name)
+		f.AttachTo(s.name)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -250,8 +250,8 @@ includessubset:
 
 	// filter flags
 	used := []string{}
-	if args[0] == s.name {
-		used = append(used, s.name)
+	if args[0] == s.name || args[0] == os.Args[0] {
+		used = append(used, args[0])
 	}
 	// for _, flag := range s.flags {
 	// 	if !flag.Present() {
@@ -290,7 +290,11 @@ includessubset:
 		if err != nil {
 			return err
 		}
-		s.args = append(s.args, a)
+		if s.argsn == -1 || len(s.args) < s.argsn {
+			s.args = append(s.args, a)
+		} else {
+			break
+		}
 	}
 	return nil
 }

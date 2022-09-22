@@ -16,9 +16,29 @@ package happyx
 
 import (
 	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/pkg/vars"
 )
 
 // GetServiceAPI returns Service API from session.
 func GetServiceAPI[SVC happy.Service](sess happy.Session, url string) (svc SVC, err happy.Error) {
 	return
+}
+
+type Slug string
+
+func NewSlug(str string) (happy.Slug, error) {
+	s, err := vars.ParseKey(str)
+	if err != nil {
+		return nil, err
+	}
+	return Slug(s), nil
+}
+
+func (s Slug) Valid() bool {
+	_, err := vars.ParseKey(string(s))
+	return err == nil
+}
+
+func (s Slug) String() string {
+	return string(s)
 }

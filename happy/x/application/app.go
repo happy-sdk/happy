@@ -15,11 +15,12 @@
 package application
 
 import (
-	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/happyx"
-	"github.com/mkungla/happy/x/pkg/varflag"
 	"os"
 	"time"
+
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/cli"
+	"github.com/mkungla/happy/x/happyx"
 )
 
 type APP struct {
@@ -27,14 +28,16 @@ type APP struct {
 	configured  bool
 	logger      happy.Logger
 	session     happy.Session
-	monitor     happy.ApplicationMonitor
 	assets      happy.FS
 	engine      happy.Engine
 
 	opts happy.Variables
 
-	flags   happy.Flags
-	version happy.Version
+	rootCmd   happy.Command
+	activeCmd happy.Command
+
+	tickAction happy.ActionTickFunc
+	tockAction happy.ActionTickFunc
 }
 
 // happy.Application interface
@@ -59,42 +62,58 @@ func (a *APP) Configure(conf happy.Configurator) (err happy.Error) {
 		return err
 	}
 
-	a.monitor, err = conf.GetMonitor()
-	if err != nil {
-		return err
-	}
 	a.assets, err = conf.GetAssets()
 	if err != nil {
 		return err
 	}
+
 	a.engine, err = conf.GetEngine()
 	if err != nil {
 		return err
 	}
-
-	flags, ferr := varflag.NewFlagSetAs[
-		happy.Flags,    // flagset
-		happy.Flags,    // sub flagset
-		happy.Flag,     // flag
-		happy.Variable, // flag values
-		happy.Value,    // arguements
-	](os.Args[0], 0)
-	if ferr != nil {
+	monitor, err := conf.GetMonitor()
+	if err != nil {
 		return err
 	}
-	a.flags = flags
+	if err := a.engine.AttachMonitor(monitor); err != nil {
+		return err
+	}
 
+	rootCmd, err := cli.NewCommand(os.Args[0])
+	if err != nil {
+		return err
+	}
+	a.rootCmd = rootCmd
 	return nil
 }
 
 func (a *APP) RegisterAddon(addon happy.Addon) {
+
 	if addon == nil {
 		a.logger.Warn("RegisterAddon got <nil> addon")
 		return
 	}
 
+	for _, cmd := range addon.Commands() {
+		a.logger.SystemDebugf("addon %s provided command %s", addon.Slug(), cmd.Slug())
+		a.AddSubCommand(cmd)
+	}
+
+	for _, svc := range addon.Services() {
+		a.logger.SystemDebugf("addon %s provided service %s", addon.Slug(), svc.Slug())
+		a.RegisterService(svc)
+	}
+
+	info := happy.AddonInfo{
+		Name:    addon.Name(),
+		Slug:    addon.Slug(),
+		Version: addon.Version(),
+	}
+
+	a.engine.Monitor().RegisterAddon(info)
+
 	a.logger.SystemDebugf(
-		"registered addon name: %s, version: %s",
+		"registerd addon name: %s, version: %s",
 		addon.Name(),
 		addon.Version(),
 	)
@@ -116,11 +135,23 @@ func (a *APP) RegisterAddons(acfunc ...happy.AddonCreateFunc) {
 	}
 }
 
-func (a *APP) RegisterService(happy.Service) {
-	a.logger.SystemDebug("app.RegisterService")
+func (a *APP) RegisterService(svc happy.Service) {
+	if svc == nil {
+		a.logger.Alert("adding <nil> service")
+		a.Exit(2)
+		return
+	}
+	if err := a.engine.Register(svc); err != nil {
+		a.logger.Alert(err)
+		a.Exit(2)
+		return
+	}
+
+	a.logger.SystemDebugf("added service %s:", svc.URL())
 }
 
 func (a *APP) RegisterServices(...happy.ServiceCreateFunc) {
+
 	a.logger.SystemDebug("app.RegisterServices")
 }
 
@@ -133,78 +164,104 @@ func (a *APP) Main() {
 		return
 	}
 
-	if err := a.engine.Start(); err != nil {
-		a.Log().Emergency(err)
-		a.Exit(1)
+	// Shall we display default help if so print it and exit with 0
+	if cli.Help(a.session, a.rootCmd, a.activeCmd) {
+		a.Exit(0)
 		return
 	}
 
-	a.Exit(0)
+	// Start application main process
+	go a.execute()
+
+	// block if needed
+	appmain()
 }
 
 // happy.Command interface (root command)
-func (a *APP) Slug() happy.Slug { return nil }
+func (a *APP) Slug() happy.Slug { return a.rootCmd.Slug() }
 
 // AddFlag to application. Invalid flag or when flag is shadowing
 // existing flag log Alert.
 func (a *APP) AddFlag(flag happy.Flag) {
 	if flag == nil {
 		a.logger.Alert("adding <nil> flag")
+		a.Exit(2)
 		return
 	}
 
-	if err := a.flags.Add(flag); err != nil {
-		a.logger.Alertf("failed to add flag %s:", err)
-	}
-	a.logger.SystemDebugf("added global flag %s:", flag.Name())
+	a.logger.SystemDebugf("adding global flag %s:", flag.Name())
+	a.rootCmd.AddFlag(flag)
 }
 
 func (a *APP) AddFlags(flagFuncs ...happy.FlagCreateFunc) {
-	for _, flagFunc := range flagFuncs {
-		flag, err := flagFunc()
+	a.rootCmd.AddFlags(flagFuncs...)
+}
+
+func (a *APP) AddSubCommand(cmd happy.Command) {
+	if cmd == nil {
+		a.logger.Alert("adding <nil> command")
+		a.Exit(2)
+		return
+	}
+	a.rootCmd.AddSubCommand(cmd)
+	a.logger.SystemDebugf("added command %s:", cmd.Slug())
+}
+
+func (a *APP) AddSubCommands(cmdFuncs ...happy.CommandCreateFunc) {
+	for _, cmdFunc := range cmdFuncs {
+		cmd, err := cmdFunc()
 		if err != nil {
 			a.logger.Error(err)
+			a.Exit(2)
+			return
 		}
-		a.AddFlag(flag)
+		a.AddSubCommand(cmd)
 	}
 }
 
-func (a *APP) AddSubCommand(happy.Command) {
-	a.logger.SystemDebug("app.AddSubCommand")
+func (a *APP) Before(action happy.ActionCommandFunc) {
+	a.rootCmd.Before(action)
+	a.logger.SystemDebug("set app.Before")
 }
-func (a *APP) AddSubCommands(...happy.CommandCreateFunc) {
-	a.logger.SystemDebug("app.AddSubCommands")
+
+func (a *APP) Do(action happy.ActionCommandFunc) {
+	a.rootCmd.Do(action)
+	a.logger.SystemDebug("set app.Do")
 }
-func (a *APP) Before(happy.ActionWithArgsAndAssetsFunc) {
-	a.logger.SystemDebug("app.Before")
+
+func (a *APP) AfterSuccess(action happy.ActionFunc) {
+	a.rootCmd.AfterSuccess(action)
+	a.logger.SystemDebug("set app.AfterSuccess")
 }
-func (a *APP) Do(happy.ActionWithArgsAndAssetsFunc) {
-	a.logger.SystemDebug("app.Do")
+
+func (a *APP) AfterFailure(action happy.ActionWithErrorFunc) {
+	a.rootCmd.AfterFailure(action)
+	a.logger.SystemDebug("set app.AfterFailure")
 }
-func (a *APP) AfterSuccess(happy.ActionFunc) {
-	a.logger.SystemDebug("app.AfterSuccess")
+
+func (a *APP) AfterAlways(action happy.ActionWithErrorFunc) {
+	a.rootCmd.AfterAlways(action)
+	a.logger.SystemDebug("set app.AfterAlways")
 }
-func (a *APP) AfterFailure(happy.ActionWithErrorFunc) {
-	a.logger.SystemDebug("app.AfterFailure")
-}
-func (a *APP) AfterAlways(happy.ActionWithErrorFunc) {
-	a.logger.SystemDebug("app.AfterAlways")
-}
+
 func (a *APP) RequireServices(svcs ...string) {
 	a.logger.SystemDebug("app.RequireServices")
 }
 
 // happy.TickerFuncs interface
-func (a *APP) OnTick(happy.ActionTickFunc) {
-	a.logger.SystemDebug("app.OnTick")
+func (a *APP) OnTick(action happy.ActionTickFunc) {
+	a.tickAction = action
+	a.logger.SystemDebug("set app.OnTick")
 }
-func (a *APP) OnTock(happy.ActionTickFunc) {
-	a.logger.SystemDebug("app.OnTock")
+
+func (a *APP) OnTock(action happy.ActionTickFunc) {
+	a.tockAction = action
+	a.logger.SystemDebug("set app.OnTock")
 }
 
 // happy.Cron interface
 func (a *APP) Cron(happy.ActionCronSchedulerSetup) {
-	a.logger.SystemDebug("app.Cron")
+	a.logger.NotImplemented("app.Cron")
 }
 
 func (a *APP) Exit(code int) {

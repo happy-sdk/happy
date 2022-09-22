@@ -14,7 +14,7 @@
 
 //go:build (linux && !android) || freebsd || windows || openbsd || darwin || !js
 
-package devlog
+package console
 
 import (
 	"fmt"

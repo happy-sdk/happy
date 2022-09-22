@@ -76,23 +76,23 @@ type (
 
 		// Return flag aliases
 		Aliases() []string
+		UsageAliases() string
 
 		// IsHidden reports whether to show that flag in help menu or not.
-		IsHidden() bool
+		Hidden() bool
 
 		// Hide flag from help menu.
 		Hide()
 
 		// IsGlobal reports whether this flag was global and was set before any command or arg
-		IsGlobal() bool
+		Global() bool
 
 		// BelongsTo marks flag non global and belonging to provided named command.
-		BelongsTo(cmdname string)
-
+		AttachTo(cmdname string)
 		// CommandName returns empty string if command is not set with .BelongsTo
 		// When BelongsTo is set to wildcard "*" then this function will return
 		// name of the command which triggered this flag to be parsed.
-		CommandName() string
+		BelongsTo() string
 
 		// Pos returns flags position after command. In case of mulyflag first position is reported
 		Pos() int
@@ -108,10 +108,10 @@ type (
 		Var() vars.Variable
 
 		// Required sets this flag as required
-		Required()
+		MarkAsRequired()
 
 		// IsRequired returns true if this flag is required
-		IsRequired() bool
+		Required() bool
 
 		// Parse value for the flag from given string. It returns true if flag
 		// was found in provided args string and false if not.
@@ -231,7 +231,7 @@ func NewFlagSetAs[
 	FLAG FlagIface[VAR, VAL],
 	VAR vars.VariableIface[VAL],
 	VAL vars.ValueIface,
-](name string, argsn uint) (FLAGS, error) {
+](name string, argsn int) (FLAGS, error) {
 	var flags FlagsIface[FLAGSET, FLAG, VAR, VAL]
 
 	n, err := vars.ParseKey(name)
@@ -241,7 +241,7 @@ func NewFlagSetAs[
 	if len(os.Args) > 0 && n == os.Args[0] {
 		n = "/"
 	}
-	flags = &GenericFlagSet[FLAGS, FLAGSET, FLAG, VAR, VAL]{name: name, argsn: argsn}
+	flags = &GenericFlagSet[FLAGS, FLAGSET, FLAG, VAR, VAL]{name: n, argsn: argsn}
 	return flags.(FLAGS), nil
 }
 
@@ -279,7 +279,7 @@ type GenericFlagSet[
 ] struct {
 	mu      sync.RWMutex
 	name    string
-	argsn   uint
+	argsn   int
 	present bool
 	flags   []FLAG
 	sets    []FLAGS
@@ -305,7 +305,7 @@ func (s *GenericFlagSet[FLAGS, FLAGSET, FLAG, VAR, VAL]) Add(flag ...FLAG) error
 		if !errors.Is(err, ErrNoNamedFlag) {
 			return fmt.Errorf("%w: %s", ErrFlagExists, f.Name())
 		}
-		f.BelongsTo(s.name)
+		f.AttachTo(s.name)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -375,18 +375,23 @@ includessubset:
 
 	// filter flags
 	used := []string{}
-	if args[0] == s.name {
-		used = append(used, s.name)
+	if args[0] == s.name || args[0] == os.Args[0] {
+		used = append(used, args[0])
 	}
 
 	sargs := slicediff(args, used)
 	for _, arg := range sargs {
-		a, err := vars.NewVariable(s.Name(), arg, true)
+		a, err := vars.NewVariable(s.name, arg, true)
 		a1 := vars.AsVariable[VAR, VAL](a)
 		if err != nil {
 			return err
 		}
-		s.args = append(s.args, a1.Value())
+
+		if s.argsn == -1 || len(s.args) < s.argsn {
+			s.args = append(s.args, a1.Value())
+		} else {
+			break
+		}
 	}
 	return nil
 }
@@ -496,11 +501,23 @@ func (s *GenericFlagSet[FLAGS, FLAGSET, FLAG, VAR, VAL]) Parse(args []string) er
 
 type FlagIface[VAR vars.VariableIface[VAL], VAL vars.ValueIface] interface {
 	Name() string
-	Var() VAR
 	Default() VAR
-	BelongsTo(cmdname string)
-	Parse([]string) (bool, error)
+	Usage() string
+	Flag() string
+	Aliases() []string
+	UsageAliases() string
+	Hidden() bool
+	Hide()
+	Global() bool
+	AttachTo(cmdname string)
+	BelongsTo() string
+	Pos() int
+	Unset()
 	Present() bool
+	Var() VAR
+	MarkAsRequired()
+	Required() bool
+	Parse([]string) (bool, error)
 	Input() []string
 }
 
@@ -546,10 +563,13 @@ func (f *GenericFlag[VAR, VAL]) Flag() string {
 func (f *GenericFlag[VAR, VAL]) Aliases() []string {
 	return f.f.Aliases()
 }
+func (f *GenericFlag[VAR, VAL]) UsageAliases() string {
+	return f.f.UsageAliases()
+}
 
 // IsHidden reports whether to show that flag in help menu or not.
-func (f *GenericFlag[VAR, VAL]) IsHidden() bool {
-	return f.f.IsHidden()
+func (f *GenericFlag[VAR, VAL]) Hidden() bool {
+	return f.f.Hidden()
 }
 
 // Hide flag from help menu.
@@ -558,20 +578,20 @@ func (f *GenericFlag[VAR, VAL]) Hide() {
 }
 
 // IsGlobal reports whether this flag was global and was set before any command or arg
-func (f *GenericFlag[VAR, VAL]) IsGlobal() bool {
-	return f.f.IsGlobal()
+func (f *GenericFlag[VAR, VAL]) Global() bool {
+	return f.f.Global()
 }
 
 // BelongsTo marks flag non global and belonging to provided named command.
-func (f *GenericFlag[VAR, VAL]) BelongsTo(cmdname string) {
-	f.f.BelongsTo(cmdname)
+func (f *GenericFlag[VAR, VAL]) AttachTo(cmdname string) {
+	f.f.AttachTo(cmdname)
 }
 
-// CommandName returns empty string if command is not set with .BelongsTo
+// BelongsTo returns empty string if command is not set with .BelongsTo
 // When BelongsTo is set to wildcard "*" then this function will return
 // name of the command which triggered this flag to be parsed.
-func (f *GenericFlag[VAR, VAL]) CommandName() string {
-	return f.f.CommandName()
+func (f *GenericFlag[VAR, VAL]) BelongsTo() string {
+	return f.f.BelongsTo()
 }
 
 // Pos returns flags position after command. In case of mulyflag first position is reported
@@ -591,13 +611,13 @@ func (f *GenericFlag[VAR, VAL]) Present() bool {
 }
 
 // Required sets this flag as required
-func (f *GenericFlag[VAR, VAL]) Required() {
-	f.f.Required()
+func (f *GenericFlag[VAR, VAL]) MarkAsRequired() {
+	f.f.MarkAsRequired()
 }
 
 // IsRequired returns true if this flag is required
-func (f *GenericFlag[VAR, VAL]) IsRequired() bool {
-	return f.f.IsRequired()
+func (f *GenericFlag[VAR, VAL]) Required() bool {
+	return f.f.Required()
 }
 
 // Parse value for the flag from given string. It returns true if flag
