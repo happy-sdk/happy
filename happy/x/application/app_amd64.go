@@ -281,7 +281,7 @@ func (a *APP) execute() {
 
 	cmdtree := strings.Join(a.activeCmd.Parents(), ".") + "." + a.activeCmd.Slug().String()
 	a.logger.SystemDebugf("session ready: execute %s.Do action", cmdtree)
-	err := a.activeCmd.ExecuteDoAction(a.session, a.assets, a.engine.Monitor().Status())
+	err := a.activeCmd.ExecuteDoAction(a.session, a.assets, a.engine.Monitor().Status(), a.apis)
 	if err != nil {
 		a.executeAfterFailureActions(err)
 	} else {
@@ -293,11 +293,11 @@ func (a *APP) execute() {
 func (a *APP) executeBeforeActions() happy.Error {
 	a.logger.SystemDebug("execute before actions")
 	if a.rootCmd != a.activeCmd {
-		if err := a.rootCmd.ExecuteBeforeAction(a.session, a.assets, a.engine.Monitor().Status()); err != nil {
+		if err := a.rootCmd.ExecuteBeforeAction(a.session, a.assets, a.engine.Monitor().Status(), a.apis); err != nil {
 			return err
 		}
 	}
-	if err := a.activeCmd.ExecuteBeforeAction(a.session, a.assets, a.engine.Monitor().Status()); err != nil {
+	if err := a.activeCmd.ExecuteBeforeAction(a.session, a.assets, a.engine.Monitor().Status(), a.apis); err != nil {
 		return err
 	}
 	return nil

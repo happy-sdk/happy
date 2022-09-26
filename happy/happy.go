@@ -85,6 +85,13 @@ const (
 type (
 	LogPriority int
 
+	LogEntry struct {
+		Time     time.Time
+		Priority LogPriority
+		Message  string
+		Label    string
+	}
+
 	// Action is common callback in happy framework.
 	ActionFunc func(sess Session) error
 
@@ -93,7 +100,13 @@ type (
 	ActionWithArgsFunc  func(sess Session, args Variables) error
 	ActionWithEventFunc func(sess Session, ev Event) error
 
-	ActionCommandFunc func(sess Session, flasg Flags, assets FS, status ApplicationStatus) error
+	ActionCommandFunc func(
+		sess Session,
+		flags Flags,
+		assets FS,
+		status ApplicationStatus,
+		apis []API,
+	) error
 
 	// ActionWithError is common callback in happy framework which has
 	// second arguments as previous error id any otherwise nil.
@@ -110,7 +123,7 @@ type (
 
 	ActionCronSchedulerSetup func(CronScheduler)
 
-	ActionCronFunc func(sess Session, ctx context.Context, err Error) error
+	ActionCronFunc func(sess Session) error
 
 	// Event is consumable by local instance of application components.
 	Event interface {
@@ -135,7 +148,8 @@ type (
 		TotalEvents() int
 
 		Addons() []AddonInfo
-		Services() []ServiceInfo
+		Services() []ServiceStatus
+		GetServiceStatus(url URL) (ServiceStatus, Error)
 		Dependencies() []DependencyInfo
 		DebugInfo() Variables
 	}
@@ -230,6 +244,8 @@ type (
 		SystemDebug(args ...any)
 		SystemDebugf(template string, args ...any)
 
+		OnEntry(func(LogEntry))
+
 		OptionDefaultsSetter
 	}
 
@@ -264,7 +280,7 @@ type (
 	}
 
 	CronScheduler interface {
-		Job(expr any, cb ActionCronFunc)
+		Job(expr string, cb ActionCronFunc)
 	}
 
 	// FS could be e.g. embed.FS
@@ -485,6 +501,7 @@ type (
 		Cron
 	}
 
+	// Maybe name it Context?
 	Session interface {
 		fmt.Stringer
 
@@ -513,7 +530,7 @@ type (
 		// even tho it implements context aswell.
 		Context() context.Context
 
-		RequireServices(urls ...URL) ServiceLoader
+		RequireServices(status ApplicationStatus, urls ...string) ServiceLoader
 
 		Events() <-chan Event
 
@@ -613,8 +630,8 @@ type (
 		Description() string
 		UsageDescription() string
 
-		ExecuteBeforeAction(sess Session, assets FS, status ApplicationStatus) Error
-		ExecuteDoAction(sess Session, assets FS, status ApplicationStatus) Error
+		ExecuteBeforeAction(sess Session, assets FS, status ApplicationStatus, apis []API) Error
+		ExecuteDoAction(sess Session, assets FS, status ApplicationStatus, apis []API) Error
 		ExecuteAfterFailureAction(sess Session, err Error) Error
 		ExecuteAfterSuccessAction(sess Session) Error
 		ExecuteAfterAlwaysAction(sess Session, err Error) Error
@@ -749,6 +766,13 @@ type (
 		Services() []Service
 
 		Options
+		API() API
+	}
+
+	API interface {
+		// So that you dont return addon it self as API
+		Commands() error
+		Services() error
 	}
 
 	AddonInfo struct {
@@ -763,7 +787,7 @@ type (
 		Sum     string // checksum
 	}
 
-	ServiceInfo struct {
+	ServiceStatus struct {
 		URL        string
 		Registered bool
 		Running    bool
@@ -821,6 +845,8 @@ type (
 		TickerFuncs
 
 		EventListener
+
+		Cron
 	}
 
 	BackgroundService interface {

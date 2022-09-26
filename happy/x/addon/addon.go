@@ -67,6 +67,10 @@ func (a *Addon) Services() []happy.Service {
 	return nil
 }
 
+func (a *Addon) API() happy.API {
+	return nil
+}
+
 func (a *Addon) SetOption(v happy.Variable) happy.Error {
 	return a.SetOptionKeyValue(v.Key(), v.Value())
 }

@@ -182,14 +182,14 @@ func (a *FileServerAddon) createServeCommand() (happy.Command, happy.Error) {
 		return nil, err
 	}
 
-	serveCmd.Before(func(sess happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus) error {
+	serveCmd.Before(func(sess happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) error {
 		// set dynamic service url
 		a.mu.Lock()
 		serviceURL := a.serviceURL
 		a.mu.Unlock()
 
 		// wait for fileserver service
-		loader := sess.RequireServices(serviceURL)
+		loader := sess.RequireServices(status, serviceURL.String())
 		<-loader.Loaded()
 
 		if loader.Err() != nil {
@@ -199,7 +199,7 @@ func (a *FileServerAddon) createServeCommand() (happy.Command, happy.Error) {
 		return nil
 	})
 
-	serveCmd.Do(func(sess happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus) error {
+	serveCmd.Do(func(sess happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) error {
 		return nil
 	})
 
@@ -231,17 +231,17 @@ func (a *FileServerAddon) createServices() happy.Error {
 		a.mu.Lock()
 		a.serviceURL = svc.URL()
 		a.mu.Unlock()
-		sess.Log().Experimental("fileserver.OnInitialize")
+		sess.Log().Debug("fileserver.OnInitialize")
 		return nil
 	})
 
 	svc.OnStart(func(sess happy.Session, args happy.Variables) error {
-		sess.Log().Experimental("fileserver.OnStart")
+		sess.Log().Debug("fileserver.OnStart")
 		return nil
 	})
 
 	svc.OnStop(func(sess happy.Session) error {
-		sess.Log().Experimental("fileserver.OnStop")
+		sess.Log().Debug("fileserver.OnStop")
 		return nil
 	})
 

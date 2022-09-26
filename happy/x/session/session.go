@@ -159,8 +159,9 @@ func (s *Session) Context() context.Context {
 	return nil
 }
 
-func (s *Session) RequireServices(urls ...happy.URL) happy.ServiceLoader {
-	return service.NewServiceLoader(s, urls...)
+func (s *Session) RequireServices(status happy.ApplicationStatus, svcs ...string) happy.ServiceLoader {
+
+	return service.NewServiceLoader(s, status, svcs...)
 }
 
 // Deadline returns the time when work done on behalf of this context

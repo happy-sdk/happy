@@ -38,6 +38,8 @@ type APP struct {
 
 	tickAction happy.ActionTickFunc
 	tockAction happy.ActionTickFunc
+
+	apis []happy.API
 }
 
 // happy.Application interface
@@ -95,13 +97,19 @@ func (a *APP) RegisterAddon(addon happy.Addon) {
 	}
 
 	for _, cmd := range addon.Commands() {
-		a.logger.SystemDebugf("addon %s provided command %s", addon.Slug(), cmd.Slug())
+		a.logger.SystemDebugf("ADDON: %s provided command %s", addon.Slug(), cmd.Slug())
 		a.AddSubCommand(cmd)
+	}
+	if len(addon.Commands()) == 0 {
+		a.logger.SystemDebugf("ADDON: %s provided no commands", addon.Slug())
 	}
 
 	for _, svc := range addon.Services() {
-		a.logger.SystemDebugf("addon %s provided service %s", addon.Slug(), svc.Slug())
+		a.logger.SystemDebugf("ADDON: %s provided service %s", addon.Slug(), svc.Slug())
 		a.RegisterService(svc)
+	}
+	if len(addon.Services()) == 0 {
+		a.logger.SystemDebugf("ADDON: %s provided no services", addon.Slug())
 	}
 
 	info := happy.AddonInfo{
@@ -112,8 +120,11 @@ func (a *APP) RegisterAddon(addon happy.Addon) {
 
 	a.engine.Monitor().RegisterAddon(info)
 
+	if api := addon.API(); api != nil {
+		a.apis = append(a.apis, api)
+	}
 	a.logger.SystemDebugf(
-		"registerd addon name: %s, version: %s",
+		"ADDON: registerd addon name: %s, version: %s",
 		addon.Name(),
 		addon.Version(),
 	)

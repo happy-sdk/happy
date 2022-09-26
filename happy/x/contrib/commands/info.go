@@ -35,7 +35,7 @@ func Info(opts ...happy.OptionSetFunc) happy.Command {
 	if err != nil {
 		return nil
 	}
-	cmd.Do(func(session happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus) error {
+	cmd.Do(func(session happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) error {
 
 		var env bytes.Buffer
 		env.WriteString("\nINFO\n==========================\n")
@@ -76,7 +76,7 @@ func Info(opts ...happy.OptionSetFunc) happy.Command {
 
 		env.WriteString("\nSERVICES\n==========================\n")
 		for _, svc := range status.Services() {
-			info := fmt.Sprintf("running(%T), failed(%T), err(%s)", svc.Running, svc.Failed, svc.Err)
+			info := fmt.Sprintf("registered(%t) running(%t), failed(%t), err(%s)", svc.Registered, svc.Running, svc.Failed, svc.Err)
 			env.WriteString(svc.URL + "\n" + info + "\n")
 
 		}

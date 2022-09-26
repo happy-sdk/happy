@@ -35,13 +35,13 @@ type Status struct {
 
 	debug happy.Variables
 
-	svcs map[string]*happy.ServiceInfo
+	svcs map[string]*happy.ServiceStatus
 }
 
 func (s *Status) start() error {
 	s.debug = vars.AsMap[happy.Variables, happy.Variable, happy.Value](new(vars.Map))
 
-	s.svcs = make(map[string]*happy.ServiceInfo)
+	s.svcs = make(map[string]*happy.ServiceStatus)
 
 	bi, ok := debug.ReadBuildInfo()
 	if ok {
@@ -110,7 +110,7 @@ func (s *Status) setServiceStatus(url, key string, val any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.svcs[url]; !ok {
-		s.svcs[url] = &happy.ServiceInfo{
+		s.svcs[url] = &happy.ServiceStatus{
 			URL: url,
 		}
 	}
@@ -178,11 +178,20 @@ func (s *Status) DebugInfo() happy.Variables {
 	return s.debug
 }
 
-func (s *Status) Services() (svcs []happy.ServiceInfo) {
+func (s *Status) Services() (svcs []happy.ServiceStatus) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, svc := range s.svcs {
 		svcs = append(svcs, *svc)
 	}
 	return
+}
+
+func (s *Status) GetServiceStatus(url happy.URL) (happy.ServiceStatus, happy.Error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if svss, ok := s.svcs[url.String()]; ok {
+		return *svss, nil
+	}
+	return happy.ServiceStatus{}, ErrMonitor.WithTextf("service not registered: %s", url)
 }

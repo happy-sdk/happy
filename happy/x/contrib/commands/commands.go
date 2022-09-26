@@ -34,7 +34,7 @@ func BashCompletion() happy.Command {
 		return nil
 	}
 
-	cmd.Do(func(session happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus) error {
+	cmd.Do(func(session happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) error {
 		return happyx.NotImplementedError("bash-completion command do action")
 	})
 

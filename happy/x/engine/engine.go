@@ -241,18 +241,19 @@ func (e *Engine) startService(sess happy.Session, svcurl string) {
 		sess.Log().NotImplemented("service startService args not implemented")
 	}
 
+	sess.Log().SystemDebugf("starting service: %s", svcurl)
 	if err := reg.svc.Start(sess, nil); err != nil {
 		sess.Log().Errorf("failed to start service: %s", err)
 		return
 	}
 
 	reg.jobContext, reg.jobCancel = context.WithCancel(sess)
-	go func(reg *registeredService, svcurl string) {
+	go func(r *registeredService, svcurl string) {
 		defer func() {
 			e.Monitor().SetServiceStatus(svcurl, "running", false)
 			e.Monitor().SetServiceStatus(svcurl, "stopped.at", time.Now())
 		}()
-		reg.running = true
+		r.running = true
 		e.Monitor().SetServiceStatus(svcurl, "running", true)
 		e.Monitor().SetServiceStatus(svcurl, "started.at", time.Now())
 
@@ -261,25 +262,29 @@ func (e *Engine) startService(sess happy.Session, svcurl string) {
 			sess.Log().Error(err)
 			e.Monitor().SetServiceStatus(svcurl, "failed", true)
 			e.Monitor().SetServiceStatus(svcurl, "err", err)
-			reg.jobCancel()
-			if err := reg.svc.Stop(sess); err != nil {
+			r.jobCancel()
+			if err := r.svc.Stop(sess); err != nil {
 				sess.Log().Error(err)
 			}
 		}
+		ttick := time.NewTicker(time.Microsecond * 100)
+		defer ttick.Stop()
+
 	ticker:
 		for {
 			select {
-			case <-reg.jobContext.Done():
+			case <-e.appLoopContext.Done():
+				r.jobCancel()
 				break ticker
-			default:
+			case now := <-ttick.C:
 				delta := time.Since(lastTick)
-				lastTick = time.Now()
-				if err := reg.svc.Tick(sess, lastTick, delta); err != nil {
+				lastTick = now
+				if err := r.svc.Tick(sess, lastTick, delta); err != nil {
 					kill(err)
 					break ticker
 				}
 				tickDelta := time.Since(lastTick)
-				if err := reg.svc.Tock(sess, lastTick, tickDelta); err != nil {
+				if err := r.svc.Tock(sess, lastTick, tickDelta); err != nil {
 					kill(err)
 					break ticker
 				}
@@ -360,14 +365,17 @@ func (e *Engine) startApploop(init *sync.WaitGroup, sess happy.Session) {
 	go func() {
 		lastTick := time.Now()
 
+		ttick := time.NewTicker(time.Microsecond * 100)
+		defer ttick.Stop()
+
 	engineLoop:
 		for {
 			select {
 			case <-e.appLoopContext.Done():
 				break engineLoop
-			default:
+			case now := <-ttick.C:
 				delta := time.Since(lastTick)
-				lastTick = time.Now()
+				lastTick = now
 				if err := e.tickAction(sess, lastTick, delta); err != nil {
 					sess.Log().Alert(err)
 					sess.Dispatch(event("app.tick.err", ErrEngine.Wrap(err), nil))
@@ -393,6 +401,7 @@ func (e *Engine) startApploop(init *sync.WaitGroup, sess happy.Session) {
 
 func (e *Engine) Stop(sess happy.Session) happy.Error {
 	sess.Log().SystemDebug("stopping engine")
+
 	if !e.running {
 		return nil
 	}
@@ -403,15 +412,21 @@ func (e *Engine) Stop(sess happy.Session) happy.Error {
 	e.evCancel()
 	<-e.evContext.Done()
 
-	for u, r := range e.registry {
-		if r.running {
-			sess.Log().SystemDebugf("stopping service: %s", u)
-			r.jobCancel()
-			if err := r.svc.Stop(sess); err != nil {
-				sess.Log().Error(err)
-			}
+	var graceful sync.WaitGroup
+	for u, reg := range e.registry {
+		if reg.running {
+			graceful.Add(1)
+			go func(url string, r *registeredService) {
+				defer graceful.Done()
+				sess.Log().SystemDebugf("stopping service: %s", url)
+				<-r.jobContext.Done()
+				if err := r.svc.Stop(sess); err != nil {
+					sess.Log().Error(err)
+				}
+			}(u, reg)
 		}
 	}
+	graceful.Wait()
 
 	sess.Log().SystemDebug("engine stopped")
 	return e.monitor.Stop()

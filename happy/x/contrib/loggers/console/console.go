@@ -78,6 +78,8 @@ type Logger struct {
 	initialized       bool
 	logInitialization sync.Once
 	initEntries       []entry
+
+	onEntry func(happy.LogEntry)
 }
 
 func Default() happy.Logger { return std }
@@ -391,6 +393,12 @@ func (l *Logger) SetOptionsDefaultFuncs(vfuncs ...happy.VariableParseFunc) happy
 	return happyx.Errorf("%w: devlog.SetOptionsDefaultFuncs", happyx.ErrNotImplemented)
 }
 
+func (l *Logger) OnEntry(cb func(happy.LogEntry)) {
+	l.mu.Lock()
+	l.onEntry = cb
+	l.mu.Unlock()
+}
+
 func (l *Logger) handleHappyErrors(args []any) bool {
 	for _, a := range args {
 		if e, ok := a.(error); ok {
@@ -422,6 +430,16 @@ func (l *Logger) output(lvl happy.LogPriority, ltype string, calldepth int, s st
 		return nil
 	}
 
+	if l.onEntry != nil {
+		e := happy.LogEntry{
+			Time:     now,
+			Priority: lvl,
+			Label:    ltype,
+			Message:  s,
+		}
+		l.onEntry(e)
+		return nil
+	}
 	durr := now.Sub(l.last)
 	l.last = now
 

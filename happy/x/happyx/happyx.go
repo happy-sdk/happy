@@ -19,11 +19,6 @@ import (
 	"github.com/mkungla/happy/x/pkg/vars"
 )
 
-// GetServiceAPI returns Service API from session.
-func GetServiceAPI[SVC happy.Service](sess happy.Session, url string) (svc SVC, err happy.Error) {
-	return
-}
-
 type Slug string
 
 func NewSlug(str string) (happy.Slug, error) {
@@ -41,4 +36,14 @@ func (s Slug) Valid() bool {
 
 func (s Slug) String() string {
 	return string(s)
+}
+
+// GetServiceAPI returns Service API from session.
+func API[API happy.API](apis []happy.API) (api API, err happy.Error) {
+	for _, a := range apis {
+		if aa, ok := a.(API); ok {
+			return aa, nil
+		}
+	}
+	return api, BUG.WithTextf("requesting non existing API %T")
 }

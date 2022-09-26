@@ -20,7 +20,9 @@ import (
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/happyx"
 	"github.com/mkungla/happy/x/pkg/vars"
+	"github.com/robfig/cron/v3"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -88,11 +90,15 @@ func (s *Service) OnTock(action happy.ActionTickFunc) {
 func (s *Service) OnEvent(key string, cb happy.ActionWithEventFunc) {}
 func (s *Service) OnAnyEvent(happy.ActionWithEventFunc)             {}
 
+func (s *Service) Cron(setup happy.ActionCronSchedulerSetup) {
+	s.svc.cronsetup = setup
+}
+
 func (s *Service) Register(sess happy.Session) (happy.BackgroundService, happy.Error) {
 	if !sess.Opts().Has("app.peer.addr") {
 		return nil, happyx.Errorf("can not initialize service %s - app.peer.addr not set", s.slug)
 	}
-	url, err := url.Parse("happy://" + sess.Get("app.peer.addr").String() + s.path)
+	url, err := url.Parse(sess.Get("app.peer.addr").String() + s.path)
 	if err != nil {
 		return nil, ErrService.Wrap(err)
 	}
@@ -101,12 +107,14 @@ func (s *Service) Register(sess happy.Session) (happy.BackgroundService, happy.E
 }
 
 type BackgroundService struct {
-	initOnce    sync.Once
+	// initOnce    sync.Once
 	initialize  happy.ActionFunc
 	start       happy.ActionWithArgsFunc
 	stop        happy.ActionFunc
 	tick        happy.ActionTickFunc
 	tock        happy.ActionTickFunc
+	cronsetup   happy.ActionCronSchedulerSetup
+	cron        *Cron
 	initialized bool
 }
 
@@ -120,6 +128,56 @@ func (s *BackgroundService) Initialize(sess happy.Session) happy.Error {
 		return ErrService.Wrap(err)
 	}
 	s.initialized = true
+	if s.cronsetup != nil {
+		s.cron = newCron(sess)
+		s.cronsetup(s.cron)
+	}
+
+	return nil
+}
+
+type Cron struct {
+	sess   happy.Session
+	lib    *cron.Cron
+	jobIDs []cron.EntryID
+}
+
+func newCron(sess happy.Session) *Cron {
+	c := &Cron{}
+	c.sess = sess
+	c.lib = cron.New(cron.WithParser(cron.NewParser(
+		cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
+	)))
+	return c
+}
+
+func (cs *Cron) Job(expr string, cb happy.ActionCronFunc) {
+	id, err := cs.lib.AddFunc(expr, func() {
+		if err := cb(cs.sess); err != nil {
+			cs.sess.Log().Error(err)
+		}
+	})
+	cs.jobIDs = append(cs.jobIDs, id)
+	if err != nil {
+		cs.sess.Log().Errorf("cron(%d): %s", id, err)
+		return
+	}
+}
+
+func (cs *Cron) Start() happy.Error {
+	for _, id := range cs.jobIDs {
+		job := cs.lib.Entry(id)
+		if job.Job != nil {
+			go job.Job.Run()
+		}
+	}
+	cs.lib.Start()
+	return nil
+}
+
+func (cs *Cron) Stop() happy.Error {
+	ctx := cs.lib.Stop()
+	<-ctx.Done()
 	return nil
 }
 
@@ -131,6 +189,11 @@ func (s *BackgroundService) Start(sess happy.Session, args happy.Variables) happ
 	if err := s.start(sess, args); err != nil {
 		return ErrService.Wrap(err)
 	}
+
+	if s.cron != nil {
+		sess.Log().SystemDebug("starting cron scheduler")
+		s.cron.Start()
+	}
 	return nil
 }
 
@@ -141,6 +204,10 @@ func (s *BackgroundService) Stop(sess happy.Session) happy.Error {
 
 	if err := s.stop(sess); err != nil {
 		return ErrService.Wrap(err)
+	}
+	if s.cron != nil {
+		sess.Log().SystemDebug("stopping cron scheduler, waiting jobs to finish")
+		s.cron.Stop()
 	}
 	return nil
 }
@@ -167,12 +234,28 @@ func (s *BackgroundService) Tock(sess happy.Session, ts time.Time, delta time.Du
 	return nil
 }
 
-func NewServiceLoader(sess happy.Session, urls ...happy.URL) *ServiceLoader {
+func NewServiceLoader(sess happy.Session, status happy.ApplicationStatus, svcs ...string) *ServiceLoader {
+	var urls []happy.URL
+
 	loader := &ServiceLoader{
 		loaded: make(chan struct{}),
 	}
 
-	loader.request(sess, urls...)
+	peeraddr := sess.Get("app.peer.addr").String()
+	for _, svc := range svcs {
+		if strings.HasPrefix(svc, "/") {
+			svc = peeraddr + svc
+		}
+		u, err := url.Parse(svc)
+		if err != nil {
+			loader.err = ErrServiceLoader.Wrap(err)
+			loader.done = true
+			break
+		}
+		urls = append(urls, u)
+	}
+
+	loader.request(sess, status, urls...)
 
 	return loader
 }
@@ -199,35 +282,36 @@ func (sl *ServiceLoader) Loaded() <-chan struct{} {
 	return sl.loaded
 }
 
-func (sl *ServiceLoader) request(sess happy.Session, urls ...happy.URL) {
+func (sl *ServiceLoader) request(sess happy.Session, status happy.ApplicationStatus, urls ...happy.URL) {
 	go func() {
 		defer close(sl.loaded)
 
-		var checks []string
+		var needloading []happy.URL
 		for _, url := range urls {
-			key := "service.[" + url.String() + "].registered"
-			if !sess.Opts().Has(key) {
+			stat, err := status.GetServiceStatus(url)
+			// key := "service.[" + url.String() + "].registered"
+			if err != nil {
 				sl.mu.Lock()
-				sl.err = ErrService.WithTextf("service not registered: %s", url.String())
+				sl.err = err
 				sl.done = true
 				sl.mu.Unlock()
 				return
 			}
-			check := "service.[" + url.String() + "].running"
+			// check := "service.[" + url.String() + "].running"
 			// check if service is already running
-			if !sess.Opts().Get(check).Bool() {
-				checks = append(checks, check)
+			if !stat.Running {
+				needloading = append(needloading, url)
 			}
 		}
 
-		sess.Dispatch(NewRequireServicesEvent(urls...))
-
-		if len(checks) == 0 {
+		if len(needloading) == 0 {
 			sl.mu.Lock()
 			sl.done = true
 			sl.mu.Unlock()
 			return
 		}
+
+		sess.Dispatch(NewRequireServicesEvent(urls...))
 
 		timeout := time.Duration(sess.Settings().Get("engine.service.discovery.timeout").Int64())
 		if timeout <= 0 {
@@ -247,12 +331,19 @@ func (sl *ServiceLoader) request(sess happy.Session, urls ...happy.URL) {
 				break queue
 			default:
 				loaded := 0
-				for _, check := range checks {
-					if sess.Opts().Get(check).Bool() {
+				for _, url := range needloading {
+					stat, err := status.GetServiceStatus(url)
+					if err != nil {
+						sl.mu.Lock()
+						sl.err = err
+						sl.mu.Unlock()
+						continue
+					}
+					if stat.Running {
 						loaded++
 					}
 				}
-				if loaded == len(checks) {
+				if loaded == len(needloading) {
 					sl.mu.Lock()
 					sl.done = true
 					sl.mu.Unlock()

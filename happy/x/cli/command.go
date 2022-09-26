@@ -288,7 +288,7 @@ func (c *Command) Verify() happy.Error {
 		if !c.isWrapperCommand {
 			c.isWrapperCommand = len(c.subCommands) > 0
 		}
-		c.doAction = func(session happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus) error {
+		c.doAction = func(session happy.Session, flags happy.Flags, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) error {
 			HelpCommand(session, c)
 			return nil
 		}
@@ -330,28 +330,28 @@ func (c *Command) SubCommand(name string) (cmd happy.Command, exists bool) {
 	return
 }
 
-func (c *Command) ExecuteBeforeAction(session happy.Session, assets happy.FS, status happy.ApplicationStatus) happy.Error {
+func (c *Command) ExecuteBeforeAction(session happy.Session, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) happy.Error {
 	if c.beforeAction == nil {
 		return nil
 	}
 
-	if err := c.beforeAction(session, c.flags, assets, status); err != nil {
+	if err := c.beforeAction(session, c.flags, assets, status, apis); err != nil {
 		return ErrCommandAction.WithText(c.slug.String()).Wrap(err)
 	}
 	return nil
 }
 
-func (c *Command) ExecuteDoAction(session happy.Session, assets happy.FS, status happy.ApplicationStatus) (err happy.Error) {
+func (c *Command) ExecuteDoAction(session happy.Session, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) (err happy.Error) {
 	if c.doAction == nil {
 		return nil
 	}
 	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				err = ErrPanic.WithTextf("%s(panic): %v", r)
-			}
-		}()
-		if e := c.doAction(session, c.flags, assets, status); e != nil {
+		// defer func() {
+		// 	if r := recover(); r != nil {
+		// 		err = ErrPanic.WithTextf("%s(panic): %v", r)
+		// 	}
+		// }()
+		if e := c.doAction(session, c.flags, assets, status, apis); e != nil {
 			err = ErrCommandAction.WithText(c.slug.String()).Wrap(e)
 		}
 	}()
