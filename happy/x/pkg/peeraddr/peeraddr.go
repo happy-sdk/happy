@@ -19,7 +19,7 @@ package peeraddr
 import (
 	"bytes"
 	"github.com/mkungla/happy"
-	"net/url"
+	"github.com/mkungla/happy/x/happyx"
 	"regexp"
 	"runtime"
 	"runtime/debug"
@@ -52,7 +52,7 @@ func Create(modulepath string) happy.URL {
 
 	sl := strings.Split(modulepath, "/")
 	if len(sl) == 1 {
-		u, _ := url.Parse("happy://" + ensure(modulepath))
+		u, _ := happyx.ParseURL("happy://" + ensure(modulepath))
 		return u
 	}
 
@@ -71,7 +71,7 @@ func Create(modulepath string) happy.URL {
 		}
 		rev = append(rev, ensure(sl[i]))
 	}
-	u, _ := url.Parse("happy://" + strings.Join(rev, "."))
+	u, _ := happyx.ParseURL("happy://" + strings.Join(rev, "."))
 	return u
 }
 

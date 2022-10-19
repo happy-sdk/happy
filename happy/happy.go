@@ -264,6 +264,8 @@ type (
 
 	URL interface {
 		fmt.Stringer
+		Args() Variables
+		PeerService() string
 	}
 
 	Version interface {
@@ -302,7 +304,7 @@ type (
 	}
 
 	EventListener interface {
-		OnEvent(key string, cb ActionWithEventFunc)
+		OnEvent(scope, key string, cb ActionWithEventFunc)
 		OnAnyEvent(ActionWithEventFunc)
 	}
 )
@@ -855,6 +857,7 @@ type (
 		Stop(Session) Error
 		Tick(sess Session, ts time.Time, delta time.Duration) Error
 		Tock(sess Session, ts time.Time, delta time.Duration) Error
+		HandleEvent(sess Session, ev Event) error
 	}
 
 	ServiceLoader interface {

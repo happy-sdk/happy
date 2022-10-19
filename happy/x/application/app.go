@@ -40,6 +40,7 @@ type APP struct {
 	tockAction happy.ActionTickFunc
 
 	apis []happy.API
+	slug happy.Slug
 }
 
 // happy.Application interface
@@ -53,6 +54,9 @@ func (a *APP) Configure(conf happy.Configurator) (err happy.Error) {
 	}()
 
 	a.opts = conf.GetApplicationOptions()
+
+	slug, _ := a.opts.LoadOrDefault("slug", os.Args[0])
+	a.slug = happyx.Slug(slug.String())
 
 	a.logger, err = conf.GetLogger()
 	if err != nil {
@@ -188,8 +192,10 @@ func (a *APP) Main() {
 	appmain()
 }
 
-// happy.Command interface (root command)
-func (a *APP) Slug() happy.Slug { return a.rootCmd.Slug() }
+// Slug returns application slug
+func (a *APP) Slug() happy.Slug {
+	return a.slug
+}
 
 // AddFlag to application. Invalid flag or when flag is shadowing
 // existing flag log Alert.

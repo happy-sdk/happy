@@ -25,6 +25,7 @@ var (
 	ErrNotImplemented = NewError("missing implementation")
 	ErrConfiguration  = NewError("configuration error")
 	ErrOption         = NewError("option error")
+	ErrEvent          = NewError("event with error")
 )
 
 type Error struct {

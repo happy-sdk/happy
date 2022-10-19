@@ -139,13 +139,23 @@ func (a *APP) exit(code int) {
 		a.Log().Error(err)
 	}
 
+	if err := a.engine.Monitor().Stop(); err != nil {
+		a.Log().Error(err)
+	}
+
 	// Destroy session
 	a.session.Destroy(nil)
 
 	if err := a.session.Err(); err != nil && !errors.Is(err, session.ErrSession) {
 		a.logger.Error(err)
 	}
-	// Stop monitor
+
+	if a.opts.Get("runtime.ensure.paths").Bool() {
+		tmdir := a.opts.Get("path.tmp")
+		if err := os.RemoveAll(tmdir.String()); err != nil {
+			a.logger.Warn(err)
+		}
+	}
 
 	a.logger.SystemDebugf("uptime: %s", a.engine.Monitor().Status().Elapsed())
 	os.Exit(code)
@@ -252,10 +262,25 @@ func appmain() {
 
 // executed in go routine
 func (a *APP) execute() {
+
 	if err := a.session.Start(); err != nil {
 		a.logger.Emergency(err)
 		a.Exit(1)
 		return
+	}
+
+	if a.opts.Get("runtime.ensure.paths").Bool() {
+		dirs := a.opts.ExtractWithPrefix("path.")
+		dirs.Range(func(v happy.Variable) bool {
+			if v.Key() == "home" {
+				return true
+			}
+			if err := os.MkdirAll(v.String(), 0750); err != nil {
+				a.logger.Error(err)
+			}
+			a.session.Log().SystemDebugf("create dir: %s", v.String())
+			return true
+		})
 	}
 
 	if err := a.engine.Start(a.session); err != nil {

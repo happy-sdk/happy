@@ -16,7 +16,6 @@ package engine
 
 import (
 	"context"
-	"net/url"
 	"sync"
 	"time"
 
@@ -212,21 +211,29 @@ func (e *Engine) startEventDispatcher(sess happy.Session) {
 						})
 						continue
 					}
-
 				}
-				sess.Log().NotImplementedf("got ev: %s(%s)", ev.Scope(), ev.Key())
+
+				sess.Log().SystemDebugf("got ev: %s(%s)", ev.Scope(), ev.Key())
+				e.mu.RLock()
+				registry := e.registry
+				e.mu.RUnlock()
+				for u, s := range registry {
+					if err := s.svc.HandleEvent(sess, ev); err != nil {
+						sess.Log().Warnf("%s: %s", u, err)
+					}
+				}
 			}
 		}
 	}()
 }
 
 func (e *Engine) startService(sess happy.Session, svcurl string) {
-	u, err := url.Parse(svcurl)
+	u, err := happyx.ParseURL(svcurl)
 	if err != nil {
 		sess.Log().Errorf("failed to parse service url: %s", err)
 		return
 	}
-	svcurl = u.Scheme + "://" + u.Host + u.Path
+	svcurl = u.PeerService()
 
 	e.mu.RLock()
 	reg, ok := e.registry[svcurl]
@@ -237,13 +244,13 @@ func (e *Engine) startService(sess happy.Session, svcurl string) {
 		return
 	}
 
-	if len(u.RawQuery) > 0 {
-		sess.Log().NotImplemented("service startService args not implemented")
-	}
-
 	sess.Log().SystemDebugf("starting service: %s", svcurl)
-	if err := reg.svc.Start(sess, nil); err != nil {
+
+	if err := reg.svc.Start(sess, u.Args()); err != nil {
 		sess.Log().Errorf("failed to start service: %s", err)
+		if err := reg.svc.Stop(sess); err != nil {
+			sess.Log().Error(err)
+		}
 		return
 	}
 
@@ -429,7 +436,7 @@ func (e *Engine) Stop(sess happy.Session) happy.Error {
 	graceful.Wait()
 
 	sess.Log().SystemDebug("engine stopped")
-	return e.monitor.Stop()
+	return nil
 }
 
 func (e *Engine) ResolvePeerTo(ns, ipport string) {}

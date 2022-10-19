@@ -65,7 +65,7 @@ func (m *Monitor) OnAnyEvent(cb happy.ActionWithEventFunc) {
 
 }
 
-func (m *Monitor) OnEvent(key string, cb happy.ActionWithEventFunc) {
+func (m *Monitor) OnEvent(scope, key string, cb happy.ActionWithEventFunc) {
 
 }
 

@@ -12,27 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package restapi
+package happyx
 
 import (
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/sdk"
+	"time"
 )
 
-type RestAPIAddon struct {
-	happy.Addon
+type Event struct {
+	scope, key string
+	ts         time.Time
+	err        happy.Error
+	payload    happy.Variables
 }
 
-func New(options ...happy.OptionSetFunc) (*RestAPIAddon, happy.Error) {
-	a, err := sdk.NewAddon(
-		"restapi",
-		"REST API",
-		"0.0.1",
-	)
+func NewEvent(scope, key string, payload happy.Variables, err error) Event {
+	var e happy.Error
 	if err != nil {
-		return nil, err
+		e = ErrEvent.Wrap(err)
 	}
-	return &RestAPIAddon{
-		Addon: a,
-	}, nil
+	return Event{
+		scope:   scope,
+		key:     key,
+		payload: payload,
+		err:     e,
+		ts:      time.Now(),
+	}
+}
+
+func (ev Event) Key() string {
+	return ev.key
+}
+
+func (ev Event) Scope() string {
+	return ev.scope
+}
+
+func (ev Event) Time() time.Time {
+	return ev.ts
+}
+
+func (ev Event) Payload() happy.Variables {
+	return ev.payload
+}
+
+func (ev Event) Err() happy.Error {
+	return ev.err
 }

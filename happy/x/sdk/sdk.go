@@ -24,6 +24,7 @@ import (
 	"github.com/mkungla/happy/x/engine"
 	"github.com/mkungla/happy/x/happyx"
 	"github.com/mkungla/happy/x/monitor"
+	"github.com/mkungla/happy/x/pkg/varflag"
 	"github.com/mkungla/happy/x/session"
 
 	"os"
@@ -32,6 +33,7 @@ import (
 
 var (
 	ErrAddon = addon.ErrAddon
+	ErrFlag  = happyx.NewError("flag error")
 )
 
 type Slug struct {
@@ -118,4 +120,12 @@ func NewMonitor(opts ...happy.OptionSetFunc) happy.Monitor {
 
 func NewCommand(cmd string, opts ...happy.OptionSetFunc) (happy.Command, happy.Error) {
 	return cli.NewCommand(cmd, opts...)
+}
+
+func NewStringFlag(name string, value string, usage string, aliases ...string) (happy.Flag, happy.Error) {
+	f, err := varflag.New(name, value, usage, aliases...)
+	if err != nil {
+		return nil, ErrFlag.Wrap(err)
+	}
+	return varflag.AsFlag[happy.Flag, happy.Variable, happy.Value](f), nil
 }

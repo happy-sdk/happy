@@ -190,7 +190,7 @@ func (s *Status) Services() (svcs []happy.ServiceStatus) {
 func (s *Status) GetServiceStatus(url happy.URL) (happy.ServiceStatus, happy.Error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if svss, ok := s.svcs[url.String()]; ok {
+	if svss, ok := s.svcs[url.PeerService()]; ok {
 		return *svss, nil
 	}
 	return happy.ServiceStatus{}, ErrMonitor.WithTextf("service not registered: %s", url)

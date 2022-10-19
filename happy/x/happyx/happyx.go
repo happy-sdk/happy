@@ -17,6 +17,7 @@ package happyx
 import (
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/pkg/vars"
+	"net/url"
 )
 
 type Slug string
@@ -46,4 +47,50 @@ func API[API happy.API](apis []happy.API) (api API, err happy.Error) {
 		}
 	}
 	return api, BUG.WithTextf("requesting non existing API %T")
+}
+
+type URL struct {
+	raw      string
+	peeraddr string
+	args     happy.Variables
+}
+
+func (u *URL) Args() happy.Variables {
+	return u.args
+}
+
+func (u *URL) PeerService() string {
+	return u.peeraddr
+}
+
+func (u *URL) String() string {
+	return u.raw
+}
+
+func ParseURL(str string) (*URL, error) {
+	u, err := url.Parse(str)
+	if err != nil {
+		return nil, err
+	}
+	args := NewVariables()
+	res := &URL{
+		args:     args,
+		raw:      str,
+		peeraddr: u.Scheme + "://" + u.Host + u.Path,
+	}
+
+	for k, v := range u.Query() {
+		if len(v) > 0 {
+			res.args.Store(k, v[0])
+		} else {
+			// ?key (key = true)
+			res.args.Store(k, true)
+		}
+	}
+
+	return res, nil
+}
+
+func NewVariables() happy.Variables {
+	return vars.AsMap[happy.Variables, happy.Variable, happy.Value](new(vars.Map))
 }
