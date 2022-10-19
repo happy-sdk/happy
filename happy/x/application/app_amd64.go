@@ -61,11 +61,6 @@ func (a *APP) setup() happy.Error {
 	}
 	a.Log().LogInitialization() // logs init log entires if needed
 
-	// also sets app version
-	if err := a.loadModuleInfo(); err != nil {
-		return ErrApplication.Wrap(err)
-	}
-
 	if a.rootCmd.Flag("version").Present() {
 		a.printVersion()
 		a.Exit(0)
@@ -202,6 +197,7 @@ func (a *APP) loadModuleInfo() error {
 		a.opts.Store("peer.addr", peeraddr.Current())
 	}
 
+	a.version = version
 	return nil
 }
 

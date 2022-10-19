@@ -494,7 +494,7 @@ type (
 		Log() Logger
 
 		Main()
-
+		Version() Version
 		Exit(code int)
 		CommandActionSetter
 		CommandSubCommandSetter

@@ -17,7 +17,6 @@ package addon
 import (
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/happyx"
-	ver "github.com/mkungla/happy/x/pkg/version"
 )
 
 var ErrAddon = happyx.NewError("addon error")
@@ -29,7 +28,7 @@ type Addon struct {
 	opts    happy.Variables
 }
 
-func New(slug, name, version string, defaultOptions ...happy.OptionSetFunc) (happy.Addon, happy.Error) {
+func New(slug, name string, version happy.Version, defaultOptions ...happy.OptionSetFunc) (happy.Addon, happy.Error) {
 	s, err := happyx.NewSlug(slug)
 	if err != nil {
 		return nil, ErrAddon.Wrap(err)
@@ -40,15 +39,10 @@ func New(slug, name, version string, defaultOptions ...happy.OptionSetFunc) (hap
 		return nil, ErrAddon.Wrap(err)
 	}
 
-	v, err := ver.Parse(version)
-	if err != nil {
-		return nil, ErrAddon.Wrap(err)
-	}
-
 	addon := &Addon{
 		slug:    s,
 		name:    name,
-		version: v,
+		version: version,
 		opts:    opts,
 	}
 	return addon, nil

@@ -15,6 +15,9 @@
 package sdk
 
 import (
+	"os"
+	"time"
+
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/addon"
 	"github.com/mkungla/happy/x/application"
@@ -25,10 +28,8 @@ import (
 	"github.com/mkungla/happy/x/happyx"
 	"github.com/mkungla/happy/x/monitor"
 	"github.com/mkungla/happy/x/pkg/varflag"
+	"github.com/mkungla/happy/x/pkg/version"
 	"github.com/mkungla/happy/x/session"
-
-	"os"
-	"time"
 )
 
 var (
@@ -48,8 +49,13 @@ func (s Slug) String() string {
 	return s.s
 }
 
-func NewAddon(slug, name, version string, defaultOptions ...happy.OptionSetFunc) (happy.Addon, happy.Error) {
-	return addon.New(slug, name, version, defaultOptions...)
+func NewAddon(slug, name, ver string, defaultOptions ...happy.OptionSetFunc) (happy.Addon, happy.Error) {
+	v, err := version.Parse(ver)
+	if err != nil {
+		return nil, ErrAddon.Wrap(err)
+	}
+
+	return addon.New(slug, name, v, defaultOptions...)
 }
 
 func NewConfig(opts ...happy.OptionSetFunc) happy.Configurator {

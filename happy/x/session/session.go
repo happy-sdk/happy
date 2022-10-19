@@ -47,8 +47,6 @@ type Session struct {
 	readyFunc context.CancelFunc
 	isReady   bool
 
-	evqueue []happy.Event
-
 	evch chan happy.Event
 }
 
@@ -223,48 +221,3 @@ func (s *Session) Events() <-chan happy.Event {
 	s.mu.RUnlock()
 	return ch
 }
-
-// // happy.Options interface
-// func (s *Session) DeleteOption(key string) happy.Error {
-// 	return happyx.NotImplementedError("Session.DeleteOption")
-// }
-// func (s *Session) ResetOptions() happy.Error {
-// 	return happyx.NotImplementedError("Session.DeleteOption")
-// }
-
-// // happy.OptionReader interface
-// func (s *Session) Read(p []byte) (n int, err error) {
-// 	return 0, happyx.NotImplementedError("Session.Read")
-// }
-
-// func (s *Session) GetOption(key string) (happy.Variable, happy.Error) {
-// 	return nil, happyx.NotImplementedError("Session.GetOption")
-// }
-
-// func (s *Session) GetOptionOrDefault(key string, defval ...any) (val happy.Variable) {
-// 	s.logger.NotImplemented("Session.GetOptionOrDefault")
-// 	return
-// }
-
-// func (s *Session) HasOption(key string) bool {
-// 	s.logger.NotImplemented("Session.HasOption")
-// 	return false
-// }
-
-// func (s *Session) RangeOptions(f func(v happy.Variable) bool) {
-// 	s.logger.NotImplemented("Session.RangeOptions")
-// }
-
-// func (sess *Session) GetAllOptions() happy.Variables {
-// 	return nil
-// }
-
-// // happy.OptionWriter interface
-// func (sess *Session) Write(p []byte) (n int, err error)    { return 0, happyx.ErrNotImplemented }
-// func (sess *Session) SetOption(happy.Variable) happy.Error { return happyx.ErrNotImplemented }
-// func (sess *Session) SetOptionKeyValue(key string, val any) happy.Error {
-// 	return happyx.ErrNotImplemented
-// }
-// func (sess *Session) SetOptionValue(key string, val happy.Value) happy.Error {
-// 	return happyx.ErrNotImplemented
-// }

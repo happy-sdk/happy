@@ -39,8 +39,13 @@ type APP struct {
 	tickAction happy.ActionTickFunc
 	tockAction happy.ActionTickFunc
 
-	apis []happy.API
-	slug happy.Slug
+	apis    []happy.API
+	slug    happy.Slug
+	version happy.Version
+}
+
+func (a *APP) Version() happy.Version {
+	return a.version
 }
 
 // happy.Application interface
@@ -54,6 +59,11 @@ func (a *APP) Configure(conf happy.Configurator) (err happy.Error) {
 	}()
 
 	a.opts = conf.GetApplicationOptions()
+
+	// also sets app version
+	if err := a.loadModuleInfo(); err != nil {
+		return ErrApplication.Wrap(err)
+	}
 
 	slug, _ := a.opts.LoadOrDefault("slug", os.Args[0])
 	a.slug = happyx.Slug(slug.String())
