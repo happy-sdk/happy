@@ -330,7 +330,7 @@ func (e *Engine) initServices(init *sync.WaitGroup, sess happy.Session) {
 				sess.Log().Alert("service url already in use: ", svc.URL())
 				return
 			}
-			if err := bgsvc.Initialize(sess); err != nil {
+			if err := bgsvc.Initialize(sess, e.monitor.Status()); err != nil {
 				sess.Log().Alertf("failed to initialize service(%s): %s", svc.Slug(), err)
 				return
 			}

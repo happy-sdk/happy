@@ -59,7 +59,7 @@ func (s *Service) Name() string     { return s.name }
 
 func (s *Service) URL() happy.URL { return s.url }
 
-func (s *Service) OnInitialize(action happy.ActionFunc) {
+func (s *Service) OnInitialize(action happy.ActionWithStatusFunc) {
 	s.svc.initialize = action
 }
 
@@ -117,7 +117,7 @@ func (s *Service) Register(sess happy.Session) (happy.BackgroundService, happy.E
 
 type BackgroundService struct {
 	// initOnce    sync.Once
-	initialize happy.ActionFunc
+	initialize happy.ActionWithStatusFunc
 	start      happy.ActionWithArgsFunc
 	stop       happy.ActionFunc
 	tick       happy.ActionTickFunc
@@ -129,13 +129,13 @@ type BackgroundService struct {
 	initialized bool
 }
 
-func (s *BackgroundService) Initialize(sess happy.Session) happy.Error {
+func (s *BackgroundService) Initialize(sess happy.Session, status happy.ApplicationStatus) happy.Error {
 
 	if s.initialized || s.initialize == nil {
 		return nil
 	}
 
-	if err := s.initialize(sess); err != nil {
+	if err := s.initialize(sess, status); err != nil {
 		return ErrService.Wrap(err)
 	}
 	s.initialized = true

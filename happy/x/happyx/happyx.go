@@ -15,9 +15,10 @@
 package happyx
 
 import (
+	"net/url"
+
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/pkg/vars"
-	"net/url"
 )
 
 type Slug string
@@ -47,6 +48,13 @@ func API[API happy.API](apis []happy.API) (api API, err happy.Error) {
 		}
 	}
 	return api, BUG.WithTextf("requesting non existing API %T")
+}
+
+func AsAPI[API happy.API](api happy.API) (a API, err happy.Error) {
+	if aa, ok := api.(API); ok {
+		return aa, nil
+	}
+	return a, BUG.WithTextf("requesting non existing API %T")
 }
 
 type URL struct {

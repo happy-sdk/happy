@@ -93,7 +93,8 @@ type (
 	}
 
 	// Action is common callback in happy framework.
-	ActionFunc func(sess Session) error
+	ActionFunc           func(sess Session) error
+	ActionWithStatusFunc func(sess Session, status ApplicationStatus) error
 
 	// ActionWithArgs is common callback in happy framework which has
 	// privides arguments as vars.Collection.
@@ -773,8 +774,8 @@ type (
 
 	API interface {
 		// So that you dont return addon it self as API
-		Commands() error
-		Services() error
+		// Commands() error
+		// Services() error
 	}
 
 	AddonInfo struct {
@@ -821,7 +822,7 @@ type (
 
 		// OnInitialize is called when app is preparing runtime and attaching
 		// services.
-		OnInitialize(ActionFunc)
+		OnInitialize(ActionWithStatusFunc)
 
 		// OnStart is called when service is requested to be started.
 		// For instace when command is requiring this service or whenever
@@ -852,7 +853,7 @@ type (
 	}
 
 	BackgroundService interface {
-		Initialize(Session) Error
+		Initialize(Session, ApplicationStatus) Error
 		Start(sess Session, args Variables) Error
 		Stop(Session) Error
 		Tick(sess Session, ts time.Time, delta time.Duration) Error
