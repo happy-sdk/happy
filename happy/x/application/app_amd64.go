@@ -54,9 +54,12 @@ func (a *APP) setup() happy.Error {
 	// change log level after user potenially added own logger
 	if a.rootCmd.Flag("verbose").Present() {
 		a.Log().SetPriority(happy.LOG_INFO)
+		a.session.Store("flags.verbose", true)
 	} else if a.rootCmd.Flag("debug").Present() {
 		a.Log().SetPriority(happy.LOG_DEBUG)
+		a.session.Store("flags.debug", true)
 	} else if a.rootCmd.Flag("system-debug").Present() {
+		a.session.Store("flags.system-debug", true)
 		a.Log().SetPriority(happy.LOG_SYSTEMDEBUG)
 	}
 	a.Log().LogInitialization() // logs init log entires if needed
@@ -64,6 +67,10 @@ func (a *APP) setup() happy.Error {
 	if a.rootCmd.Flag("version").Present() {
 		a.printVersion()
 		a.Exit(0)
+	}
+
+	if a.rootCmd.Flag("x").Present() {
+		a.session.Store("flags.x", true)
 	}
 
 	if err := a.loadHostInfo(); err != nil {
@@ -168,6 +175,7 @@ func (a *APP) loadModuleInfo() error {
 
 		// version
 		if bi.Main.Version == "(devel)" {
+			fmt.Println("bi.Main.Version is ", bi.Main)
 			slug, ok := a.opts.LoadOrDefault("slug", "happy-app")
 			if !ok {
 				return errors.New("APP.loadModuleInfo slug not set")
