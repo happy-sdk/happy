@@ -366,7 +366,7 @@ func (e *Engine) startApploop(init *sync.WaitGroup, sess happy.Session) {
 		e.tockAction = ttnoop
 	}
 
-	init.Add(1)
+	init.Add(2)
 	defer init.Done()
 
 	go func() {
@@ -379,8 +379,20 @@ func (e *Engine) startApploop(init *sync.WaitGroup, sess happy.Session) {
 		for {
 			select {
 			case <-e.appLoopContext.Done():
+				sess.Log().SystemDebug("engineLoop appLoopContext Done")
 				break engineLoop
 			case now := <-ttick.C:
+				// mark engine running only if first tick tock are successful
+				e.appLoopReadyCallback.Do(func() {
+					sess.Log().SystemDebug("engine started")
+
+					e.mu.Lock()
+					e.appLoopOK = true
+					e.mu.Unlock()
+
+					init.Done()
+				})
+
 				delta := time.Since(lastTick)
 				lastTick = now
 				if err := e.tickAction(sess, lastTick, delta); err != nil {
@@ -395,11 +407,6 @@ func (e *Engine) startApploop(init *sync.WaitGroup, sess happy.Session) {
 					break engineLoop
 				}
 
-				// mark engine running only if first tick tock are successful
-				e.appLoopReadyCallback.Do(func() {
-					sess.Log().SystemDebug("engine started")
-					e.appLoopOK = true
-				})
 			}
 		}
 		sess.Log().SystemDebug("engine loop stopped")

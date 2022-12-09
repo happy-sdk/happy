@@ -95,6 +95,14 @@ func (a *APP) setActiveCommand() happy.Error {
 
 	if name == "/" {
 		a.activeCmd = a.rootCmd
+		// only set app tick tock if current command is root command
+		if a.tickAction != nil {
+			a.engine.OnTick(a.tickAction)
+		}
+		if a.tockAction != nil {
+			a.engine.OnTock(a.tockAction)
+		}
+
 		return nil
 	}
 
@@ -122,15 +130,6 @@ func (a *APP) setActiveCommand() happy.Error {
 
 	a.activeCmd = activeCmd
 
-	// only set app tick tock if current command is root command
-	if a.rootCmd == a.activeCmd {
-		if a.tickAction != nil {
-			a.engine.OnTick(a.tickAction)
-		}
-		if a.tockAction != nil {
-			a.engine.OnTock(a.tockAction)
-		}
-	}
 	return nil
 }
 
@@ -168,30 +167,35 @@ func (a *APP) loadModuleInfo() error {
 		ver string
 		err error
 	)
-	bi, ok := debug.ReadBuildInfo()
-	if !ok {
-		ver = fmt.Sprintf("0.0.1-devel+%d", time.Now().UnixMilli())
-	} else {
 
-		// version
-		if bi.Main.Version == "(devel)" {
-			fmt.Println("bi.Main.Version is ", bi.Main)
-			slug, ok := a.opts.LoadOrDefault("slug", "happy-app")
-			if !ok {
-				return errors.New("APP.loadModuleInfo slug not set")
-			}
-			moduleVersion := strings.Trim(filepath.Ext(slug.String()), ".")
-			major := "v1"
-			if strings.HasPrefix(moduleVersion, "v") {
-				majorint, err := strconv.Atoi(strings.TrimPrefix(moduleVersion, "v"))
-				if err != nil {
-					return err
-				}
-				major = fmt.Sprintf("v%d", majorint+1)
-			}
-			ver = fmt.Sprintf("%s.0.0-alpha.%d", major, time.Now().UnixMilli())
+	if len(happy.ApplicationVersion) > 0 {
+		ver = happy.ApplicationVersion
+	} else {
+		bi, ok := debug.ReadBuildInfo()
+		if !ok {
+			ver = fmt.Sprintf("0.0.1-devel+%d", time.Now().UnixMilli())
 		} else {
-			ver = bi.Main.Version
+
+			// version
+			if bi.Main.Version == "(devel)" {
+				// fmt.Println("bi.Main.Version is ", bi.Main)
+				slug, ok := a.opts.LoadOrDefault("slug", "happy-app")
+				if !ok {
+					return errors.New("APP.loadModuleInfo slug not set")
+				}
+				moduleVersion := strings.Trim(filepath.Ext(slug.String()), ".")
+				major := "v1"
+				if strings.HasPrefix(moduleVersion, "v") {
+					majorint, err := strconv.Atoi(strings.TrimPrefix(moduleVersion, "v"))
+					if err != nil {
+						return err
+					}
+					major = fmt.Sprintf("v%d", majorint+1)
+				}
+				ver = fmt.Sprintf("%s.0.0-alpha.%d", major, time.Now().UnixMilli())
+			} else {
+				ver = bi.Main.Version
+			}
 		}
 	}
 
@@ -238,8 +242,9 @@ func (a *APP) loadHostInfo() happy.Error {
 
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
-		return ErrApplication.Wrap(err)
+		return ErrApplication.WithTextf("path.home: %s", err.Error())
 	}
+	a.logger.SystemDebugf("path.home: %s", userHomeDir)
 	a.opts.Store("path.home", userHomeDir)
 
 	tempDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%d", a.Slug().String(), time.Now().UnixMilli()))
@@ -247,21 +252,17 @@ func (a *APP) loadHostInfo() happy.Error {
 
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {
-		return ErrApplication.Wrap(err)
+		return ErrApplication.WithTextf("path.cache: %s", err.Error())
 	}
 	a.opts.Store("path.cache", filepath.Join(userCacheDir, a.Slug().String()))
 
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {
-		return ErrApplication.Wrap(err)
+		return ErrApplication.WithTextf("path.config: %s", err.Error())
 	}
 	a.opts.Store("path.config", filepath.Join(userConfigDir, a.Slug().String()))
 
 	return nil
-}
-
-func appmain() {
-	select {}
 }
 
 // executed in go routine
@@ -279,10 +280,20 @@ func (a *APP) execute() {
 			if v.Key() == "home" {
 				return true
 			}
-			if err := os.MkdirAll(v.String(), 0750); err != nil {
-				a.logger.Error(err)
+
+			_, err := os.Stat(v.String())
+			if err == nil {
+				a.session.Log().SystemDebugf("dir exists: %s", v.String())
+				return true
+			} else if os.IsNotExist(err) {
+				if err := os.MkdirAll(v.String(), 0750); err != nil {
+					a.logger.Error(err)
+				}
+				a.session.Log().SystemDebugf("create dir: %s", v.String())
+			} else {
+				a.session.Log().Error("ensure dir: %s - %s", v.String(), err)
 			}
-			a.session.Log().SystemDebugf("create dir: %s", v.String())
+
 			return true
 		})
 	}

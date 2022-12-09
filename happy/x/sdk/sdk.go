@@ -84,7 +84,7 @@ func NewConfig(opts ...happy.OptionSetFunc) happy.Configurator {
 		happyx.ReadOnlyOption("ts.microseconds", false),
 		happyx.ReadOnlyOption("ts.utc", false), // utc true will show UTC time instead
 	)
-
+	logger.SystemDebug("attached default logger")
 	// Logger to be used
 	conf.UseLogger(logger)
 

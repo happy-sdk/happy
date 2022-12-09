@@ -210,7 +210,7 @@ func (a *APP) Main() {
 	go a.execute()
 
 	// block if needed
-	appmain()
+	osmain()
 }
 
 // Slug returns application slug
