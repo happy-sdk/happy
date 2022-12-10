@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -238,7 +239,7 @@ func NewFlagSetAs[
 	if err != nil {
 		return flags.(FLAGS), fmt.Errorf("name %q is not valid for flag set", name)
 	}
-	if len(os.Args) > 0 && n == os.Args[0] {
+	if len(os.Args) > 0 && n == filepath.Base(os.Args[0]) {
 		n = "/"
 	}
 	flags = &GenericFlagSet[FLAGS, FLAGSET, FLAG, VAR, VAL]{name: n, argsn: argsn}

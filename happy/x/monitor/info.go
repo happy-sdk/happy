@@ -16,13 +16,14 @@ package monitor
 
 import (
 	"fmt"
-	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/pkg/vars"
 	"os"
 	"runtime"
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/pkg/vars"
 )
 
 type Status struct {
@@ -91,18 +92,22 @@ func (s *Status) start() error {
 	// effective group id of the caller.
 	s.debug.Store("os.egid", os.Getegid())
 	s.debug.Store("os.euid", os.Geteuid())
-	gs, err := os.Getgroups()
-	if err != nil {
-		return err
-	}
-	for _, g := range gs {
-		s.debug.Store(fmt.Sprintf("os.groups.%d", g), true)
-	}
+
 	s.debug.Store("os.pagesize", os.Getpagesize())
 	s.debug.Store("os.pid", os.Getpid())
 	s.debug.Store("os.ppid", os.Getppid())
 	s.debug.Store("os.user.uid", os.Getuid())
 	s.debug.Store("os.user.gid", os.Getgid())
+
+	if runtime.GOOS != "windows" {
+		gs, err := os.Getgroups()
+		if err != nil {
+			return err
+		}
+		for _, g := range gs {
+			s.debug.Store(fmt.Sprintf("os.groups.%d", g), true)
+		}
+	}
 	return nil
 }
 

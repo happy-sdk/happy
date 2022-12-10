@@ -16,6 +16,7 @@ package application
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/mkungla/happy"
@@ -95,7 +96,7 @@ func (a *APP) Configure(conf happy.Configurator) (err happy.Error) {
 		return err
 	}
 
-	rootCmd, err := cli.NewCommand(os.Args[0])
+	rootCmd, err := cli.NewCommand(filepath.Base(os.Args[0]))
 	if err != nil {
 		return err
 	}
