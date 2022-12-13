@@ -20,6 +20,8 @@ import (
 	"github.com/mkungla/happy/x/pkg/vars"
 )
 
+var ErrConfig = happyx.NewError("configuration error:")
+
 type Configurator struct {
 	logger  happy.Logger
 	session happy.Session
@@ -58,7 +60,12 @@ func (c *Configurator) UseLogger(logger happy.Logger) {
 	c.logger = logger
 }
 
-func (c *Configurator) GetLogger() (happy.Logger, happy.Error) { return c.logger, nil }
+func (c *Configurator) GetLogger() (happy.Logger, happy.Error) {
+	if c.logger == nil {
+		return nil, ErrConfig.WithText("logger not set")
+	}
+	return c.logger, nil
+}
 
 func (c *Configurator) UseSession(session happy.Session) {
 	c.session = session

@@ -178,11 +178,7 @@ func (a *APP) loadModuleInfo() error {
 
 			// version
 			if bi.Main.Version == "(devel)" {
-				// fmt.Println("bi.Main.Version is ", bi.Main)
-				slug, ok := a.opts.LoadOrDefault("slug", "happy-app")
-				if !ok {
-					return errors.New("APP.loadModuleInfo slug not set")
-				}
+				slug, _ := a.opts.LoadOrDefault("slug", "happy-app")
 				moduleVersion := strings.Trim(filepath.Ext(slug.String()), ".")
 				major := "v1"
 				if strings.HasPrefix(moduleVersion, "v") {

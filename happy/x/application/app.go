@@ -43,6 +43,9 @@ type APP struct {
 	apis    []happy.API
 	slug    happy.Slug
 	version happy.Version
+	// hasRootDo is used to show general help when rootCmd == activeCmd
+	// and rootCmd does not have Do action set.
+	hasRootDo bool
 }
 
 func (a *APP) Version() happy.Version {
@@ -207,8 +210,15 @@ func (a *APP) Main() {
 		return
 	}
 
+	showGeneralHelp := a.rootCmd.Flag("help").Present()
+
+	if !showGeneralHelp && (a.rootCmd == a.activeCmd && !a.hasRootDo) {
+		showGeneralHelp = true
+	}
+
 	// Shall we display default help if so print it and exit with 0
-	if cli.Help(a.session, a.rootCmd, a.activeCmd) {
+	cli.Help(a.session, showGeneralHelp, a.rootCmd, a.activeCmd)
+	if showGeneralHelp {
 		a.Exit(0)
 		return
 	}
@@ -272,6 +282,7 @@ func (a *APP) Before(action happy.ActionCommandFunc) {
 func (a *APP) Do(action happy.ActionCommandFunc) {
 	a.rootCmd.Do(action)
 	a.logger.SystemDebug("set app.Do")
+	a.hasRootDo = action != nil
 }
 
 func (a *APP) AfterSuccess(action happy.ActionFunc) {

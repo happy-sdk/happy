@@ -17,39 +17,36 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/mkungla/happy"
 )
 
-func Help(ctx happy.Session, rootCmd, activeCmd happy.Command) bool {
-	if rootCmd.Flag("help").Present() {
-		Banner(ctx)
-		settree := rootCmd.Flags().GetActiveSets()
-		name := settree[len(settree)-1].Name()
+func Help(ctx happy.Session, show bool, rootCmd, activeCmd happy.Command) {
+	Banner(ctx)
+	settree := rootCmd.Flags().GetActiveSets()
+	name := settree[len(settree)-1].Name()
 
-		if name == "/" {
-			help := helpGlobal{
-				Commands: rootCmd.SubCommands(),
-				Flags:    rootCmd.Flags().Flags(),
-			}
-			info := info{
-				Slug:        ctx.Get("app.slug").String(),
-				Description: ctx.Get("app.description").String(),
-			}
-			if err := help.Print(info); err != nil {
-				ctx.Log().Error(err)
-			}
-		} else {
-			helpCmd := helpCommand{}
-			if err := helpCmd.Print(ctx, activeCmd); err != nil {
-				ctx.Log().Error(err)
-			}
+	if name == "/" {
+		help := helpGlobal{
+			Commands: rootCmd.SubCommands(),
+			Flags:    rootCmd.Flags().Flags(),
 		}
-		return true
+		info := info{
+			Slug:        filepath.Base(os.Args[0]),
+			Description: ctx.Get("app.description").String(),
+		}
+		if err := help.Print(info); err != nil {
+			ctx.Log().Error(err)
+		}
+	} else {
+		helpCmd := helpCommand{}
+		if err := helpCmd.Print(ctx, activeCmd); err != nil {
+			ctx.Log().Error(err)
+		}
 	}
-	return false
 }
 
 func HelpCommand(ctx happy.Session, cmd happy.Command) {
@@ -73,7 +70,7 @@ type helpGlobal struct {
 }
 
 var (
-	helpGlobalTmpl = `{{if .Info.Description}}{{ .Info.Description }}{{end}}
+	helpGlobalTmpl = `
  USAGE:
   {{ .Info.Slug }} command
   {{ .Info.Slug }} command [command-flags] [arguments]
@@ -149,7 +146,7 @@ func (h *helpCommand) Print(ctx happy.Session, cmd happy.Command) error {
 	}
 	h.Command = cmd
 	h.SetTemplate(helpCommandTmpl)
-	usage := []string{ctx.Get("app.slug").String()}
+	usage := []string{filepath.Base(os.Args[0])}
 	usage = append(usage, cmd.Parents()[1:]...)
 	usage = append(usage, cmd.Slug().String())
 	if h.Command.Flags().Len() > 0 {
