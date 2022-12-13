@@ -211,14 +211,13 @@ func (a *APP) Main() {
 	}
 
 	showGeneralHelp := a.rootCmd.Flag("help").Present()
-
 	if !showGeneralHelp && (a.rootCmd == a.activeCmd && !a.hasRootDo) {
 		showGeneralHelp = true
 	}
 
 	// Shall we display default help if so print it and exit with 0
-	cli.Help(a.session, showGeneralHelp, a.rootCmd, a.activeCmd)
 	if showGeneralHelp {
+		cli.Help(a.session, showGeneralHelp, a.rootCmd, a.activeCmd)
 		a.Exit(0)
 		return
 	}
