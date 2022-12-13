@@ -14,5 +14,4 @@
 
 package application
 
-func osmain() {
-}
+func osmain() {}

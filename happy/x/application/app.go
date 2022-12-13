@@ -187,9 +187,15 @@ func (a *APP) RegisterService(svc happy.Service) {
 	a.logger.SystemDebugf("added service %s:", svc.URL())
 }
 
-func (a *APP) RegisterServices(...happy.ServiceCreateFunc) {
-
-	a.logger.SystemDebug("app.RegisterServices")
+func (a *APP) RegisterServices(svcFuncs ...happy.ServiceCreateFunc) {
+	for _, svcFunc := range svcFuncs {
+		svc, err := svcFunc()
+		if err != nil {
+			a.logger.Error(err)
+			continue
+		}
+		a.RegisterService(svc)
+	}
 }
 
 func (a *APP) Log() happy.Logger { return a.logger }

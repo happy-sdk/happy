@@ -2,10 +2,15 @@
 
 DRAFT
 
-Package howijd is the ultimate prototyping SDK written in Go. SDK which makes developers happy by giving them a great API to solve any domain problem and quickly create a working prototype (maybe even MVP). It's a tool for hackers and creators to realize their ideas when a software architect is not at hand or technical knowledge about infrastructure planning is minimal.
-Howijd interface's first design is to make bleeding-edge APIs and technologies quickly available, hence the compromise to prioritize prototyping before production readiness. In addition to the above, Happy addons and services add value to the SDK by favoring the sharing and reuse of implementations in the idea phase between domains.
+The ultimate prototyping SDK written in Go. 
+This SDK which makes developers happy by giving them a great SDK to quickly create a working prototype (maybe even MVP)
+solving their domain problem. It's a tool for hackers and creators to realize their ideas when a software architect 
+is not at hand or technical knowledge about infrastructure planning is minimal.
 
-SDK statmens which always must be true:
+Happy do dependency interface's first design is to make bleeding-edge APIs and technologies quickly available, 
+hence the compromise to prioritize prototyping before production readiness. In addition to the above, 
+Happy addons and services add value to the SDK by favoring the sharing and reuse of implementations in the 
+idea phase between domains and projects.
 
 - Default implementations of Happy interfaces.
 - Ready to use addons, plugins, services and commands you can simply attach to your prototype application.
@@ -40,6 +45,7 @@ SDK statmens which always must be true:
 
 Prototyping SDK for software archidects and developers alike
 merging tools like https://softwarearchitecture.tools/ and actual prototype.
+
 ### Goals and key principles
 
 - Quickly prototype any domain application for proof of concept.
@@ -47,6 +53,4 @@ merging tools like https://softwarearchitecture.tools/ and actual prototype.
 - Not intended for long term production use.
 - 0 Dependency and no vendor lock-in
 
-
-- [ ] To list of pontential of names [eng|est]
 
