@@ -90,7 +90,7 @@ func New(out io.Writer, options ...happy.OptionSetFunc) *Logger {
 		dlvl:           happy.LOG_NOTICE, // default level
 		lvl:            happy.LOG_SYSTEMDEBUG,
 		scope:          "",
-		filenamesLvl:   happy.LOG_NOTICE,
+		filenamesLvl:   happy.LOG_WARNING,
 		filenamesLong:  true,
 		filenamesPre:   "",
 		colors:         true,

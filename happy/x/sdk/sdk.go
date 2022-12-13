@@ -76,7 +76,7 @@ func NewConfig(opts ...happy.OptionSetFunc) happy.Configurator {
 		// in on underlying implementation do respect readonly values.
 		// This is good example why you should use github.com/mkungla/happy/x/testsuite
 		// to test your implementations, since that will test against such things.
-		happyx.ReadOnlyOption("filenames.level", happy.LOG_NOTICE),
+		happyx.ReadOnlyOption("filenames.level", happy.LOG_WARNING),
 		happyx.ReadOnlyOption("filenames.long", false),
 		happyx.ReadOnlyOption("filenames.pre", ""),
 		happyx.ReadOnlyOption("ts.date", false),
