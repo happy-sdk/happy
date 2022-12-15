@@ -62,7 +62,12 @@ func Parse(expr string) []string {
 		expr = "\\{\\}" + expr[2:]
 	}
 
-	return mapArray(expand(escapeBraces(expr), true), unescapeBraces)
+	res := mapArray(expand(escapeBraces(expr), true), unescapeBraces)
+
+	if len(res) == 0 && len(expr) > 0 {
+		return []string{""}
+	}
+	return res
 }
 
 // ParseValid is for convienience to get errors on input:
@@ -78,13 +83,12 @@ func Parse(expr string) []string {
 func ParseValid(expr string) (res []string, err error) {
 	res = Parse(expr)
 
-	if len(res) == 1 {
-		if len(res) == 0 || (len(res) == 1 && len(res[0]) == 0) {
-			return res, ErrEmptyResult
-		}
-		if res[0] == expr {
-			return res, ErrUnchangedBraceExpansion
-		}
+	if len(res) == 1 && len(res[0]) == 0 {
+		return res, ErrEmptyResult
+	}
+
+	if len(res) == 1 && res[0] == expr {
+		return res, ErrUnchangedBraceExpansion
 	}
 
 	return res, err
@@ -350,11 +354,13 @@ func numeric(str string) int64 {
 // escapeBraces is cheaper strings.NewReplacer to escape braces
 //
 // var escapeBraces = strings.NewReplacer(
-// 	"\\\\", escSlash,
-// 	"\\{", escOpen,
-// 	"\\}", escClose,
-// 	"\\,", escComma,
-// 	"\\.", escPeriod,
+//
+//	"\\\\", escSlash,
+//	"\\{", escOpen,
+//	"\\}", escClose,
+//	"\\,", escComma,
+//	"\\.", escPeriod,
+//
 // )
 //
 // escapeBraces.Replace(str).
@@ -368,11 +374,13 @@ func escapeBraces(str string) string {
 
 // unescapeBraces is cheaper strings.NewReplacer to escape braces
 // var unescapeBraces = strings.NewReplacer(
-// 	escSlash, "",
-// 	escOpen, "{",
-// 	escClose, "}",
-// 	escComma, ",",
-// 	escPeriod, ".",
+//
+//	escSlash, "",
+//	escOpen, "{",
+//	escClose, "}",
+//	escComma, ",",
+//	escPeriod, ".",
+//
 // ).
 func unescapeBraces(str string) string {
 	return sliceAndJoin(
