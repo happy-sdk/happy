@@ -277,10 +277,6 @@ type (
 		PeerService() string
 	}
 
-	Version interface {
-		fmt.Stringer
-	}
-
 	Cron interface {
 		Cron(ActionCronSchedulerSetup)
 	}
@@ -601,7 +597,7 @@ type (
 
 		// AfterAlways is optional callback to execute reqardless did Main
 		// succeed or not.
-		AfterAlways(action ActionWithErrorFunc)
+		AfterAlways(action ActionWithStatusFunc)
 	}
 
 	CommandSubCommandSetter interface {
@@ -645,7 +641,7 @@ type (
 		ExecuteDoAction(sess Session, assets FS, status ApplicationStatus, apis []API) Error
 		ExecuteAfterFailureAction(sess Session, err Error) Error
 		ExecuteAfterSuccessAction(sess Session) Error
-		ExecuteAfterAlwaysAction(sess Session, err Error) Error
+		ExecuteAfterAlwaysAction(sess Session, status ApplicationStatus) Error
 
 		CommandActionSetter
 		CommandSubCommandSetter

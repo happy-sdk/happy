@@ -28,7 +28,6 @@ import (
 	"github.com/mkungla/happy/x/happyx"
 	"github.com/mkungla/happy/x/monitor"
 	"github.com/mkungla/happy/x/pkg/varflag"
-	"github.com/mkungla/happy/x/pkg/version"
 	"github.com/mkungla/happy/x/session"
 )
 
@@ -50,7 +49,7 @@ func (s Slug) String() string {
 }
 
 func NewAddon(slug, name, ver string, defaultOptions ...happy.OptionSetFunc) (happy.Addon, happy.Error) {
-	v, err := version.Parse(ver)
+	v, err := happy.ParseVersion(ver)
 	if err != nil {
 		return nil, ErrAddon.Wrap(err)
 	}

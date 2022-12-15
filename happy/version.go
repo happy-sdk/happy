@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
+package happy
 
 import (
 	"errors"
@@ -28,7 +28,7 @@ type Version struct {
 	v string
 }
 
-func Parse(v string) (Version, error) {
+func ParseVersion(v string) (Version, error) {
 	if !strings.HasPrefix(v, "v") {
 		v = "v" + v
 	}
@@ -40,4 +40,24 @@ func Parse(v string) (Version, error) {
 
 func (v Version) String() string {
 	return v.v
+}
+
+func (v Version) IsZero() bool {
+	return len(v.v) == 0 || v.v == "v0.0.0"
+}
+
+func (v Version) MarshalJSON() ([]byte, error) {
+	b := make([]byte, 0, len(v.v)+2)
+	b = append(b, '"')
+	b = append(b, []byte(v.v)...)
+	b = append(b, '"')
+	return b, nil
+}
+
+func (v *Version) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		return nil
+	}
+	v.v = strings.Trim(string(data), `"`)
+	return nil
 }

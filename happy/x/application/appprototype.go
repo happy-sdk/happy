@@ -26,7 +26,6 @@ import (
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/x/pkg/peeraddr"
-	"github.com/mkungla/happy/x/pkg/version"
 	"github.com/mkungla/happy/x/session"
 )
 
@@ -195,7 +194,7 @@ func (a *APP) loadModuleInfo() error {
 		}
 	}
 
-	version, err := version.Parse(ver)
+	version, err := happy.ParseVersion(ver)
 	if err != nil {
 		return err
 	}
@@ -370,12 +369,18 @@ func (a *APP) executeAfterSuccessActions() {
 func (a *APP) executeAfterAlwaysActions(err happy.Error) {
 	a.logger.SystemDebug("execute after always actions")
 
-	if err := a.activeCmd.ExecuteAfterAlwaysAction(a.session, err); err != nil {
+	if err := a.activeCmd.ExecuteAfterAlwaysAction(
+		a.session,
+		a.engine.Monitor().Status(),
+	); err != nil {
 		a.logger.Error(err)
 	}
 
 	if a.rootCmd != a.activeCmd {
-		if err := a.rootCmd.ExecuteAfterAlwaysAction(a.session, err); err != nil {
+		if err := a.rootCmd.ExecuteAfterAlwaysAction(
+			a.session,
+			a.engine.Monitor().Status(),
+		); err != nil {
 			a.logger.Error(err)
 		}
 	}

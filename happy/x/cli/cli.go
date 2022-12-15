@@ -21,11 +21,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/happyx"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/happyx"
 )
 
 var (
@@ -78,6 +79,15 @@ func AskForConfirmation(q string) bool {
 
 		return AskForConfirmation(q)
 	}
+}
+
+func AskForInput(q string) string {
+	var response string
+	fmt.Fprintln(os.Stdout, q)
+	if _, err := fmt.Scanln(&response); err != nil {
+		return ""
+	}
+	return response
 }
 
 func runCommand(sess happy.Session, cmd *exec.Cmd) error {

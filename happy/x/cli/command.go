@@ -69,7 +69,7 @@ type Command struct {
 	doAction           happy.ActionCommandFunc
 	afterSuccessAction happy.ActionFunc
 	afterFailureAction happy.ActionWithErrorFunc
-	afterAlwaysAction  happy.ActionWithErrorFunc
+	afterAlwaysAction  happy.ActionWithStatusFunc
 
 	desc      string
 	category  string
@@ -249,7 +249,7 @@ func (c *Command) AfterFailure(action happy.ActionWithErrorFunc) {
 // AfterFailure and/or AfterSuccess functions are done executing.
 // If this function if set then it is called always regardless what was the final state of
 // any previous phase.
-func (c *Command) AfterAlways(action happy.ActionWithErrorFunc) {
+func (c *Command) AfterAlways(action happy.ActionWithStatusFunc) {
 	if c.afterAlwaysAction != nil {
 		c.errs = append(c.errs, ErrCommand.WithText("attempt to override AfterAlways action for "+c.slug.String()))
 		return
@@ -380,12 +380,12 @@ func (c *Command) ExecuteAfterSuccessAction(sess happy.Session) happy.Error {
 	return nil
 }
 
-func (c *Command) ExecuteAfterAlwaysAction(sess happy.Session, err happy.Error) happy.Error {
+func (c *Command) ExecuteAfterAlwaysAction(sess happy.Session, status happy.ApplicationStatus) happy.Error {
 	if c.afterAlwaysAction == nil {
 		return nil
 	}
 
-	if e := c.afterAlwaysAction(sess, err); e != nil {
+	if e := c.afterAlwaysAction(sess, status); e != nil {
 		return ErrCommandAction.WithText(c.slug.String()).Wrap(e)
 	}
 	return nil

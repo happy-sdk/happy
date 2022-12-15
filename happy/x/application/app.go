@@ -294,7 +294,7 @@ func (a *APP) AfterFailure(action happy.ActionWithErrorFunc) {
 	a.logger.SystemDebug("set app.AfterFailure")
 }
 
-func (a *APP) AfterAlways(action happy.ActionWithErrorFunc) {
+func (a *APP) AfterAlways(action happy.ActionWithStatusFunc) {
 	a.rootCmd.AfterAlways(action)
 	a.logger.SystemDebug("set app.AfterAlways")
 }
