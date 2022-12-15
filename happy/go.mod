@@ -4,10 +4,13 @@ go 1.19
 
 require (
 	github.com/mkungla/bexp/v3 v3.0.0
-	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
+	golang.org/x/mod v0.7.0
 )
 
-require github.com/kr/pretty v0.3.0 // indirect
+require (
+	github.com/kr/pretty v0.3.0 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
+)
 
 require (
 	github.com/robfig/cron/v3 v3.0.1

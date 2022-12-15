@@ -14,42 +14,76 @@
 
 package main
 
-// import (
-// 	"fmt"
+import (
+	"errors"
+	"time"
 
-// 	"github.com/mkungla/happy"
-// 	"github.com/mkungla/happy/x/sdk/application"
-// )
+	"github.com/mkungla/happy"
+	"github.com/mkungla/happy/x/contrib/flags"
+	"github.com/mkungla/happy/x/examples/hello-world/hello"
+	"github.com/mkungla/happy/x/happyx"
+	"github.com/mkungla/happy/x/sdk"
+)
 
-// func main() {
-// 	// Create application instance
-// 	// With this minimal example we do not provide Configurator
-// 	// and expect application implementation auto configure it for us.
-// 	app, err := application.New(nil)
+func main() {
+	conf := sdk.NewConfig(
+		happyx.Option("app.title", "Hello World"),
+	)
+	app := sdk.NewApplication(conf)
 
-// 	// Apply configuration to application
-// 	if err != nil {
-// 		app.Log().Error(err)
-// 		return
-// 	}
+	// app.AddFlag(flags.VersionFlag()) // --version (print app version)
+	// app.AddFlag(flags.XFlag())       // -x (prints commands as they are executed)
+	app.AddFlag(flags.HelpFlag()) // -h, --help (help for app and comands)
+	app.AddFlags(
+		// Add common log verbosity flags provided by SDK
+		// -v -verbose, --debug, --system-debug
+		flags.LoggerFlags()...,
+	)
 
-// 	// Minimal example what is available by default
-// 	app.Do(func(ctx happy.Session, args happy.Variables, assets happy.FS) error {
+	app.RegisterAddon(hello.New())
 
-// 		fmt.Println("SESSION")
-// 		ctx.RangeOptions(func(key string, value happy.Value) bool {
-// 			fmt.Println("key: ", key, " value: ", value)
-// 			return true
-// 		})
+	app.Before(func(sess happy.Session, f happy.Flags, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) error {
+		sess.Log().Notice("app.before")
 
-// 		fmt.Println("SETTINGS")
-// 		ctx.Settings().RangeOptions(func(key string, value happy.Value) bool {
-// 			fmt.Println("key: ", key, " value: ", value)
-// 			return true
-// 		})
+		loader := sess.RequireServices(
+			status,
+			"/hello-service",
+		)
 
-// 		return nil
-// 	})
+		sess.Log().Notice("app.before service loading")
+		<-loader.Loaded()
+		sess.Log().Notice("app.before service loaded")
 
-// 	app.Main()
-// }
+		// <-sess.Ready()
+		// auth
+
+		return nil
+	})
+
+	app.Do(func(sess happy.Session, f happy.Flags, assets happy.FS, status happy.ApplicationStatus, apis []happy.API) error {
+		// say hello in background
+		time.Sleep(time.Second * 2)
+
+		sess.Dispatch(happyx.NewEvent("say", "hello.world", nil, nil))
+		time.Sleep(time.Second * 2)
+		<-sess.Done()
+		return errors.New("before")
+	})
+
+	app.AfterFailure(func(sess happy.Session, err happy.Error) error {
+		sess.Log().Notice("AfterFailure")
+		return nil
+	})
+
+	app.AfterSuccess(func(sess happy.Session) error {
+		sess.Log().Notice("AfterSuccess")
+		return nil
+	})
+
+	app.AfterAlways(func(sess happy.Session, status happy.ApplicationStatus) error {
+		sess.Log().Noticef("AfterAlways: elapsed %s", status.Elapsed())
+		return nil
+	})
+
+	app.Main()
+}

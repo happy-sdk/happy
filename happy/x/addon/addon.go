@@ -45,6 +45,7 @@ func New(slug, name string, version happy.Version, defaultOptions ...happy.Optio
 		version: version,
 		opts:    opts,
 	}
+
 	return addon, nil
 }
 

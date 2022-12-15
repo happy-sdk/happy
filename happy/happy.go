@@ -44,14 +44,6 @@ const (
 	LOG_SYSTEMDEBUG
 )
 
-// ApplicationVersion version is set
-// then app.version is set to this value instead of
-// reading it from debug.BuildInfo. This is only fo cases where you need
-// version embed with go build and take full responsibility
-// about setting correct version see:
-// https://github.com/golang/go/issues/50603
-var ApplicationVersion string
-
 // A Kind represents the specific kind of kinde that a Value represents.
 // The zero Kind is not a valid kind.
 type ValueKind uint
