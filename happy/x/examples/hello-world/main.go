@@ -15,7 +15,6 @@
 package main
 
 import (
-	"errors"
 	"time"
 
 	"github.com/mkungla/happy"
@@ -66,8 +65,12 @@ func main() {
 
 		sess.Dispatch(happyx.NewEvent("say", "hello.world", nil, nil))
 		time.Sleep(time.Second * 2)
+
+		helloapi, _ := happyx.API[*hello.API](apis)
+		sess.Log().Notice(helloapi.GetHello())
+
 		<-sess.Done()
-		return errors.New("before")
+		return nil
 	})
 
 	app.AfterFailure(func(sess happy.Session, err happy.Error) error {

@@ -14,6 +14,7 @@ type HelloAddon struct {
 	happy.Addon
 	cmds []happy.Command
 	svcs []happy.Service
+	api  API
 }
 
 func New() happy.Addon {
@@ -40,6 +41,24 @@ func (a *HelloAddon) Commands() []happy.Command {
 
 func (a *HelloAddon) Services() []happy.Service {
 	return a.svcs
+}
+
+func (a *HelloAddon) API() happy.API {
+	return &a.api
+}
+
+type API struct{}
+
+func (a *API) Commands() error {
+	return nil
+}
+
+func (a *API) Services() error {
+	return nil
+}
+
+func (a *API) GetHello() string {
+	return "HELLO"
 }
 
 func cmdHello() happy.Command {
