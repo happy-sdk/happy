@@ -8,20 +8,20 @@ jobs:
   benchmark:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v3
         with:
-          go-version: 1.15.x
-      - uses: actions/checkout@v2
+          go-version: '1.18'
+      - uses: actions/checkout@v3
       - name: Run benchmark
         run: go test -benchmem -benchtime 100000x -bench . | tee bench.result
       - name: Download previous benchmark data
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
         # Run `github-action-benchmark` action
       - name: Store benchmark result
-        uses: mkungla/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1
         with:
           # What benchmark tool the output.txt came from
           tool: 'go'

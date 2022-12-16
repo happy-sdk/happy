@@ -13,18 +13,20 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 [![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/bexp/v3)](https://goreportcard.com/report/github.com/mkungla/bexp/v3)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
 
-[![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fmkungla%bexp.git)
+[![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)](https://dashboard.bencher.orijtech.com/graphs?tab=1&branch=&repo=https%3A%2F%2Fgithub.com%2Fmkungla%2Fbexp.git&start=1670554071&end=1671158871&searchTerm=&yScale=linear&highlight=)
 <!-- ![GitHub all releases](https://img.shields.io/github/downloads/mkungla/bexp/total) -->
 
 
 
-- [Usage](#usage)
-- [Get string slice](#get-string-slice)
-- [Generating directory tree](#generating-directory-tree)
-- [Expand URLS](#expand-urls)
-- [Need error checking?](#need-error-checking)
-- [With **os.Expand**](#with-osexpand)
-- [With **os.ExpandEnv**](#with-osexpandenv)
+- [Bash Brace Expansion in Go](#bash-brace-expansion-in-go)
+  - [Usage](#usage)
+  - [Get string slice](#get-string-slice)
+  - [Generating directory tree](#generating-directory-tree)
+  - [Expand URLS](#expand-urls)
+  - [Need error checking?](#need-error-checking)
+  - [With **os.Expand**](#with-osexpand)
+  - [With **os.ExpandEnv**](#with-osexpandenv)
+  - [Inspired by and other similar libraries](#inspired-by-and-other-similar-libraries)
 
 
 ## Usage

@@ -13,7 +13,7 @@ import (
 	"github.com/mkungla/bexp/v3"
 )
 
-//nolint: lll
+// nolint: lll
 func ExampleParse() {
 	var v []string
 
