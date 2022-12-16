@@ -10,7 +10,7 @@ type balancedTest struct {
 	A, B, Str string
 }
 
-func TestBalanced(t *testing.T) {
+func TestBalanced(t *testing.T) { //nolint: funlen
 	regStart := regexp.MustCompile(`\{`)
 	regEnd := regexp.MustCompile(`\}`)
 

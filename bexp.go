@@ -83,7 +83,7 @@ func Parse(expr string) []string {
 func ParseValid(expr string) (res []string, err error) {
 	res = Parse(expr)
 
-	if len(res) == 1 && len(res[0]) == 0 {
+	if len(res) == 1 && res[0] == "" {
 		return res, ErrEmptyResult
 	}
 
@@ -172,17 +172,17 @@ func expand(str string, isTop bool) []string {
 	)
 	isSequence := strings.Contains(m.Body, "..")
 	if isSequence {
-		isNumericSequence = regexp.MustCompile(`^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$`).Match([]byte(m.Body))
-		isAlphaSequence = regexp.MustCompile(`^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$`).Match([]byte(m.Body))
+		isNumericSequence = regexp.MustCompile(`^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$`).MatchString(m.Body)
+		isAlphaSequence = regexp.MustCompile(`^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$`).MatchString(m.Body)
 		isSequence = isNumericSequence || isAlphaSequence
 	}
 
-	// isOptions := regexp.MustCompile(`^(.*,)+(.+)?$`).Match([]byte(m.Body))
+	// slow regex `^(.*,)+(.+)?$`
 	isOptions := strings.Contains(m.Body, ",")
 
 	if !isSequence && !isOptions {
 		// UseCase???
-		if regexp.MustCompile(`,.*\}`).Match([]byte(m.Post)) {
+		if regexp.MustCompile(`,.*\}`).MatchString(m.Post) {
 			return expand(m.Pre+"{"+m.Body+escClose+m.Post, false)
 		}
 		return []string{str}
@@ -250,6 +250,7 @@ func expandSequence(n []string, isAlphaSequence bool) []string {
 }
 
 func expandNonAlphaSequence(i int64, width int, pad bool) string {
+	//nolint: gomnd
 	c := strconv.FormatInt(i, 10)
 	if pad {
 		var need = width - len(c)
@@ -323,7 +324,7 @@ func isPadded(el string) bool {
 		return false
 	}
 	test := strings.TrimLeft(el, "-")[1:]
-	if len(test) == 0 {
+	if test == "" {
 		return false
 	}
 
@@ -334,11 +335,11 @@ func embrace(str string) string {
 	return "{" + str + "}"
 }
 
-func lte(i int64, y int64) bool {
+func lte(i, y int64) bool {
 	return i <= y
 }
 
-func gte(i int64, y int64) bool {
+func gte(i, y int64) bool {
 	return i >= y
 }
 
@@ -391,6 +392,6 @@ func unescapeBraces(str string) string {
 
 // sliceAndJoin replaces separators
 // return strings.Join(strings.Split(str, slice), join).
-func sliceAndJoin(str string, join string, slice string) string {
+func sliceAndJoin(str, join, slice string) string {
 	return strings.ReplaceAll(str, slice, join)
 }

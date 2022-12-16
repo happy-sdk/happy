@@ -20,12 +20,12 @@ type BalancedResult struct {
 }
 
 // Balanced returns first non-nested matching pair of a and b in str.
-func Balanced(a, b string, str string) BalancedResult {
+func Balanced(a, b, str string) BalancedResult {
 	return Range(a, b, str)
 }
 
 // Range retruns the first non-nested matching pair of a and b in str.
-func Range(a, b string, str string) BalancedResult {
+func Range(a, b, str string) BalancedResult {
 	var (
 		result []int
 		ai     = -1
@@ -49,7 +49,7 @@ func Range(a, b string, str string) BalancedResult {
 	return composeBalancedResult(a, b, str, result)
 }
 
-func doRange(a string, b string, ai, bi int, str string) []int {
+func doRange(a, b string, ai, bi int, str string) []int {
 	var (
 		result []int
 		begs   []int
@@ -60,7 +60,7 @@ func doRange(a string, b string, ai, bi int, str string) []int {
 	)
 	left = len(str)
 	for i < len(str) && i >= 0 && result == nil {
-		//nolint: gocritic, nestif
+		//nolint:  nestif
 		if i == ai {
 			begs = append(begs, i)
 			ai = strings.Index(str[i+1:], a)
@@ -100,7 +100,7 @@ func doRange(a string, b string, ai, bi int, str string) []int {
 	return result
 }
 
-func composeBalancedResult(a string, b string, str string, result []int) (bres BalancedResult) {
+func composeBalancedResult(a, b, str string, result []int) (bres BalancedResult) {
 	if len(result) != 2 {
 		return
 	}

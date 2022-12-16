@@ -38,7 +38,7 @@ func BenchmarkIsPadded(b *testing.B) {
 	b.Run("GO/isPaddedRegexp", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, test := range tests {
-				res := re.Match([]byte(test.in))
+				res := re.MatchString(test.in)
 				if res != test.want {
 					b.Errorf("expected %t got %t", !test.want, test.want)
 				}

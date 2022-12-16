@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         version: ['>=1.18.0', 'latest']
-        platform: [ubuntu-latest, macos-latest, windows-latest]
+        platform: [ubuntu-22.04, macOS-12, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Set up Go

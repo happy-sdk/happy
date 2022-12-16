@@ -25,7 +25,6 @@ type testResource struct {
 	Len     int
 }
 
-// nolint: gochecknoglobals
 var testResources = []testResource{
 	// PATHS
 	{"data/{P1/{10..19},P2/{20..29},P3/{30..39}}", "data/P1/10", "data/P1/11", "data/P3/39", 30},
@@ -316,7 +315,7 @@ var testResources = []testResource{
 
 // TestTestDataWithBash ensures that test data is valid
 // and expecations match bash output.
-func TestTestDataWithBash(t *testing.T) {
+func TestTestDataWithBash(t *testing.T) { //nolint: gocyclo
 	if _, err := exec.LookPath("bash"); err != nil {
 		t.Log("bash not found")
 		return
@@ -329,6 +328,7 @@ func TestTestDataWithBash(t *testing.T) {
 				fmt.Sprintf("echo %s", test.Pattern),
 			}
 
+			//nolint: gosec
 			out, err := exec.Command(args[0], args[1:]...).Output()
 			if err != nil {
 				t.Errorf("failed to exec: %s", strings.Join(args, " "))
