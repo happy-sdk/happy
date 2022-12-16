@@ -28,11 +28,7 @@ jobs:
       - name: Run tests
         run: |
           go test -v -race -covermode atomic -coverprofile=covprofile ./...
-      - name: Install goveralls
+      - uses: shogo82148/actions-goveralls@v1
         if: runner.os == 'Linux'
-        run: go install github.com/mattn/goveralls@latest
-      - name: Send coverage
-        if: runner.os == 'Linux'
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goveralls -coverprofile=covprofile -service=github
+        with:
+          path-to-profile: covprofile
