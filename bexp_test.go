@@ -316,6 +316,10 @@ var testResources = []testResource{
 // TestTestDataWithBash ensures that test data is valid
 // and expecations match bash output.
 func TestTestDataWithBash(t *testing.T) { //nolint: gocyclo
+	if runtime.GOOS != "linux" {
+		t.Skip()
+		return
+	}
 	if _, err := exec.LookPath("bash"); err != nil {
 		t.Log("bash not found")
 		return
