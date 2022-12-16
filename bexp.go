@@ -250,8 +250,7 @@ func expandSequence(n []string, isAlphaSequence bool) []string {
 }
 
 func expandNonAlphaSequence(i int64, width int, pad bool) string {
-	//nolint: gomnd
-	c := strconv.FormatInt(i, 10)
+	c := strconv.FormatInt(i, 10) //nolint: gomnd
 	if pad {
 		var need = width - len(c)
 		if need > 0 {
