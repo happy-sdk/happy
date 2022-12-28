@@ -5,6 +5,7 @@
 package vars
 
 import (
+	"encoding/json"
 	"sync"
 	"sync/atomic"
 )
@@ -19,22 +20,24 @@ type Map struct {
 // Store sets the value for a key.
 // Error is returned when key or value parsing fails
 // or variable is already set and is readonly.
-func (c *Map) Store(key string, value any) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (m *Map) Store(key string, value any) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-	if c.db == nil {
-		c.db = make(map[string]Variable)
+	if m.db == nil {
+		m.db = make(map[string]Variable)
 	}
 
-	curr, ok := c.db[key]
-	if ok && curr.ReadOnly() {
+	curr, has := m.db[key]
+	if has && curr.ReadOnly() {
 		return errorf("%w: can not set value for %s", ErrReadOnly, key)
 	}
 
 	if v, ok := value.(Variable); ok && v.Name() == key {
-		c.db[key] = v
-		atomic.AddInt64(&c.len, 1)
+		m.db[key] = v
+		if !has {
+			atomic.AddInt64(&m.len, 1)
+		}
 		return nil
 	}
 
@@ -42,24 +45,26 @@ func (c *Map) Store(key string, value any) error {
 	if err != nil {
 		return err
 	}
-	c.db[key] = v
-	atomic.AddInt64(&c.len, 1)
+	m.db[key] = v
+	if !has {
+		atomic.AddInt64(&m.len, 1)
+	}
 	return err
 }
 
-func (c *Map) StoreReadOnly(key string, value any, ro bool) error {
+func (m *Map) StoreReadOnly(key string, value any, ro bool) error {
 	v, err := New(key, value, ro)
 	if err != nil {
 		return err
 	}
-	return c.Store(key, v)
+	return m.Store(key, v)
 }
 
 // Get retrieves the value of the variable named by the key.
 // It returns the value, which will be empty string if the variable is not set
 // or value was empty.
-func (c *Map) Get(key string) (v Variable) {
-	v, ok := c.db[key]
+func (m *Map) Get(key string) (v Variable) {
+	v, ok := m.db[key]
 	if !ok {
 		return EmptyVariable
 	}
@@ -67,15 +72,15 @@ func (c *Map) Get(key string) (v Variable) {
 }
 
 // Has reprts whether given variable  exists.
-func (c *Map) Has(key string) bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	_, ok := c.db[key]
+func (m *Map) Has(key string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	_, ok := m.db[key]
 	return ok
 }
 
-func (c *Map) All() (all []Variable) {
-	c.Range(func(v Variable) bool {
+func (m *Map) All() (all []Variable) {
+	m.Range(func(v Variable) bool {
 		all = append(all, v)
 		return true
 	})
@@ -83,42 +88,42 @@ func (c *Map) All() (all []Variable) {
 }
 
 // Delete deletes the value for a key.
-func (c *Map) Delete(key string) {
-	_, _ = c.LoadAndDelete(key)
+func (m *Map) Delete(key string) {
+	_, _ = m.LoadAndDelete(key)
 }
 
 // Load returns the variable stored in the Collection for a key,
 // or EmptyVar if no value is present.
 // The ok result indicates whether variable was found in the Collection.
-func (c *Map) Load(key string) (v Variable, ok bool) {
-	if !c.Has(key) {
+func (m *Map) Load(key string) (v Variable, ok bool) {
+	if !m.Has(key) {
 		return EmptyVariable, false
 	}
-	return c.Get(key), true
+	return m.Get(key), true
 }
 
 // LoadAndDelete deletes the value for a key, returning the previous value if any.
 // The loaded result reports whether the key was present.
-func (c *Map) LoadAndDelete(key string) (v Variable, loaded bool) {
-	if !c.Has(key) {
+func (m *Map) LoadAndDelete(key string) (v Variable, loaded bool) {
+	if !m.Has(key) {
 		return EmptyVariable, false
 	}
 
-	v = c.Get(key)
+	v = m.Get(key)
 	loaded = true
-	c.mu.Lock()
-	delete(c.db, v.Name())
-	atomic.AddInt64(&c.len, -1)
-	c.mu.Unlock()
+	m.mu.Lock()
+	delete(m.db, v.Name())
+	atomic.AddInt64(&m.len, -1)
+	m.mu.Unlock()
 	return
 }
 
 // LoadOrDefault returns the existing value for the key if present.
 // Much like LoadOrStore, but second argument willl be returned as
 // Value whithout being stored into Map.
-func (c *Map) LoadOrDefault(key string, value any) (v Variable, loaded bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+func (m *Map) LoadOrDefault(key string, value any) (v Variable, loaded bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
 	if len(key) > 0 {
 		if def, ok := value.(Variable); ok {
@@ -126,7 +131,7 @@ func (c *Map) LoadOrDefault(key string, value any) (v Variable, loaded bool) {
 		}
 	}
 	// existing
-	if val, ok := c.db[key]; ok {
+	if val, ok := m.db[key]; ok {
 		return val, true
 	}
 
@@ -140,16 +145,16 @@ func (c *Map) LoadOrDefault(key string, value any) (v Variable, loaded bool) {
 // LoadOrStore returns the existing value for the key if present.
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
-func (c *Map) LoadOrStore(key string, value any) (actual Variable, loaded bool) {
+func (m *Map) LoadOrStore(key string, value any) (actual Variable, loaded bool) {
 	k, err := parseKey(key)
 	if err != nil {
 		return EmptyVariable, false
 	}
-	loaded = c.Has(k)
+	loaded = m.Has(k)
 	if !loaded {
-		c.Store(k, value)
+		m.Store(k, value)
 	}
-	return c.Get(k), loaded
+	return m.Get(k), loaded
 }
 
 // Range calls f sequentially for each key and value present in the map.
@@ -162,22 +167,22 @@ func (c *Map) LoadOrStore(key string, value any) (actual Variable, loaded bool) 
 //
 // Range may be O(N) with the number of elements in the map even if f returns
 // false after a constant number of calls.
-func (c *Map) Range(f func(v Variable) bool) {
-	c.mu.RLock()
-	for _, v := range c.db {
-		c.mu.RUnlock()
+func (m *Map) Range(f func(v Variable) bool) {
+	m.mu.RLock()
+	for _, v := range m.db {
+		m.mu.RUnlock()
 		if !f(v) {
 			break
 		}
-		c.mu.RLock()
+		m.mu.RLock()
 	}
-	c.mu.RUnlock()
+	m.mu.RUnlock()
 }
 
 // ToBytes returns []byte containing
 // key = "value"\n.
-func (c *Map) ToBytes() []byte {
-	s := c.ToKeyValSlice()
+func (m *Map) ToBytes() []byte {
+	s := m.ToKeyValSlice()
 
 	p := getParser()
 	defer p.free()
@@ -189,9 +194,9 @@ func (c *Map) ToBytes() []byte {
 }
 
 // ToKeyValSlice produces []string slice of strings in format key = "value".
-func (c *Map) ToKeyValSlice() []string {
+func (m *Map) ToKeyValSlice() []string {
 	r := []string{}
-	c.Range(func(v Variable) bool {
+	m.Range(func(v Variable) bool {
 		// we can do it directly on interface value since they all are Values
 		// implementing Stringer
 		r = append(r, v.Name()+"=\""+v.String()+"\"")
@@ -201,17 +206,17 @@ func (c *Map) ToKeyValSlice() []string {
 }
 
 // Len of collection.
-func (c *Map) Len() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return int(atomic.LoadInt64(&c.len))
+func (m *Map) Len() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return int(atomic.LoadInt64(&m.len))
 }
 
 // GetWithPrefix return all variables with prefix if any as new Map
 // and strip prefix from keys.
-func (c *Map) ExtractWithPrefix(prfx string) *Map {
+func (m *Map) ExtractWithPrefix(prfx string) *Map {
 	vars := new(Map)
-	c.Range(func(v Variable) bool {
+	m.Range(func(v Variable) bool {
 		key := v.Name()
 		if len(key) >= len(prfx) && key[0:len(prfx)] == prfx {
 			_ = vars.Store(key[len(prfx):], v)
@@ -222,9 +227,9 @@ func (c *Map) ExtractWithPrefix(prfx string) *Map {
 }
 
 // LoadWithPrefix return all variables with prefix if any as new Map.
-func (c *Map) LoadWithPrefix(prfx string) (set *Map, loaded bool) {
+func (m *Map) LoadWithPrefix(prfx string) (set *Map, loaded bool) {
 	set = new(Map)
-	c.Range(func(v Variable) bool {
+	m.Range(func(v Variable) bool {
 		key := v.Name()
 		if len(key) >= len(prfx) && key[0:len(prfx)] == prfx {
 			_ = set.Store(key, v)
@@ -233,4 +238,37 @@ func (c *Map) LoadWithPrefix(prfx string) (set *Map, loaded bool) {
 		return true
 	})
 	return set, loaded
+}
+
+func (m *Map) MarshalJSON() ([]byte, error) {
+	// Create a map to hold the key-value pairs of the synm.Map
+	var objMap = make(map[string]any)
+
+	// Iterate over the synm.Map and add the key-value pairs to the map
+	m.Range(func(v Variable) bool {
+		objMap[v.Name()] = v.Any()
+		return true
+	})
+
+	// Use json.Marshal to convert the map to JSON
+	return json.Marshal(objMap)
+}
+
+func (m *Map) UnmarshalJSON(data []byte) error {
+	// Create a map to hold the key-value pairs from the JSON data
+	var objMap map[string]any
+
+	// Use json.Unmarshal to parse the JSON data into the map
+	if err := json.Unmarshal(data, &objMap); err != nil {
+		return err
+	}
+
+	// Iterate over the map and add the key-value pairs to the synm.Map
+	for key, value := range objMap {
+		if err := m.Store(key, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

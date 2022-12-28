@@ -22,7 +22,7 @@ type Application struct {
 	session *Session
 	engine  *Engine
 
-	rootCmd   Command
+	rootCmd   *Command
 	activeCmd *Command
 	addons    []Addon
 
@@ -119,11 +119,11 @@ func (a *Application) Main() {
 	osmain(a.exitCh)
 }
 
-func (a *Application) Before(action Action) {
+func (a *Application) Before(action ActionWithArgs) {
 	a.rootCmd.Before(action)
 }
 
-func (a *Application) Do(action Action) {
+func (a *Application) Do(action ActionWithArgs) {
 	a.rootCmd.Do(action)
 }
 
@@ -153,7 +153,7 @@ func (a *Application) WithAddons(addon ...Addon) {
 	}
 }
 
-func (a *Application) AddCommand(cmd Command) {
+func (a *Application) AddCommand(cmd *Command) {
 	a.rootCmd.AddSubCommand(cmd)
 }
 
@@ -253,7 +253,7 @@ func (a *Application) setActiveCommand() error {
 	settree := a.rootCmd.flags.GetActiveSets()
 	name := settree[len(settree)-1].Name()
 	if name == "/" {
-		a.activeCmd = &a.rootCmd
+		a.activeCmd = a.rootCmd
 		// only set app tick tock if current command is root command
 		a.engine.onTick(a.tickAction)
 		a.engine.onTock(a.tockAction)
@@ -407,11 +407,11 @@ func (a *Application) configureLogger() {
 }
 
 func (a *Application) configureRootCommand() error {
-	rootCmd, err := NewCommand(
+	rootCmd := NewCommand(
 		filepath.Base(os.Args[0]),
 		Option("description", a.session.Get("app.description")),
 	)
-	if err != nil {
+	if err := rootCmd.Err(); err != nil {
 		return err
 	}
 
@@ -442,7 +442,7 @@ func (a *Application) configureRootCommand() error {
 
 func (a *Application) executeBeforeActions() error {
 	a.logger.SystemDebug("execute before actions")
-	if &a.rootCmd != a.activeCmd {
+	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callBeforeAction(a.session); err != nil {
 			return err
 		}
@@ -460,7 +460,7 @@ func (a *Application) executeAfterFailureActions(err error) {
 		a.logger.Error("command after failure action", err)
 	}
 
-	if &a.rootCmd != a.activeCmd {
+	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callAfterFailureAction(a.session, err); err != nil {
 			a.logger.Error("app after failure action", err)
 		}
@@ -473,7 +473,7 @@ func (a *Application) executeAfterSuccessActions() {
 		a.logger.Error("command after success action", err)
 	}
 
-	if &a.rootCmd != a.activeCmd {
+	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callAfterSuccessAction(a.session); err != nil {
 			a.logger.Error("app after success action", err)
 		}
@@ -487,7 +487,7 @@ func (a *Application) executeAfterAlwaysActions(err error) {
 		a.logger.Error("command after always action", err)
 	}
 
-	if &a.rootCmd != a.activeCmd {
+	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callAfterAlwaysAction(a.session); err != nil {
 			a.logger.Error("app after always action", err)
 		}
@@ -502,11 +502,10 @@ func (a *Application) executeAfterAlwaysActions(err error) {
 
 func (a *Application) registerAddonCommands() error {
 	for _, addon := range a.addons {
-		cmds, err := addon.Commands()
-		if err != nil {
-			return err
-		}
-		for _, cmd := range cmds {
+		for _, cmd := range addon.Commands() {
+			if err := cmd.Err(); err != nil {
+				return err
+			}
 			a.AddCommand(cmd)
 		}
 	}

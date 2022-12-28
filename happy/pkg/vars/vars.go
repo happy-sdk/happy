@@ -101,6 +101,7 @@ func ParseVariableFromString(kv string) (Variable, error) {
 // NewValue parses provided val into Value
 // Error is returned if parsing fails.
 func NewValue(val any) (Value, error) {
+
 	if vv, ok := val.(Value); ok {
 		if vv.kind == KindInvalid {
 			return EmptyValue, fmt.Errorf("%w: %#v", ErrValueInvalid, val)

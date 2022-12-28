@@ -18,6 +18,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/mkungla/happy/pkg/varflag"
 	"github.com/mkungla/happy/pkg/vars"
 )
 
@@ -41,6 +42,7 @@ type Action func(s *Session) error
 // Tocks are useful mostly for GPU ops which need to do post proccessing
 // of frames rendered in tick.
 type ActionTick func(sess *Session, ts time.Time, delta time.Duration) error
+type ActionWithArgs func(sess *Session, args Args) error
 
 type Assets interface{}
 type Service interface{}
@@ -56,11 +58,43 @@ type Logger interface{}
 
 type Addon interface {
 	Register(*Session) (AddonInfo, error)
-	Commands() ([]Command, error)
+	Commands() []*Command
 }
 
 type AddonInfo struct {
 	Name        string
 	Description string
 	Version     string
+}
+
+type Args interface {
+	Argn(i uint) vars.Value
+	Argv() []vars.Value
+	Flag(name string) varflag.Flag
+}
+
+type args struct {
+	argv  []vars.Value
+	argn  uint
+	flags varflag.Flags
+}
+
+func (a *args) Argn(i uint) vars.Value {
+	if a.argn <= i {
+		return vars.EmptyValue
+	}
+	return a.argv[i]
+}
+
+func (a *args) Argv() []vars.Value {
+	return a.argv
+}
+
+func (a *args) Flag(name string) varflag.Flag {
+	f, err := a.flags.Get(name)
+	if err != nil {
+		ff, _ := varflag.Bool("unknown", false, "")
+		return ff
+	}
+	return f
 }

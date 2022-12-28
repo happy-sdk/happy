@@ -166,7 +166,7 @@ func (t *cliTmplParser) year() int {
 type helpGlobal struct {
 	cliTmplParser
 	Name                string
-	Commands            map[string]Command
+	Commands            map[string]*Command
 	Flags               []varflag.Flag
 	PrimaryCommands     []*Command
 	CommandsCategorized map[string][]*Command
@@ -179,13 +179,14 @@ func (h *helpGlobal) print() error {
 
 	for _, cmd := range h.Commands {
 		cat := cmd.category
+		fmt.Println("cmd: ", cmd.name)
 		if cat == "" {
-			h.PrimaryCommands = append(h.PrimaryCommands, &cmd)
+			h.PrimaryCommands = append(h.PrimaryCommands, cmd)
 		} else {
 			if h.CommandsCategorized == nil {
 				h.CommandsCategorized = make(map[string][]*Command)
 			}
-			h.CommandsCategorized[cat] = append(h.CommandsCategorized[cat], &cmd)
+			h.CommandsCategorized[cat] = append(h.CommandsCategorized[cat], cmd)
 		}
 	}
 	err := h.parseTmpl("help-global-tmpl", h, time.Duration(0))

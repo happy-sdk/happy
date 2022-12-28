@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mkungla/happy/pkg/vars"
 	"github.com/mkungla/happy/sdk/testutils"
-	"github.com/mkungla/happy/vars"
 )
 
 func TestErrors(t *testing.T) {

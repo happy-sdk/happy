@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/mod/semver"
 	// "golang.org/x/mod/semver"
 )
 
@@ -64,4 +66,14 @@ func Current() Version {
 	}
 
 	return Version(fmt.Sprintf("%s.0.0-alpha%s%s", major, revision, dirty))
+}
+
+func ParseVersion(v string) (Version, error) {
+	if !strings.HasPrefix(v, "v") {
+		v = "v" + v
+	}
+	if !semver.IsValid(v) {
+		return Version(""), fmt.Errorf("invalid version: %s", v)
+	}
+	return Version(v), nil
 }

@@ -330,16 +330,177 @@ func (p *parser) parseValue(val any) (typ Kind, err error) {
 	return typ, err
 }
 
+func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
+	var (
+		underlying   any
+		localtype    Kind
+		implStringer bool
+	)
+	if str, ok := val.(stringer); val != nil && ok {
+		p.fmt.string(str.String())
+		implStringer = true
+	}
+
+	switch v := val.(type) {
+	case *bool:
+		localtype = KindBool
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.boolean(*v)
+			}
+		}
+	case *int:
+		localtype = KindInt
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+			}
+		}
+	case *int8:
+		localtype = KindInt8
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+			}
+		}
+	case *int16:
+		localtype = KindInt16
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+			}
+		}
+	case *int32:
+		localtype = KindInt32
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+			}
+		}
+	case *int64:
+		localtype = KindInt64
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+			}
+		}
+	case *uint:
+		localtype = KindUint
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+			}
+		}
+	case *uint8:
+		localtype = KindUint8
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+			}
+		}
+	case *uint16:
+		localtype = KindUint16
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+			}
+		}
+	case *uint32:
+		localtype = KindUint32
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+			}
+		}
+	case *uint64:
+		localtype = KindUint64
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+			}
+		}
+	case *uintptr:
+		localtype = KindUintptr
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+			}
+		}
+	case *float32:
+		localtype = KindFloat32
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.float(float64(*v), 32, 'g', -1)
+			}
+		}
+	case *float64:
+		localtype = KindFloat64
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.float(*v, 64, 'g', -1)
+			}
+		}
+	case *complex64:
+		localtype = KindComplex64
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.complex(complex128(*v), 64)
+			}
+		}
+	case *complex128:
+		localtype = KindComplex128
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.complex(*v, 128)
+			}
+		}
+	case *string:
+		localtype = KindString
+		if v != nil {
+			underlying = *v
+			if !implStringer {
+				p.fmt.string(*v)
+			}
+		}
+	default:
+		if v == nil {
+			underlying = "" // use empty string for nil ptr
+			localtype = KindInvalid
+		}
+	}
+	p.val = underlying
+	return localtype, nil
+}
+
 // parseUnderlyingAsKind is unsafe function.
 // it takes non builtin arg and to parses it to given Kind.
 // Before calling you must be sure that val can be casted into Kind.
 func (p *parser) parseUnderlyingAsKind(val any) (Kind, error) {
+	// check is it pointer
 	pval, typ := underlyingValueOf(val, true)
 	// first check does type implment stringer.
 	// so that we can write string representation of value
 	// to buffer directly.
 	var implStringer bool
-	if str, ok := val.(stringer); ok {
+	// unsafe ptr with nil value would satisfy stringer
+	// so check that value is actually present
+	if str, ok := val.(stringer); pval != nil && ok {
 		p.fmt.string(str.String())
 		implStringer = true
 	}
@@ -348,6 +509,15 @@ func (p *parser) parseUnderlyingAsKind(val any) (Kind, error) {
 		underlying any
 		localtype  Kind
 	)
+
+	if pval == nil {
+		return typ, nil
+	}
+
+	if typ == KindPointer {
+		return p.parseUnderlyingAsKindFromPointer(val)
+	}
+
 	switch v := pval.(type) {
 	case bool:
 		underlying = v

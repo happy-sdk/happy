@@ -5,6 +5,7 @@
 package vars_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
@@ -18,8 +19,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/mkungla/happy/pkg/vars"
 	"github.com/mkungla/happy/sdk/testutils"
-	"github.com/mkungla/happy/vars"
 )
 
 func TestMapParseFields(t *testing.T) {
@@ -531,4 +532,18 @@ func TestExpectedEmptyVars(t *testing.T) {
 	if v := c.Get(" "); !v.Empty() {
 		t.Fatal("empty value lookup returned value")
 	}
+}
+
+func TestJSON(t *testing.T) {
+	m := vars.Map{}
+	m.Store("key1", "value1")
+	m.Store("key2", "value2")
+	jsonData, err := json.Marshal(&m)
+	testutils.NoError(t, err)
+
+	var newmap vars.Map
+	err = json.Unmarshal(jsonData, &newmap)
+	testutils.NoError(t, err)
+	testutils.Equal(t, "value1", newmap.Get("key1").String())
+	testutils.Equal(t, "value2", newmap.Get("key2").String())
 }

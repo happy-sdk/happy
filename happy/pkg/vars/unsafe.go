@@ -4,51 +4,56 @@
 
 package vars
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
-func valueFromPtr[T any](ptr unsafe.Pointer, asKind Kind) T {
+func valueFromPtr[T any](ptr unsafe.Pointer) T {
 	return *(*T)(ptr)
 }
 
 // That is super unsafe call. Pointer must match with kind.
 func (k Kind) valueFromPtr(ptr unsafe.Pointer) (val any) {
+	if ptr == nil {
+		return nil
+	}
 	switch k {
 	case KindBool:
-		val = valueFromPtr[bool](ptr, k)
+		val = valueFromPtr[bool](ptr)
 	case KindInt:
-		val = valueFromPtr[int](ptr, k)
+		val = valueFromPtr[int](ptr)
 	case KindInt8:
-		val = valueFromPtr[int8](ptr, k)
+		val = valueFromPtr[int8](ptr)
 	case KindInt16:
-		val = valueFromPtr[int16](ptr, k)
+		val = valueFromPtr[int16](ptr)
 	case KindInt32:
-		val = valueFromPtr[int32](ptr, k)
+		val = valueFromPtr[int32](ptr)
 	case KindInt64:
-		val = valueFromPtr[int64](ptr, k)
+		val = valueFromPtr[int64](ptr)
 	case KindUint:
-		val = valueFromPtr[uint](ptr, k)
+		val = valueFromPtr[uint](ptr)
 	case KindUint8:
-		val = valueFromPtr[uint8](ptr, k)
+		val = valueFromPtr[uint8](ptr)
 	case KindUint16:
-		val = valueFromPtr[uint16](ptr, k)
+		val = valueFromPtr[uint16](ptr)
 	case KindUint32:
-		val = valueFromPtr[uint32](ptr, k)
+		val = valueFromPtr[uint32](ptr)
 	case KindUint64:
-		val = valueFromPtr[uint64](ptr, k)
+		val = valueFromPtr[uint64](ptr)
 	case KindUintptr, KindPointer, KindUnsafePointer:
-		val = valueFromPtr[uintptr](ptr, k)
+		val = valueFromPtr[uintptr](ptr)
 	case KindFloat32:
-		val = valueFromPtr[float32](ptr, k)
+		val = valueFromPtr[float32](ptr)
 	case KindFloat64:
-		val = valueFromPtr[float64](ptr, k)
+		val = valueFromPtr[float64](ptr)
 	case KindComplex64:
-		val = valueFromPtr[complex64](ptr, k)
+		val = valueFromPtr[complex64](ptr)
 	case KindComplex128:
-		val = valueFromPtr[complex128](ptr, k)
+		val = valueFromPtr[complex128](ptr)
 	case KindString:
-		val = valueFromPtr[string](ptr, k)
+		val = valueFromPtr[string](ptr)
 	case KindSlice:
-		val = valueFromPtr[[]byte](ptr, k)
+		val = valueFromPtr[[]byte](ptr)
 	default:
 		val = nil
 	}
@@ -83,9 +88,9 @@ func underlyingValueOf(in any, withvalue bool) (val any, kind Kind) {
 
 	// there are 27 kinds.
 	// check whether t is stored indirectly in an interface value.
-	f := uintptr(Kind(t.kind & ((1 << 5) - 1)))
+	f := uint8(Kind(t.kind & ((1 << 5) - 1)))
 	if t.kind&(1<<5) == 0 {
-		f |= uintptr(1 << 7)
+		f |= uint8(1 << 7)
 		kind = Kind(f & (1<<5 - 1))
 	} else {
 		kind = Kind(t.kind & ((1 << 5) - 1))

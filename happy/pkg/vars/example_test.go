@@ -9,7 +9,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/mkungla/happy/vars"
+	"github.com/mkungla/happy/pkg/vars"
 )
 
 func ExampleValue() {

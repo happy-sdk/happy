@@ -26,20 +26,20 @@ import (
 	"strings"
 
 	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/x/happyx"
+	"golang.org/x/exp/slog"
 )
 
 var (
 	// ErrCommand        = happyx.NewError("command error")
 	// ErrCommandAction  = happyx.NewError("command action error")
-	ErrCommandInvalid = happyx.NewError("invalid command definition")
-	ErrCommandArgs    = happyx.NewError("command arguments error")
-	ErrCommandFlags   = happyx.NewError("command flags error")
-	ErrPanic          = happyx.NewError("there was panic, check logs for more info")
+	ErrCommandInvalid = errors.New("invalid command definition")
+	ErrCommandArgs    = errors.New("command arguments error")
+	ErrCommandFlags   = errors.New("command flags error")
+	ErrPanic          = errors.New("there was panic, check logs for more info")
 )
 
 // ExecCommand wraps ExecCommandRaw to return output as string.
-func ExecCommand(sess happy.Session, cmd *exec.Cmd) (string, error) {
+func ExecCommand(sess *happy.Session, cmd *exec.Cmd) (string, error) {
 	out, err := ExecCommandRaw(sess, cmd)
 	return string(bytes.TrimSpace(out)), err
 }
@@ -47,14 +47,14 @@ func ExecCommand(sess happy.Session, cmd *exec.Cmd) (string, error) {
 // ExecCommandRaw wraps and executes provided command and returns its
 // CombinedOutput. It ensures that -x flag is taken into account and
 // Command is Session Context aware.
-func ExecCommandRaw(sess happy.Session, cmd *exec.Cmd) ([]byte, error) {
+func ExecCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 	return execCommandRaw(sess, cmd)
 }
 
 // RunCommand wraps and executes provided command and writes
 // its Stdout and Stderr. It ensures that -x flag is taken
 // into account and Command is Session Context aware.
-func RunCommand(sess happy.Session, cmd *exec.Cmd) error {
+func RunCommand(sess *happy.Session, cmd *exec.Cmd) error {
 	return runCommand(sess, cmd)
 }
 
@@ -90,8 +90,8 @@ func AskForInput(q string) string {
 	return response
 }
 
-func runCommand(sess happy.Session, cmd *exec.Cmd) error {
-	sess.Log().Debugf("exec: %s", cmd.String())
+func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
+	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
 	if sess.Get("flags.x").Bool() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
@@ -138,18 +138,18 @@ func runCommand(sess happy.Session, cmd *exec.Cmd) error {
 		fmt.Println("")
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
-			// ee.ExitCode(),
-			sess.Log().Warnf("%s %s", ee.Error(), string(ee.Stderr))
+			fmt.Println(string(ee.Stderr))
+			sess.Log().Error("cmd error", ee)
 		}
 
-		return ErrCommand.Wrap(err)
+		return err
 	}
-	sess.Log().Debugf("%s done", cmd.String())
+	sess.Log().Debug(cmd.String(), slog.Int("exit", 0))
 	return nil
 }
 
-func execCommandRaw(sess happy.Session, cmd *exec.Cmd) ([]byte, error) {
-	sess.Log().Debugf("exec: %s", cmd.String())
+func execCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
+	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
 	if sess.Get("flags.x").Bool() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
@@ -166,13 +166,14 @@ func execCommandRaw(sess happy.Session, cmd *exec.Cmd) ([]byte, error) {
 
 	out, err := cmd.CombinedOutput()
 	if err == nil {
-		sess.Log().Debugf("%s done", cmd.String())
+		sess.Log().Debug(cmd.String(), slog.Int("exit", 0))
 		return out, nil
 	}
 	var ee *exec.ExitError
 	if errors.As(err, &ee) {
-		sess.Log().Warnf("%s %s", ee.Error(), string(ee.Stderr))
-		return nil, ErrCommand.Wrap(err)
+		fmt.Println(string(ee.Stderr))
+		sess.Log().Error("cmd error", ee)
+		return nil, err
 	}
 	return nil, err
 }

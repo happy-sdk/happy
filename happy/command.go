@@ -20,10 +20,10 @@ type Command struct {
 	category    string
 	flags       varflag.Flags
 	parent      *Command
-	subCommands map[string]Command
+	subCommands map[string]*Command
 
-	beforeAction       Action
-	doAction           Action
+	beforeAction       ActionWithArgs
+	doAction           ActionWithArgs
 	afterSuccessAction Action
 	afterFailureAction func(s *Session, err error) error
 	afterAlwaysAction  Action
@@ -34,40 +34,39 @@ type Command struct {
 	parents []string
 }
 
-func NewCommand(name string, options ...OptionAttr) (Command, error) {
-	s, err := vars.ParseKey(name)
-	if err != nil {
-		return Command{}, errors.Join(ErrCommand, err)
-	}
+func NewCommand(name string, options ...OptionAttr) *Command {
+	c := &Command{}
+
+	n, err := vars.ParseKey(name)
+	c.errs = append(c.errs, err)
+	c.name = n
 
 	flags, err := varflag.NewFlagSet(name, -1)
-	if err != nil {
-		return Command{}, errors.Join(ErrCommand, err)
-	}
-	c := Command{
-		name:  s,
-		flags: flags,
-	}
+	c.errs = append(c.errs, err)
+	c.flags = flags
 
 	opts, err := NewOptions("command", getDefaultCommandOpts())
-	if err != nil {
-		return Command{}, errors.Join(ErrCommand, err)
-	}
+	c.errs = append(c.errs, err)
+
 	for _, opt := range options {
 		if err := opt.apply(opts); err != nil {
-			return Command{}, errors.Join(ErrCommand, err)
+			c.errs = append(c.errs, err)
 		}
 	}
 
 	c.usage = opts.Get("usage").String()
 	c.desc = opts.Get("description").String()
-	c.category = opts.Get("description").String()
+	c.category = opts.Get("category").String()
 
-	return c, nil
+	return c
 }
 
 func (c *Command) Name() string {
 	return c.name
+}
+
+func (c *Command) Err() error {
+	return errors.Join(c.errs...)
 }
 
 func (c *Command) Usage() string {
@@ -81,7 +80,7 @@ func (c *Command) AddFlag(f varflag.Flag) {
 	}
 }
 
-func (c *Command) Before(action func(s *Session) error) {
+func (c *Command) Before(action ActionWithArgs) {
 	if c.beforeAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override Before action for %s", ErrCommand, c.name))
 		return
@@ -89,7 +88,7 @@ func (c *Command) Before(action func(s *Session) error) {
 	c.beforeAction = action
 }
 
-func (c *Command) Do(action func(s *Session) error) {
+func (c *Command) Do(action ActionWithArgs) {
 	if c.doAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override Before action for %s", ErrCommand, c.name))
 		return
@@ -121,9 +120,9 @@ func (c *Command) AfterAlways(action func(s *Session) error) {
 	c.afterAlwaysAction = action
 }
 
-func (c *Command) AddSubCommand(cmd Command) {
+func (c *Command) AddSubCommand(cmd *Command) {
 	if c.subCommands == nil {
-		c.subCommands = make(map[string]Command)
+		c.subCommands = make(map[string]*Command)
 	}
 	cmd.parents = append(c.parents, c.name)
 
@@ -152,7 +151,7 @@ func (c *Command) verify() error {
 			c.isWrapperCommand = len(c.subCommands) > 0
 		}
 
-		c.doAction = func(sess *Session) error {
+		c.doAction = func(sess *Session, args Args) error {
 			happylog.NotImplemented("should show command help")
 			return nil
 		}
@@ -191,7 +190,7 @@ func (c *Command) flag(name string) varflag.Flag {
 
 func (c *Command) getSubCommand(name string) (cmd *Command, exists bool) {
 	if cmd, exists := c.subCommands[name]; exists {
-		return &cmd, exists
+		return cmd, exists
 	}
 	return
 }
@@ -201,8 +200,14 @@ func (c *Command) callBeforeAction(session *Session) error {
 		return nil
 	}
 
-	if err := c.beforeAction(session); err != nil {
-		return fmt.Errorf("%w: %s", ErrCommandAction, c.name)
+	args := &args{
+		flags: c.flags,
+		argv:  c.flags.Args(),
+		argn:  uint(len(c.flags.Args())),
+	}
+
+	if err := c.beforeAction(session, args); err != nil {
+		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
 	}
 	return nil
 }
@@ -212,8 +217,14 @@ func (c *Command) callDoAction(session *Session) error {
 		return nil
 	}
 
-	if err := c.doAction(session); err != nil {
-		return fmt.Errorf("%w: %s", ErrCommandAction, c.name)
+	args := &args{
+		flags: c.flags,
+		argv:  c.flags.Args(),
+		argn:  uint(len(c.flags.Args())),
+	}
+
+	if err := c.doAction(session, args); err != nil {
+		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
 	}
 	return nil
 }
@@ -224,7 +235,7 @@ func (c *Command) callAfterFailureAction(session *Session, err error) error {
 	}
 
 	if err := c.afterFailureAction(session, err); err != nil {
-		return fmt.Errorf("%w: %s", ErrCommandAction, c.name)
+		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
 	}
 	return nil
 }
@@ -235,7 +246,7 @@ func (c *Command) callAfterSuccessAction(session *Session) error {
 	}
 
 	if err := c.afterSuccessAction(session); err != nil {
-		return fmt.Errorf("%w: %s", ErrCommandAction, c.name)
+		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
 	}
 	return nil
 }
@@ -246,7 +257,7 @@ func (c *Command) callAfterAlwaysAction(session *Session) error {
 	}
 
 	if err := c.afterAlwaysAction(session); err != nil {
-		return fmt.Errorf("%w: %s", ErrCommandAction, c.name)
+		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
 	}
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/mkungla/happy/vars"
+	"github.com/mkungla/happy/pkg/vars"
 )
 
 var (
