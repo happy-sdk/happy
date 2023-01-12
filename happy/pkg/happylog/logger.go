@@ -6,6 +6,7 @@ package happylog
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/mkungla/happy/pkg/vars"
@@ -77,11 +78,16 @@ func (l *Logger) Issue(msg string, args ...any) {
 // If err is non-nil, Error appends Any(ErrorKey, err)
 // to the list of attributes.
 func (l *Logger) Error(msg string, err error, args ...any) {
+	// Would need to have workaround for this allocation
 	if err != nil {
-		// Would need to have workaround for this allocation
-		args = append([]any{slog.Any("err", err)}, args...)
+		errmsgs := strings.Split(err.Error(), "\n")
+		for _, emsg := range errmsgs {
+			l.LogDepth(0, LevelError, msg, slog.String("err", emsg))
+		}
 	}
-	l.LogDepth(0, LevelError, msg, args...)
+	if len(args) > 0 {
+		l.LogDepth(0, LevelError, msg, args...)
+	}
 }
 
 func (l *Logger) Out(msg string, args ...any) {

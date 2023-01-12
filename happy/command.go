@@ -124,7 +124,6 @@ func (c *Command) AddSubCommand(cmd *Command) {
 	if c.subCommands == nil {
 		c.subCommands = make(map[string]*Command)
 	}
-	cmd.parents = append(c.parents, c.name)
 
 	if err := c.flags.AddSet(cmd.flags); err != nil {
 		c.errs = append(c.errs, fmt.Errorf(
@@ -142,8 +141,12 @@ func (c *Command) AddSubCommand(cmd *Command) {
 //   - verify that commands are valid and have atleast Do function
 //   - verify that subcommand do not shadow flags of any parent command
 func (c *Command) verify() error {
+
 	if len(c.errs) > 0 {
-		return errors.Join(c.errs...)
+		err := errors.Join(c.errs...)
+		if err != nil {
+			return err
+		}
 	}
 
 	if c.doAction == nil {
@@ -161,9 +164,11 @@ func (c *Command) verify() error {
 			return fmt.Errorf("%w: command (%s) must have Do action or atleeast one subcommand", ErrCommand, c.name)
 		}
 	}
+
 SubCommands:
 	if c.subCommands != nil {
 		for _, cmd := range c.subCommands {
+			cmd.parents = append(c.parents, c.name)
 			err := cmd.verify()
 			if err != nil {
 				return err

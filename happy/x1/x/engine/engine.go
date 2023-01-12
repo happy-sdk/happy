@@ -108,17 +108,17 @@ func (e *Engine) Monitor() happy.Monitor {
 }
 
 func (e *Engine) Register(svcs ...happy.Service) happy.Error {
-	if e.running {
-		return ErrEngine.WithText("can not register services engine is already running")
-	}
-	for _, svc := range svcs {
-		if svc == nil {
-			return ErrEngine.WithText("attempt to register <nil> service")
-		}
+	// if e.running {
+	// 	return ErrEngine.WithText("can not register services engine is already running")
+	// }
+	// for _, svc := range svcs {
+	// 	if svc == nil {
+	// 		return ErrEngine.WithText("attempt to register <nil> service")
+	// 	}
 
-		e.services = append(e.services, svc)
-	}
-	return nil
+	// 	e.services = append(e.services, svc)
+	// }
+	// return nil
 }
 
 var settings = map[string]bool{
@@ -228,76 +228,76 @@ func (e *Engine) startEventDispatcher(sess happy.Session) {
 }
 
 func (e *Engine) startService(sess happy.Session, svcurl string) {
-	u, err := happyx.ParseURL(svcurl)
-	if err != nil {
-		sess.Log().Errorf("failed to parse service url: %s", err)
-		return
-	}
-	svcurl = u.PeerService()
+	// u, err := happyx.ParseURL(svcurl)
+	// if err != nil {
+	// 	sess.Log().Errorf("failed to parse service url: %s", err)
+	// 	return
+	// }
+	// svcurl = u.PeerService()
 
-	e.mu.RLock()
-	reg, ok := e.registry[svcurl]
-	e.mu.RUnlock()
+	// e.mu.RLock()
+	// reg, ok := e.registry[svcurl]
+	// e.mu.RUnlock()
 
-	if !ok {
-		sess.Log().SystemDebugf("requested unknown service: %s", svcurl)
-		return
-	}
+	// if !ok {
+	// 	sess.Log().SystemDebugf("requested unknown service: %s", svcurl)
+	// 	return
+	// }
 
-	sess.Log().SystemDebugf("starting service: %s", svcurl)
+	// sess.Log().SystemDebugf("starting service: %s", svcurl)
 
-	if err := reg.svc.Start(sess, u.Args()); err != nil {
-		sess.Log().Errorf("failed to start service: %s", err)
-		if err := reg.svc.Stop(sess); err != nil {
-			sess.Log().Error(err)
-		}
-		return
-	}
+	// if err := reg.svc.Start(sess, u.Args()); err != nil {
+	// 	sess.Log().Errorf("failed to start service: %s", err)
+	// 	if err := reg.svc.Stop(sess); err != nil {
+	// 		sess.Log().Error(err)
+	// 	}
+	// 	return
+	// }
 
-	reg.jobContext, reg.jobCancel = context.WithCancel(sess)
-	go func(r *registeredService, svcurl string) {
-		defer func() {
-			e.Monitor().SetServiceStatus(svcurl, "running", false)
-			e.Monitor().SetServiceStatus(svcurl, "stopped.at", time.Now())
-		}()
-		r.running = true
-		e.Monitor().SetServiceStatus(svcurl, "running", true)
-		e.Monitor().SetServiceStatus(svcurl, "started.at", time.Now())
+	// reg.jobContext, reg.jobCancel = context.WithCancel(sess)
+	// go func(r *registeredService, svcurl string) {
+		// defer func() {
+		// 	e.Monitor().SetServiceStatus(svcurl, "running", false)
+		// 	e.Monitor().SetServiceStatus(svcurl, "stopped.at", time.Now())
+		// }()
+		// r.running = true
+		// e.Monitor().SetServiceStatus(svcurl, "running", true)
+		// e.Monitor().SetServiceStatus(svcurl, "started.at", time.Now())
 
-		lastTick := time.Now()
-		kill := func(err happy.Error) {
-			sess.Log().Error(err)
-			e.Monitor().SetServiceStatus(svcurl, "failed", true)
-			e.Monitor().SetServiceStatus(svcurl, "err", err)
-			r.jobCancel()
-			if err := r.svc.Stop(sess); err != nil {
-				sess.Log().Error(err)
-			}
-		}
-		ttick := time.NewTicker(time.Microsecond * 100)
-		defer ttick.Stop()
+		// lastTick := time.Now()
+		// kill := func(err happy.Error) {
+		// 	sess.Log().Error(err)
+		// 	e.Monitor().SetServiceStatus(svcurl, "failed", true)
+		// 	e.Monitor().SetServiceStatus(svcurl, "err", err)
+		// 	r.jobCancel()
+		// 	if err := r.svc.Stop(sess); err != nil {
+		// 		sess.Log().Error(err)
+		// 	}
+		// }
+	// 	ttick := time.NewTicker(time.Microsecond * 100)
+	// 	defer ttick.Stop()
 
-	ticker:
-		for {
-			select {
-			case <-e.appLoopContext.Done():
-				r.jobCancel()
-				break ticker
-			case now := <-ttick.C:
-				delta := time.Since(lastTick)
-				lastTick = now
-				if err := r.svc.Tick(sess, lastTick, delta); err != nil {
-					kill(err)
-					break ticker
-				}
-				tickDelta := time.Since(lastTick)
-				if err := r.svc.Tock(sess, lastTick, tickDelta); err != nil {
-					kill(err)
-					break ticker
-				}
-			}
-		}
-	}(reg, svcurl)
+	// ticker:
+	// 	for {
+	// 		select {
+	// 		case <-e.appLoopContext.Done():
+	// 			r.jobCancel()
+	// 			break ticker
+	// 		case now := <-ttick.C:
+	// 			delta := time.Since(lastTick)
+	// 			lastTick = now
+	// 			if err := r.svc.Tick(sess, lastTick, delta); err != nil {
+	// 				kill(err)
+	// 				break ticker
+	// 			}
+	// 			tickDelta := time.Since(lastTick)
+	// 			if err := r.svc.Tock(sess, lastTick, tickDelta); err != nil {
+	// 				kill(err)
+	// 				break ticker
+	// 			}
+	// 		}
+	// 	}
+	// }(reg, svcurl)
 }
 
 func (e *Engine) initServices(init *sync.WaitGroup, sess happy.Session) {
@@ -307,47 +307,47 @@ func (e *Engine) initServices(init *sync.WaitGroup, sess happy.Session) {
 	// }
 	// sess.Log().SystemDebug("initialize services ...")
 	// init.Add(len(e.services))
-	for _, svc := range e.services {
+	// for _, svc := range e.services {
 
-		go func(svc happy.Service) {
-			defer init.Done()
-			bgsvc, err := svc.Register(sess)
-			if err != nil {
-				sess.Log().Alertf("failed to register service(%s): %s", svc.Slug(), err)
-				return
-			}
-			u := svc.URL().String()
-			if len(u) == 0 {
-				sess.Log().Alert("service url empty after registration: ", svc.Slug(), svc.URL())
-				return
-			}
+	// 	go func(svc happy.Service) {
+	// 		defer init.Done()
+	// 		bgsvc, err := svc.Register(sess)
+	// 		if err != nil {
+	// 			sess.Log().Alertf("failed to register service(%s): %s", svc.Slug(), err)
+	// 			return
+	// 		}
+	// 		u := svc.URL().String()
+	// 		if len(u) == 0 {
+	// 			sess.Log().Alert("service url empty after registration: ", svc.Slug(), svc.URL())
+	// 			return
+	// 		}
 
-			e.mu.RLock()
-			_, ok := e.registry[u]
-			e.mu.RUnlock()
+	// 		e.mu.RLock()
+	// 		_, ok := e.registry[u]
+	// 		e.mu.RUnlock()
 
-			if ok {
-				sess.Log().Alert("service url already in use: ", svc.URL())
-				return
-			}
-			if err := bgsvc.Initialize(sess, e.monitor.Status()); err != nil {
-				sess.Log().Alertf("failed to initialize service(%s): %s", svc.Slug(), err)
-				return
-			}
-			e.mu.Lock()
+	// 		if ok {
+	// 			sess.Log().Alert("service url already in use: ", svc.URL())
+	// 			return
+	// 		}
+	// 		if err := bgsvc.Initialize(sess, e.monitor.Status()); err != nil {
+	// 			sess.Log().Alertf("failed to initialize service(%s): %s", svc.Slug(), err)
+	// 			return
+	// 		}
+	// 		e.mu.Lock()
 
-			e.registry[u] = &registeredService{
-				svc: bgsvc,
-			}
+	// 		e.registry[u] = &registeredService{
+	// 			svc: bgsvc,
+	// 		}
 
-			e.monitor.SetServiceStatus(u, "registered", true)
-			e.monitor.SetServiceStatus(u, "running", false)
+	// 		e.monitor.SetServiceStatus(u, "registered", true)
+	// 		e.monitor.SetServiceStatus(u, "running", false)
 
-			sess.Log().SystemDebugf("initialized service: %s(%s)", svc.Slug(), svc.URL())
-			e.mu.Unlock()
+	// 		sess.Log().SystemDebugf("initialized service: %s(%s)", svc.Slug(), svc.URL())
+	// 		e.mu.Unlock()
 
-		}(svc)
-	}
+	// 	}(svc)
+	// }
 }
 
 // func (e *Engine) startApploop(init *sync.WaitGroup, sess happy.Session) {
@@ -426,51 +426,51 @@ func (e *Engine) Stop(sess happy.Session) happy.Error {
 	// e.evCancel()
 	// <-e.evContext.Done()
 
-	var graceful sync.WaitGroup
-	for u, reg := range e.registry {
-		if reg.running {
-			graceful.Add(1)
-			go func(url string, r *registeredService) {
-				defer graceful.Done()
-				sess.Log().SystemDebugf("stopping service: %s", url)
-				<-r.jobContext.Done()
-				if err := r.svc.Stop(sess); err != nil {
-					sess.Log().Error(err)
-				}
-			}(u, reg)
-		}
-	}
-	graceful.Wait()
+	// var graceful sync.WaitGroup
+	// for u, reg := range e.registry {
+	// 	if reg.running {
+	// 		graceful.Add(1)
+	// 		go func(url string, r *registeredService) {
+	// 			defer graceful.Done()
+	// 			sess.Log().SystemDebugf("stopping service: %s", url)
+	// 			<-r.jobContext.Done()
+	// 			if err := r.svc.Stop(sess); err != nil {
+	// 				sess.Log().Error(err)
+	// 			}
+	// 		}(u, reg)
+	// 	}
+	// }
+	// graceful.Wait()
 
-	sess.Log().SystemDebug("engine stopped")
+	// sess.Log().SystemDebug("engine stopped")
 	return nil
 }
 
-func (e *Engine) ResolvePeerTo(ns, ipport string) {}
+// func (e *Engine) ResolvePeerTo(ns, ipport string) {}
 
-func (e *Engine) OnTick(action happy.ActionTickFunc) {
-	if e.tickAction != nil {
-		e.errs = append(e.errs, ErrEngine.WithText("attempt to override engine.OnTick action"))
-		return
-	}
-	if action == nil {
-		e.errs = append(e.errs, ErrEngine.WithText("provided <nil> action to engine.OnTick"))
-		return
-	}
-	e.tickAction = action
-}
+// func (e *Engine) OnTick(action happy.ActionTickFunc) {
+// 	if e.tickAction != nil {
+// 		e.errs = append(e.errs, ErrEngine.WithText("attempt to override engine.OnTick action"))
+// 		return
+// 	}
+// 	if action == nil {
+// 		e.errs = append(e.errs, ErrEngine.WithText("provided <nil> action to engine.OnTick"))
+// 		return
+// 	}
+// 	e.tickAction = action
+// }
 
-func (e *Engine) OnTock(action happy.ActionTickFunc) {
-	if e.tockAction != nil {
-		e.errs = append(e.errs, ErrEngine.WithText("attempt to override engine.OnTock action"))
-		return
-	}
-	if action == nil {
-		e.errs = append(e.errs, ErrEngine.WithText("provided <nil> action to engine.OnTock"))
-		return
-	}
-	e.tockAction = action
-}
+// func (e *Engine) OnTock(action happy.ActionTickFunc) {
+// 	if e.tockAction != nil {
+// 		e.errs = append(e.errs, ErrEngine.WithText("attempt to override engine.OnTock action"))
+// 		return
+// 	}
+// 	if action == nil {
+// 		e.errs = append(e.errs, ErrEngine.WithText("provided <nil> action to engine.OnTock"))
+// 		return
+// 	}
+// 	e.tockAction = action
+// }
 
 func (e *Engine) ListenEvents(evch <-chan happy.Event) {
 	e.mu.Lock()

@@ -264,10 +264,6 @@ type (
 		PeerService() string
 	}
 
-	Cron interface {
-		Cron(ActionCronSchedulerSetup)
-	}
-
 	CronHandler interface {
 		Job() ActionWithErrorFunc
 		Expr() string
@@ -284,16 +280,16 @@ type (
 		ReadFile(name string) ([]byte, error)
 	}
 
-	TickerFuncs interface {
-		// OnTick enables you to define func body for operation set
-		// to call in minimal timeframe until session is valid and
-		// service is running.
-		OnTick(ActionTickFunc)
+	// TickerFuncs interface {
+	// 	// OnTick enables you to define func body for operation set
+	// 	// to call in minimal timeframe until session is valid and
+	// 	// service is running.
+	// 	OnTick(ActionTickFunc)
 
-		// OnTock is helper called right after OnTick to separate
-		// your primary operations and post prossesing logic.
-		OnTock(ActionTickFunc)
-	}
+	// 	// OnTock is helper called right after OnTick to separate
+	// 	// your primary operations and post prossesing logic.
+	// 	OnTock(ActionTickFunc)
+	// }
 
 	EventListener interface {
 		OnEvent(scope, key string, cb ActionWithEventFunc)

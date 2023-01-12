@@ -7,10 +7,10 @@ package happy
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/mkungla/happy/pkg/happylog"
@@ -179,7 +179,6 @@ func (h *helpGlobal) print() error {
 
 	for _, cmd := range h.Commands {
 		cat := cmd.category
-		fmt.Println("cmd: ", cmd.name)
 		if cat == "" {
 			h.PrimaryCommands = append(h.PrimaryCommands, cmd)
 		} else {
@@ -199,34 +198,58 @@ func (h *helpGlobal) print() error {
 }
 
 // HelpCommand is used to display help for command.
+
 type helpCommand struct {
 	cliTmplParser
-	Command *Command
+	Command *command
 	Usage   string
 	Flags   []varflag.Flag
 }
 
+type command struct {
+	Name        string
+	Usage       string
+	SubCommands []command
+	Flags       varflag.Flags
+	Description string
+}
+
 func (h *helpCommand) print(sess *Session, cmd *Command) error {
-	h.Command = cmd
+	h.Command = &command{
+		Name:        cmd.name,
+		Usage:       cmd.Usage(),
+		Flags:       cmd.flags,
+		Description: cmd.desc,
+	}
 	h.setTemplate(helpCommandTmpl)
-	usage := []string{filepath.Base(os.Args[0])}
-	usage = append(usage, cmd.parents[1:]...)
+	usage := []string{""}
+	// usage := []string{filepath.Base(os.Args[0])}
+	usage = append(usage, cmd.parents...)
 	usage = append(usage, cmd.name)
-	if h.Command.flags.Len() > 0 {
+	if cmd.flags.Len() > 0 {
 		usage = append(usage, "[flags]")
 	}
 
-	if h.Command.subCommands != nil {
+	if cmd.subCommands != nil {
 		usage = append(usage, "[subcommands]")
+		for _, subcmd := range cmd.subCommands {
+			subCmd := command{
+				Name:        subcmd.name,
+				Usage:       subcmd.Usage(),
+				Flags:       subcmd.flags,
+				Description: subcmd.desc,
+			}
+			h.Command.SubCommands = append(h.Command.SubCommands, subCmd)
+		}
 	}
 
-	if h.Command.flags.AcceptsArgs() {
+	if cmd.flags.AcceptsArgs() {
 		usage = append(usage, "[args]")
 	}
 	h.Usage = strings.Join(usage, " ")
-	h.Flags = append(h.Flags, h.Command.flags.Flags()...)
-	if h.Command.parent != nil {
-		h.Flags = append(h.Flags, h.Command.parent.flags.Flags()...)
+	h.Flags = append(h.Flags, cmd.flags.Flags()...)
+	if cmd.parent != nil {
+		h.Flags = append(h.Flags, cmd.parent.flags.Flags()...)
 	}
 	err := h.parseTmpl("help-global-tmpl", h, time.Duration(0))
 	if err != nil {
@@ -262,7 +285,7 @@ var (
   {{ end }}
  USAGE:
   {{ funcTextBold .Usage }}
-{{ if .Command.HasSubcommands }}
+{{ if .Command.SubCommands }}
  {{ print "Subcommands" | funcCmdCategory }}
 {{ range $cmd := .Command.SubCommands }}
 {{ $cmd.Name | funcCmdName }}{{ $cmd.Usage }}{{ end }}

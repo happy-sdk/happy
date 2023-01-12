@@ -30,6 +30,7 @@ var (
 	ErrInvalidVersion   = errors.New("invalid version")
 	ErrEngine           = errors.New("engine error")
 	ErrSessionDestroyed = errors.New("session destroyed")
+	ErrService          = errors.New("service error")
 )
 
 type Action func(s *Session) error
@@ -43,9 +44,9 @@ type Action func(s *Session) error
 // of frames rendered in tick.
 type ActionTick func(sess *Session, ts time.Time, delta time.Duration) error
 type ActionWithArgs func(sess *Session, args Args) error
+type ActionWithEvent func(sess *Session, ev Event) error
 
 type Assets interface{}
-type Service interface{}
 
 type Event interface {
 	Key() string
@@ -54,11 +55,28 @@ type Event interface {
 	Time() time.Time
 }
 
+type EventListener interface {
+	OnEvent(scope, key string, cb ActionWithEvent)
+	OnAnyEvent(ActionWithEvent)
+}
+
+type TickerFuncs interface {
+	// OnTick enables you to define func body for operation set
+	// to call in minimal timeframe until session is valid and
+	// service is running.
+	OnTick(ActionTick)
+
+	// OnTock is helper called right after OnTick to separate
+	// your primary operations and post prossesing logic.
+	OnTock(ActionTick)
+}
+
 type Logger interface{}
 
 type Addon interface {
 	Register(*Session) (AddonInfo, error)
 	Commands() []*Command
+	Services() []*Service
 }
 
 type AddonInfo struct {
@@ -97,4 +115,41 @@ func (a *args) Flag(name string) varflag.Flag {
 		return ff
 	}
 	return f
+}
+
+func NewEvent(scope, key string, payload *vars.Map, err error) Event {
+	return &happyEvent{
+		ts:      time.Now(),
+		key:     key,
+		scope:   scope,
+		err:     err,
+		payload: payload,
+	}
+}
+
+type happyEvent struct {
+	ts      time.Time
+	scope   string
+	key     string
+	err     error
+	payload *vars.Map
+}
+
+func (ev *happyEvent) Time() time.Time {
+	return ev.ts
+}
+
+func (ev *happyEvent) Scope() string {
+	return ev.scope
+}
+
+func (ev *happyEvent) Key() string {
+	return ev.key
+}
+func (ev *happyEvent) Err() error {
+	return ev.err
+}
+
+func (ev *happyEvent) Payload() *vars.Map {
+	return ev.payload
 }

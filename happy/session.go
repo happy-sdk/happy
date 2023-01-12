@@ -6,6 +6,7 @@ package happy
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -29,6 +30,7 @@ type Session struct {
 
 	done chan struct{}
 	evch chan Event
+	svss map[string]*ServiceInfo
 }
 
 func (s *Session) Ready() <-chan struct{} {
@@ -49,6 +51,27 @@ func (s *Session) Err() error {
 	defer s.mu.RUnlock()
 	err := s.err
 	return err
+}
+
+func (s *Session) setServiceInfo(info *ServiceInfo) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.svss == nil {
+		s.svss = make(map[string]*ServiceInfo)
+	}
+
+	s.svss[info.addr.String()] = info
+}
+
+func (s *Session) ServiceInfo(svcurl string) (*ServiceInfo, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	svcinfo, ok := s.svss[svcurl]
+	if !ok {
+		return nil, fmt.Errorf("%w: unknown service %s", ErrService, svcurl)
+	}
+	return svcinfo, nil
 }
 
 func (s *Session) Destroy(err error) {
@@ -155,6 +178,7 @@ func (s *Session) Dispatch(ev Event) {
 func (s *Session) start() error {
 	s.ready, s.readyFunc = context.WithCancel(context.Background())
 	s.sig, s.sigRelease = signal.NotifyContext(s, os.Interrupt, os.Kill)
+	s.evch = make(chan Event, 100)
 	return nil
 }
 
@@ -163,11 +187,4 @@ func (s *Session) setReady() {
 	s.readyFunc()
 	s.mu.Unlock()
 	s.Log().SystemDebug("session ready")
-}
-
-func (s *Session) events() <-chan Event {
-	s.mu.RLock()
-	ch := s.evch
-	s.mu.RUnlock()
-	return ch
 }

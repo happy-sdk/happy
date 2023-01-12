@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mkungla/happy/pkg/address"
 	"github.com/mkungla/happy/pkg/happylog"
 	"github.com/mkungla/happy/pkg/vars"
 	"github.com/mkungla/happy/pkg/version"
@@ -176,7 +177,6 @@ var noopOptValidator = func(key string, val vars.Value) error {
 }
 
 func getDefaultApplicationConfig() []OptionAttr {
-
 	configOpts := []OptionAttr{
 		{
 			key:   "*",
@@ -226,6 +226,28 @@ func getDefaultApplicationConfig() []OptionAttr {
 			desc:      "License",
 			kind:      optionKindReadOnly | optionKindConfig,
 			validator: noopOptValidator,
+		},
+		{
+			key: "app.host.addr",
+			value: func() string {
+				addr, err := address.Current()
+				if err != nil {
+					panic(err)
+				}
+				fmt.Println(addr.String())
+				return addr.String()
+			}(),
+			desc: "Application happy host address",
+			kind: optionKindReadOnly | optionKindConfig,
+			validator: func(key string, val vars.Value) error {
+				_, err := address.Parse(val.String())
+				if err != nil {
+					return fmt.Errorf(
+						"%w: invalid host address (%q)",
+						ErrOptionValidation, val.String())
+				}
+				return nil
+			},
 		},
 		{
 			key:   "app.version",

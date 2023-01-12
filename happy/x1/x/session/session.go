@@ -150,11 +150,6 @@ func (s *Session) Dispatch(ev happy.Event) {
 	s.evch <- ev
 }
 
-func (s *Session) Context() context.Context {
-	s.logger.NotImplemented("Session.Context")
-	return nil
-}
-
 func (s *Session) RequireServices(status happy.ApplicationStatus, svcs ...string) happy.ServiceLoader {
 
 	return service.NewServiceLoader(s, status, svcs...)

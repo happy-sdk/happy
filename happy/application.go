@@ -53,7 +53,7 @@ type Application struct {
 // It panics if there is critical internal error or bug.
 func New(opts ...OptionAttr) *Application {
 	a := &Application{
-		engine:      &Engine{},
+		engine:      newEngine(),
 		initialized: time.Now(),
 		exitOs:      true,
 		lvl:         &slog.LevelVar{},
@@ -81,6 +81,20 @@ func (a *Application) Main() {
 	}
 	a.running = true
 
+	// when we disable os.Exit e.g. for tests then create
+	// channel which would block main thread
+	if !a.exitOs {
+		a.exitCh = make(chan struct{}, 1)
+		defer close(a.exitCh)
+	}
+
+	// initialize application
+	if err := a.initialize(); err != nil {
+		a.logger.Error("initialization failed", err)
+		a.exit(1)
+		return
+	}
+
 	// check for config options which were not used
 	if len(a.pendingOpts) > 0 {
 		for _, opt := range a.pendingOpts {
@@ -97,21 +111,6 @@ func (a *Application) Main() {
 			))
 		}
 	}
-
-	// when we disable os.Exit e.g. for tests then create
-	// channel which would block main thread
-	if !a.exitOs {
-		a.exitCh = make(chan struct{}, 1)
-		defer close(a.exitCh)
-	}
-
-	// initialize application
-	if err := a.initialize(); err != nil {
-		a.logger.Error("initialization failed", err)
-		a.exit(1)
-		return
-	}
-
 	// Start application main process
 	go a.execute()
 
@@ -147,14 +146,26 @@ func (a *Application) OnTock(action ActionTick) {
 	a.tockAction = action
 }
 
+func (a *Application) Cron(setup func(schedule CronScheduler)) {
+	a.logger.NotImplemented("use service for cron")
+}
+
 func (a *Application) WithAddons(addon ...Addon) {
 	if addon != nil {
 		a.addons = append(a.addons, addon...)
 	}
 }
 
+func (a *Application) RegisterService(svc *Service) error {
+	return a.engine.serviceRegister(a.session, svc)
+}
+
 func (a *Application) AddCommand(cmd *Command) {
 	a.rootCmd.AddSubCommand(cmd)
+}
+
+func (a *Application) AddFlag(f varflag.Flag) {
+	a.rootCmd.AddFlag(f)
 }
 
 func (a *Application) shutdown() {
@@ -235,7 +246,7 @@ func (a *Application) initialize() error {
 	}
 
 	// show help
-	if a.activeCmd.flag("help").Present() {
+	if a.rootCmd.flag("help").Present() {
 		if err := a.clihelp(); err != nil {
 			a.logger.Error("failed to create help view", err)
 		}
@@ -244,7 +255,15 @@ func (a *Application) initialize() error {
 		return nil
 	}
 
-	a.logger.Debug("enable logging", slog.String("level", happylog.Level(a.lvl.Level()).String()))
+	a.logger.Debug(
+		"enable logging",
+		slog.String("level", happylog.Level(a.lvl.Level()).String()),
+		slog.String("cmd", a.activeCmd.name),
+	)
+
+	if err := a.registerAddons(); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -509,5 +528,28 @@ func (a *Application) registerAddonCommands() error {
 			a.AddCommand(cmd)
 		}
 	}
+	return nil
+}
+
+func (a *Application) registerAddons() error {
+	for _, addon := range a.addons {
+		info, err := addon.Register(a.session)
+		if err != nil {
+			return err
+		}
+		a.logger.Debug(
+			"registered addon",
+			slog.Group("addon",
+				slog.String("name", info.Name),
+				slog.String("version", info.Version),
+			),
+		)
+		for _, svc := range addon.Services() {
+			if err := a.RegisterService(svc); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
