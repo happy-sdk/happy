@@ -4,7 +4,7 @@
 
 //go:build race
 
-package happylog
+package hlog
 
 import "testing"
 

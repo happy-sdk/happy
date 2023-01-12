@@ -4,7 +4,7 @@
 
 //go:build !nopc
 
-package happylog
+package hlog
 
 import "runtime"
 

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mkungla/happy/pkg/happylog"
+	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/varflag"
 	"github.com/mkungla/happy/pkg/vars"
 	"golang.org/x/exp/slog"
@@ -40,7 +40,7 @@ type Application struct {
 	initialized time.Time
 
 	// logger
-	logger *happylog.Logger
+	logger *hlog.Logger
 	lvl    *slog.LevelVar
 
 	// exit handler
@@ -234,11 +234,11 @@ func (a *Application) initialize() error {
 
 	// set log verbosity from flags
 	if a.rootCmd.flag("system-debug").Present() {
-		a.lvl.Set(slog.Level(happylog.LevelSystemDebug))
+		a.lvl.Set(slog.Level(hlog.LevelSystemDebug))
 	} else if a.rootCmd.flag("debug").Present() {
-		a.lvl.Set(slog.Level(happylog.LevelDebug))
+		a.lvl.Set(slog.Level(hlog.LevelDebug))
 	} else if a.rootCmd.flag("verbose").Present() {
-		a.lvl.Set(slog.Level(happylog.LevelInfo))
+		a.lvl.Set(slog.Level(hlog.LevelInfo))
 	}
 
 	if err := a.setActiveCommand(); err != nil {
@@ -257,7 +257,7 @@ func (a *Application) initialize() error {
 
 	a.logger.Debug(
 		"enable logging",
-		slog.String("level", happylog.Level(a.lvl.Level()).String()),
+		slog.String("level", hlog.Level(a.lvl.Level()).String()),
 		slog.String("cmd", a.activeCmd.name),
 	)
 
@@ -407,7 +407,7 @@ func (a *Application) configureLogger() {
 			secrets = append(secrets, strings.TrimSpace(secret))
 		}
 	}
-	handler := happylog.Config{
+	handler := hlog.Config{
 		Options: slog.HandlerOptions{
 			AddSource: a.session.Get("log.source").Bool(),
 			Level:     a.lvl,
@@ -420,9 +420,9 @@ func (a *Application) configureLogger() {
 		JSON:    false,
 	}.NewHandler(os.Stdout)
 
-	a.logger = happylog.New(handler)
+	a.logger = hlog.New(handler)
 	a.session.logger = a.logger
-	happylog.SetDefault(a.logger, a.session.Get("log.stdlog").Bool())
+	hlog.SetDefault(a.logger, a.session.Get("log.stdlog").Bool())
 }
 
 func (a *Application) configureRootCommand() error {

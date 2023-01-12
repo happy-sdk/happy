@@ -13,7 +13,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mkungla/happy/pkg/happylog"
+	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/varflag"
 )
 
@@ -75,9 +75,9 @@ func (h *view) printBanner() error {
 	}
 	fmt.Fprintln(
 		os.Stdout,
-		happylog.Colorize(
+		hlog.Colorize(
 			h.banner.buffer.String(),
-			happylog.FgYellow,
+			hlog.FgYellow,
 			0,
 			0,
 		),

@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
-package happylog
+package hlog
 
 import (
 	"encoding"
@@ -15,7 +15,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/mkungla/happy/pkg/happylog/internal/buffer"
+	"github.com/mkungla/happy/pkg/hlog/internal/buffer"
 	"golang.org/x/exp/slices"
 	"golang.org/x/exp/slog"
 )

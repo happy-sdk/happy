@@ -7,7 +7,7 @@
 
 //go:build nopc
 
-package happylog
+package hlog
 
 // source
 // https://github.com/golang/exp/blob/dc92f86530134df267cc7e7ea686d509f7ca1163/slog/nopc.go

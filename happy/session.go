@@ -12,14 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mkungla/happy/pkg/happylog"
+	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/vars"
 )
 
 type Session struct {
 	mu sync.RWMutex
 
-	logger *happylog.Logger
+	logger *hlog.Logger
 	opts   *Options
 
 	ready      context.Context
@@ -118,7 +118,7 @@ func (s *Session) Deadline() (deadline time.Time, ok bool) {
 	return
 }
 
-func (s *Session) Log() *happylog.Logger {
+func (s *Session) Log() *hlog.Logger {
 	return s.logger
 }
 

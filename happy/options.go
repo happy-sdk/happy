@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/mkungla/happy/pkg/address"
-	"github.com/mkungla/happy/pkg/happylog"
+	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/vars"
 	"github.com/mkungla/happy/pkg/version"
 	"golang.org/x/mod/semver"
@@ -275,7 +275,7 @@ func getDefaultApplicationConfig() []OptionAttr {
 		},
 		{
 			key:       "log.level",
-			value:     happylog.LevelInfo,
+			value:     hlog.LevelInfo,
 			desc:      "Log level for applicaton",
 			kind:      optionKindReadOnly | optionKindSetting,
 			validator: noopOptValidator,

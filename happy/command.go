@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mkungla/happy/pkg/happylog"
+	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/varflag"
 	"github.com/mkungla/happy/pkg/vars"
 )
@@ -155,7 +155,7 @@ func (c *Command) verify() error {
 		}
 
 		c.doAction = func(sess *Session, args Args) error {
-			happylog.NotImplemented("should show command help")
+			hlog.NotImplemented("should show command help")
 			return nil
 		}
 		if c.subCommands != nil {
