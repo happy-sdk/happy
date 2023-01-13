@@ -234,7 +234,6 @@ func getDefaultApplicationConfig() []OptionAttr {
 				if err != nil {
 					panic(err)
 				}
-				fmt.Println(addr.String())
 				return addr.String()
 			}(),
 			desc: "Application happy host address",

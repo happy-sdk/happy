@@ -18,7 +18,7 @@ import (
 )
 
 type Service struct {
-	slug string
+	name string
 
 	EventListener
 	TickerFuncs
@@ -33,9 +33,9 @@ type Service struct {
 	cronsetup func(schedule CronScheduler)
 }
 
-func NewService(slug string, opts ...OptionAttr) *Service {
+func NewService(name string, opts ...OptionAttr) *Service {
 	svc := &Service{
-		slug: slug,
+		name: name,
 	}
 	return svc
 }
@@ -91,17 +91,14 @@ func (s *Service) Cron(setup func(schedule CronScheduler)) {
 }
 
 func (s *Service) container(sess *Session, addr *address.Address) *serviceContainer {
-	return &serviceContainer{
-		svc: s,
-		info: &ServiceInfo{
-			addr: addr,
-			slug: s.slug,
-		},
-	}
+	c := &serviceContainer{}
+	c.svc = s
+	c.info.addr = addr
+	c.info.name = s.name
+	return c
 }
 
 type ServiceLoader struct {
-	mu       sync.Mutex
 	loading  bool
 	loaderCh chan struct{}
 	errs     []error
@@ -137,9 +134,7 @@ func NewServiceLoader(sess *Session, svcs ...string) *ServiceLoader {
 }
 
 func (sl *ServiceLoader) Load() <-chan struct{} {
-	sl.mu.Lock()
 	if sl.loading {
-		sl.mu.Unlock()
 		return sl.loaderCh
 	}
 	sl.loading = true
@@ -148,7 +143,6 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 			"%w: loader initializeton failed",
 			ErrService,
 		))
-		sl.mu.Unlock()
 		return sl.loaderCh
 	}
 
@@ -175,7 +169,6 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 		info, err := sl.sess.ServiceInfo(svcaddrstr)
 		if err != nil {
 			sl.cancel(err)
-			sl.mu.Unlock()
 			return sl.loaderCh
 		}
 		if _, ok := queue[svcaddrstr]; ok {
@@ -184,7 +177,6 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 				ErrService,
 				svcaddrstr,
 			))
-			sl.mu.Unlock()
 			return sl.loaderCh
 		}
 		if info.Running() {
@@ -202,15 +194,13 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 		require = append(require, svcaddrstr)
 	}
 
-	sl.mu.Unlock()
-
-	sl.sess.Dispatch(newRequireServicesEvent(require))
+	sl.sess.Dispatch(newStartServicesEvent(require))
 
 	ctx, cancel := context.WithTimeout(sl.sess, timeout)
 
 	go func() {
 		defer cancel()
-		ltick := time.NewTicker(time.Millisecond * 250)
+		ltick := time.NewTicker(time.Millisecond * 100)
 		defer ltick.Stop()
 		qlen := len(queue)
 
@@ -218,25 +208,22 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 		for {
 			select {
 			case <-ctx.Done():
-				sl.mu.Lock()
-				sl.cancel(ctx.Err())
+				sl.sess.Log().Warn("loader context done")
 				for _, status := range queue {
 					if !status.Running() {
 						sl.addErr(fmt.Errorf("service did not load on time %s", status.Addr().String()))
 					}
 				}
-				sl.mu.Unlock()
+				sl.cancel(ctx.Err())
 				return
 			case <-ltick.C:
-
 				var loaded int
 				for _, status := range queue {
 					if errs := status.Errs(); errs != nil {
-						sl.mu.Lock()
 						for _, err := range errs {
 							sl.addErr(err)
 						}
-						sl.mu.Unlock()
+						sl.cancel(fmt.Errorf("%w: service loader failed to load required services %s", ErrService, status.Addr().String()))
 						return
 					}
 					if status.Running() {
@@ -255,8 +242,6 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 }
 
 func (sl *ServiceLoader) Err() error {
-	sl.mu.Lock()
-	defer sl.mu.Unlock()
 	if sl.loading {
 		return fmt.Errorf("%w: service loader error checked before loader finished! did you wait for .Loaded?", ErrService)
 	}
@@ -274,6 +259,7 @@ func (sl *ServiceLoader) cancel(reason error) {
 
 func (sl *ServiceLoader) done() {
 	sl.loading = false
+	sl.sess.Log().Debug("service loader completed")
 	defer close(sl.loaderCh)
 }
 
@@ -284,18 +270,18 @@ func (sl *ServiceLoader) addErr(err error) {
 	sl.errs = append(sl.errs, err)
 }
 
-func newRequireServicesEvent(svcs []string) Event {
+func newStartServicesEvent(svcs []string) Event {
 	var payload vars.Map
 	for i, url := range svcs {
 		payload.Store(fmt.Sprintf("service.%d", i), url)
 	}
 
-	return NewEvent("service.loader", "require.services", &payload, nil)
+	return NewEvent("services", "start.services", &payload, nil)
 }
 
 type ServiceInfo struct {
 	mu        sync.RWMutex
-	slug      string
+	name      string
 	addr      *address.Address
 	running   bool
 	errs      map[time.Time]error
@@ -309,19 +295,22 @@ func (s *ServiceInfo) Running() bool {
 	return s.running
 }
 
-func (s *ServiceInfo) Errs() map[time.Time]error {
+func (s *ServiceInfo) Name() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.errs
+	return s.name
 }
 
-func (s *ServiceInfo) addErr(err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.errs == nil {
-		s.errs = make(map[time.Time]error)
-	}
-	s.errs[time.Now().UTC()] = err
+func (s *ServiceInfo) StartedAt() time.Time {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.startedAt
+}
+
+func (s *ServiceInfo) StoppedAt() time.Time {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.stoppedAt
 }
 
 func (s *ServiceInfo) Addr() *address.Address {
@@ -330,22 +319,47 @@ func (s *ServiceInfo) Addr() *address.Address {
 	return s.addr
 }
 
-func (s *ServiceInfo) start() {
+func (s *ServiceInfo) Failed() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.errs) > 0
+}
+
+func (s *ServiceInfo) Errs() map[time.Time]error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.errs
+}
+
+func (s *ServiceInfo) started() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.running = true
 	s.startedAt = time.Now().UTC()
 }
 
-func (s *ServiceInfo) stop() {
+func (s *ServiceInfo) stopped() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.running = false
 	s.stoppedAt = time.Now().UTC()
 }
 
+func (s *ServiceInfo) addErr(err error) {
+	if err == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.errs == nil {
+		s.errs = make(map[time.Time]error)
+	}
+	s.errs[time.Now().UTC()] = err
+}
+
 type serviceContainer struct {
-	info   *ServiceInfo
+	mu     sync.Mutex
+	info   ServiceInfo
 	svc    *Service
 	cancel context.CancelCauseFunc
 	ctx    context.Context
@@ -355,6 +369,7 @@ type serviceContainer struct {
 func (s *serviceContainer) initialize(sess *Session) error {
 	if s.svc.initializeAction != nil {
 		if err := s.svc.initializeAction(sess); err != nil {
+			s.info.addErr(err)
 			return err
 		}
 	}
@@ -363,32 +378,80 @@ func (s *serviceContainer) initialize(sess *Session) error {
 		s.cron = newCron(sess)
 		s.svc.cronsetup(s.cron)
 	}
+	sess.Log().Debug("service initialied", slog.String("service", s.info.Addr().String()))
 	return nil
 }
 
-func (s *serviceContainer) start(sess *Session) error {
+func (s *serviceContainer) start(sess *Session) (err error) {
 	if s.svc.startAction != nil {
-		if err := s.svc.startAction(sess); err != nil {
-			return err
-		}
+		err = s.svc.startAction(sess)
 	}
 	if s.cron != nil {
 		sess.Log().SystemDebug("starting cron jobs", slog.String("service", s.info.Addr().String()))
 		s.cron.Start()
 	}
+
+	s.mu.Lock()
+	s.ctx, s.cancel = context.WithCancelCause(sess)
+	s.mu.Unlock()
+
+	if err == nil {
+		s.info.started()
+	} else {
+		s.info.addErr(err)
+	}
+
+	payload := new(vars.Map)
+	payload.Store("name", s.info.Name())
+	payload.Store("addr", s.info.Addr())
+	if err != nil {
+		payload.Store("err", err)
+	}
+	payload.Store("running", s.info.Running())
+	payload.Store("started.at", s.info.StartedAt())
+	sess.Dispatch(NewEvent("services", "service.started", payload, nil))
+
+	sess.Log().Debug("service started", slog.String("service", s.info.Addr().String()))
 	return nil
 }
 
-func (s *serviceContainer) stop(sess *Session) error {
-	if s.svc.stopAction == nil {
-		return nil
+func (s *serviceContainer) stop(sess *Session, e error) (err error) {
+	if e != nil {
+		sess.Log().Error("service error", e, slog.String("service", s.info.Addr().String()))
 	}
-	err := s.svc.stopAction(sess)
 	if s.cron != nil {
 		sess.Log().SystemDebug("stopping cron scheduler, waiting jobs to finish", slog.String("service", s.info.Addr().String()))
 		s.cron.Stop()
 	}
+	if s.svc.stopAction != nil {
+		err = s.svc.stopAction(sess)
+	}
+
+	if e != nil {
+		err = errors.Join(err, e)
+	}
+
+	s.info.stopped()
+
+	payload := new(vars.Map)
+	payload.Store("name", s.info.Name())
+	payload.Store("addr", s.info.Addr())
+	if err != nil {
+		payload.Store("err", err)
+	}
+	payload.Store("running", s.info.Running())
+	payload.Store("stopped.at", s.info.StoppedAt())
+	sess.Dispatch(NewEvent("services", "service.stopped", payload, nil))
+
+	sess.Log().Debug("service stopped", slog.String("service", s.info.Addr().String()))
 	return err
+}
+
+func (s *serviceContainer) Done() <-chan struct{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	done := s.ctx.Done()
+	return done
 }
 
 func (s *serviceContainer) tick(sess *Session, ts time.Time, delta time.Duration) error {

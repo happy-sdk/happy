@@ -16,6 +16,7 @@ package happy
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/mkungla/happy/pkg/varflag"
@@ -77,6 +78,10 @@ type Addon interface {
 	Register(*Session) (AddonInfo, error)
 	Commands() []*Command
 	Services() []*Service
+	// Returns slice of event regsistration events
+	// created using RegisterEvent
+	Events() []Event
+	API() API
 }
 
 type AddonInfo struct {
@@ -127,6 +132,14 @@ func NewEvent(scope, key string, payload *vars.Map, err error) Event {
 	}
 }
 
+func RegisterEvent(scope, key, desc string, example *vars.Map) Event {
+	if example == nil && desc != "" {
+		example = new(vars.Map)
+	}
+	example.Store("happy.app.event.description", desc)
+	return NewEvent(scope, key, example, nil)
+}
+
 type happyEvent struct {
 	ts      time.Time
 	scope   string
@@ -152,4 +165,20 @@ func (ev *happyEvent) Err() error {
 
 func (ev *happyEvent) Payload() *vars.Map {
 	return ev.payload
+}
+
+type API interface {
+	Set(key string, value any)
+	Get(key string) vars.Variable
+}
+
+func GetAPI[A API](sess *Session, addonName string) (api A, err error) {
+	papi, err := sess.API(addonName)
+	if err != nil {
+		return api, err
+	}
+	if aa, ok := papi.(A); ok {
+		return aa, nil
+	}
+	return api, fmt.Errorf("unable to cast %s API to given type", addonName)
 }

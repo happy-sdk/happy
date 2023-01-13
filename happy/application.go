@@ -175,7 +175,7 @@ func (a *Application) shutdown() {
 	// Destroy session
 	a.session.Destroy(nil)
 	if err := a.session.Err(); err != nil && !errors.Is(err, ErrSessionDestroyed) {
-		a.logger.Error("session error", err)
+		a.logger.Warn("session", slog.String("err", err.Error()))
 	}
 
 }
@@ -260,6 +260,10 @@ func (a *Application) initialize() error {
 		slog.String("level", hlog.Level(a.lvl.Level()).String()),
 		slog.String("cmd", a.activeCmd.name),
 	)
+
+	if err := a.registerInternalEvents(); err != nil {
+		return err
+	}
 
 	if err := a.registerAddons(); err != nil {
 		return err
@@ -520,23 +524,33 @@ func (a *Application) executeAfterAlwaysActions(err error) {
 }
 
 func (a *Application) registerAddonCommands() error {
+	var provided bool
 	for _, addon := range a.addons {
 		for _, cmd := range addon.Commands() {
 			if err := cmd.Err(); err != nil {
 				return err
 			}
 			a.AddCommand(cmd)
+			provided = true
 		}
 	}
+
+	if provided {
+		a.logger.SystemDebug("attached commands provided by addons")
+	}
+
 	return nil
 }
 
 func (a *Application) registerAddons() error {
+	var provided bool
+
 	for _, addon := range a.addons {
 		info, err := addon.Register(a.session)
 		if err != nil {
 			return err
 		}
+		provided = true
 		a.logger.Debug(
 			"registered addon",
 			slog.Group("addon",
@@ -549,7 +563,39 @@ func (a *Application) registerAddons() error {
 				return err
 			}
 		}
+
+		for _, ev := range addon.Events() {
+			if err := a.engine.registerEvent(ev); err != nil {
+				return err
+			}
+		}
+
+		if api := addon.API(); api != nil {
+			if err := a.session.registerAPI(info.Name, api); err != nil {
+				return err
+			}
+		}
+	}
+	if provided {
+		a.logger.SystemDebug("registeration of addons completed")
 	}
 
+	return nil
+}
+
+func (a *Application) registerInternalEvents() error {
+	var sysevs = []Event{
+		RegisterEvent("services", "start.services", "starts local or connects remote service defined in payload", nil),
+		RegisterEvent("services", "stop.services", "stops local or disconnects remote service defined in payload", nil),
+		RegisterEvent("services", "service.started", "triggered when service has been started", nil),
+		RegisterEvent("services", "service.stopped", "triggered when service has been stopped", nil),
+	}
+
+	for _, rev := range sysevs {
+		if err := a.engine.registerEvent(rev); err != nil {
+			return err
+		}
+	}
+	a.logger.SystemDebug("registered system events")
 	return nil
 }

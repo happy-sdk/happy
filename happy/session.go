@@ -14,6 +14,7 @@ import (
 
 	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/vars"
+	"golang.org/x/exp/slog"
 )
 
 type Session struct {
@@ -31,6 +32,9 @@ type Session struct {
 	done chan struct{}
 	evch chan Event
 	svss map[string]*ServiceInfo
+	apis map[string]API
+
+	disposed bool
 }
 
 func (s *Session) Ready() <-chan struct{} {
@@ -82,6 +86,7 @@ func (s *Session) Destroy(err error) {
 	}
 
 	s.mu.Lock()
+	s.disposed = true
 	// s.err is nil otherwise we would not be here
 	s.err = err
 
@@ -172,13 +177,24 @@ func (s *Session) Dispatch(ev Event) {
 		s.Log().Warn("received <nil> event")
 		return
 	}
-	s.evch <- ev
+	s.mu.Lock()
+	if !s.disposed {
+		s.evch <- ev
+	} else {
+		s.Log().SystemDebug(
+			"session is disposed - skipping event dispatch",
+			slog.String("scope", ev.Scope()),
+			slog.String("key", ev.Key()),
+		)
+	}
+	s.mu.Unlock()
 }
 
 func (s *Session) start() error {
 	s.ready, s.readyFunc = context.WithCancel(context.Background())
 	s.sig, s.sigRelease = signal.NotifyContext(s, os.Interrupt, os.Kill)
 	s.evch = make(chan Event, 100)
+	s.Log().SystemDebug("session started")
 	return nil
 }
 
@@ -187,4 +203,27 @@ func (s *Session) setReady() {
 	s.readyFunc()
 	s.mu.Unlock()
 	s.Log().SystemDebug("session ready")
+}
+
+func (s *Session) registerAPI(addonName string, api API) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.apis == nil {
+		s.apis = make(map[string]API)
+	}
+	if _, ok := s.apis[addonName]; ok {
+		return fmt.Errorf("addon api already registered: %s", addonName)
+	}
+	s.apis[addonName] = api
+	return nil
+}
+
+func (s *Session) API(addonName string) (API, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	api, ok := s.apis[addonName]
+	if !ok {
+		return nil, fmt.Errorf("no api fo addon: %s", addonName)
+	}
+	return api, nil
 }

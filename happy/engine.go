@@ -35,19 +35,25 @@ type Engine struct {
 	evContext context.Context
 
 	registry map[string]*serviceContainer
+	events   map[string]Event
 }
 
 func newEngine() *Engine {
-	return &Engine{
+	engine := &Engine{
 		registry: make(map[string]*serviceContainer),
+		events:   make(map[string]Event),
 	}
+
+	return engine
 }
 
 func (e *Engine) start(sess *Session) error {
+	sess.Log().SystemDebug("starting engine ...")
 	e.started = time.Now()
 	if e.tickAction == nil && e.tockAction != nil {
 		return fmt.Errorf("%w: register tick action or move tock logic into tick action", ErrEngine)
 	}
+
 	var init sync.WaitGroup
 
 	e.loopStart(sess, &init)
@@ -64,6 +70,7 @@ func (e *Engine) start(sess *Session) error {
 	}
 
 	e.running = true
+	sess.Log().SystemDebug("engine started")
 	return nil
 }
 
@@ -99,30 +106,58 @@ func (e *Engine) startEventDispatcher(sess *Session) {
 	}(sess)
 }
 
+func (e *Engine) registerEvent(ev Event) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	skey := ev.Scope() + "." + ev.Key()
+	if _, ok := e.events[skey]; ok {
+		return fmt.Errorf("%w: event already registered %s", ErrEngine, skey)
+	}
+	e.events[skey] = ev
+	return nil
+}
+
 func (e *Engine) handleEvent(sess *Session, ev Event) {
+	skey := ev.Scope() + "." + ev.Key()
+
+	e.mu.RLock()
+	_, rev := e.events[skey]
+	registry := e.registry
+	e.mu.RUnlock()
+
+	if len(skey) == 1 || !rev {
+		sess.Log().NotImplemented("event not registered, ignoring", slog.String("scope", ev.Scope()), slog.String("key", ev.Key()))
+		e.mu.RLock()
+		for _, ev := range e.events {
+			sess.Log().SystemDebug("available event", slog.String("ev", ev.Scope()+"."+ev.Key()))
+		}
+		e.mu.RUnlock()
+		return
+	}
 	sess.Log().SystemDebug("event", slog.String("scope", ev.Scope()), slog.String("key", ev.Key()))
 	switch ev.Scope() {
-	case "service.loader":
+	case "services":
 		switch ev.Key() {
-		case "require.services":
+		case "start.services":
 			payload := ev.Payload()
 			payload.Range(func(v vars.Variable) bool {
-				e.serviceStart(sess, v.String())
+				go e.serviceStart(sess, v.String())
+				return true
+			})
+		case "stop.services":
+			payload := ev.Payload()
+			payload.Range(func(v vars.Variable) bool {
+				go e.serviceStop(sess, v.String(), nil)
 				return true
 			})
 		}
 	}
-	e.mu.RLock()
-	registry := e.registry
-	e.mu.RUnlock()
 	for _, svcc := range registry {
-		svcc.handleEvent(sess, ev)
+		go svcc.handleEvent(sess, ev)
 	}
 }
 
 func (e *Engine) loopStart(sess *Session, init *sync.WaitGroup) {
-	sess.Log().SystemDebug("starting engine ...")
-
 	e.ctx, e.ctxCancel = context.WithCancel(sess)
 
 	if e.tickAction == nil && e.tockAction == nil {
@@ -202,17 +237,13 @@ func (e *Engine) stop(sess *Session) error {
 		}
 		go func(url string, svcc *serviceContainer) {
 			defer graceful.Done()
-			sarg := slog.String("service", url)
 			// wait for engine context is canceled which triggers
 			// r.ctx also to be cancelled, however lets wait for the
 			// context done since r.ctx is cancelled after last tickk completes.
 			// so e.xtc is not parent of r.ctx.
-			<-svcc.ctx.Done()
+			<-svcc.Done()
 			// lets call stop now we know that tick loop has exited.
-			if err := svcc.stop(sess); err != nil {
-				sess.Log().Error("failed to stop service", err, sarg)
-			}
-			sess.Log().SystemDebug("stopping service", sarg)
+			e.serviceStop(sess, url, nil)
 		}(u, rsvc)
 		graceful.Add(1)
 	}
@@ -229,14 +260,14 @@ func (e *Engine) serviceRegister(sess *Session, svc *Service) error {
 	}
 
 	if e.running {
-		return fmt.Errorf("%w: can not register services engine is already running - %s", ErrEngine, svc.slug)
+		return fmt.Errorf("%w: can not register services engine is already running - %s", ErrEngine, svc.name)
 	}
 
 	hostaddr, err := address.Parse(sess.Get("app.host.addr").String())
 	if err != nil {
 		return errors.Join(ErrEngine, err)
 	}
-	addr, err := hostaddr.ResolveService(svc.slug)
+	addr, err := hostaddr.ResolveService(svc.name)
 	if err != nil {
 		return err
 	}
@@ -248,7 +279,7 @@ func (e *Engine) serviceRegister(sess *Session, svc *Service) error {
 
 	container := svc.container(sess, addr)
 	e.registry[addrstr] = container
-	sess.setServiceInfo(container.info)
+	sess.setServiceInfo(&container.info)
 	sess.Log().Debug("registered service", slog.String("service", addrstr))
 	return nil
 }
@@ -265,21 +296,28 @@ func (e *Engine) servicesInit(sess *Session, init *sync.WaitGroup) {
 	for svcaddrstr, svcc := range e.registry {
 		go func(addr string, c *serviceContainer) {
 			defer init.Done()
-			sess.Log().Debug("initializing service", slog.String("service", c.info.addr.String()))
 			if err := c.initialize(sess); err != nil {
-				sess.Log().Error("failed to initialize service", err, slog.String("service", c.info.addr.String()))
+				sess.Log().Error("failed to initialize service", err, slog.String("service", c.info.Addr().String()))
 				return
 			}
+
 		}(svcaddrstr, svcc)
 	}
 	sess.Log().SystemDebug("initialize services ...")
 }
 
 func (e *Engine) serviceStart(sess *Session, svcurl string) {
-	sess.Log().SystemDebug("starting service", slog.String("service", svcurl))
 	e.mu.RLock()
 	svcc, ok := e.registry[svcurl]
 	e.mu.RUnlock()
+	if !ok {
+		sess.Log().Warn("no such service to start", slog.String("service", svcurl))
+		return
+	}
+	if svcc.info.Failed() {
+		sess.Log().SystemDebug("skip starting service due previous errors", slog.String("service", svcurl))
+		return
+	}
 
 	sarg := slog.String("service", svcurl)
 	if !ok {
@@ -297,7 +335,6 @@ func (e *Engine) serviceStart(sess *Session, svcurl string) {
 		)
 		return
 	}
-	sess.Log().Debug("starting service", sarg)
 
 	if err := svcc.start(sess); err != nil {
 		sess.Log().Error(
@@ -308,18 +345,8 @@ func (e *Engine) serviceStart(sess *Session, svcurl string) {
 		return
 	}
 
-	svcc.ctx, svcc.cancel = context.WithCancelCause(sess)
-	go func(svcc *serviceContainer, sarg slog.Attr) {
-		svcc.info.start()
+	go func(svcc *serviceContainer, svcurl string, sarg slog.Attr) {
 		lastTick := time.Now()
-		kill := func(err error) {
-			sess.Log().Error("service error", err, sarg)
-			svcc.info.stop()
-			svcc.cancel(err)
-			if err := svcc.stop(sess); err != nil {
-				sess.Log().Error("error when stopping service", err, sarg)
-			}
-		}
 		if svcc.svc.tickAction == nil {
 			<-e.ctx.Done()
 			svcc.cancel(nil)
@@ -339,15 +366,31 @@ func (e *Engine) serviceStart(sess *Session, svcurl string) {
 				delta := time.Since(lastTick)
 				lastTick = now
 				if err := svcc.tick(sess, lastTick, delta); err != nil {
-					kill(err)
+					e.serviceStop(sess, svcurl, err)
 					break ticker
 				}
 				tickDelta := time.Since(lastTick)
 				if err := svcc.tock(sess, lastTick, tickDelta); err != nil {
-					kill(err)
+					e.serviceStop(sess, svcurl, err)
 					break ticker
 				}
 			}
 		}
-	}(svcc, sarg)
+	}(svcc, svcurl, sarg)
+}
+
+func (e *Engine) serviceStop(sess *Session, svcurl string, err error) {
+	sarg := slog.String("service", svcurl)
+
+	e.mu.RLock()
+	svcc, ok := e.registry[svcurl]
+	e.mu.RUnlock()
+	if !ok {
+		sess.Log().Warn("no such service to start", sarg)
+		return
+	}
+	sess.Log().SystemDebug("stopping service", sarg)
+	if e := svcc.stop(sess, err); e != nil {
+		sess.Log().Error("failed to stop service", e, sarg)
+	}
 }
