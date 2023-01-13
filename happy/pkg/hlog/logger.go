@@ -161,6 +161,9 @@ func (l *Logger) LogDepth(calldepth int, level Level, msg string, args ...any) {
 	if len(args) > 0 {
 		var sargs []any
 		for _, arg := range args {
+			if arg == nil {
+				continue
+			}
 			if v, ok := arg.(vars.Variable); ok {
 				var attr slog.Attr
 				switch v.Kind() {
@@ -175,7 +178,7 @@ func (l *Logger) LogDepth(calldepth int, level Level, msg string, args ...any) {
 				case vars.KindUint64:
 					attr = slog.Uint64(v.Name(), v.Uint64())
 				default:
-					attr = slog.Any(v.Name(), v.Any())
+					attr = slog.String(v.Name(), v.String())
 				}
 				sargs = append(sargs, attr)
 			} else {

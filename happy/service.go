@@ -27,7 +27,7 @@ type Service struct {
 	startAction      Action
 	stopAction       Action
 	tickAction       ActionTick
-	tockAction       ActionTick
+	tockAction       ActionTock
 	listeners        map[string][]ActionWithEvent
 
 	cronsetup func(schedule CronScheduler)
@@ -66,7 +66,7 @@ func (s *Service) OnTick(action ActionTick) {
 	s.tickAction = action
 }
 
-func (s *Service) OnTock(action ActionTick) {
+func (s *Service) OnTock(action ActionTock) {
 	s.tockAction = action
 }
 
@@ -86,8 +86,8 @@ func (s *Service) OnAnyEvent(cb ActionWithEvent) {
 	s.listeners["any"] = append(s.listeners["any"], cb)
 }
 
-func (s *Service) Cron(setup func(schedule CronScheduler)) {
-	s.cronsetup = setup
+func (s *Service) Cron(setupFunc func(schedule CronScheduler)) {
+	s.cronsetup = setupFunc
 }
 
 func (s *Service) container(sess *Session, addr *address.Address) *serviceContainer {
@@ -194,7 +194,7 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 		require = append(require, svcaddrstr)
 	}
 
-	sl.sess.Dispatch(newStartServicesEvent(require))
+	sl.sess.Dispatch(StartServicesEvent(require...))
 
 	ctx, cancel := context.WithTimeout(sl.sess, timeout)
 
@@ -270,13 +270,22 @@ func (sl *ServiceLoader) addErr(err error) {
 	sl.errs = append(sl.errs, err)
 }
 
-func newStartServicesEvent(svcs []string) Event {
+func StartServicesEvent(svcs ...string) Event {
 	var payload vars.Map
 	for i, url := range svcs {
 		payload.Store(fmt.Sprintf("service.%d", i), url)
 	}
 
 	return NewEvent("services", "start.services", &payload, nil)
+}
+
+func StopServicesEvent(svcs ...string) Event {
+	var payload vars.Map
+	for i, url := range svcs {
+		payload.Store(fmt.Sprintf("service.%d", i), url)
+	}
+
+	return NewEvent("services", "stop.services", &payload, nil)
 }
 
 type ServiceInfo struct {
@@ -382,7 +391,7 @@ func (s *serviceContainer) initialize(sess *Session) error {
 	return nil
 }
 
-func (s *serviceContainer) start(sess *Session) (err error) {
+func (s *serviceContainer) start(ectx context.Context, sess *Session) (err error) {
 	if s.svc.startAction != nil {
 		err = s.svc.startAction(sess)
 	}
@@ -392,7 +401,7 @@ func (s *serviceContainer) start(sess *Session) (err error) {
 	}
 
 	s.mu.Lock()
-	s.ctx, s.cancel = context.WithCancelCause(sess)
+	s.ctx, s.cancel = context.WithCancelCause(ectx) // with engine context
 	s.mu.Unlock()
 
 	if err == nil {
@@ -423,6 +432,8 @@ func (s *serviceContainer) stop(sess *Session, e error) (err error) {
 		sess.Log().SystemDebug("stopping cron scheduler, waiting jobs to finish", slog.String("service", s.info.Addr().String()))
 		s.cron.Stop()
 	}
+
+	s.cancel(e)
 	if s.svc.stopAction != nil {
 		err = s.svc.stopAction(sess)
 	}
@@ -461,11 +472,11 @@ func (s *serviceContainer) tick(sess *Session, ts time.Time, delta time.Duration
 	return s.svc.tickAction(sess, ts, delta)
 }
 
-func (s *serviceContainer) tock(sess *Session, ts time.Time, delta time.Duration) error {
+func (s *serviceContainer) tock(sess *Session, delta time.Duration, tps int) error {
 	if s.svc.tockAction == nil {
 		return nil
 	}
-	return s.svc.tockAction(sess, ts, delta)
+	return s.svc.tockAction(sess, delta, tps)
 }
 
 func (s *serviceContainer) handleEvent(sess *Session, ev Event) {

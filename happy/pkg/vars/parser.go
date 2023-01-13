@@ -336,10 +336,10 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		localtype    Kind
 		implStringer bool
 	)
-	if str, ok := val.(stringer); val != nil && ok {
-		p.fmt.string(str.String())
-		implStringer = true
-	}
+	// if _, ok := val.(stringer); val != nil && ok {
+	// 	// p.fmt.string(vv.String())
+	// 	implStringer = true
+	// }
 
 	switch v := val.(type) {
 	case *bool:

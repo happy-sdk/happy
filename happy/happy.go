@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/varflag"
 	"github.com/mkungla/happy/pkg/vars"
 )
@@ -34,7 +35,23 @@ var (
 	ErrService          = errors.New("service error")
 )
 
-type Action func(s *Session) error
+const (
+	// Levels
+	LevelSystemDebug    = hlog.LevelSystemDebug
+	LevelDebug          = hlog.LevelDebug
+	LevelInfo           = hlog.LevelInfo
+	LevelTask           = hlog.LevelTask
+	LevelOk             = hlog.LevelOk
+	LevelNotice         = hlog.LevelNotice
+	LevelWarn           = hlog.LevelWarn
+	LevelNotImplemented = hlog.LevelNotImplemented
+	LevelDeprecated     = hlog.LevelDeprecated
+	LevelIssue          = hlog.LevelIssue
+	LevelError          = hlog.LevelError
+	LevelOut            = hlog.LevelOut
+)
+
+type Action func(sess *Session) error
 
 // ActionTickFunc is operation set in given minimal time frame it can be executed.
 // You can throttle tick/tocks to cap FPS or for [C|G]PU throttling.
@@ -44,6 +61,7 @@ type Action func(s *Session) error
 // Tocks are useful mostly for GPU ops which need to do post proccessing
 // of frames rendered in tick.
 type ActionTick func(sess *Session, ts time.Time, delta time.Duration) error
+type ActionTock func(sess *Session, delta time.Duration, tps int) error
 type ActionWithArgs func(sess *Session, args Args) error
 type ActionWithEvent func(sess *Session, ev Event) error
 
@@ -72,8 +90,6 @@ type TickerFuncs interface {
 	OnTock(ActionTick)
 }
 
-type Logger interface{}
-
 type Addon interface {
 	Register(*Session) (AddonInfo, error)
 	Commands() []*Command
@@ -91,8 +107,10 @@ type AddonInfo struct {
 }
 
 type Args interface {
-	Argn(i uint) vars.Value
-	Argv() []vars.Value
+	Arg(i uint) vars.Value
+	ArgDefault(i uint, value any) (vars.Value, error)
+	ArgVarDefault(i uint, key string, value any) (vars.Variable, error)
+	Args() []vars.Value
 	Flag(name string) varflag.Flag
 }
 
@@ -102,14 +120,28 @@ type args struct {
 	flags varflag.Flags
 }
 
-func (a *args) Argn(i uint) vars.Value {
+func (a *args) Arg(i uint) vars.Value {
 	if a.argn <= i {
 		return vars.EmptyValue
 	}
 	return a.argv[i]
 }
 
-func (a *args) Argv() []vars.Value {
+func (a *args) ArgDefault(i uint, value any) (vars.Value, error) {
+	if a.argn <= i {
+		return vars.NewValue(value)
+	}
+	return a.Arg(i), nil
+}
+
+func (a *args) ArgVarDefault(i uint, key string, value any) (vars.Variable, error) {
+	if a.argn <= i {
+		return vars.New(key, value, true)
+	}
+	return vars.New(key, a.argv[i], true)
+}
+
+func (a *args) Args() []vars.Value {
 	return a.argv
 }
 

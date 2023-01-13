@@ -29,7 +29,7 @@ type Application struct {
 	// tick tock when defined are only
 	// used when root command is called
 	tickAction ActionTick
-	tockAction ActionTick
+	tockAction ActionTock
 
 	// pendingOpts contains options
 	// which are not yet applied.
@@ -142,7 +142,7 @@ func (a *Application) OnTick(action ActionTick) {
 	a.tickAction = action
 }
 
-func (a *Application) OnTock(action ActionTick) {
+func (a *Application) OnTock(action ActionTock) {
 	a.tockAction = action
 }
 

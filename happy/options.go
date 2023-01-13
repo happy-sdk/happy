@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/mkungla/happy/pkg/address"
 	"github.com/mkungla/happy/pkg/hlog"
@@ -222,10 +223,24 @@ func getDefaultApplicationConfig() []OptionAttr {
 		},
 		{
 			key:       "app.license",
-			value:     "0",
+			value:     "",
 			desc:      "License",
 			kind:      optionKindReadOnly | optionKindConfig,
 			validator: noopOptValidator,
+		},
+		{
+			key:   "app.throttle.ticks",
+			value: time.Duration(time.Millisecond * 100),
+			desc:  "Interfal target for system and service ticks",
+			kind:  optionKindReadOnly | optionKindConfig,
+			validator: func(key string, val vars.Value) error {
+				if v, _ := val.Int64(); v < 1 {
+					return fmt.Errorf(
+						"%w: invalid throttle value (%d), must be greater that 1",
+						ErrOptionValidation, v)
+				}
+				return nil
+			},
 		},
 		{
 			key: "app.host.addr",

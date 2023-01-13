@@ -17,14 +17,15 @@ import (
 )
 
 // noop for tick | tock
-var ttnoop = func(sess *Session, ts time.Time, delta time.Duration) error { return nil }
+var nooptock = func(sess *Session, delta time.Duration, tps int) error { return nil }
 
 type Engine struct {
 	mu      sync.RWMutex
 	running bool
 	started time.Time
 
-	tickAction, tockAction ActionTick
+	tickAction ActionTick
+	tockAction ActionTock
 
 	readyCallback sync.Once
 	engineOK      bool
@@ -82,7 +83,7 @@ func (e *Engine) onTick(action ActionTick) {
 	e.tickAction = action
 	return
 }
-func (e *Engine) onTock(action ActionTick) {
+func (e *Engine) onTock(action ActionTock) {
 	e.tockAction = action
 	return
 }
@@ -168,7 +169,7 @@ func (e *Engine) loopStart(sess *Session, init *sync.WaitGroup) {
 	// we should have enured that tick action is set.
 	// so only set noop tock if needed
 	if e.tockAction == nil {
-		e.tockAction = ttnoop
+		e.tockAction = nooptock
 	}
 
 	init.Add(2)
@@ -177,7 +178,7 @@ func (e *Engine) loopStart(sess *Session, init *sync.WaitGroup) {
 	go func() {
 		lastTick := time.Now()
 
-		ttick := time.NewTicker(time.Microsecond * 100)
+		ttick := time.NewTicker(time.Duration(sess.Get("app.throttle.ticks").Int64()))
 		defer ttick.Stop()
 
 	engineLoop:
@@ -198,7 +199,7 @@ func (e *Engine) loopStart(sess *Session, init *sync.WaitGroup) {
 					init.Done()
 				})
 
-				delta := time.Since(lastTick)
+				delta := now.Sub(lastTick)
 				lastTick = now
 				if err := e.tickAction(sess, lastTick, delta); err != nil {
 					sess.Log().Error("tick error", err)
@@ -206,7 +207,7 @@ func (e *Engine) loopStart(sess *Session, init *sync.WaitGroup) {
 					break engineLoop
 				}
 				tickDelta := time.Since(lastTick)
-				if err := e.tockAction(sess, lastTick, tickDelta); err != nil {
+				if err := e.tockAction(sess, tickDelta, 0); err != nil {
 					sess.Log().Error("tock error", err)
 					sess.Dispatch(NewEvent("engine", "app.tock.err", nil, err))
 					break engineLoop
@@ -336,7 +337,7 @@ func (e *Engine) serviceStart(sess *Session, svcurl string) {
 		return
 	}
 
-	if err := svcc.start(sess); err != nil {
+	if err := svcc.start(e.ctx, sess); err != nil {
 		sess.Log().Error(
 			"failed to start service",
 			err,
@@ -346,31 +347,40 @@ func (e *Engine) serviceStart(sess *Session, svcurl string) {
 	}
 
 	go func(svcc *serviceContainer, svcurl string, sarg slog.Attr) {
-		lastTick := time.Now()
+
 		if svcc.svc.tickAction == nil {
 			<-e.ctx.Done()
 			svcc.cancel(nil)
 			return
 		}
 
-		ttick := time.NewTicker(time.Microsecond * 100)
+		ttick := time.NewTicker(time.Duration(sess.Get("app.throttle.ticks").Int64()))
 		defer ttick.Stop()
 
+		lastTick := time.Now()
+		tis := 0
+		tps := 0
 	ticker:
 		for {
 			select {
-			case <-e.ctx.Done():
+			case <-svcc.ctx.Done():
 				svcc.cancel(nil)
 				break ticker
 			case now := <-ttick.C:
-				delta := time.Since(lastTick)
+				if lastTick.Truncate(time.Second) == now.Truncate(time.Second) {
+					tis++
+				} else {
+					tps = tis
+					tis = 0
+				}
+				delta := now.Sub(lastTick)
 				lastTick = now
 				if err := svcc.tick(sess, lastTick, delta); err != nil {
 					e.serviceStop(sess, svcurl, err)
 					break ticker
 				}
 				tickDelta := time.Since(lastTick)
-				if err := svcc.tock(sess, lastTick, tickDelta); err != nil {
+				if err := svcc.tock(sess, tickDelta, tps); err != nil {
 					e.serviceStop(sess, svcurl, err)
 					break ticker
 				}
