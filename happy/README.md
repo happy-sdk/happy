@@ -6,6 +6,7 @@
 
 ```
 go run ./examples/hello/
+go run ./examples/hello/ nickname
 # increase verbosity
 go run ./examples/hello/ --debug
 go run ./examples/hello/ --system-debug

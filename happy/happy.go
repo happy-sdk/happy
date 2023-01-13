@@ -200,7 +200,6 @@ func (ev *happyEvent) Payload() *vars.Map {
 }
 
 type API interface {
-	Set(key string, value any)
 	Get(key string) vars.Variable
 }
 

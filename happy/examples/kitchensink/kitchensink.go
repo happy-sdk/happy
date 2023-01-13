@@ -7,6 +7,7 @@ import (
 
 	"github.com/mkungla/happy"
 	"github.com/mkungla/happy/pkg/varflag"
+	"github.com/mkungla/happy/pkg/vars"
 	"golang.org/x/exp/slog"
 )
 
@@ -95,6 +96,12 @@ func main() {
 		))
 		fmt.Println("")
 		<-sess.Done()
+
+		api, err := happy.GetAPI[*RendererAPI](sess, "renderer")
+		if err != nil {
+			return err
+		}
+		sess.Log().Ok("rendered total", slog.Int("frames", api.TotalFrames()))
 		return nil
 	})
 
@@ -201,13 +208,15 @@ func simpleBackgroundService() *happy.Service {
 
 // RendererAddon is example addon providing a service
 type RendererAddon struct {
-	info  happy.AddonInfo
-	last  *Frame
-	total int
+	info happy.AddonInfo
+	last *Frame
+	api  *RendererAPI
 }
 
 func rendererAddon() *RendererAddon {
-	addon := &RendererAddon{}
+	addon := &RendererAddon{
+		api: &RendererAPI{},
+	}
 	return addon
 }
 
@@ -225,8 +234,18 @@ func (addon *RendererAddon) Services() []*happy.Service {
 		addon.renderer(),
 	}
 }
-func (addon *RendererAddon) API() happy.API        { return nil }
+func (addon *RendererAddon) API() happy.API        { return addon.api }
 func (addon *RendererAddon) Events() []happy.Event { return nil }
+
+type RendererAPI struct {
+	total int
+}
+
+func (*RendererAPI) Get(key string) vars.Variable { return vars.EmptyVariable }
+
+func (api *RendererAPI) TotalFrames() int {
+	return api.total
+}
 
 // Custom addon implementation
 type Frame struct {
@@ -272,12 +291,12 @@ func (addon *RendererAddon) process(msg string, ts time.Time, delta time.Duratio
 
 func (addon *RendererAddon) render() error {
 	frame := *addon.last
-	if addon.total == 0 {
+	if addon.api.total == 0 {
 		fmt.Print("\n")
 	}
 	fmt.Printf(
 		"\rframe: FPS [%-4d] - frame-delta [%-15s] - process-delta [%-15s]",
 		frame.FPS, frame.FrameDelta, frame.ProcessDelta)
-	addon.total++
+	addon.api.total++
 	return nil
 }
