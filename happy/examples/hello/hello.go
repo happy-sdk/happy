@@ -9,6 +9,12 @@ import (
 // Usage:
 // - go run ./examples/hello/
 // - go run ./examples/hello/ nickname
+//
+// Increase verbosity
+// - go run ./examples/hello/ --debug
+// - go run ./examples/hello/ --system-debug
+//
+// Help
 // - go run ./examples/hello/ -h
 func main() {
 	app := happy.New()

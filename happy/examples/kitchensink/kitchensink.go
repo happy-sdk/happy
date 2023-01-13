@@ -10,6 +10,23 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+// A simple hello application
+//
+// Usage:
+// - go run ./examples/kitchensink/
+//
+// Increase verbosity
+// - go run ./examples/kitchensink/ --verbose
+// - go run ./examples/kitchensink/ --debug
+// - go run ./examples/kitchensink/ --system-debug
+//
+// Hello command
+// - go run ./examples/kitchensink/ hello --name me --repeat 10
+// - go run ./examples/kitchensink/ hello -n me -r 10
+// - go run ./examples/kitchensink/ hello -h
+//
+// Help
+// - go run ./examples/kitchensink/ -h
 func main() {
 	app := happy.New(
 		happy.Option("app.name", "Happy Kitchensink"),
@@ -28,6 +45,7 @@ func main() {
 		happy.Option("log.secrets", "password,apiKey"),
 	)
 
+	// Add commands,
 	app.AddCommand(helloCommand())
 
 	// register simple background service
@@ -102,6 +120,8 @@ func helloCommand() *happy.Command {
 	cmd := happy.NewCommand(
 		"hello",
 	)
+
+	// cmd.AddSubCommand(someSubCommand)
 
 	nameflag, _ := varflag.New("name", "anonymous", "print hello <name>", "n")
 	repeatflag, _ := varflag.Int("repeat", 1, "repeat message n times", "r")
