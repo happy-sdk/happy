@@ -25,7 +25,7 @@ type Task struct {
 	Args    []slog.Attr
 }
 
-func (t Task) Attr() slog.Attr {
+func (t Task) LogAttr() slog.Attr {
 	args := append([]slog.Attr{
 		slog.String("name", t.Name),
 		slog.Duration("elapsed", time.Since(t.Started)),
