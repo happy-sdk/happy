@@ -56,6 +56,8 @@ type Application struct {
 	errs     []error
 	firstuse bool
 	state    *persistentState
+	isDev    bool
+	profile  string
 }
 
 // New returns new happy application instance.
@@ -107,7 +109,7 @@ func (a *Application) Main() {
 	if len(a.pendingOpts) > 0 {
 		for _, opt := range a.pendingOpts {
 			// apply if it is custom glopal setting
-			a.session.Log().Notice("opt", slog.Any(opt.key, opt.value))
+			a.session.Log().SystemDebug("opt", slog.Any(opt.key, opt.value))
 			if _, ok := a.session.opts.config[opt.key]; ok {
 				if err := opt.apply(a.session.opts); err != nil {
 					a.session.Log().Error("failed to apply option", err)
@@ -297,11 +299,16 @@ func (a *Application) initializePaths() error {
 		return err
 	}
 	slug := a.session.Get("app.slug").String()
+
 	if slug == "" {
 		return fmt.Errorf("%w: invalid slug %s", ErrApplication, slug)
 	}
+	dir := slug
+	if a.profile != "default" {
+		dir = filepath.Join(dir, a.profile)
+	}
 
-	tempDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%d", slug, time.Now().UnixMilli()))
+	tempDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%d", dir, time.Now().UnixMilli()))
 	if err := os.MkdirAll(tempDir, 0700); err != nil {
 		return err
 	}
@@ -321,7 +328,7 @@ func (a *Application) initializePaths() error {
 	if err != nil {
 		return err
 	}
-	appCacheDir := filepath.Join(userCacheDir, slug)
+	appCacheDir := filepath.Join(userCacheDir, dir)
 	_, err = os.Stat(appCacheDir)
 	if errors.Is(err, fs.ErrNotExist) {
 		if err := os.MkdirAll(appCacheDir, 0700); err != nil {
@@ -338,7 +345,7 @@ func (a *Application) initializePaths() error {
 	if err != nil {
 		return err
 	}
-	appConfigDir := filepath.Join(userConfigDir, slug)
+	appConfigDir := filepath.Join(userConfigDir, dir)
 	_, err = os.Stat(appConfigDir)
 	if errors.Is(err, fs.ErrNotExist) {
 		if err := os.MkdirAll(appConfigDir, 0700); err != nil {
@@ -396,6 +403,16 @@ func (a *Application) initialize() error {
 		a.lvl.Set(slog.Level(hlog.LevelDebug))
 	} else if a.rootCmd.flag("verbose").Var().Bool() {
 		a.lvl.Set(slog.Level(hlog.LevelInfo))
+	}
+
+	a.profile = a.rootCmd.flag("profile").Var().String()
+	a.logger.SystemDebug("using profile", slog.String("profile", a.profile))
+	if err := a.initializePaths(); err != nil {
+		return err
+	} else {
+		if err := a.load(); err != nil {
+			return err
+		}
 	}
 
 	if err := a.setActiveCommand(); err != nil {
@@ -554,6 +571,9 @@ func (a *Application) save() error {
 	if !a.session.Get("app.fs.enabled").Bool() {
 		return nil
 	}
+	if a.activeCmd == nil {
+		return nil
+	}
 	if !a.activeCmd.allowOnFirstUse {
 		a.logger.SystemDebug("skip saving")
 		return nil
@@ -649,6 +669,13 @@ func (a *Application) execute() {
 		return
 	}
 
+	if a.isDev {
+		a.logger.Notice("development mode",
+			slog.Bool("enabled", true),
+			slog.String("profile", a.profile),
+		)
+	}
+
 	// execute before action chain
 	if err := a.executeBeforeActions(); err != nil {
 		a.logger.Error("prerequisites failed", err)
@@ -722,13 +749,8 @@ func (a *Application) configureApplication(opts []OptionArg) (err error) {
 		}
 	}
 
-	if err := a.initializePaths(); err != nil {
-		errs = append(errs, err)
-	} else {
-		if err := a.load(); err != nil {
-			errs = append(errs, err)
-		}
-	}
+	a.isDev = version.IsDev(a.session.Get("app.version").String())
+
 	return errors.Join(errs...)
 }
 
@@ -793,6 +815,16 @@ func (a *Application) configureRootCommand() error {
 		rootCmd.AddFlag(f)
 	}
 
+	profile := "default"
+	if a.isDev {
+		profile = "devel"
+	}
+
+	profileFlag, err := varflag.New("profile", profile, "session profile to be used")
+	if err != nil {
+		return err
+	}
+	rootCmd.AddFlag(profileFlag)
 	a.rootCmd = rootCmd
 	return nil
 }

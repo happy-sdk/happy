@@ -379,6 +379,10 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, erro
 			continue
 		}
 		if len(pargs) == pose {
+			if !f.defval.Empty() {
+				f.isPresent = true
+				continue
+			}
 			return values, fmt.Errorf("%w: %s", ErrMissingValue, f.name)
 		}
 

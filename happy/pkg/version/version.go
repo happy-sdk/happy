@@ -16,6 +16,8 @@ import (
 	// "golang.org/x/mod/semver"
 )
 
+const PRE = "0xDEV"
+
 type Version string
 
 func (v Version) String() string {
@@ -65,7 +67,7 @@ func Current() Version {
 		dirty = "." + vcs + "." + date
 	}
 
-	return Version(fmt.Sprintf("%s.0.0-alpha%s%s", major, revision, dirty))
+	return Version(fmt.Sprintf("%s.0.0-%s%s%s", major, PRE, revision, dirty))
 }
 
 func Parse(v string) (Version, error) {
@@ -76,4 +78,12 @@ func Parse(v string) (Version, error) {
 		return Version(""), fmt.Errorf("invalid version: %s", v)
 	}
 	return Version(v), nil
+}
+
+func Prerelease(v string) string {
+	return strings.Trim(semver.Prerelease(v), "-")
+}
+
+func IsDev(v string) bool {
+	return Prerelease(v) == PRE
 }
