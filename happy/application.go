@@ -524,12 +524,10 @@ func (a *Application) load() error {
 
 	for _, setting := range a.state.Settings {
 		// override predef options
-		testval, _ := vars.NewValue(setting.Value)
-
-		fmt.Println("load raw: ", setting.Key, setting.Value, " want: ", vars.Kind(setting.Kind), " got: ", testval.Kind(), testval.String(), testval.Any(), " isnil: ", testval.Any() == nil)
-		varval, _ := vars.NewValueAs(setting.Value, vars.Kind(setting.Kind))
-
-		fmt.Println("load typed: ", setting.Key, setting.Value, " want: ", vars.Kind(setting.Kind), " got: ", varval.Kind(), varval.String(), testval.Any(), " isnil: ", varval.Any() == nil)
+		varval, err := vars.NewValueAs(setting.Value, vars.Kind(setting.Kind))
+		if err != nil {
+			return err
+		}
 		if a.session.Has(setting.Key) {
 			if err := a.session.opts.set(setting.Key, varval.Any(), true); err != nil {
 				return err
@@ -585,7 +583,6 @@ func (a *Application) save() error {
 	}
 	settings := a.session.Settings()
 	settings.Range(func(v vars.Variable) bool {
-		fmt.Println("save: ", v.Name(), v.Kind(), v.Any())
 		ps.Settings = append(ps.Settings, persistentValue{
 			Key:   v.Name(),
 			Kind:  uint8(v.Kind()),
