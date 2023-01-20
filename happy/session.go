@@ -157,7 +157,7 @@ func (s *Session) Value(key any) any {
 }
 
 func (s *Session) String() string {
-	return "happyx.Session"
+	return "happy.Session"
 }
 
 func (s *Session) Get(key string) vars.Variable {
@@ -226,4 +226,52 @@ func (s *Session) API(addonName string) (API, error) {
 		return nil, fmt.Errorf("no api fo addon: %s", addonName)
 	}
 	return api, nil
+}
+
+func (s *Session) Settings() *vars.Map {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	settings := &vars.Map{}
+	for _, cnf := range s.opts.config {
+		if cnf.kind&SettingsOption != 0 {
+			// make sure to return valid settings
+			val := s.opts.Get(cnf.key).Value()
+			if cnf.validator != nil {
+				if err := cnf.validator(cnf.key, val); err != nil {
+					continue
+				}
+			}
+			settings.Store(cnf.key, val)
+		}
+	}
+	return settings
+}
+
+func (s *Session) Config() *vars.Map {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	config := &vars.Map{}
+	for _, cnf := range s.opts.config {
+		if cnf.kind&ConfigOption != 0 {
+			config.Store(cnf.key, s.opts.Get(cnf.key).Value())
+		}
+	}
+	return config
+}
+
+func (s *Session) RuntimeOpts() *vars.Map {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	opts := &vars.Map{}
+	for _, opt := range s.opts.db.All() {
+		cnf, ok := s.opts.config[opt.Name()]
+		if ok {
+			if cnf.kind&ConfigOption == 0 && cnf.kind&SettingsOption == 0 {
+				opts.Store(cnf.key, s.opts.Get(cnf.key).Value())
+			}
+		} else {
+			opts.Store(opt.Name(), opt.Value())
+		}
+	}
+	return opts
 }

@@ -68,7 +68,7 @@ func Current() Version {
 	return Version(fmt.Sprintf("%s.0.0-alpha%s%s", major, revision, dirty))
 }
 
-func ParseVersion(v string) (Version, error) {
+func Parse(v string) (Version, error) {
 	if !strings.HasPrefix(v, "v") {
 		v = "v" + v
 	}

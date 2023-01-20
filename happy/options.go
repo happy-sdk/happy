@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/mkungla/happy/pkg/address"
-	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/vars"
 	"github.com/mkungla/happy/pkg/version"
 	"golang.org/x/mod/semver"
@@ -24,12 +23,12 @@ type (
 	Options struct {
 		name   string
 		db     vars.Map
-		config map[string]OptionAttr
+		config map[string]OptionArg
 	}
 
 	// Option is used to define option and
 	// apply given key value to options.
-	OptionAttr struct {
+	OptionArg struct {
 		key       string
 		desc      string
 		value     any // default
@@ -48,49 +47,46 @@ type (
 )
 
 const (
-	optionKindOption OptionKind = iota << 1
-	optionKindReadOnly
-	// groups
-	optionKindSetting
-	optionKindConfig
-	optionKindAddon
+	defaultOption OptionKind = 1 << iota
+	ReadOnlyOption
+	SettingsOption
+	ConfigOption
 )
 
 var (
 	ErrOption           = errors.New("option error")
 	ErrOptionReadOnly   = fmt.Errorf("%w: readonly option", ErrOption)
-	ErrOptionValidation = fmt.Errorf("%w: option validation error", ErrOption)
-	ErrOptions          = errors.New("options error")
+	ErrOptionValidation = fmt.Errorf("%w: validation failed", ErrOption)
 )
 
 // Opt creates option for given key value pair
 // which can be applied to any Options set.
-func Option(key string, value any) OptionAttr {
-	return OptionAttr{
+func Option(key string, value any) OptionArg {
+	return OptionArg{
 		key:   key,
 		value: value,
-		kind:  optionKindOption,
+		kind:  defaultOption,
 	}
 }
 
-func (o OptionAttr) apply(opts *Options) error {
+func (o OptionArg) apply(opts *Options) error {
 	return opts.Set(o.key, o.value)
 }
 
 // NewOptions returns new named options with optiona validator when provided.
-func NewOptions(name string, defaults []OptionAttr) (*Options, error) {
+func NewOptions(name string, defaults []OptionArg) (*Options, error) {
 	opts := &Options{
 		name: name,
 	}
 	if defaults != nil && len(defaults) > 0 {
-		opts.config = make(map[string]OptionAttr)
+		opts.config = make(map[string]OptionArg)
 		for _, cnf := range defaults {
 			key, err := vars.ParseKey(cnf.key)
 			if err != nil {
-				return nil, errors.Join(fmt.Errorf("%w: %s invalid option key", ErrOptions, name), err)
+				return nil, errors.Join(fmt.Errorf("%w: %s invalid key", ErrOption, name), err)
 			}
 			if _, ok := opts.config[key]; ok {
-				return nil, fmt.Errorf("%w: %s duplicated option key %s", ErrOptions, name, key)
+				return nil, fmt.Errorf("%w: %s duplicated key %s", ErrOption, name, key)
 			}
 			opts.config[key] = cnf
 		}
@@ -101,7 +97,7 @@ func NewOptions(name string, defaults []OptionAttr) (*Options, error) {
 // Accepts reports whether given option key is accepted by Options.
 func (opts *Options) Accepts(key string) bool {
 	if opts.config == nil {
-		return true
+		return false
 	}
 	if _, ok := opts.config["*"]; ok {
 		return true
@@ -115,15 +111,23 @@ func (opts *Options) Name() string {
 	return opts.name
 }
 
+var emptyStringVariable, _ = vars.New("empty", "", true)
+
 func (opts *Options) Get(key string) vars.Variable {
-	return opts.db.Get(key)
+	if opts.db.Has(key) {
+		return opts.db.Get(key)
+	}
+	return emptyStringVariable
 }
 
 func (opts *Options) Load(key string) (vars.Variable, bool) {
 	return opts.db.Load(key)
 }
 
-func (opts *Options) Set(key string, value any) error {
+func (opts *Options) set(key string, value any, override bool) error {
+	if key == "*" {
+		return nil
+	}
 	if !opts.Accepts(key) {
 		return fmt.Errorf(
 			"%w: %s does not accept option %s",
@@ -134,13 +138,18 @@ func (opts *Options) Set(key string, value any) error {
 	}
 	// Check is readonly
 	if opts.db.Get(key).ReadOnly() {
-		return fmt.Errorf(
-			"%w: can not set %s for %s",
-			ErrOptionReadOnly,
-			key,
-			opts.name,
-		)
+		if !override {
+			return fmt.Errorf(
+				"%w: can not set %s for %s",
+				ErrOptionReadOnly,
+				key,
+				opts.name,
+			)
+		}
+		// remove old readonly option
+		opts.db.Delete(key)
 	}
+
 	val, err := vars.NewValue(value)
 	if err != nil {
 		return err
@@ -151,21 +160,24 @@ func (opts *Options) Set(key string, value any) error {
 		return opts.db.Store(key, val)
 	}
 
-	var cnf *OptionAttr
-	if c, ok := opts.config[key]; ok && c.validator != nil {
+	var cnf *OptionArg
+	if c, ok := opts.config[key]; ok {
 		cnf = &c
-	} else if c, ok := opts.config["*"]; ok && c.validator != nil {
+	} else if c, ok := opts.config["*"]; ok {
 		cnf = &c
 	}
-	if cnf == nil {
-		return fmt.Errorf("%w: no validator for %s", ErrOption, key)
+	if cnf.validator != nil {
+		// validate
+		if err := cnf.validator(key, val); err != nil {
+			return err
+		}
 	}
-	// fallback validator
-	if err := cnf.validator(key, val); err != nil {
-		return err
-	}
-	readonly := cnf.kind&optionKindReadOnly == optionKindReadOnly
-	return opts.db.StoreReadOnly(key, val, readonly)
+
+	return opts.db.StoreReadOnly(key, val, cnf.kind&ReadOnlyOption != 0)
+}
+
+func (opts *Options) Set(key string, value any) error {
+	return opts.set(key, value, false)
 }
 
 // Has reports whether options has given key
@@ -173,21 +185,42 @@ func (opts *Options) Has(key string) bool {
 	return opts.db.Has(key)
 }
 
-var noopOptValidator = func(key string, val vars.Value) error {
+func (opts *Options) setDefaults() error {
+	for key, cnf := range opts.config {
+		if key == "*" {
+			continue
+		}
+		if !opts.db.Has(key) {
+			if err := opts.Set(key, cnf.value); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
-func getDefaultApplicationConfig() []OptionAttr {
-	configOpts := []OptionAttr{
+// noopvalidator is needed so that valid options would not falltrough to
+// "*" case validator and fail since runtime options for "app." and "log."
+// are not allowed.
+var noopvalidator = func(key string, val vars.Value) error {
+	return nil
+}
+
+var OptionValidatorNotEmpty = func(key string, val vars.Value) error {
+	if val.Len() == 0 {
+		return fmt.Errorf("%w: %s value can not be empty", ErrOption, key)
+	}
+	return nil
+}
+
+func getDefaultApplicationConfig() []OptionArg {
+	configOpts := []OptionArg{
 		{
 			key:   "*",
 			value: "",
-			kind:  optionKindReadOnly,
+			kind:  ReadOnlyOption,
 			validator: func(key string, val vars.Value) error {
-				if strings.HasPrefix(key, "app.") {
-					return fmt.Errorf("%w: unknown application option %s", ErrOptionValidation, key)
-				}
-				if strings.HasPrefix(key, "log.") {
+				if strings.HasPrefix(key, "app.") || strings.HasPrefix(key, "log.") || strings.HasPrefix(key, "happy.") {
 					return fmt.Errorf("%w: unknown application option %s", ErrOptionValidation, key)
 				}
 				return nil
@@ -197,68 +230,78 @@ func getDefaultApplicationConfig() []OptionAttr {
 			key:       "app.name",
 			value:     "Happy Application",
 			desc:      "Name of the application",
-			kind:      optionKindReadOnly | optionKindConfig,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
 		},
 		{
-			key:       "app.description",
-			value:     "",
-			desc:      "Short description for application",
-			kind:      optionKindReadOnly | optionKindConfig,
-			validator: noopOptValidator,
-		},
-		{
-			key:       "app.copyright.by",
-			value:     "",
-			desc:      "Copyright owner",
-			kind:      optionKindReadOnly | optionKindConfig,
-			validator: noopOptValidator,
-		},
-		{
-			key:       "app.copyright.since",
-			value:     0,
-			desc:      "Copyright since",
-			kind:      optionKindReadOnly | optionKindConfig,
-			validator: noopOptValidator,
-		},
-		{
-			key:       "app.license",
-			value:     "",
-			desc:      "License",
-			kind:      optionKindReadOnly | optionKindConfig,
-			validator: noopOptValidator,
-		},
-		{
-			key:   "app.throttle.ticks",
-			value: time.Duration(time.Millisecond * 100),
-			desc:  "Interfal target for system and service ticks",
-			kind:  optionKindReadOnly | optionKindConfig,
-			validator: func(key string, val vars.Value) error {
-				if v, _ := val.Int64(); v < 1 {
-					return fmt.Errorf(
-						"%w: invalid throttle value (%d), must be greater that 1",
-						ErrOptionValidation, v)
-				}
-				return nil
-			},
-		},
-		{
-			key: "app.host.addr",
+			key: "app.slug",
 			value: func() string {
 				addr, err := address.Current()
 				if err != nil {
 					panic(err)
 				}
-				return addr.String()
+				return addr.Instance
 			}(),
-			desc: "Application happy host address",
-			kind: optionKindReadOnly | optionKindConfig,
+			desc:      "Slug of the application",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "app.description",
+			value:     "",
+			desc:      "Short description for application",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "app.copyright.by",
+			value:     "",
+			desc:      "Copyright owner",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "app.copyright.since",
+			value:     0,
+			desc:      "Copyright since",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "app.cron.on.service.start",
+			value:     false,
+			desc:      "Execute Cronjobs first time when service starts",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "app.fs.enabled",
+			value:     false,
+			desc:      "enable and load filesystem paths for application",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "app.license",
+			value:     "",
+			desc:      "License",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:   "app.throttle.ticks",
+			value: time.Duration(time.Millisecond * 100),
+			desc:  "Interfal target for system and service ticks",
+			kind:  ReadOnlyOption | SettingsOption,
 			validator: func(key string, val vars.Value) error {
-				_, err := address.Parse(val.String())
+				v, err := val.Int64()
 				if err != nil {
+					return err
+				}
+				if v < 1 {
 					return fmt.Errorf(
-						"%w: invalid host address (%q)",
-						ErrOptionValidation, val.String())
+						"%w: invalid throttle value %s(%d - %v), must be greater that 1",
+						ErrOptionValidation, val.Kind(), v, val.Any())
 				}
 				return nil
 			},
@@ -267,7 +310,7 @@ func getDefaultApplicationConfig() []OptionAttr {
 			key:   "app.version",
 			value: version.Current(),
 			desc:  "Application version",
-			kind:  optionKindReadOnly | optionKindConfig,
+			kind:  ReadOnlyOption | ConfigOption,
 			validator: func(key string, val vars.Value) error {
 				if !semver.IsValid(val.String()) {
 					return fmt.Errorf("%w %q, version must be valid semantic version", ErrInvalidVersion, val)
@@ -279,7 +322,7 @@ func getDefaultApplicationConfig() []OptionAttr {
 			key:   "app.settings.persistent",
 			value: false,
 			desc:  "persist settings across restarts",
-			kind:  optionKindReadOnly | optionKindConfig,
+			kind:  ReadOnlyOption | ConfigOption,
 			validator: func(key string, val vars.Value) error {
 				if val.Kind() != vars.KindBool {
 					return fmt.Errorf("%w: %s must be boolean got %s(%s)", ErrOptionValidation, key, val.Kind(), val.String())
@@ -289,65 +332,100 @@ func getDefaultApplicationConfig() []OptionAttr {
 		},
 		{
 			key:       "log.level",
-			value:     hlog.LevelInfo,
+			value:     LogLevelTask,
 			desc:      "Log level for applicaton",
-			kind:      optionKindReadOnly | optionKindSetting,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | SettingsOption,
+			validator: noopvalidator,
 		},
 		{
 			key:       "log.source",
 			value:     false,
 			desc:      "adds source = file:line attribute to the output indicating the source code position of the log statement.",
-			kind:      optionKindReadOnly | optionKindSetting,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
 		},
 		{
 			key:       "log.colors",
 			value:     true,
 			desc:      "enable colored log output",
-			kind:      optionKindReadOnly | optionKindSetting,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | SettingsOption,
+			validator: noopvalidator,
 		},
 		{
 			key:       "log.stdlog",
 			value:     false,
 			desc:      "set configured logger as slog.Default",
-			kind:      optionKindReadOnly | optionKindConfig,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
 		},
 		{
 			key:       "log.secrets",
 			value:     "",
 			desc:      "comma separated list of attr key to mask value with ****",
-			kind:      optionKindReadOnly | optionKindConfig,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key: "happy.host.addr",
+			value: func() string {
+				addr, err := address.Current()
+				if err != nil {
+					panic(err)
+				}
+				return addr.String()
+			}(),
+			desc: "Application happy host address",
+			kind: ReadOnlyOption | ConfigOption,
+			validator: func(key string, val vars.Value) error {
+				_, err := address.Parse(val.String())
+				if err != nil {
+					return fmt.Errorf(
+						"%w: invalid host address (%q)",
+						ErrOptionValidation, val.String())
+				}
+				return nil
+			},
 		},
 	}
 	return configOpts
 }
 
-func getDefaultCommandOpts() []OptionAttr {
-	opts := []OptionAttr{
+func getDefaultCommandOpts() []OptionArg {
+	opts := []OptionArg{
 		{
 			key:       "description",
 			value:     "",
 			desc:      "Long escription for command",
-			kind:      optionKindReadOnly,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
 		},
 		{
 			key:       "usage",
 			value:     "",
 			desc:      "Usage description for command",
-			kind:      optionKindReadOnly,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
 		},
 		{
 			key:       "category",
 			value:     "",
 			desc:      "Command category",
-			kind:      optionKindReadOnly,
-			validator: noopOptValidator,
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "allowed.on.firstuse",
+			value:     true,
+			desc:      "Is command allowed to be used when application is used first time",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "skip.addons",
+			value:     false,
+			desc:      "Skip registering addons for this command",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
 		},
 	}
 	return opts

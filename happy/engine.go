@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -128,14 +129,8 @@ func (e *Engine) handleEvent(sess *Session, ev Event) {
 
 	if len(skey) == 1 || !rev {
 		sess.Log().NotImplemented("event not registered, ignoring", slog.String("scope", ev.Scope()), slog.String("key", ev.Key()))
-		e.mu.RLock()
-		for _, ev := range e.events {
-			sess.Log().SystemDebug("available event", slog.String("ev", ev.Scope()+"."+ev.Key()))
-		}
-		e.mu.RUnlock()
 		return
 	}
-	sess.Log().SystemDebug("event", slog.String("scope", ev.Scope()), slog.String("key", ev.Key()))
 	switch ev.Scope() {
 	case "services":
 		switch ev.Key() {
@@ -156,6 +151,7 @@ func (e *Engine) handleEvent(sess *Session, ev Event) {
 	for _, svcc := range registry {
 		go svcc.handleEvent(sess, ev)
 	}
+	sess.Log().SystemDebug("event", slog.String("scope", ev.Scope()), slog.String("key", ev.Key()))
 }
 
 func (e *Engine) loopStart(sess *Session, init *sync.WaitGroup) {
@@ -264,7 +260,7 @@ func (e *Engine) serviceRegister(sess *Session, svc *Service) error {
 		return fmt.Errorf("%w: can not register services engine is already running - %s", ErrEngine, svc.name)
 	}
 
-	hostaddr, err := address.Parse(sess.Get("app.host.addr").String())
+	hostaddr, err := address.Parse(sess.Get("happy.host.addr").String())
 	if err != nil {
 		return errors.Join(ErrEngine, err)
 	}
@@ -301,7 +297,14 @@ func (e *Engine) servicesInit(sess *Session, init *sync.WaitGroup) {
 				sess.Log().Error("failed to initialize service", err, slog.String("service", c.info.Addr().String()))
 				return
 			}
-
+			// register events what service listens for
+			for ev, _ := range c.svc.listeners {
+				scope, key, _ := strings.Cut(ev, ".")
+				// we can ignore error because this error is handled
+				// when emitter registers this event. Listening
+				// for unregistered event is not an error.
+				_ = e.registerEvent(registerEvent(scope, key, "has listener", nil))
+			}
 		}(svcaddrstr, svcc)
 	}
 	sess.Log().SystemDebug("initialize services ...")

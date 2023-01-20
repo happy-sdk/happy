@@ -17,6 +17,35 @@ import (
 	"github.com/mkungla/happy/pkg/varflag"
 )
 
+type help struct {
+	padding uint8
+	colored bool
+}
+
+func (a *Application) cliCmdHelp(cmd *Command) {
+	help := &help{
+		padding: 2,
+		colored: a.rootCmd.flag("no-color").Var().Bool(),
+	}
+	help.banner(a)
+}
+
+func (h *help) banner(a *Application) {
+	h.printColoredln(fmt.Sprintf("  %s", a.session.Get("app.name")))
+}
+
+func (h *help) println(line string) {
+	fmt.Println(line)
+}
+func (h *help) printColoredln(line string) {
+	if h.colored {
+		h.println(line)
+		return
+	}
+	fmt.Println(line)
+}
+
+// // DEPRECATED
 type view struct {
 	banner cliTmplParser
 	Info   struct {
@@ -30,6 +59,7 @@ type view struct {
 }
 
 func (a *Application) clihelp() error {
+	a.session.Log().Deprecated("clihelp is deprecated")
 	view := &view{}
 	view.Info.Name = a.session.Get("app.name").String()
 	view.Info.Version = a.session.Get("app.version").String()
@@ -215,6 +245,8 @@ type command struct {
 }
 
 func (h *helpCommand) print(sess *Session, cmd *Command) error {
+	sess.Log().Deprecated("helpCommand.print is deprecated")
+
 	h.Command = &command{
 		Name:        cmd.name,
 		Usage:       cmd.Usage(),

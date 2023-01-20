@@ -87,7 +87,7 @@ func AskForInput(q string) string {
 	if _, err := fmt.Scanln(&response); err != nil {
 		return ""
 	}
-	return response
+	return strings.TrimSpace(response)
 }
 
 func runCommand(sess *happy.Session, cmd *exec.Cmd) error {

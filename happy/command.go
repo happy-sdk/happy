@@ -8,16 +8,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/varflag"
 	"github.com/mkungla/happy/pkg/vars"
 )
 
 type Command struct {
-	name        string
-	usage       string
-	desc        string
-	category    string
+	name     string
+	usage    string
+	desc     string
+	category string
+
 	flags       varflag.Flags
 	parent      *Command
 	subCommands map[string]*Command
@@ -29,12 +29,15 @@ type Command struct {
 	afterAlwaysAction  Action
 
 	isWrapperCommand bool
-	errs             []error
+	allowOnFirstUse  bool
+	skipAddons       bool
+
+	errs []error
 
 	parents []string
 }
 
-func NewCommand(name string, options ...OptionAttr) *Command {
+func NewCommand(name string, options ...OptionArg) *Command {
 	c := &Command{}
 
 	n, err := vars.ParseKey(name)
@@ -53,10 +56,15 @@ func NewCommand(name string, options ...OptionAttr) *Command {
 			c.errs = append(c.errs, err)
 		}
 	}
+	if err := opts.setDefaults(); err != nil {
+		c.errs = append(c.errs, err)
+	}
 
 	c.usage = opts.Get("usage").String()
 	c.desc = opts.Get("description").String()
 	c.category = opts.Get("category").String()
+	c.allowOnFirstUse = opts.Get("allowed.on.firstuse").Bool()
+	c.skipAddons = opts.Get("skip.addons").Bool()
 
 	return c
 }
@@ -154,10 +162,6 @@ func (c *Command) verify() error {
 			c.isWrapperCommand = len(c.subCommands) > 0
 		}
 
-		c.doAction = func(sess *Session, args Args) error {
-			hlog.NotImplemented("should show command help")
-			return nil
-		}
 		if c.subCommands != nil {
 			goto SubCommands
 		} else {
@@ -212,7 +216,7 @@ func (c *Command) callBeforeAction(session *Session) error {
 	}
 
 	if err := c.beforeAction(session, args); err != nil {
-		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
+		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	return nil
 }
@@ -229,7 +233,7 @@ func (c *Command) callDoAction(session *Session) error {
 	}
 
 	if err := c.doAction(session, args); err != nil {
-		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
+		return fmt.Errorf("%w: %s: %w", ErrCommandAction, err, c.name)
 	}
 	return nil
 }
@@ -240,7 +244,7 @@ func (c *Command) callAfterFailureAction(session *Session, err error) error {
 	}
 
 	if err := c.afterFailureAction(session, err); err != nil {
-		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
+		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	return nil
 }
@@ -251,7 +255,7 @@ func (c *Command) callAfterSuccessAction(session *Session) error {
 	}
 
 	if err := c.afterSuccessAction(session); err != nil {
-		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
+		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	return nil
 }
@@ -262,7 +266,7 @@ func (c *Command) callAfterAlwaysAction(session *Session) error {
 	}
 
 	if err := c.afterAlwaysAction(session); err != nil {
-		return errors.Join(fmt.Errorf("%w: %s", ErrCommandAction, c.name), err)
+		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	return nil
 }

@@ -90,7 +90,7 @@ func (l *Logger) Error(msg string, err error, args ...any) {
 	}
 }
 
-func (l *Logger) Out(msg string, args ...any) {
+func (l *Logger) Println(msg string, args ...any) {
 	l.LogDepth(0, LevelOut, msg, args...)
 }
 

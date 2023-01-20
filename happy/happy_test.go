@@ -20,7 +20,7 @@ type ApplicationTestSuite struct {
 	output   []string
 }
 
-func Suite(code int, output []string, opts ...OptionAttr) *ApplicationTestSuite {
+func Suite(code int, output []string, opts ...OptionArg) *ApplicationTestSuite {
 	return &ApplicationTestSuite{
 		App:      New(opts...),
 		output:   output,

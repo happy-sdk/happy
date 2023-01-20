@@ -260,6 +260,10 @@ func parseIntFast(s string, base int, bitSize int) (i int64, err error) {
 	var un uint64
 	un, err = strconvParseUint(s, base, bitSize)
 	if err != nil && err.(*NumError).Err != ErrRange {
+		// fallback to float
+		if ufn, _, e := parseFloat(s, 64); e == nil {
+			return int64(ufn), nil
+		}
 		err.(*NumError).Func = fnParseInt
 		err.(*NumError).Num = s0
 		return 0, err

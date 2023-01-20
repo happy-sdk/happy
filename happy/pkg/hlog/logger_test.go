@@ -99,9 +99,9 @@ func TestLogHandler(t *testing.T) {
 	l.Warn("w", slog.Duration("dur", 3*time.Second))
 	check(` warn     w dur=3s`)
 
-	Out("o", slog.Duration("dur", 3*time.Second))
+	Println("o", slog.Duration("dur", 3*time.Second))
 	check(`o dur=3s`)
-	l.Out("o", slog.Duration("dur", 3*time.Second))
+	l.Println("o", slog.Duration("dur", 3*time.Second))
 	check(`o dur=3s`)
 
 	Error("bad", io.EOF, "a", 1)

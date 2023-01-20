@@ -49,13 +49,13 @@ func TestNewOptions(t *testing.T) {
 	}
 
 	// Test case for invalid key in option config
-	_, err = NewOptions("test", []OptionAttr{
+	_, err = NewOptions("test", []OptionArg{
 		Option("$$$", nil),
 	})
 	testutils.Error(t, err, "Expected error for invalid key in option config, got nil")
 
 	// Test case for duplicate key in option configs
-	_, err = NewOptions("test", []OptionAttr{
+	_, err = NewOptions("test", []OptionArg{
 		Option("key1", nil),
 		Option("key1", nil),
 	})
@@ -66,7 +66,7 @@ func TestOptionSet(t *testing.T) {
 	// Test case for key not accepted by Options struct
 	opts := Options{
 		name: "test",
-		config: map[string]OptionAttr{
+		config: map[string]OptionArg{
 			"key1": {},
 			"key2": {},
 		},
@@ -101,7 +101,7 @@ func TestOptionSet(t *testing.T) {
 	// Test case for specific validator
 	opts = Options{
 		name: "test",
-		config: map[string]OptionAttr{
+		config: map[string]OptionArg{
 			"key1": {
 				validator: func(key string, value vars.Value) error {
 					if value.String() == "invalid" {
@@ -118,7 +118,7 @@ func TestOptionSet(t *testing.T) {
 	// Test case for fallback validator
 	opts = Options{
 		name: "test",
-		config: map[string]OptionAttr{
+		config: map[string]OptionArg{
 			"*": {
 				validator: func(key string, value vars.Value) error {
 					if value.String() == "invalid" {

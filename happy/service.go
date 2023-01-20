@@ -33,7 +33,7 @@ type Service struct {
 	cronsetup func(schedule CronScheduler)
 }
 
-func NewService(name string, opts ...OptionAttr) *Service {
+func NewService(name string, opts ...OptionArg) *Service {
 	svc := &Service{
 		name: name,
 	}
@@ -112,11 +112,11 @@ func NewServiceLoader(sess *Session, svcs ...string) *ServiceLoader {
 		sess:     sess,
 		loaderCh: make(chan struct{}),
 	}
-	hostaddr, err := address.Parse(sess.Get("app.host.addr").String())
+	hostaddr, err := address.Parse(sess.Get("happy.host.addr").String())
 	if err != nil {
 		loader.addErr(err)
 		loader.addErr(fmt.Errorf(
-			"%w: loader requires valid app.host.addr",
+			"%w: loader requires valid happy.host.addr",
 			ErrService,
 		))
 	}
@@ -529,10 +529,16 @@ func (cs *Cron) Job(expr string, cb Action) {
 }
 
 func (cs *Cron) Start() error {
-	for _, id := range cs.jobIDs {
-		job := cs.lib.Entry(id)
-		if job.Job != nil {
-			go job.Job.Run()
+	if cs.sess.Get("app.cron.on.service.start").Bool() {
+		for _, id := range cs.jobIDs {
+			cs.sess.Log().SystemDebug(
+				"executing cron first time",
+				slog.Int("id", int(id)),
+			)
+			job := cs.lib.Entry(id)
+			if job.Job != nil {
+				go job.Job.Run()
+			}
 		}
 	}
 	cs.lib.Start()

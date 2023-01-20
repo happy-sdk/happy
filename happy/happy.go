@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mkungla/happy/pkg/hlog"
 	"github.com/mkungla/happy/pkg/varflag"
 	"github.com/mkungla/happy/pkg/vars"
 )
@@ -33,22 +32,7 @@ var (
 	ErrEngine           = errors.New("engine error")
 	ErrSessionDestroyed = errors.New("session destroyed")
 	ErrService          = errors.New("service error")
-)
-
-const (
-	// Levels
-	LevelSystemDebug    = hlog.LevelSystemDebug
-	LevelDebug          = hlog.LevelDebug
-	LevelInfo           = hlog.LevelInfo
-	LevelTask           = hlog.LevelTask
-	LevelOk             = hlog.LevelOk
-	LevelNotice         = hlog.LevelNotice
-	LevelWarn           = hlog.LevelWarn
-	LevelNotImplemented = hlog.LevelNotImplemented
-	LevelDeprecated     = hlog.LevelDeprecated
-	LevelIssue          = hlog.LevelIssue
-	LevelError          = hlog.LevelError
-	LevelOut            = hlog.LevelOut
+	ErrHappy            = errors.New("not so happy")
 )
 
 type Action func(sess *Session) error
@@ -63,6 +47,7 @@ type Action func(sess *Session) error
 type ActionTick func(sess *Session, ts time.Time, delta time.Duration) error
 type ActionTock func(sess *Session, delta time.Duration, tps int) error
 type ActionWithArgs func(sess *Session, args Args) error
+type ActionWithOptions func(sess *Session, opts *Options) error
 type ActionWithEvent func(sess *Session, ev Event) error
 
 type Assets interface{}
@@ -88,22 +73,6 @@ type TickerFuncs interface {
 	// OnTock is helper called right after OnTick to separate
 	// your primary operations and post prossesing logic.
 	OnTock(ActionTick)
-}
-
-type Addon interface {
-	Register(*Session) (AddonInfo, error)
-	Commands() []*Command
-	Services() []*Service
-	// Returns slice of event regsistration events
-	// created using RegisterEvent
-	Events() []Event
-	API() API
-}
-
-type AddonInfo struct {
-	Name        string
-	Description string
-	Version     string
 }
 
 type Args interface {
@@ -164,7 +133,7 @@ func NewEvent(scope, key string, payload *vars.Map, err error) Event {
 	}
 }
 
-func RegisterEvent(scope, key, desc string, example *vars.Map) Event {
+func registerEvent(scope, key, desc string, example *vars.Map) Event {
 	if example == nil && desc != "" {
 		example = new(vars.Map)
 	}

@@ -95,7 +95,7 @@ func Error(msg string, err error, args ...any) {
 	Default().LogDepth(0, LevelError, msg, args...)
 }
 
-func Out(msg string, args ...any) {
+func Println(msg string, args ...any) {
 	Default().LogDepth(0, LevelOut, msg, args...)
 }
 

@@ -108,6 +108,7 @@ func NewValue(val any) (Value, error) {
 		}
 		return vv, nil
 	}
+
 	if vv, ok := val.(Variable); ok {
 		if vv.Kind() == KindInvalid {
 			return EmptyValue, fmt.Errorf("%w: variable value %#v", ErrValueInvalid, val)
@@ -128,14 +129,215 @@ func NewValue(val any) (Value, error) {
 }
 
 func NewValueAs(val any, kind Kind) (Value, error) {
-	src, err := NewValue(val)
+	p := getParser()
+	akind, err := p.parseValue(val)
 	if err != nil {
+		p.free()
 		return EmptyValue, err
 	}
-	if src.Kind() == kind {
-		return src, nil
+	if kind == akind {
+		defer p.free()
+		return Value{
+			raw:      p.val,
+			kind:     kind,
+			str:      string(p.buf),
+			isCustom: p.isCustom,
+		}, nil
 	}
-	return ParseValueAs(src.String(), kind)
+	str := string(p.buf)
+	p.free()
+
+	if v, err := convert(val, akind, kind); err == nil {
+		return v, nil
+	}
+
+	return ParseValueAs(str, kind)
+}
+
+func convertInt64(val int64, to Kind) (Value, error) {
+	v := Value{
+		kind: to,
+	}
+	switch to {
+	case KindBool:
+		if val == 0 {
+			v.raw = false
+		} else if val == 1 {
+			v.raw = true
+		}
+	case KindInt:
+		v.raw = int(val)
+	case KindInt8:
+		v.raw = int8(val)
+	case KindInt16:
+		v.raw = int16(val)
+	case KindInt32:
+		v.raw = int32(val)
+	case KindInt64:
+		v.raw = val
+	case KindUint:
+		v.raw = uint(val)
+	case KindUint8:
+		v.raw = uint8(val)
+	case KindUint16:
+		v.raw = uint16(val)
+	case KindUint32:
+		v.raw = uint32(val)
+	case KindUint64:
+		v.raw = uint64(val)
+	case KindUintptr:
+		v.raw = uintptr(val)
+	case KindFloat32:
+		v.raw = float32(val)
+	case KindFloat64:
+		v.raw = float64(val)
+	case KindComplex64:
+		v.raw = complex64(complex(float64(val), 0))
+	case KindComplex128:
+		v.raw = complex(float64(val), 0)
+	}
+	if v.raw != nil {
+		return v, nil
+	}
+	return EmptyValue, fmt.Errorf("%w: %d to %s", ErrValueConv, val, to.String())
+}
+
+func convertUint64(val uint64, to Kind) (Value, error) {
+	v := Value{
+		kind: to,
+	}
+	switch to {
+	case KindBool:
+		if val == 0 {
+			v.raw = false
+		} else if val == 1 {
+			v.raw = true
+		}
+	case KindInt:
+		v.raw = int(val)
+	case KindInt8:
+		v.raw = int8(val)
+	case KindInt16:
+		v.raw = int16(val)
+	case KindInt32:
+		v.raw = int32(val)
+	case KindInt64:
+		v.raw = val
+	case KindUint:
+		v.raw = uint(val)
+	case KindUint8:
+		v.raw = uint8(val)
+	case KindUint16:
+		v.raw = uint16(val)
+	case KindUint32:
+		v.raw = uint32(val)
+	case KindUint64:
+		v.raw = uint64(val)
+	case KindUintptr:
+		v.raw = uintptr(val)
+	case KindFloat32:
+		v.raw = float32(val)
+	case KindFloat64:
+		v.raw = float64(val)
+	case KindComplex64:
+		v.raw = complex64(complex(float64(val), 0))
+	case KindComplex128:
+		v.raw = complex(float64(val), 0)
+	}
+	if v.raw != nil {
+		return v, nil
+	}
+	return EmptyValue, fmt.Errorf("%w: %d to %s", ErrValueConv, val, to.String())
+}
+
+func convertFloat64(val float64, to Kind) (Value, error) {
+	v := Value{
+		kind: to,
+	}
+	switch to {
+	case KindBool:
+		if val == 0 {
+			v.raw = false
+		} else if val == 1 {
+			v.raw = true
+		}
+	case KindInt:
+		v.raw = int(val)
+	case KindInt8:
+		v.raw = int8(val)
+	case KindInt16:
+		v.raw = int16(val)
+	case KindInt32:
+		v.raw = int32(val)
+	case KindInt64:
+		v.raw = val
+	case KindUint:
+		v.raw = uint(val)
+	case KindUint8:
+		v.raw = uint8(val)
+	case KindUint16:
+		v.raw = uint16(val)
+	case KindUint32:
+		v.raw = uint32(val)
+	case KindUint64:
+		v.raw = uint64(val)
+	case KindUintptr:
+		v.raw = uintptr(val)
+	case KindFloat32:
+		v.raw = float32(val)
+	case KindFloat64:
+		v.raw = float64(val)
+	case KindComplex64:
+		v.raw = complex64(complex(float64(val), 0))
+	case KindComplex128:
+		v.raw = complex(float64(val), 0)
+	}
+	if v.raw != nil {
+		return v, nil
+	}
+	return EmptyValue, fmt.Errorf("%w: %f to %s", ErrValueConv, val, to.String())
+}
+
+func convert(raw any, from, to Kind) (Value, error) {
+	p := getParser()
+	defer p.free()
+
+	if from >= KindInt && from <= KindInt64 {
+		val, ok := raw.(int64)
+		if ok {
+			if v, err := convertInt64(val, to); err == nil {
+				if _, err := p.parseValue(v); err != nil {
+					return EmptyValue, err
+				}
+				v.str = string(p.buf)
+				return v, nil
+			}
+		}
+	} else if from >= KindUint && from <= KindUintptr {
+		val, ok := raw.(uint64)
+		if ok {
+			if v, err := convertUint64(val, to); err == nil {
+				if _, err := p.parseValue(v); err != nil {
+					return EmptyValue, err
+				}
+				v.str = string(p.buf)
+				return v, nil
+			}
+		}
+	} else if from == KindFloat32 || from == KindFloat64 {
+		val, ok := raw.(float64)
+		if ok {
+			if v, err := convertFloat64(val, to); err == nil {
+				if _, err := p.parseValue(v); err != nil {
+					return EmptyValue, err
+				}
+				v.str = string(p.buf)
+				return v, nil
+			}
+		}
+	}
+
+	return EmptyValue, fmt.Errorf("%w: %v to %s", ErrValueConv, raw, to.String())
 }
 
 func ParseValueAs(val string, kind Kind) (Value, error) {
