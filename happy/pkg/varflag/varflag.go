@@ -1,9 +1,9 @@
-// Copyright 2022 The Happy Authors
+// Copyright 2022 Marko Kungla
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
 // Package varflag implements command-line flag parsing into compatible
-// with var library.
+// with package https://github.com/mkungla/happy/pkg/vars.
 //
 // Originally based of https://pkg.go.dev/github.com/mkungla/varflag/v5
 package varflag

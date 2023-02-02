@@ -1,4 +1,4 @@
-// Copyright 2022 The Happy Authors
+// Copyright 2022 Marko Kungla
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -25,20 +25,6 @@ func BenchmarkString(b *testing.B) {
 		}
 	})
 }
-
-// func BenchmarkDuration(b *testing.B) {
-// 	args := []string{"/bin/app", "--duration", "1h30s"}
-
-// 	b.Run("pkg:duration", func(b *testing.B) {
-// 		for i := 0; i < b.N; i++ {
-// 			f, _ := Duration("duration", 1*time.Second, "")
-// 			if _, err := f.Parse(args); err != nil {
-// 				b.Error(err)
-// 			}
-// 			f.Value()
-// 		}
-// 	})
-// }
 
 func BenchmarkFloat(b *testing.B) {
 	args := []string{"/bin/app", "--float", "1.001000023"}
