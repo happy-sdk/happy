@@ -110,16 +110,6 @@ func (a *Application) Main() {
 
 	if len(a.pendingOpts) > 0 {
 		for _, opt := range a.pendingOpts {
-			// apply if it is custom glopal setting
-			a.session.Log().SystemDebug("opt", slog.Any(opt.key, opt.value))
-			if _, ok := a.session.opts.config[opt.key]; ok {
-				if err := opt.apply(a.session.opts); err != nil {
-					a.session.Log().Error("failed to apply option", err)
-					a.exit(1)
-				}
-				continue
-			}
-
 			group := "option"
 			if opt.kind&ConfigOption != 0 {
 				group = "config"
@@ -490,6 +480,13 @@ func (a *Application) initialize() error {
 		a.setupNextRun = false
 		a.logger.Ok("setup complete")
 	}
+
+	// apply pending options for app settings if set
+	if err := a.applySettings(); err != nil {
+		return err
+	}
+
+	// set defaults for config and settings
 	a.session.opts.setDefaults()
 
 	if err := a.registerAddons(); err != nil {
@@ -507,6 +504,24 @@ func (a *Application) initialize() error {
 	}
 
 	return errors.Join(a.errs...)
+}
+
+func (a *Application) applySettings() error {
+	// apply options
+	var pendingOpts []OptionArg
+	for _, opt := range a.pendingOpts {
+		// apply if it is custom glopal setting
+		a.session.Log().SystemDebug("opt", slog.Any(opt.key, opt.value))
+		if _, ok := a.session.opts.config[opt.key]; ok {
+			if err := opt.apply(a.session.opts); err != nil {
+				return err
+			}
+			continue
+		}
+		pendingOpts = append(pendingOpts, opt)
+	}
+	a.pendingOpts = pendingOpts
+	return nil
 }
 
 func (a *Application) firstUse() error {
