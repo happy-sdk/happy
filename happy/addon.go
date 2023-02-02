@@ -104,9 +104,17 @@ func (addon *Addon) Setting(key string, value any, description string, validator
 }
 
 func (addon *Addon) ProvidesCommand(cmd *Command) {
+	if cmd == nil {
+		addon.errs = append(addon.errs, fmt.Errorf("%w: %s provided <nil> command", ErrAddon, addon.info.Name))
+		return
+	}
 	addon.cmds = append(addon.cmds, cmd)
 }
 
 func (addon *Addon) ProvideService(svc *Service) {
+	if svc == nil {
+		addon.errs = append(addon.errs, fmt.Errorf("%w: %s provided <nil> service", ErrAddon, addon.info.Name))
+		return
+	}
 	addon.svcs = append(addon.svcs, svc)
 }

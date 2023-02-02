@@ -33,6 +33,7 @@ var (
 	ErrSessionDestroyed = errors.New("session destroyed")
 	ErrService          = errors.New("service error")
 	ErrHappy            = errors.New("not so happy")
+	ErrAddon            = errors.New("addon error")
 )
 
 type Action func(sess *Session) error
@@ -49,6 +50,7 @@ type ActionTock func(sess *Session, delta time.Duration, tps int) error
 type ActionWithArgs func(sess *Session, args Args) error
 type ActionWithOptions func(sess *Session, opts *Options) error
 type ActionWithEvent func(sess *Session, ev Event) error
+type ActionMigrate func(ver Version, sess *Session) error
 
 type Assets interface{}
 
@@ -182,3 +184,5 @@ func GetAPI[A API](sess *Session, addonName string) (api A, err error) {
 	}
 	return api, fmt.Errorf("unable to cast %s API to given type", addonName)
 }
+
+type Version string

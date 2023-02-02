@@ -213,7 +213,12 @@ var OptionValidatorNotEmpty = func(key string, val vars.Value) error {
 	return nil
 }
 
-func getDefaultApplicationConfig() []OptionArg {
+func getDefaultApplicationConfig() ([]OptionArg, error) {
+	addr, err := address.Current()
+	if err != nil {
+		return nil, err
+	}
+
 	configOpts := []OptionArg{
 		{
 			key:   "*",
@@ -234,14 +239,8 @@ func getDefaultApplicationConfig() []OptionArg {
 			validator: noopvalidator,
 		},
 		{
-			key: "app.slug",
-			value: func() string {
-				addr, err := address.Current()
-				if err != nil {
-					panic(err)
-				}
-				return addr.Instance
-			}(),
+			key:       "app.slug",
+			value:     addr.Instance,
 			desc:      "Slug of the application",
 			kind:      ReadOnlyOption | ConfigOption,
 			validator: noopvalidator,
@@ -366,16 +365,10 @@ func getDefaultApplicationConfig() []OptionArg {
 			validator: noopvalidator,
 		},
 		{
-			key: "happy.host.addr",
-			value: func() string {
-				addr, err := address.Current()
-				if err != nil {
-					panic(err)
-				}
-				return addr.String()
-			}(),
-			desc: "Application happy host address",
-			kind: ReadOnlyOption | ConfigOption,
+			key:   "happy.host.addr",
+			value: addr.String(),
+			desc:  "Application happy host address",
+			kind:  ReadOnlyOption | ConfigOption,
 			validator: func(key string, val vars.Value) error {
 				_, err := address.Parse(val.String())
 				if err != nil {
@@ -387,7 +380,7 @@ func getDefaultApplicationConfig() []OptionArg {
 			},
 		},
 	}
-	return configOpts
+	return configOpts, nil
 }
 
 func getDefaultCommandOpts() []OptionArg {
@@ -414,7 +407,7 @@ func getDefaultCommandOpts() []OptionArg {
 			validator: noopvalidator,
 		},
 		{
-			key:       "allowed.on.firstuse",
+			key:       "allow.on.fresh.install",
 			value:     true,
 			desc:      "Is command allowed to be used when application is used first time",
 			kind:      ReadOnlyOption | ConfigOption,
@@ -423,7 +416,7 @@ func getDefaultCommandOpts() []OptionArg {
 		{
 			key:       "skip.addons",
 			value:     false,
-			desc:      "Skip registering addons for this command",
+			desc:      "Skip registering addons for this command, Addons and their provided services will not be loaded when this command is used.",
 			kind:      ReadOnlyOption | ConfigOption,
 			validator: noopvalidator,
 		},

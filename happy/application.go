@@ -19,7 +19,6 @@ import (
 	"github.com/mkungla/happy/pkg/vars"
 	"github.com/mkungla/happy/pkg/version"
 	"golang.org/x/exp/slog"
-	"golang.org/x/mod/semver"
 )
 
 type Application struct {
@@ -35,7 +34,7 @@ type Application struct {
 	tickAction ActionTick
 	tockAction ActionTock
 
-	firstUseAction Action
+	installAction Action
 
 	// pendingOpts contains options
 	// which are not yet applied.
@@ -50,14 +49,17 @@ type Application struct {
 	lvl    *slog.LevelVar
 
 	// exit handler
-	exitOs   bool
-	exitFunc []func(code int) error
-	exitCh   chan struct{}
-	errs     []error
-	firstuse bool
-	state    *persistentState
-	isDev    bool
-	profile  string
+	exitOs     bool
+	exitFunc   []func(code int) error
+	exitCh     chan struct{}
+	errs       []error
+	isDev      bool
+	profile    string
+	migrations map[string]migration
+
+	firstuse     bool
+	state        *persistentState
+	setupNextRun bool
 }
 
 // New returns new happy application instance.
@@ -132,7 +134,9 @@ func (a *Application) Main() {
 		}
 	}
 	if a.activeCmd.doAction == nil {
-		a.cliCmdHelp(a.activeCmd)
+		if err := a.clihelp(); err != nil {
+			a.logger.Error("help error", err)
+		}
 		return
 	}
 	// Start application main process
@@ -180,8 +184,37 @@ func (a *Application) OnTock(action ActionTock) {
 	a.tockAction = action
 }
 
-func (a *Application) OnFirstUse(action Action) {
-	a.firstUseAction = action
+func (a *Application) OnInstall(action Action) {
+	a.installAction = action
+}
+
+type migration struct {
+	version    version.Version
+	upAction   ActionMigrate
+	downAction ActionMigrate
+}
+
+func (a *Application) OnMigrate(ver string, up, down ActionMigrate) {
+	v, err := version.Parse(ver)
+	if err != nil {
+		a.errs = append(a.errs, fmt.Errorf("%w: migration version error: %w", ErrApplication, err))
+		return
+	}
+	if a.migrations != nil {
+		_, ok := a.migrations[v.String()]
+		if ok {
+			a.errs = append(a.errs, fmt.Errorf("%w: only one migration per evrsion allowed (%s)", ErrApplication, v.String()))
+			return
+		}
+	} else {
+		a.migrations = make(map[string]migration)
+	}
+
+	a.migrations[v.String()] = migration{
+		version:    v,
+		upAction:   up,
+		downAction: down,
+	}
 }
 
 func (a *Application) Cron(setup func(schedule CronScheduler)) {
@@ -437,19 +470,6 @@ func (a *Application) initialize() error {
 
 	// loaded persistent state
 	if a.state != nil {
-		var direction string
-		if a.state.migration == -1 {
-			direction = "up"
-		} else if a.state.migration == 1 {
-			direction = "down"
-		}
-		if a.state.migration != 0 {
-			a.logger.SystemDebug("migrate",
-				slog.String("direction", direction),
-				slog.String("from", a.state.Version.String()),
-				slog.String("to", a.session.Get("app.version").String()),
-			)
-		}
 		a.logger.SystemDebug("loaded settings from",
 			slog.String("file", a.state.cfile),
 		)
@@ -459,12 +479,16 @@ func (a *Application) initialize() error {
 		return err
 	}
 
-	// check for config options which were not used
 	a.logger.SystemDebug("initialize", slog.Bool("first.use", a.firstuse))
-	if a.firstuse {
+	if a.firstuse || a.state.SetupNextRun {
 		if err := a.firstUse(); err != nil {
+			// Set it so that installer rruns again on next run
+			// If there were user errors on setup.
+			a.setupNextRun = true
 			return err
 		}
+		a.setupNextRun = false
+		a.logger.Ok("setup complete")
 	}
 	a.session.opts.setDefaults()
 
@@ -472,23 +496,26 @@ func (a *Application) initialize() error {
 		return err
 	}
 
+	// migrate
+	if err := a.migrate(); err != nil {
+		return err
+	}
+
+	// save valid state
 	if err := a.save(); err != nil {
 		return err
 	}
+
 	return errors.Join(a.errs...)
 }
 
 func (a *Application) firstUse() error {
-	if !a.activeCmd.allowOnFirstUse {
+	if !a.activeCmd.allowOnFreshInstall {
 		return fmt.Errorf("%w: command %q is not allowed on first time application use", ErrCommand, a.activeCmd.name)
 	}
-	a.logger.NotImplemented("first use")
-	if err := a.session.opts.db.Store("app.first.use", true); err != nil {
-		return err
-	}
 
-	if a.firstUseAction != nil {
-		if err := a.firstUseAction(a.session); err != nil {
+	if a.installAction != nil {
+		if err := a.installAction(a.session); err != nil {
 			return err
 		}
 	}
@@ -496,11 +523,12 @@ func (a *Application) firstUse() error {
 }
 
 type persistentState struct {
-	Date      time.Time         `json:"date"`
-	Version   version.Version   `json:"version"`
-	Settings  []persistentValue `json:"settings"`
-	migration int
-	cfile     string
+	Date          time.Time         `json:"date"`
+	Version       version.Version   `json:"version"`
+	LastMigration version.Version   `json:"lastMigration"`
+	Settings      []persistentValue `json:"settings"`
+	SetupNextRun  bool              `json:"setupNextRun"`
+	cfile         string
 }
 
 type persistentValue struct {
@@ -535,9 +563,6 @@ func (a *Application) load() error {
 		return err
 	}
 	a.state.cfile = cfile
-
-	currver := a.session.Get("app.version").String()
-	a.state.migration = semver.Compare(a.state.Version.String(), currver)
 
 	for _, setting := range a.state.Settings {
 		// override predef options
@@ -574,7 +599,7 @@ func (a *Application) save() error {
 	if a.activeCmd == nil {
 		return nil
 	}
-	if !a.activeCmd.allowOnFirstUse {
+	if !a.activeCmd.allowOnFreshInstall {
 		a.logger.SystemDebug("skip saving")
 		return nil
 	}
@@ -598,8 +623,9 @@ func (a *Application) save() error {
 		return err
 	}
 	ps := &persistentState{
-		Date:    time.Now().UTC(),
-		Version: ver,
+		Date:         time.Now().UTC(),
+		Version:      ver,
+		SetupNextRun: a.setupNextRun,
 	}
 	settings := a.session.Settings()
 	settings.Range(func(v vars.Variable) bool {
@@ -710,7 +736,11 @@ func (a *Application) printVersion() {
 
 func (a *Application) configureApplication(opts []OptionArg) (err error) {
 	a.session = &Session{}
-	a.session.opts, err = NewOptions("config", getDefaultApplicationConfig())
+	defAppConf, conferr := getDefaultApplicationConfig()
+	a.session.opts, err = NewOptions("config", defAppConf)
+	if conferr != nil {
+		return conferr
+	}
 	if err != nil {
 		return err
 	}
@@ -912,6 +942,9 @@ func (a *Application) registerAddons() error {
 	var provided bool
 
 	for _, addon := range a.addons {
+		if len(addon.errs) > 0 {
+			return errors.Join(addon.errs...)
+		}
 		opts, err := NewOptions(addon.info.Name, addon.acceptsOpts)
 		if err != nil {
 			return err
@@ -1032,5 +1065,23 @@ func (a *Application) registerInternalEvents() error {
 		}
 	}
 	a.logger.SystemDebug("registered system events")
+	return nil
+}
+
+func (a *Application) migrate() error {
+	if a.migrations == nil {
+		return nil
+	}
+	if !a.session.Get("app.fs.enabled").Bool() {
+		return fmt.Errorf("%w: app.fs.enabled must be enabled to use migrations", ErrApplication)
+	}
+	// check has any migrations executed earlier
+	a.logger.Debug("preparing migrations...")
+	if a.state.LastMigration == "" {
+		a.logger.SystemDebug("no previous migrations applied")
+	}
+
+	// currver := a.session.Get("app.version").String()
+	// a.state.migration = semver.Compare(a.state.Version.String(), currver)
 	return nil
 }

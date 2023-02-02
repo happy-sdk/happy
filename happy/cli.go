@@ -22,16 +22,8 @@ type help struct {
 	colored bool
 }
 
-func (a *Application) cliCmdHelp(cmd *Command) {
-	help := &help{
-		padding: 2,
-		colored: a.rootCmd.flag("no-color").Var().Bool(),
-	}
-	help.banner(a)
-}
-
 func (h *help) banner(a *Application) {
-	h.printColoredln(fmt.Sprintf("  %s", a.session.Get("app.name")))
+	h.printColoredln(fmt.Sprintf("HELP\n  %s", a.session.Get("app.name")))
 }
 
 func (h *help) println(line string) {
@@ -251,7 +243,7 @@ func (h *helpCommand) print(sess *Session, cmd *Command) error {
 		Name:        cmd.name,
 		Usage:       cmd.Usage(),
 		Flags:       cmd.flags,
-		Description: cmd.desc,
+		Description: cmd.Description(),
 	}
 	h.setTemplate(helpCommandTmpl)
 	usage := []string{""}
@@ -312,10 +304,14 @@ var (
  {{funcFlagName $flag.Flag $flag.UsageAliases }} {{ $flag.Usage }}{{ end }}{{ end }}{{ end }}
 `
 
-	helpCommandTmpl = ` COMMAND: {{.Command.Name }}
-  {{ if gt (len .Command.Usage) 0 }}{{funcTextBold .Command.Usage}}
+	helpCommandTmpl = `  COMMAND: {{.Command.Name }}
+  {{ if gt (len .Command.Usage) 0 }}
+  {{funcTextBold .Command.Usage}}
   {{ end }}
- USAGE:
+  {{ if gt (len .Command.Description) 0 }}
+  {{.Command.Description}}
+  {{ end }}
+  USAGE:
   {{ funcTextBold .Usage }}
 {{ if .Command.SubCommands }}
  {{ print "Subcommands" | funcCmdCategory }}
@@ -324,7 +320,5 @@ var (
 {{ end }}
 {{ if gt .Command.Flags.Len 0 }} Accepts following flags:
 {{ range $flag := .Flags }}{{ if not .Hidden }}
- {{funcFlagName $flag.Flag $flag.UsageAliases }} {{ $flag.Usage }}{{ end }}{{ end }}{{ end }}
-{{ if gt (len .Command.Description) 0 }}
-{{.Command.Description}}{{ end }}`
+ {{funcFlagName $flag.Flag $flag.UsageAliases }} {{ $flag.Usage }}{{ end }}{{ end }}{{ end }}`
 )

@@ -118,8 +118,12 @@ func FromModule(host, modulepath string) (*Address, error) {
 func Current() (*Address, error) {
 	var name string
 	if info, available := debug.ReadBuildInfo(); available {
+
 		if info.Path == "command-line-arguments" {
-			name = info.Deps[0].Path
+			return nil, errors.Join(
+				fmt.Errorf("%w: unable to rad module info", ErrAddr),
+				fmt.Errorf("%w: possible reason go run main.go vs go run .", ErrAddr),
+			)
 		} else {
 			name = info.Path
 		}
@@ -134,7 +138,6 @@ func Current() (*Address, error) {
 			name = strings.Join(ps[0:pl-1], ".")
 		}
 	}
-
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, err

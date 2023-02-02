@@ -282,6 +282,7 @@ func (s *handleState) appendAttr(lvl Level, a slog.Attr) {
 	if a.Key == "" {
 		return
 	}
+
 	v := a.Value.Resolve()
 	if rep := s.h.opts.ReplaceAttr; rep != nil && v.Kind() != slog.GroupKind {
 		var gs []string
@@ -316,6 +317,7 @@ func (s *handleState) appendKey(lvl Level, key string) {
 	}
 
 	s.buf.WriteString(s.sep)
+
 	if s.prefix != nil {
 		// TODO: optimize by avoiding allocation.
 		s.appendString(string(*s.prefix) + key)
@@ -387,6 +389,7 @@ func (s *handleState) appendNonBuiltIns(r slog.Record) {
 		s.buf.Write(s.h.preformattedAttrs)
 		s.sep = s.h.attrSep()
 	}
+
 	// Attrs in Record -- unlike the built-in ones, they are in groups started
 	// from WithGroup.
 	s.prefix = buffer.New()

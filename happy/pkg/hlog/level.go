@@ -155,7 +155,7 @@ func (l Level) color() (start []byte) {
 		fg = FgGreen
 
 	case LevelNotice:
-		fg = FgBlack
+		fg = FgCyan
 	case LevelWarn:
 		fg = FgYellow
 	case LevelNotImplemented:

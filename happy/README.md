@@ -1,3 +1,11 @@
+![Happy Logo](assets/images/happy.svg)
+
+# Howijd Prototyping Framework and SDK
+
+Package happy is a powerful tool for developers looking to bring their ideas to life through rapid prototyping. With its comprehensive set of resources and modular design, it's easy to create working prototypes or MVPs with minimal technical knowledge or infrastructure planning. Plus, its flexible design allows it to seamlessly integrate into projects with components written in different programming languages. So why wait? Let Happy help you achieve your goals and bring a smile to your face along the way.
+
+:warning: *Happy is very early in development phase and is not intended for production use.*  
+
 ## examples
 
 **hello**
@@ -39,3 +47,10 @@ go run ./examples/kitchensink/ hello -n me -r 10
 # help for hello command
 go run ./examples/kitchensink/ hello -h
 ```
+
+## Credits
+
+[![GitHub contributors](https://img.shields.io/github/contributors/mkungla/happy?style=flat-square)](https://github.com/mkungla/happy/graphs/contributors)
+
+<sub>**Happy banner design.**</sub>  
+<sup>Happy banner was designed by Egon Elbre <a href="https://egonelbre.com/" target="_blank">egonelbre.com</a></sup>

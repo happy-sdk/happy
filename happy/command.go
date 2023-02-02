@@ -7,12 +7,15 @@ package happy
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/mkungla/happy/pkg/varflag"
 	"github.com/mkungla/happy/pkg/vars"
+	"golang.org/x/exp/slog"
 )
 
 type Command struct {
+	mu       sync.Mutex
 	name     string
 	usage    string
 	desc     string
@@ -28,9 +31,9 @@ type Command struct {
 	afterFailureAction func(s *Session, err error) error
 	afterAlwaysAction  Action
 
-	isWrapperCommand bool
-	allowOnFirstUse  bool
-	skipAddons       bool
+	isWrapperCommand    bool
+	allowOnFreshInstall bool
+	skipAddons          bool
 
 	errs []error
 
@@ -63,25 +66,54 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	c.usage = opts.Get("usage").String()
 	c.desc = opts.Get("description").String()
 	c.category = opts.Get("category").String()
-	c.allowOnFirstUse = opts.Get("allowed.on.firstuse").Bool()
+	c.allowOnFreshInstall = opts.Get("allow.on.fresh.install").Bool()
 	c.skipAddons = opts.Get("skip.addons").Bool()
 
 	return c
 }
 
 func (c *Command) Name() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.name
 }
 
 func (c *Command) Err() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return errors.Join(c.errs...)
 }
 
 func (c *Command) Usage() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.usage
 }
 
+func (c *Command) Description() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.desc
+}
+
+func (c *Command) tryLock(method string) bool {
+	if !c.mu.TryLock() {
+		slog.Warn(
+			"wrong command usage, should not be called when application is running",
+			slog.String("command", c.name),
+			slog.String("method", method),
+		)
+		return false
+	}
+	return true
+}
+
 func (c *Command) AddFlag(f varflag.Flag) {
+	if !c.tryLock("AddFlag") {
+		return
+	}
+	defer c.mu.Unlock()
+
 	err := c.flags.Add(f)
 	if err != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: %s", ErrCommandFlags, err.Error()))
@@ -89,6 +121,10 @@ func (c *Command) AddFlag(f varflag.Flag) {
 }
 
 func (c *Command) Before(action ActionWithArgs) {
+	if !c.tryLock("Before") {
+		return
+	}
+	defer c.mu.Unlock()
 	if c.beforeAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override Before action for %s", ErrCommand, c.name))
 		return
@@ -97,6 +133,10 @@ func (c *Command) Before(action ActionWithArgs) {
 }
 
 func (c *Command) Do(action ActionWithArgs) {
+	if !c.tryLock("Do") {
+		return
+	}
+	defer c.mu.Unlock()
 	if c.doAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override Before action for %s", ErrCommand, c.name))
 		return
@@ -105,6 +145,10 @@ func (c *Command) Do(action ActionWithArgs) {
 }
 
 func (c *Command) AfterSuccess(action func(s *Session) error) {
+	if !c.tryLock("AfterSuccess") {
+		return
+	}
+	defer c.mu.Unlock()
 	if c.afterSuccessAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override AfterSuccess action for %s", ErrCommand, c.name))
 		return
@@ -113,6 +157,10 @@ func (c *Command) AfterSuccess(action func(s *Session) error) {
 }
 
 func (c *Command) AfterFailure(action func(s *Session, err error) error) {
+	if !c.tryLock("AfterFailure") {
+		return
+	}
+	defer c.mu.Unlock()
 	if c.afterFailureAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override AfterFailure action for %s", ErrCommand, c.name))
 		return
@@ -121,6 +169,10 @@ func (c *Command) AfterFailure(action func(s *Session, err error) error) {
 }
 
 func (c *Command) AfterAlways(action func(s *Session) error) {
+	if !c.tryLock("AfterAlways") {
+		return
+	}
+	defer c.mu.Unlock()
 	if c.afterAlwaysAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override AfterAlways action for %s", ErrCommand, c.name))
 		return
@@ -129,6 +181,10 @@ func (c *Command) AfterAlways(action func(s *Session) error) {
 }
 
 func (c *Command) AddSubCommand(cmd *Command) {
+	if !c.tryLock("AddSubCommand") {
+		return
+	}
+	defer c.mu.Unlock()
 	if c.subCommands == nil {
 		c.subCommands = make(map[string]*Command)
 	}
@@ -233,7 +289,7 @@ func (c *Command) callDoAction(session *Session) error {
 	}
 
 	if err := c.doAction(session, args); err != nil {
-		return fmt.Errorf("%w: %s: %w", ErrCommandAction, err, c.name)
+		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	return nil
 }

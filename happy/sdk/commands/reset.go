@@ -14,9 +14,9 @@ import (
 func Reset() *happy.Command {
 	cmd := happy.NewCommand(
 		"reset",
-		happy.Option("description", "reset application information, warning it would remove all settings and user data"),
+		happy.Option("usage", "reset application information, warning it would remove all settings and user data"),
 		happy.Option("category", "GENERAL"),
-		happy.Option("allowed.on.firstuse", false),
+		happy.Option("allow.on.fresh.install", false),
 		happy.Option("skip.addons", true),
 	)
 
@@ -40,6 +40,7 @@ func Reset() *happy.Command {
 		if err := os.RemoveAll(config); err != nil {
 			return err
 		}
+		sess.Log().Ok("application reset")
 		return nil
 	})
 	return cmd
