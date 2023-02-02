@@ -111,7 +111,7 @@ func (addon *Addon) ProvidesCommand(cmd *Command) {
 	addon.cmds = append(addon.cmds, cmd)
 }
 
-func (addon *Addon) ProvideService(svc *Service) {
+func (addon *Addon) ProvidesService(svc *Service) {
 	if svc == nil {
 		addon.errs = append(addon.errs, fmt.Errorf("%w: %s provided <nil> service", ErrAddon, addon.info.Name))
 		return

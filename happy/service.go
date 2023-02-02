@@ -112,11 +112,11 @@ func NewServiceLoader(sess *Session, svcs ...string) *ServiceLoader {
 		sess:     sess,
 		loaderCh: make(chan struct{}),
 	}
-	hostaddr, err := address.Parse(sess.Get("happy.host.addr").String())
+	hostaddr, err := address.Parse(sess.Get("app.host.addr").String())
 	if err != nil {
 		loader.addErr(err)
 		loader.addErr(fmt.Errorf(
-			"%w: loader requires valid happy.host.addr",
+			"%w: loader requires valid app.host.addr",
 			ErrService,
 		))
 	}

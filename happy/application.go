@@ -480,7 +480,7 @@ func (a *Application) initialize() error {
 	}
 
 	a.logger.SystemDebug("initialize", slog.Bool("first.use", a.firstuse))
-	if a.firstuse || a.state.SetupNextRun {
+	if a.firstuse || (a.state != nil && a.state.SetupNextRun) {
 		if err := a.firstUse(); err != nil {
 			// Set it so that installer rruns again on next run
 			// If there were user errors on setup.

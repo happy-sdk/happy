@@ -365,7 +365,7 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 			validator: noopvalidator,
 		},
 		{
-			key:   "happy.host.addr",
+			key:   "app.host.addr",
 			value: addr.String(),
 			desc:  "Application happy host address",
 			kind:  ReadOnlyOption | ConfigOption,

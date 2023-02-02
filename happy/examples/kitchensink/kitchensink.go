@@ -39,8 +39,8 @@ func main() {
 		happy.Option("app.host.addr", "happy://localhost/kitchensink"),
 		happy.Option("app.version", "v0.1.0"),
 		happy.Option("app.settings.persistent", false),
-		happy.Option("log.level", happy.LevelWarn),
-		happy.Option("log.source", true),
+		happy.Option("log.level", happy.LogLevelWarn),
+		happy.Option("log.source", false),
 		happy.Option("log.colors", true),
 		happy.Option("log.stdlog", true),
 		happy.Option("log.secrets", "password,apiKey"),
@@ -78,7 +78,7 @@ func main() {
 	})
 
 	app.Do(func(sess *happy.Session, args happy.Args) error {
-		sess.Log().Out("Ctrl+C to exit or wait 30 seconds")
+		sess.Log().Println("Ctrl+C to exit or wait 30 seconds")
 		time.Sleep(time.Second * 2) // dummy delay to start our renderer
 		// you can start and stop services with loader as "background" inBefore is used
 		// or start it from any place by dispatching event.
@@ -141,7 +141,7 @@ func helloCommand() *happy.Command {
 	cmd.Do(func(sess *happy.Session, args happy.Args) error {
 		r := args.Flag("repeat").Var().Int()
 		for i := 0; i < r; i++ {
-			sess.Log().Out("hello", slog.String("name", args.Flag("name").String()))
+			sess.Log().Println("hello", slog.String("name", args.Flag("name").String()))
 		}
 		return nil
 	})
@@ -175,7 +175,7 @@ func simpleBackgroundService() *happy.Service {
 	// svc.OnTock(func(sess *happy.Session, delta time.Duration, tps int) error {})
 
 	svc.OnEvent("kitchen", "message", func(sess *happy.Session, ev happy.Event) error {
-		sess.Log().Out("kitchen:", ev.Payload().Get("message"))
+		sess.Log().Println("kitchen:", ev.Payload().Get("message"))
 		return nil
 	})
 
@@ -191,7 +191,7 @@ func simpleBackgroundService() *happy.Service {
 				attrs = append(attrs, entry)
 			}
 		}
-		sess.Log().Out("recived event: ", attrs...)
+		sess.Log().Println("recived event: ", attrs...)
 		return nil
 	})
 
@@ -208,38 +208,27 @@ func simpleBackgroundService() *happy.Service {
 	return svc
 }
 
-// RendererAddon is example addon providing a service
-type RendererAddon struct {
-	info happy.AddonInfo
-	last *Frame
-	api  *RendererAPI
-}
+func rendererAddon() *happy.Addon {
+	addon := happy.NewAddon(
+		"renderer",
+		happy.Option("usage", "Sample renderer addon"),
+		happy.Option("description", `
+      This addon is just show possibilities of Addon system.
+    `),
+	)
 
-func rendererAddon() *RendererAddon {
-	addon := &RendererAddon{
-		api: &RendererAPI{},
-	}
+	api := &RendererAPI{}
+
+	addon.API = api
+	addon.ProvidesService(api.renderer())
+
 	return addon
 }
 
-func (addon *RendererAddon) Register(sess *happy.Session) (happy.AddonInfo, error) {
-	addon.info.Name = "renderer"
-	addon.info.Description = "renderer addon"
-	addon.info.Version = sess.Get("app.version").String()
-	return addon.info, nil
-}
-
-// Required for happy.Addon interface
-func (addon *RendererAddon) Commands() []*happy.Command { return nil }
-func (addon *RendererAddon) Services() []*happy.Service {
-	return []*happy.Service{
-		addon.renderer(),
-	}
-}
-func (addon *RendererAddon) API() happy.API        { return addon.api }
-func (addon *RendererAddon) Events() []happy.Event { return nil }
-
+// RendererAddon is example addon providing a service
 type RendererAPI struct {
+	info  happy.AddonInfo
+	last  *Frame
 	total int
 }
 
@@ -258,20 +247,20 @@ type Frame struct {
 	Timestamp    time.Time
 }
 
-func (addon *RendererAddon) renderer() *happy.Service {
+func (api *RendererAPI) renderer() *happy.Service {
 	svc := happy.NewService(
 		"renderer",
 	)
 	// create next frame
 	svc.OnTick(func(sess *happy.Session, ts time.Time, delta time.Duration) error {
 		// create dummy frame
-		return addon.process("happy kitchen", ts, delta)
+		return api.process("happy kitchen", ts, delta)
 	})
 	// render and postprocess the frame
 	svc.OnTock(func(sess *happy.Session, delta time.Duration, tps int) error {
-		addon.last.FPS = tps
-		addon.last.ProcessDelta = delta
-		return addon.render()
+		api.last.FPS = tps
+		api.last.ProcessDelta = delta
+		return api.render()
 	})
 	svc.OnStop(func(sess *happy.Session) error {
 		fmt.Print("\n")
@@ -281,24 +270,24 @@ func (addon *RendererAddon) renderer() *happy.Service {
 	return svc
 }
 
-func (addon *RendererAddon) process(msg string, ts time.Time, delta time.Duration) error {
+func (api *RendererAPI) process(msg string, ts time.Time, delta time.Duration) error {
 	frame := &Frame{
 		Message:    msg,
 		FrameDelta: delta,
 		Timestamp:  ts,
 	}
-	addon.last = frame
+	api.last = frame
 	return nil
 }
 
-func (addon *RendererAddon) render() error {
-	frame := *addon.last
-	if addon.api.total == 0 {
+func (api *RendererAPI) render() error {
+	frame := *api.last
+	if api.total == 0 {
 		fmt.Print("\n")
 	}
 	fmt.Printf(
 		"\rframe: FPS [%-4d] - frame-delta [%-15s] - process-delta [%-15s]",
 		frame.FPS, frame.FrameDelta, frame.ProcessDelta)
-	addon.api.total++
+	api.total++
 	return nil
 }

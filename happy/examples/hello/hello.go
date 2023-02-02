@@ -26,7 +26,7 @@ func main() {
 		if err != nil {
 			return err
 		}
-		sess.Log().Out("hello", name)
+		sess.Log().Println("hello", name)
 		return nil
 	})
 	app.Main()

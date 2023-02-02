@@ -223,7 +223,7 @@ func (s *Session) API(addonName string) (API, error) {
 	defer s.mu.RUnlock()
 	api, ok := s.apis[addonName]
 	if !ok {
-		return nil, fmt.Errorf("no api fo addon: %s", addonName)
+		return nil, fmt.Errorf("no api for addon: %s", addonName)
 	}
 	return api, nil
 }

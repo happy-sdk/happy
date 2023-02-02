@@ -260,7 +260,7 @@ func (e *Engine) serviceRegister(sess *Session, svc *Service) error {
 		return fmt.Errorf("%w: can not register services engine is already running - %s", ErrEngine, svc.name)
 	}
 
-	hostaddr, err := address.Parse(sess.Get("happy.host.addr").String())
+	hostaddr, err := address.Parse(sess.Get("app.host.addr").String())
 	if err != nil {
 		return errors.Join(ErrEngine, err)
 	}
