@@ -1,7 +1,12 @@
-// Copyright 2022 The Happy Authors
+// Copyright 2022 Marko Kungla
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
+// Package address provides functions for working with "happy" addresses,
+// which are URL-like strings that define the location of a resource in the "happy" system.
+// It includes functions for parsing and resolving addresses, as well as methods for converting
+// addresses to strings and checking the format of addresses. The package also provides a
+// convenient way to get the current application's address in the "happy" system.
 package address
 
 import (
@@ -37,9 +42,17 @@ var (
 	}
 )
 
+// Address represents a happy address in the form of happy://host/instance/path.
+// The happy address is a scheme-based URL that defines the location of a module
+// or service within a service mesh.
 type Address struct {
-	url      *url.URL
-	Host     string
+	// url is the underlying URL representation of the happy address.
+	url *url.URL
+
+	// Host is the hostname component of the happy address.
+	Host string
+
+	// Instance is the instance component of the happy address, which defines the service mesh the address belongs to.
 	Instance string
 }
 
@@ -61,6 +74,8 @@ func (a *Address) String() string {
 	return a.url.String()
 }
 
+// Parse takes a string representation of an address and returns a pointer to a new Address struct.
+// If the input string is not a valid representation of an address, an error is returned.
 func (a *Address) Parse(ref string) (*Address, error) {
 	refurl, err := a.url.Parse(ref)
 	if err != nil {
@@ -73,6 +88,9 @@ func (a *Address) Parse(ref string) (*Address, error) {
 	}, nil
 }
 
+// ResolveService returns the resolved service Adddress
+// for the given network and instance address.
+// If the address cannot be resolved, it returns an error.
 func (a *Address) ResolveService(svc string) (*Address, error) {
 	if !strings.HasPrefix(svc, "happy://") {
 		svc = path.Join(a.Instance, "service", svc)
@@ -88,6 +106,10 @@ func (a *Address) ResolveService(svc string) (*Address, error) {
 	return svcaddr, nil
 }
 
+// FromModule returns a new Address created from the given go module path.
+// If the module is empty, the resulting address will be an empty address.
+// If the module is not an empty string, it must be a valid module path that
+// conforms to Go's package name syntax and will be used to create a new address.
 func FromModule(host, modulepath string) (*Address, error) {
 	// fully qualified ?
 	sl := strings.Split(modulepath, "/")
@@ -152,6 +174,8 @@ func Valid(s string) bool {
 	return re.MatchString(s)
 }
 
+// Parse takes a string address and returns a new Address instance.
+// If the address is not valid, an error is returned.
 func Parse(rawAddr string) (*Address, error) {
 	if rawAddr == "" {
 		return nil, fmt.Errorf("%w: empty address", ErrAddr)
