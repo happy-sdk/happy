@@ -37,6 +37,8 @@ type Session struct {
 	disposed bool
 }
 
+// Ready returns channel which blocks until session considers application to be ready.
+// It is ensured that Ready closes before root or command Do function is called.
 func (s *Session) Ready() <-chan struct{} {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
