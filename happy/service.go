@@ -1,4 +1,4 @@
-// Copyright 2022 The Happy Authors
+// Copyright 2022 Marko Kungla
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -33,6 +33,8 @@ type Service struct {
 	cronsetup func(schedule CronScheduler)
 }
 
+// NewService cretes new draft service which you can compose
+// before passing it to applciation or providing it from addon.
 func NewService(name string, opts ...OptionArg) *Service {
 	svc := &Service{
 		name: name,

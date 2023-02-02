@@ -1,4 +1,4 @@
-// Copyright 2022 The Happy Authors
+// Copyright 2022 Marko Kungla
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -55,17 +55,6 @@ func (s *Session) Err() error {
 	defer s.mu.RUnlock()
 	err := s.err
 	return err
-}
-
-func (s *Session) setServiceInfo(info *ServiceInfo) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.svss == nil {
-		s.svss = make(map[string]*ServiceInfo)
-	}
-
-	s.svss[info.addr.String()] = info
 }
 
 func (s *Session) ServiceInfo(svcurl string) (*ServiceInfo, error) {
@@ -190,34 +179,6 @@ func (s *Session) Dispatch(ev Event) {
 	s.mu.Unlock()
 }
 
-func (s *Session) start() error {
-	s.ready, s.readyFunc = context.WithCancel(context.Background())
-	s.sig, s.sigRelease = signal.NotifyContext(s, os.Interrupt, os.Kill)
-	s.evch = make(chan Event, 100)
-	s.Log().SystemDebug("session started")
-	return nil
-}
-
-func (s *Session) setReady() {
-	s.mu.Lock()
-	s.readyFunc()
-	s.mu.Unlock()
-	s.Log().SystemDebug("session ready")
-}
-
-func (s *Session) registerAPI(addonName string, api API) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.apis == nil {
-		s.apis = make(map[string]API)
-	}
-	if _, ok := s.apis[addonName]; ok {
-		return fmt.Errorf("addon api already registered: %s", addonName)
-	}
-	s.apis[addonName] = api
-	return nil
-}
-
 func (s *Session) API(addonName string) (API, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -274,4 +235,43 @@ func (s *Session) RuntimeOpts() *vars.Map {
 		}
 	}
 	return opts
+}
+
+func (s *Session) start() error {
+	s.ready, s.readyFunc = context.WithCancel(context.Background())
+	s.sig, s.sigRelease = signal.NotifyContext(s, os.Interrupt, os.Kill)
+	s.evch = make(chan Event, 100)
+	s.Log().SystemDebug("session started")
+	return nil
+}
+
+func (s *Session) setReady() {
+	s.mu.Lock()
+	s.readyFunc()
+	s.mu.Unlock()
+	s.Log().SystemDebug("session ready")
+}
+
+func (s *Session) registerAPI(addonName string, api API) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.apis == nil {
+		s.apis = make(map[string]API)
+	}
+	if _, ok := s.apis[addonName]; ok {
+		return fmt.Errorf("addon api already registered: %s", addonName)
+	}
+	s.apis[addonName] = api
+	return nil
+}
+
+func (s *Session) setServiceInfo(info *ServiceInfo) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.svss == nil {
+		s.svss = make(map[string]*ServiceInfo)
+	}
+
+	s.svss[info.addr.String()] = info
 }

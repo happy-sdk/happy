@@ -1,4 +1,4 @@
-// Copyright 2022 The Happy Authors
+// Copyright 2022 Marko Kungla
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -11,16 +11,6 @@ import (
 	"github.com/mkungla/happy/pkg/version"
 	"golang.org/x/mod/semver"
 )
-
-// type Addon interface {
-// 	Register(*Session) (AddonInfo, error)
-// 	Commands() []*Command
-// 	Services() []*Service
-// 	// Returns slice of event regsistration events
-// 	// created using RegisterEvent
-// 	Emits() []Event
-// 	API() API
-// }
 
 type Addon struct {
 	info AddonInfo
