@@ -220,6 +220,10 @@ func rendererAddon() *happy.Addon {
 	api := &RendererAPI{}
 
 	addon.API = api
+	addon.OnRegister(func(sess *happy.Session, opts *happy.Options) error {
+		sess.Log().Notice("renderer addon registered")
+		return nil
+	})
 	addon.ProvidesService(api.renderer())
 
 	return addon
