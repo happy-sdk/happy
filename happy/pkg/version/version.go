@@ -1,4 +1,4 @@
-// Copyright 2022 The Happy Authors
+// Copyright 2022 Marko Kungla
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"golang.org/x/mod/semver"
-	// "golang.org/x/mod/semver"
 )
 
 const PRE = "0xDEV"
@@ -24,6 +23,7 @@ func (v Version) String() string {
 	return string(v)
 }
 
+// Current tryes to read version info from go module being built.
 func Current() Version {
 	bi, ok := debug.ReadBuildInfo()
 	if !ok {
