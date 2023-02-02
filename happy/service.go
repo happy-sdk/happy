@@ -60,18 +60,22 @@ func (s *Service) OnStart(action Action) {
 	s.startAction = action
 }
 
+// OnStop is called when runtime request to stop the service is recieved.
 func (s *Service) OnStop(action Action) {
 	s.stopAction = action
 }
 
+// OnTick when set will be called every application tick when service is in running state.
 func (s *Service) OnTick(action ActionTick) {
 	s.tickAction = action
 }
 
+// OnTock is called after every tick.
 func (s *Service) OnTock(action ActionTock) {
 	s.tockAction = action
 }
 
+// OnEvent is called when a specific event is received.
 func (s *Service) OnEvent(scope, key string, cb ActionWithEvent) {
 	if s.listeners == nil {
 		s.listeners = make(map[string][]ActionWithEvent)
@@ -81,6 +85,7 @@ func (s *Service) OnEvent(scope, key string, cb ActionWithEvent) {
 	s.listeners[lid] = append(s.listeners[lid], cb)
 }
 
+// OnAnyEvent called when any event is received.
 func (s *Service) OnAnyEvent(cb ActionWithEvent) {
 	if s.listeners == nil {
 		s.listeners = make(map[string][]ActionWithEvent)
@@ -88,6 +93,7 @@ func (s *Service) OnAnyEvent(cb ActionWithEvent) {
 	s.listeners["any"] = append(s.listeners["any"], cb)
 }
 
+// Cron scheduled cron jobs to run when the service is running.
 func (s *Service) Cron(setupFunc func(schedule CronScheduler)) {
 	s.cronsetup = setupFunc
 }
