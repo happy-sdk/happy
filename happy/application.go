@@ -451,6 +451,8 @@ func (a *Application) initialize() error {
 		os.Exit(0)
 		return nil
 	}
+	// set x flag to session
+	a.session.x = a.rootCmd.flag("x").Present()
 
 	a.logger.Debug(
 		"enable logging",

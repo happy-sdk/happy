@@ -199,7 +199,7 @@ func (m *Map) ToKeyValSlice() []string {
 	m.Range(func(v Variable) bool {
 		// we can do it directly on interface value since they all are Values
 		// implementing Stringer
-		r = append(r, v.Name()+"=\""+v.String()+"\"")
+		r = append(r, v.Name()+"="+v.String())
 		return true
 	})
 	return r

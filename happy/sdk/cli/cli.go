@@ -82,7 +82,7 @@ func AskForInput(q string) string {
 func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
-	if sess.Get("flags.x").Bool() {
+	if sess.X() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
 	}
 
@@ -140,7 +140,7 @@ func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
 func execCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
-	if sess.Get("flags.x").Bool() {
+	if sess.X() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
 	}
 

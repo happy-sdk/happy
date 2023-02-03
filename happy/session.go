@@ -35,6 +35,10 @@ type Session struct {
 	apis map[string]API
 
 	disposed bool
+
+	// is flag x set to indicate that
+	// external commands should be printed.
+	x bool
 }
 
 // Ready returns channel which blocks until session considers application to be ready.
@@ -57,6 +61,14 @@ func (s *Session) Err() error {
 	defer s.mu.RUnlock()
 	err := s.err
 	return err
+}
+
+// X Returns true when session expects that commands executed would be printed.
+// To set this true run application with -x flag
+func (s *Session) X() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.x
 }
 
 func (s *Session) ServiceInfo(svcurl string) (*ServiceInfo, error) {
