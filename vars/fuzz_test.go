@@ -86,15 +86,22 @@ func parseKeyValueTest(t *testing.T, key, arg string) {
 		}
 
 		val, err := vars.NewValueAs(f64, vars.KindString)
+		testutils.NoError(t, err)
 		for _, fmt := range []byte{'e', 'E', 'f', 'g', 'G', 'x', 'X'} {
 			for prec := -1; prec < 69; prec++ {
 				val32 := val.FormatFloat(fmt, prec, 32)
 				str32 := strconv.FormatFloat(f64, fmt, prec, 32)
 				testutils.Equal(t, str32, val32)
+				if _, err := vars.NewAs(key, str32, false, vars.KindFloat32); err != nil {
+					testutils.NoError(t, err)
+				}
 
 				val64 := val.FormatFloat(fmt, prec, 64)
 				str64 := strconv.FormatFloat(f64, fmt, prec, 64)
 				testutils.Equal(t, val64, str64)
+				if _, err := vars.NewAs(key, str64, false, vars.KindFloat64); err != nil {
+					testutils.NoError(t, err)
+				}
 			}
 		}
 
@@ -120,15 +127,22 @@ func parseKeyValueTest(t *testing.T, key, arg string) {
 		}
 
 		val, err := vars.NewValueAs(f32, vars.KindString)
+		testutils.NoError(t, err)
 		for _, fmt := range []byte{'e', 'E', 'f', 'g', 'G', 'x', 'X'} {
 			for prec := -1; prec < 69; prec++ {
 				val32 := val.FormatFloat(fmt, prec, 32)
 				str32 := strconv.FormatFloat(float64(f32), fmt, prec, 32)
 				testutils.Equal(t, str32, val32)
+				if _, err := vars.NewAs(key, str32, false, vars.KindFloat32); err != nil {
+					testutils.NoError(t, err)
+				}
 
 				val64 := val.FormatFloat(fmt, prec, 64)
 				str64 := strconv.FormatFloat(float64(f32), fmt, prec, 64)
 				testutils.Equal(t, val64, str64)
+				if _, err := vars.NewAs(key, str64, false, vars.KindFloat64); err != nil {
+					testutils.NoError(t, err)
+				}
 			}
 		}
 		if !math.IsNaN(f32) {
@@ -137,6 +151,7 @@ func parseKeyValueTest(t *testing.T, key, arg string) {
 			testutils.Equal(t, f32, real(complex128(cmplx)))
 			testutils.Equal(t, 0, imag(complex128(cmplx)))
 		}
+
 	}
 
 	if _, err := strconv.ParseUint(expval, 10, 64); err == nil {
@@ -148,8 +163,11 @@ func parseKeyValueTest(t *testing.T, key, arg string) {
 
 				vvv, err := vars.NewValue(vu64)
 				testutils.NoError(t, err)
-
-				testutils.Equal(t, strconv.FormatUint(vu64, base), vvv.FormatUint(base))
+				str64 := strconv.FormatUint(vu64, base)
+				testutils.Equal(t, str64, vvv.FormatUint(base))
+				if _, err := vars.NewAs(key, str64, false, vars.KindUint64); err != nil {
+					testutils.NoError(t, err)
+				}
 			}
 		}
 	}
@@ -162,58 +180,49 @@ func parseKeyValueTest(t *testing.T, key, arg string) {
 
 				vvv, err := vars.NewValue(s)
 				testutils.NoError(t, err)
-
-				testutils.Equal(t, strconv.FormatInt(vi64, base), vvv.FormatInt(base))
+				str64 := strconv.FormatInt(vi64, base)
+				testutils.Equal(t, str64, vvv.FormatInt(base))
+				if _, err := vars.NewAs(key, str64, false, vars.KindInt64); err != nil {
+					testutils.NoError(t, err)
+				}
 			}
 		}
 	}
 
-	if _, err := vars.NewAs(key, arg, false, vars.KindBool); err != nil {
+	// if _, err := vars.NewAs(key, arg, false, vars.KindBool); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
+	// if _, err := vars.NewAs(key, arg, false, vars.KindInt); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
+	// if _, err := vars.NewAs(key, arg, false, vars.KindInt8); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
+	// if _, err := vars.NewAs(key, arg, false, vars.KindInt16); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
 
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindInt); err != nil {
+	// if _, err := vars.NewAs(key, arg, false, vars.KindUint); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
+	// if _, err := vars.NewAs(key, arg, false, vars.KindUint8); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
+	// if _, err := vars.NewAs(key, arg, false, vars.KindUint16); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
+	// if _, err := vars.NewAs(key, arg, false, vars.KindUint32); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
 
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindInt8); err != nil {
+	// if _, err := vars.NewAs(key, arg, false, vars.KindUintptr); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
 
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindInt16); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindInt32); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindInt64); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindUint); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindUint8); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindUint16); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindUint32); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindUint64); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindUintptr); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindFloat32); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindFloat64); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindComplex64); err != nil {
-
-	}
-	if _, err := vars.NewAs(key, arg, false, vars.KindComplex128); err != nil {
-
-	}
+	// if _, err := vars.NewAs(key, arg, false, vars.KindComplex64); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
+	// if _, err := vars.NewAs(key, arg, false, vars.KindComplex128); err != nil {
+	// 	testutils.NoError(t, err)
+	// }
 }
