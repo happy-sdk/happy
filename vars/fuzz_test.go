@@ -201,7 +201,6 @@ func parseKeyValueTest(t *testing.T, key, arg string) {
 	// if _, err := vars.NewAs(key, arg, false, vars.KindInt16); err != nil {
 	// 	testutils.NoError(t, err)
 	// }
-
 	// if _, err := vars.NewAs(key, arg, false, vars.KindUint); err != nil {
 	// 	testutils.NoError(t, err)
 	// }
@@ -214,11 +213,9 @@ func parseKeyValueTest(t *testing.T, key, arg string) {
 	// if _, err := vars.NewAs(key, arg, false, vars.KindUint32); err != nil {
 	// 	testutils.NoError(t, err)
 	// }
-
 	// if _, err := vars.NewAs(key, arg, false, vars.KindUintptr); err != nil {
 	// 	testutils.NoError(t, err)
 	// }
-
 	// if _, err := vars.NewAs(key, arg, false, vars.KindComplex64); err != nil {
 	// 	testutils.NoError(t, err)
 	// }

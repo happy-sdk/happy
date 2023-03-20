@@ -89,11 +89,9 @@ func parseKey(k string) (key string, err error) {
 		} else if size == 3 {
 			r := rune(k[i]&mask3)<<12 | rune(k[i+1]&maskx)<<6 | rune(k[i+2]&maskx)
 			if !unicodeIsPrint(r) {
-				bug("here")
 				return "", ErrKeyHasNonPrintChar
 			}
 		} else if c := k[i+3]; c < locb || hicb < c {
-			bug("here")
 			return "", ErrKeyOutOfRange
 		} else if size == 4 {
 			r := rune(k[i]&mask4)<<18 | rune(k[i+1]&maskx)<<12 | rune(k[i+2]&maskx)<<6 | rune(k[i+3]&maskx)

@@ -771,7 +771,7 @@ func eiselLemire32(man uint64, exp10 int, neg bool) (f float32, ok bool) {
 
 	// Exp10 Range.
 	if man == 0 {
-		bug("eiselLemire32")
+		bug("eiselLemire32-1")
 		if neg {
 			f = mathFloat32frombits(0x80000000) // Negative zero.
 		}
@@ -795,7 +795,6 @@ func eiselLemire32(man uint64, exp10 int, neg bool) (f float32, ok bool) {
 		yHi, yLo := bitsMul64(man, detailedPowersOfTen[exp10-detailedPowersOfTenMinExp10][0])
 		mergedHi, mergedLo := xHi, xLo+yHi
 		if mergedLo < xLo {
-			bug("eiselLemire32")
 			mergedHi++
 		}
 		if mergedHi&0x3FFFFFFFFF == 0x3FFFFFFFFF && mergedLo+1 == 0 && yLo+man < man {
