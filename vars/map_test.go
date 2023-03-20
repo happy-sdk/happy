@@ -244,7 +244,7 @@ func TestMapParseBool(t *testing.T) {
 func genStringTestBytes() []byte {
 	var out []byte
 	for _, data := range getStringTests() {
-		line := fmt.Sprintf(`%s="%s"`+"\n", data.Key, data.Val)
+		line := fmt.Sprintf(`%s=%s`+"\n", data.Key, data.Val)
 		out = append(out, []byte(line)...)
 	}
 	// add empty line
@@ -330,6 +330,11 @@ func TestMapParseMapFromBytes(t *testing.T) {
 	bytes2 := collection.ToBytes()
 	sort.Slice(bytes2, func(i int, j int) bool { return bytes2[i] < bytes2[j] })
 	testutils.EqualAny(t, bytes, bytes2)
+
+	fmt.Println("string(bytes)")
+	fmt.Println(string(bytes))
+	fmt.Println("string(bytes2)")
+	fmt.Println(string(bytes2))
 }
 
 func TestMapParseFromString(t *testing.T) {
@@ -355,6 +360,7 @@ func TestMapParseFromString(t *testing.T) {
 	}
 
 	collection3, err := vars.ParseMapFromSlice([]string{})
+	testutils.NoError(t, err)
 	if l := collection3.Len(); l != 0 {
 		t.Errorf("Map.Len() == %d, want \"0\"", l)
 	}
