@@ -61,6 +61,8 @@ func (k Kind) valueFromPtr(ptr unsafe.Pointer) (val any) {
 }
 
 // builtin type info
+//
+//nolint:all
 type kindinfo struct {
 	size       uintptr
 	ptrdata    uintptr // number of bytes in the kinde that can contain pointers

@@ -64,6 +64,8 @@ func (m *Map) StoreReadOnly(key string, value any, ro bool) error {
 // It returns the value, which will be empty string if the variable is not set
 // or value was empty.
 func (m *Map) Get(key string) (v Variable) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	v, ok := m.db[key]
 	if !ok {
 		return EmptyVariable
@@ -152,7 +154,8 @@ func (m *Map) LoadOrStore(key string, value any) (actual Variable, loaded bool) 
 	}
 	loaded = m.Has(k)
 	if !loaded {
-		m.Store(k, value)
+		// we can't really handle that error here
+		_ = m.Store(k, value)
 	}
 	return m.Get(k), loaded
 }

@@ -84,7 +84,9 @@ func ExampleMap() {
 	if err != nil {
 		panic("did not expect error: " + err.Error())
 	}
-	collection.Store("other4", "1.001")
+	if err := collection.Store("other4", "1.001"); err != nil {
+		panic("did not expect error: " + err.Error())
+	}
 
 	set, _ := collection.LoadWithPrefix("_key3")
 

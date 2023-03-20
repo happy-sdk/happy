@@ -34,7 +34,7 @@ func baseError(fn, str string, base int) *NumError {
 type decimalSlice struct {
 	d      []byte
 	nd, dp int
-	neg    bool
+	// neg    bool
 }
 
 // %b: -ddddddddp±ddd
@@ -1317,14 +1317,6 @@ func (in *input) setString(str string) {
 	in.bytes = nil
 }
 
-func (in *input) _byte(p int) byte {
-	bug("_byte")
-	if in.bytes == nil {
-		return in.str[p]
-	}
-	return in.bytes[p]
-}
-
 func (in *input) skipASCII(p, max int) int {
 	if in.bytes == nil {
 		for ; p < max && in.str[p] < utf8RuneSelf; p++ {
@@ -1336,18 +1328,6 @@ func (in *input) skipASCII(p, max int) int {
 	}
 	return p
 }
-
-// func (in *input) skipContinuationBytes(p int) int {
-// 	bug("skipContinuationBytes")
-// 	if in.bytes == nil {
-// 		for ; p < len(in.str) && !utf8.RuneStart(in.str[p]); p++ {
-// 		}
-// 	} else {
-// 		for ; p < len(in.bytes) && !utf8.RuneStart(in.bytes[p]); p++ {
-// 		}
-// 	}
-// 	return p
-// }
 
 func (in *input) appendSlice(buf []byte, b, e int) []byte {
 	if in.bytes != nil {
@@ -1373,14 +1353,6 @@ func (in *input) charinfoNFC(p int) (uint16, int) {
 		return nfcData.lookupString(in.str[p:])
 	}
 	return nfcData.lookup(in.bytes[p:])
-}
-
-func (in *input) charinfoNFKC(p int) (uint16, int) {
-	bug("charinfoNFKC")
-	if in.bytes == nil {
-		return nfkcData.lookupString(in.str[p:])
-	}
-	return nfkcData.lookup(in.bytes[p:])
 }
 
 func (in *input) hangul(p int) (r rune) {
@@ -1579,7 +1551,7 @@ var formTable = []*formInfo{{
 	composing:     true,
 	compatibility: false,
 	info:          lookupInfoNFC,
-	nextMain:      nextComposed,
+	// nextMain:      nextComposed,
 }}
 
 // BoundaryAfter returns true if runes cannot combine with or otherwise
@@ -1647,31 +1619,6 @@ func (ss *streamSafe) next(p Properties) ssState {
 		return ssStarter
 	}
 	return ssSuccess
-}
-
-// backwards is used for checking for overflow and segment starts
-// when traversing a string backwards. Users do not need to call first
-// for the first rune. The state of the streamSafe retains the count of
-// the non-starters loaded.
-func (ss *streamSafe) backwards(p Properties) ssState {
-	bug("backwards")
-	if *ss > maxNonStarters {
-		panic("streamSafe was not reset")
-	}
-	c := *ss + streamSafe(p.nTrailingNonStarters())
-	if c > maxNonStarters {
-		return ssOverflow
-	}
-	*ss = c
-	if p.nLeadingNonStarters() == 0 {
-		return ssStarter
-	}
-	return ssSuccess
-}
-
-func (ss streamSafe) isMax() bool {
-	bug("isMax")
-	return ss == maxNonStarters
 }
 
 // GraphemeJoiner is inserted after maxNonStarters non-starter runes.
@@ -1804,18 +1751,6 @@ func (i *Iter) Seek(offset int64, whence int) (int64, error) {
 	return abs, nil
 }
 
-// returnSlice returns a slice of the underlying input type as a byte slice.
-// If the underlying is of type []byte, it will simply return a slice.
-// If the underlying is of type string, it will copy the slice to the buffer
-// and return that.
-func (i *Iter) returnSlice(a, b int) []byte {
-	bug("returnSlice")
-	if i.rb.src.bytes == nil {
-		return i.buf[:copy(i.buf[:], i.rb.src.str[a:b])]
-	}
-	return i.rb.src.bytes[a:b]
-}
-
 // Pos returns the byte position at which the next call to Next will commence processing.
 func (i *Iter) Pos() int {
 	bug("Pos")
@@ -1880,337 +1815,9 @@ func nextASCIIString(i *Iter) []byte {
 	return i.next(i)
 }
 
-func nextHangul(i *Iter) []byte {
-	bug("nextHangul")
-	p := i.p
-	next := p + hangulUTF8Size
-	if next >= i.rb.nsrc {
-		i.setDone()
-	} else if i.rb.src.hangul(next) == 0 {
-		i.rb.ss.next(i.info)
-		i.info = i.rb.f.info(i.rb.src, i.p)
-		i.next = i.rb.f.nextMain
-		return i.next(i)
-	}
-	i.p = next
-	return i.buf[:decomposeHangul(i.buf[:], i.rb.src.hangul(p))]
-}
-
 func nextDone(i *Iter) []byte {
 	bug("nextDone")
 	return nil
-}
-
-// nextMulti is used for iterating over multi-segment decompositions
-// for decomposing normal forms.
-func nextMulti(i *Iter) []byte {
-	bug("nextMulti")
-	j := 0
-	d := i.multiSeg
-	// skip first rune
-	for j = 1; j < len(d) && !utf8RuneStart(d[j]); j++ {
-	}
-	for j < len(d) {
-		info := i.rb.f.info(input{bytes: d}, j)
-		if info.BoundaryBefore() {
-			i.multiSeg = d[j:]
-			return d[:j]
-		}
-		j += int(info.size)
-	}
-	// treat last segment as normal decomposition
-	i.next = i.rb.f.nextMain
-	return i.next(i)
-}
-
-// nextMultiNorm is used for iterating over multi-segment decompositions
-// for composing normal forms.
-func nextMultiNorm(i *Iter) []byte {
-	bug("nextMultiNorm")
-	j := 0
-	d := i.multiSeg
-	for j < len(d) {
-		info := i.rb.f.info(input{bytes: d}, j)
-		if info.BoundaryBefore() {
-			i.rb.compose()
-			seg := i.buf[:i.rb.flushCopy(i.buf[:])]
-			i.rb.insertUnsafe(input{bytes: d}, j, info)
-			i.multiSeg = d[j+int(info.size):]
-			return seg
-		}
-		i.rb.insertUnsafe(input{bytes: d}, j, info)
-		j += int(info.size)
-	}
-	i.multiSeg = nil
-	i.next = nextComposed
-	return doNormComposed(i)
-}
-
-// nextDecomposed is the implementation of Next for forms NFD and NFKD.
-func nextDecomposed(i *Iter) (next []byte) {
-	bug("nextDecomposed")
-	outp := 0
-	inCopyStart, outCopyStart := i.p, 0
-	for {
-		if sz := int(i.info.size); sz <= 1 {
-			i.rb.ss = 0
-			p := i.p
-			i.p++ // ASCII or illegal byte.  Either way, advance by 1.
-			if i.p >= i.rb.nsrc {
-				i.setDone()
-				return i.returnSlice(p, i.p)
-			} else if i.rb.src._byte(i.p) < utf8RuneSelf {
-				i.next = i.asciiF
-				return i.returnSlice(p, i.p)
-			}
-			outp++
-		} else if d := i.info.Decomposition(); d != nil {
-			// Note: If leading CCC != 0, then len(d) == 2 and last is also non-zero.
-			// Case 1: there is a leftover to copy.  In this case the decomposition
-			// must begin with a modifier and should always be appended.
-			// Case 2: no leftover. Simply return d if followed by a ccc == 0 value.
-			p := outp + len(d)
-			if outp > 0 {
-				i.rb.src.copySlice(i.buf[outCopyStart:], inCopyStart, i.p)
-				// TODO: this condition should not be possible, but we leave it
-				// in for defensive purposes.
-				if p > len(i.buf) {
-					return i.buf[:outp]
-				}
-			} else if i.info.multiSegment() {
-				// outp must be 0 as multi-segment decompositions always
-				// start a new segment.
-				if i.multiSeg == nil {
-					i.multiSeg = d
-					i.next = nextMulti
-					return nextMulti(i)
-				}
-				// We are in the last segment.  Treat as normal decomposition.
-				d = i.multiSeg
-				i.multiSeg = nil
-				p = len(d)
-			}
-			prevCC := i.info.tccc
-			if i.p += sz; i.p >= i.rb.nsrc {
-				i.setDone()
-				i.info = Properties{} // Force BoundaryBefore to succeed.
-			} else {
-				i.info = i.rb.f.info(i.rb.src, i.p)
-			}
-			switch i.rb.ss.next(i.info) {
-			case ssOverflow:
-				i.next = nextCGJDecompose
-				fallthrough
-			case ssStarter:
-				if outp > 0 {
-					copy(i.buf[outp:], d)
-					return i.buf[:p]
-				}
-				return d
-			}
-			copy(i.buf[outp:], d)
-			outp = p
-			inCopyStart, outCopyStart = i.p, outp
-			if i.info.ccc < prevCC {
-				goto doNorm
-			}
-			continue
-		} else if r := i.rb.src.hangul(i.p); r != 0 {
-			outp = decomposeHangul(i.buf[:], r)
-			i.p += hangulUTF8Size
-			inCopyStart, outCopyStart = i.p, outp
-			if i.p >= i.rb.nsrc {
-				i.setDone()
-				break
-			} else if i.rb.src.hangul(i.p) != 0 {
-				i.next = nextHangul
-				return i.buf[:outp]
-			}
-		} else {
-			p := outp + sz
-			if p > len(i.buf) {
-				break
-			}
-			outp = p
-			i.p += sz
-		}
-		if i.p >= i.rb.nsrc {
-			i.setDone()
-			break
-		}
-		prevCC := i.info.tccc
-		i.info = i.rb.f.info(i.rb.src, i.p)
-		if v := i.rb.ss.next(i.info); v == ssStarter {
-			break
-		} else if v == ssOverflow {
-			i.next = nextCGJDecompose
-			break
-		}
-		if i.info.ccc < prevCC {
-			goto doNorm
-		}
-	}
-	if outCopyStart == 0 {
-		return i.returnSlice(inCopyStart, i.p)
-	} else if inCopyStart < i.p {
-		i.rb.src.copySlice(i.buf[outCopyStart:], inCopyStart, i.p)
-	}
-	return i.buf[:outp]
-doNorm:
-	// Insert what we have decomposed so far in the reorderBuffer.
-	// As we will only reorder, there will always be enough room.
-	i.rb.src.copySlice(i.buf[outCopyStart:], inCopyStart, i.p)
-	i.rb.insertDecomposed(i.buf[0:outp])
-	return doNormDecomposed(i)
-}
-
-func doNormDecomposed(i *Iter) []byte {
-	bug("doNormDecomposed")
-	for {
-		i.rb.insertUnsafe(i.rb.src, i.p, i.info)
-		if i.p += int(i.info.size); i.p >= i.rb.nsrc {
-			i.setDone()
-			break
-		}
-		i.info = i.rb.f.info(i.rb.src, i.p)
-		if i.info.ccc == 0 {
-			break
-		}
-		if s := i.rb.ss.next(i.info); s == ssOverflow {
-			i.next = nextCGJDecompose
-			break
-		}
-	}
-	// new segment or too many combining characters: exit normalization
-	return i.buf[:i.rb.flushCopy(i.buf[:])]
-}
-
-func nextCGJDecompose(i *Iter) []byte {
-	bug("nextCGJDecompose")
-	i.rb.ss = 0
-	i.rb.insertCGJ()
-	i.next = nextDecomposed
-	i.rb.ss.first(i.info)
-	buf := doNormDecomposed(i)
-	return buf
-}
-
-// nextComposed is the implementation of Next for forms NFC and NFKC.
-func nextComposed(i *Iter) []byte {
-	bug("nextComposed")
-	outp, startp := 0, i.p
-	var prevCC uint8
-	for {
-		if !i.info.isYesC() {
-			goto doNorm
-		}
-		prevCC = i.info.tccc
-		sz := int(i.info.size)
-		if sz == 0 {
-			sz = 1 // illegal rune: copy byte-by-byte
-		}
-		p := outp + sz
-		if p > len(i.buf) {
-			break
-		}
-		outp = p
-		i.p += sz
-		if i.p >= i.rb.nsrc {
-			i.setDone()
-			break
-		} else if i.rb.src._byte(i.p) < utf8RuneSelf {
-			i.rb.ss = 0
-			i.next = i.asciiF
-			break
-		}
-		i.info = i.rb.f.info(i.rb.src, i.p)
-		if v := i.rb.ss.next(i.info); v == ssStarter {
-			break
-		} else if v == ssOverflow {
-			i.next = nextCGJCompose
-			break
-		}
-		if i.info.ccc < prevCC {
-			goto doNorm
-		}
-	}
-	return i.returnSlice(startp, i.p)
-doNorm:
-	// reset to start position
-	i.p = startp
-	i.info = i.rb.f.info(i.rb.src, i.p)
-	i.rb.ss.first(i.info)
-	if i.info.multiSegment() {
-		d := i.info.Decomposition()
-		info := i.rb.f.info(input{bytes: d}, 0)
-		i.rb.insertUnsafe(input{bytes: d}, 0, info)
-		i.multiSeg = d[int(info.size):]
-		i.next = nextMultiNorm
-		return nextMultiNorm(i)
-	}
-	i.rb.ss.first(i.info)
-	i.rb.insertUnsafe(i.rb.src, i.p, i.info)
-	return doNormComposed(i)
-}
-
-func doNormComposed(i *Iter) []byte {
-	bug("doNormComposed")
-	// First rune should already be inserted.
-	for {
-		if i.p += int(i.info.size); i.p >= i.rb.nsrc {
-			i.setDone()
-			break
-		}
-		i.info = i.rb.f.info(i.rb.src, i.p)
-		if s := i.rb.ss.next(i.info); s == ssStarter {
-			break
-		} else if s == ssOverflow {
-			i.next = nextCGJCompose
-			break
-		}
-		i.rb.insertUnsafe(i.rb.src, i.p, i.info)
-	}
-	i.rb.compose()
-	seg := i.buf[:i.rb.flushCopy(i.buf[:])]
-	return seg
-}
-
-func nextCGJCompose(i *Iter) []byte {
-	bug("nextCGJCompose")
-	i.rb.ss = 0 // instead of first
-	i.rb.insertCGJ()
-	i.next = nextComposed
-	// Note that we treat any rune with nLeadingNonStarters > 0 as a non-starter,
-	// even if they are not. This is particularly dubious for U+FF9E and UFF9A.
-	// If we ever change that, insert a check here.
-	i.rb.ss.first(i.info)
-	i.rb.insertUnsafe(i.rb.src, i.p, i.info)
-	return doNormComposed(i)
-}
-
-// flush appends the normalized segment to out and resets rb.
-func (rb *reorderBuffer) flush(out []byte) []byte {
-	bug("flush")
-	for i := 0; i < rb.nrune; i++ {
-		start := rb.rune[i].pos
-		end := start + rb.rune[i].size
-		out = append(out, rb.byte[start:end]...)
-	}
-	rb.reset()
-	return out
-}
-
-// flushCopy copies the normalized segment to buf and resets rb.
-// It returns the number of bytes written to buf.
-func (rb *reorderBuffer) flushCopy(buf []byte) int {
-	bug("flushCopy")
-	p := 0
-	for i := 0; i < rb.nrune; i++ {
-		runep := rb.rune[i]
-		p += copy(buf[p:], rb.byte[runep.pos:runep.pos+runep.size])
-	}
-	rb.reset()
-	return p
 }
 
 // insertErr is an error code returned by insert. Using this type instead
@@ -2222,23 +1829,6 @@ const (
 	iShortDst
 	iShortSrc
 )
-
-// insertUnsafe inserts the given rune in the buffer ordered by CCC.
-// It is assumed there is sufficient space to hold the runes. It is the
-// responsibility of the caller to ensure this. This can be done by checking
-// the state returned by the streamSafe type.
-func (rb *reorderBuffer) insertUnsafe(src input, i int, info Properties) {
-	bug("insertUnsafe")
-	if rune := src.hangul(i); rune != 0 {
-		rb.decomposeHangul(rune)
-	}
-	if info.hasDecomposition() {
-		// TODO: inline.
-		rb.insertDecomposed(info.Decomposition())
-	} else {
-		rb.insertSingle(src, i, info)
-	}
-}
 
 // insertDecomposed inserts an entry in to the reorderBuffer for each rune
 // in dcomp. dcomp must be a sequence of decomposed UTF-8-encoded runes.
@@ -2401,30 +1991,6 @@ func isHangul(b []byte) bool {
 	return b1 == hangulEnd1 && b[2] < hangulEnd2
 }
 
-func isHangulWithoutJamoT(b []byte) bool {
-	bug("isHangulWithoutJamoT")
-	c, _ := utf8DecodeRune(b)
-	c -= hangulBase
-	return c < jamoLVTCount && c%jamoTCount == 0
-}
-
-// decomposeHangul writes the decomposed Hangul to buf and returns the number
-// of bytes written.  len(buf) should be at least 9.
-func decomposeHangul(buf []byte, r rune) int {
-	bug("decomposeHangul")
-	const JamoUTF8Len = 3
-	r -= hangulBase
-	x := r % jamoTCount
-	r /= jamoTCount
-	utf8EncodeRune(buf, jamoLBase+r/jamoVCount)
-	utf8EncodeRune(buf[JamoUTF8Len:], jamoVBase+r%jamoVCount)
-	if x != 0 {
-		utf8EncodeRune(buf[2*JamoUTF8Len:], jamoTBase+x)
-		return 3 * JamoUTF8Len
-	}
-	return 2 * JamoUTF8Len
-}
-
 // compose recombines the runes in the buffer.
 // It should only be used to recompose a single segment, as it will not
 // handle alternations between Hangul and non-Hangul characters correctly.
@@ -2497,20 +2063,20 @@ func (p Properties) isYesD() bool {
 	return p.flags&0x4 == 0
 }
 
-func (p Properties) combinesForward() bool {
-	bug("isYesD")
-	return p.flags&0x20 != 0
-}
+// func (p Properties) combinesForward() bool {
+// 	bug("isYesD")
+// 	return p.flags&0x20 != 0
+// }
 
 func (p Properties) isInert() bool {
 	bug("isInert")
 	return p.flags&qcInfoMask == 0 && p.ccc == 0
 }
 
-func (p Properties) multiSegment() bool {
-	bug("multiSegment")
-	return p.index >= firstMulti && p.index < endMulti
-}
+// func (p Properties) multiSegment() bool {
+// 	bug("multiSegment")
+// 	return p.index >= firstMulti && p.index < endMulti
+// }
 
 // Decomposition returns the decomposition for the underlying rune
 // or nil if there is none.
@@ -2572,30 +2138,6 @@ func combine(a, b rune) rune {
 		bug("caller error") // see func comment
 	}
 	return recompMap[key]
-}
-
-func lookupInfoNFKC(b input, i int) Properties {
-	bug("lookupInfoNFKC")
-	v, sz := b.charinfoNFKC(i)
-	return compInfo(v, sz)
-}
-
-// Properties returns properties for the first rune in s.
-func (f Form) Properties(s []byte) Properties {
-	bug("Properties")
-	if f == nfc {
-		return compInfo(nfcData.lookup(s))
-	}
-	return compInfo(nfkcData.lookup(s))
-}
-
-// PropertiesString returns properties for the first rune in s.
-func (f Form) PropertiesString(s string) Properties {
-	bug("PropertiesString")
-	if f == nfc {
-		return compInfo(nfcData.lookupString(s))
-	}
-	return compInfo(nfkcData.lookupString(s))
 }
 
 const (
@@ -2694,52 +2236,6 @@ func (t *nfcTrie) lookup(s []byte) (v uint16, sz int) {
 	return 0, 1
 }
 
-// lookupUnsafe returns the trie value for the first UTF-8 encoding in s.
-// s must start with a full and valid UTF-8 encoded rune.
-func (t *nfcTrie) lookupUnsafe(s []byte) uint16 {
-	bug("lookupUnsafe")
-	c0 := s[0]
-	if c0 < 0x80 { // is ASCII
-		return nfcValues[c0]
-	}
-	i := nfcIndex[c0]
-	if c0 < 0xE0 { // 2-byte UTF-8
-		return t.lookupValue(uint32(i), s[1])
-	}
-	i = nfcIndex[uint32(i)<<6+uint32(s[1])]
-	if c0 < 0xF0 { // 3-byte UTF-8
-		return t.lookupValue(uint32(i), s[2])
-	}
-	i = nfcIndex[uint32(i)<<6+uint32(s[2])]
-	if c0 < 0xF8 { // 4-byte UTF-8
-		return t.lookupValue(uint32(i), s[3])
-	}
-	return 0
-}
-
-// lookupStringUnsafe returns the trie value for the first UTF-8 encoding in s.
-// s must start with a full and valid UTF-8 encoded rune.
-func (t *nfcTrie) lookupStringUnsafe(s string) uint16 {
-	bug("lookupStringUnsafe")
-	c0 := s[0]
-	if c0 < 0x80 { // is ASCII
-		return nfcValues[c0]
-	}
-	i := nfcIndex[c0]
-	if c0 < 0xE0 { // 2-byte UTF-8
-		return t.lookupValue(uint32(i), s[1])
-	}
-	i = nfcIndex[uint32(i)<<6+uint32(s[1])]
-	if c0 < 0xF0 { // 3-byte UTF-8
-		return t.lookupValue(uint32(i), s[2])
-	}
-	i = nfcIndex[uint32(i)<<6+uint32(s[2])]
-	if c0 < 0xF8 { // 4-byte UTF-8
-		return t.lookupValue(uint32(i), s[3])
-	}
-	return 0
-}
-
 type valueRange struct {
 	value  uint16 // header: value:stride
 	lo, hi byte   // header: lo:n
@@ -2755,185 +2251,9 @@ var nfcSparse = sparseBlocks{
 	offset: nfcSparseOffset[:],
 }
 
-var nfkcSparse = sparseBlocks{
-	values: nfkcSparseValues[:],
-	offset: nfkcSparseOffset[:],
-}
-
 var (
-	nfcData  = newNfcTrie(0)
-	nfkcData = newNfkcTrie(0)
+	nfcData = newNfcTrie(0)
 )
-
-// lookup returns the trie value for the first UTF-8 encoding in s and
-// the width in bytes of this encoding. The size will be 0 if s does not
-// hold enough bytes to complete the encoding. len(s) must be greater than 0.
-func (t *nfkcTrie) lookup(s []byte) (v uint16, sz int) {
-	bug("lookup")
-	c0 := s[0]
-	switch {
-	case c0 < 0x80: // is ASCII
-		return nfkcValues[c0], 1
-	case c0 < 0xC2:
-		return 0, 1 // Illegal UTF-8: not a starter, not ASCII.
-	case c0 < 0xE0: // 2-byte UTF-8
-		if len(s) < 2 {
-			return 0, 0
-		}
-		i := nfkcIndex[c0]
-		c1 := s[1]
-		if c1 < 0x80 || 0xC0 <= c1 {
-			return 0, 1 // Illegal UTF-8: not a continuation byte.
-		}
-		return t.lookupValue(uint32(i), c1), 2
-	case c0 < 0xF0: // 3-byte UTF-8
-		if len(s) < 3 {
-			return 0, 0
-		}
-		i := nfkcIndex[c0]
-		c1 := s[1]
-		if c1 < 0x80 || 0xC0 <= c1 {
-			return 0, 1 // Illegal UTF-8: not a continuation byte.
-		}
-		o := uint32(i)<<6 + uint32(c1)
-		i = nfkcIndex[o]
-		c2 := s[2]
-		if c2 < 0x80 || 0xC0 <= c2 {
-			return 0, 2 // Illegal UTF-8: not a continuation byte.
-		}
-		return t.lookupValue(uint32(i), c2), 3
-	case c0 < 0xF8: // 4-byte UTF-8
-		if len(s) < 4 {
-			return 0, 0
-		}
-		i := nfkcIndex[c0]
-		c1 := s[1]
-		if c1 < 0x80 || 0xC0 <= c1 {
-			return 0, 1 // Illegal UTF-8: not a continuation byte.
-		}
-		o := uint32(i)<<6 + uint32(c1)
-		i = nfkcIndex[o]
-		c2 := s[2]
-		if c2 < 0x80 || 0xC0 <= c2 {
-			return 0, 2 // Illegal UTF-8: not a continuation byte.
-		}
-		o = uint32(i)<<6 + uint32(c2)
-		i = nfkcIndex[o]
-		c3 := s[3]
-		if c3 < 0x80 || 0xC0 <= c3 {
-			return 0, 3 // Illegal UTF-8: not a continuation byte.
-		}
-		return t.lookupValue(uint32(i), c3), 4
-	}
-	// Illegal rune
-	return 0, 1
-}
-
-// lookupUnsafe returns the trie value for the first UTF-8 encoding in s.
-// s must start with a full and valid UTF-8 encoded rune.
-func (t *nfkcTrie) lookupUnsafe(s []byte) uint16 {
-	bug("lookupUnsafe")
-	c0 := s[0]
-	if c0 < 0x80 { // is ASCII
-		return nfkcValues[c0]
-	}
-	i := nfkcIndex[c0]
-	if c0 < 0xE0 { // 2-byte UTF-8
-		return t.lookupValue(uint32(i), s[1])
-	}
-	i = nfkcIndex[uint32(i)<<6+uint32(s[1])]
-	if c0 < 0xF0 { // 3-byte UTF-8
-		return t.lookupValue(uint32(i), s[2])
-	}
-	i = nfkcIndex[uint32(i)<<6+uint32(s[2])]
-	if c0 < 0xF8 { // 4-byte UTF-8
-		return t.lookupValue(uint32(i), s[3])
-	}
-	return 0
-}
-
-// lookupString returns the trie value for the first UTF-8 encoding in s and
-// the width in bytes of this encoding. The size will be 0 if s does not
-// hold enough bytes to complete the encoding. len(s) must be greater than 0.
-func (t *nfkcTrie) lookupString(s string) (v uint16, sz int) {
-	bug("lookupString")
-	c0 := s[0]
-	switch {
-	case c0 < 0x80: // is ASCII
-		return nfkcValues[c0], 1
-	case c0 < 0xC2:
-		return 0, 1 // Illegal UTF-8: not a starter, not ASCII.
-	case c0 < 0xE0: // 2-byte UTF-8
-		if len(s) < 2 {
-			return 0, 0
-		}
-		i := nfkcIndex[c0]
-		c1 := s[1]
-		if c1 < 0x80 || 0xC0 <= c1 {
-			return 0, 1 // Illegal UTF-8: not a continuation byte.
-		}
-		return t.lookupValue(uint32(i), c1), 2
-	case c0 < 0xF0: // 3-byte UTF-8
-		if len(s) < 3 {
-			return 0, 0
-		}
-		i := nfkcIndex[c0]
-		c1 := s[1]
-		if c1 < 0x80 || 0xC0 <= c1 {
-			return 0, 1 // Illegal UTF-8: not a continuation byte.
-		}
-		o := uint32(i)<<6 + uint32(c1)
-		i = nfkcIndex[o]
-		c2 := s[2]
-		if c2 < 0x80 || 0xC0 <= c2 {
-			return 0, 2 // Illegal UTF-8: not a continuation byte.
-		}
-		return t.lookupValue(uint32(i), c2), 3
-	case c0 < 0xF8: // 4-byte UTF-8
-		if len(s) < 4 {
-			return 0, 0
-		}
-		i := nfkcIndex[c0]
-		c1 := s[1]
-		if c1 < 0x80 || 0xC0 <= c1 {
-			return 0, 1 // Illegal UTF-8: not a continuation byte.
-		}
-		o := uint32(i)<<6 + uint32(c1)
-		i = nfkcIndex[o]
-		c2 := s[2]
-		if c2 < 0x80 || 0xC0 <= c2 {
-			return 0, 2 // Illegal UTF-8: not a continuation byte.
-		}
-		o = uint32(i)<<6 + uint32(c2)
-		i = nfkcIndex[o]
-		c3 := s[3]
-		if c3 < 0x80 || 0xC0 <= c3 {
-			return 0, 3 // Illegal UTF-8: not a continuation byte.
-		}
-		return t.lookupValue(uint32(i), c3), 4
-	}
-	// Illegal rune
-	return 0, 1
-}
-
-// nfkcTrie. Total size: 18768 bytes (18.33 KiB). Checksum: c51186dd2412943d.
-type nfkcTrie struct{}
-
-func newNfkcTrie(i int) *nfkcTrie {
-	return &nfkcTrie{}
-}
-
-// lookupValue determines the type of block n and looks up the value for b.
-func (t *nfkcTrie) lookupValue(n uint32, b byte) uint16 {
-	bug("lookupValue")
-	switch {
-	case n < 92:
-		return uint16(nfkcValues[n<<6+uint32(b)])
-	default:
-		n -= 92
-		return uint16(nfkcSparse.lookup(n, b))
-	}
-}
 
 // recompMap: 7528 bytes (entries only)
 var recompMap map[uint32]rune

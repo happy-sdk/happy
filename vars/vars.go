@@ -415,8 +415,7 @@ func ParseVariableAs(key, val string, ro bool, kind Kind) (Variable, error) {
 }
 
 func AsVariable[VAR VariableIface[VAL], VAL ValueIface](in Variable) VAR {
-	var v VariableIface[VAL]
-	v = GenericVariable[VAL]{
+	var v VariableIface[VAL] = GenericVariable[VAL]{
 		ro:   in.ReadOnly(),
 		name: in.Name(),
 		val:  in.Value(),
@@ -454,7 +453,9 @@ func ParseMapFromSlice(kv []string) (*Map, error) {
 		if err != nil {
 			return nil, err
 		}
-		vars.Store(vv.Name(), vv.Value())
+		if err := vars.Store(vv.Name(), vv.Value()); err != nil {
+			return nil, err
+		}
 	}
 	return vars, nil
 }

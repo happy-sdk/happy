@@ -105,8 +105,8 @@ func TestMapEnvFile(t *testing.T) {
 
 func TestMapKeyNoSpaces(t *testing.T) {
 	collection := vars.Map{}
-	collection.Store("valid", true)
-	collection.Store(" invalid", true)
+	testutils.NoError(t, collection.Store("valid", true))
+	testutils.NoError(t, collection.Store(" invalid", true))
 
 	invalid := collection.Get(" invalid")
 	valid := collection.Get("valid")
@@ -330,11 +330,6 @@ func TestMapParseMapFromBytes(t *testing.T) {
 	bytes2 := collection.ToBytes()
 	sort.Slice(bytes2, func(i int, j int) bool { return bytes2[i] < bytes2[j] })
 	testutils.EqualAny(t, bytes, bytes2)
-
-	fmt.Println("string(bytes)")
-	fmt.Println(string(bytes))
-	fmt.Println("string(bytes2)")
-	fmt.Println(string(bytes2))
 }
 
 func TestMapParseFromString(t *testing.T) {
@@ -371,7 +366,7 @@ func TestConcurrentRange(t *testing.T) {
 
 	m := vars.Map{}
 	for n := int64(1); n <= mapSize; n++ {
-		m.Store("k"+strconv.Itoa(int(n)), n)
+		testutils.NoError(t, m.Store("k"+strconv.Itoa(int(n)), n))
 	}
 
 	done := make(chan struct{})
@@ -394,7 +389,7 @@ func TestConcurrentRange(t *testing.T) {
 				for n := int64(1); n < mapSize; n++ {
 					key := "k" + strconv.Itoa(int(n))
 					if r.Int63n(mapSize) == 0 {
-						m.Store(strconv.Itoa(int(n)), n*i*g)
+						testutils.NoError(t, m.Store(key, n*i*g))
 					} else {
 						m.Load(key)
 					}
@@ -437,7 +432,7 @@ func TestMissCounting(t *testing.T) {
 	// Since the miss-counting in missLocked (via Delete)
 	// compares the miss count with len(m.dirty),
 	// add an initial entry to bias len(m.dirty) above the miss count.
-	m.Store("", struct{}{})
+	_ = m.Store("", struct{}{})
 
 	var finalized uint32
 
@@ -445,12 +440,12 @@ func TestMissCounting(t *testing.T) {
 	// indicates that keys have not been leaked.
 	for atomic.LoadUint32(&finalized) == 0 {
 		p := new(int)
-		key := strconv.Itoa(*p)
+		key := "k" + strconv.Itoa(*p)
 		runtime.SetFinalizer(p, func(*int) {
 			atomic.AddUint32(&finalized, 1)
 		})
 
-		m.Store(key, struct{}{})
+		testutils.NoError(t, m.Store(key, struct{}{}))
 		m.Delete(key)
 		runtime.GC()
 	}
@@ -459,7 +454,7 @@ func TestMissCounting(t *testing.T) {
 func TestMapRangeNestedCall(t *testing.T) {
 	var c vars.Map
 	for i, v := range [3]string{"hello", "world", "Go"} {
-		c.Store(fmt.Sprint(i), v)
+		testutils.NoError(t, c.Store(fmt.Sprintf("k%d", i), v))
 	}
 	c.Range(func(v vars.Variable) bool {
 		c.Range(func(v vars.Variable) bool {
@@ -472,7 +467,7 @@ func TestMapRangeNestedCall(t *testing.T) {
 			// We didn't keep 42 and a value into the map before, if somehow we loaded
 			// a value from such a key, meaning there must be an internal bug regarding
 			// nested range in the Map.
-			if vv, loaded := c.LoadOrStore("42", "dummy"); loaded {
+			if vv, loaded := c.LoadOrStore("k42", "dummy"); loaded {
 				t.Fatalf("Nested Range loads unexpected value, want store a new value %q = %q", vv.Name(), vv.String())
 			}
 
@@ -481,8 +476,8 @@ func TestMapRangeNestedCall(t *testing.T) {
 			// removed from the Map. Therefore any future range won't observe key 42
 			// as we checked in above.
 			val := "vars.Map"
-			c.Store("42", val)
-			if vv, loaded := c.LoadAndDelete("42"); !loaded || !reflect.DeepEqual(vv.Any(), val) {
+			testutils.NoError(t, c.Store("k42", val))
+			if vv, loaded := c.LoadAndDelete("k42"); !loaded || !reflect.DeepEqual(vv.Any(), val) {
 				t.Fatalf("Nested Range loads unexpected value, got %v, want %v", vv, val)
 			}
 			return true
@@ -513,7 +508,7 @@ func TestExpectedEmptyVars(t *testing.T) {
 	}
 
 	val1 := "test1"
-	c.Store("test", val1)
+	testutils.NoError(t, c.Store("test", val1))
 	if v, loaded := c.LoadOrDefault("test", "test2"); !loaded || v.String() != val1 {
 		t.Fatalf("LoadOrDefault: unexpected value %q", v)
 	}
@@ -521,7 +516,7 @@ func TestExpectedEmptyVars(t *testing.T) {
 	if v, loaded := c.LoadOrDefault("test2", c.Get("test")); loaded {
 		t.Fatalf("LoadOrDefault: unexpected value %q", v)
 	}
-	c.Store("test2", c.Get("test"))
+	testutils.NoError(t, c.Store("test2", c.Get("test")))
 
 	c.Delete("test2")
 
@@ -542,8 +537,8 @@ func TestExpectedEmptyVars(t *testing.T) {
 
 func TestJSON(t *testing.T) {
 	m := vars.Map{}
-	m.Store("key1", "value1")
-	m.Store("key2", "value2")
+	testutils.NoError(t, m.Store("key1", "value1"))
+	testutils.NoError(t, m.Store("key2", "value2"))
 	jsonData, err := json.Marshal(&m)
 	testutils.NoError(t, err)
 
