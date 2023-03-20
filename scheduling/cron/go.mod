@@ -1,3 +1,3 @@
-module github.com/robfig/cron/v3
+module github.com/happy-sdk/cron
 
-go 1.12
+go 1.20
