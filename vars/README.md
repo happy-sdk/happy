@@ -1,12 +1,12 @@
 # VARS
 
-![license](https://img.shields.io/github/license/mkungla/vars)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/vars/v6)](https://pkg.go.dev/github.com/mkungla/vars/v6)
-![tests](https://github.com/mkungla/vars/workflows/tests/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/vars)](https://goreportcard.com/report/github.com/mkungla/vars)
-[![Coverage Status](https://coveralls.io/repos/github/mkungla/vars/badge.svg?branch=main)](https://coveralls.io/github/mkungla/vars?branch=main)
-[![benchmarks](https://github.com/mkungla/vars/workflows/benchmarks/badge.svg)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fmkungla%2Fvars.git)
-![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/vars)
+![license](https://img.shields.io/github/license/happy-sdk/vars)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/vars)](https://pkg.go.dev/github.com/happy-sdk/vars)
+![tests](https://github.com/happy-sdk/vars/workflows/tests/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/happy-sdk/vars)](https://goreportcard.com/report/github.com/happy-sdk/vars)
+[![Coverage Status](https://coveralls.io/repos/github/happy-sdk/vars/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/vars?branch=main)
+<!-- [![benchmarks](https://github.com/mkungla/vars/workflows/benchmarks/badge.svg)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fmkungla%2Fvars.git) -->
+![GitHub last commit](https://img.shields.io/github/last-commit/happy-sdk/vars)
 
 ## About
 Package vars provides the API to parse variables from various input formats/types to common key value pair vars.Value or variable sets to vars.Collection
@@ -15,19 +15,19 @@ Package vars provides the API to parse variables from various input formats/type
 ## Install
 
 ```
-go get github.com/mkungla/vars/v6
+go get github.com/happy-sdk/vars
 ```
 
 ## Usage
 
-**working with [vars.Value](https://pkg.go.dev/github.com/mkungla/vars/v6#Value)**
+**working with [vars.Value](https://pkg.go.dev/github.com/happy-sdk/vars#Value)**
 
 ```go
 package main
 
 import (
   "fmt"
-  "github.com/mkungla/vars/v6"
+  "github.com/happy-sdk/vars"
 )
 
 func main() {
@@ -66,7 +66,7 @@ func main() {
 }
 ```
 
-**working with [vars.Collection](https://pkg.go.dev/github.com/mkungla/vars/v6#Collection)**
+**working with [vars.Collection](https://pkg.go.dev/github.com/happy-sdk/vars#Collection)**
 
 > Because of underlying `sync.Map` it is meant to be populated once and read many times
 > read thoroughly sync.Map docs to understand where .Collection may not me right for you!
@@ -76,7 +76,7 @@ package main
 
 import (
   "fmt"
-  "github.com/mkungla/vars/v6"
+  "github.com/happy-sdk/vars"
 )
 
 func main() {
@@ -121,7 +121,7 @@ package main
 import (
   "fmt"
   "io/ioutil"
-  "github.com/mkungla/vars/v6"
+  "github.com/happy-sdk/vars"
 )
 
 func main() {

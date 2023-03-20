@@ -1,53 +1,79 @@
-// Copyright 2020 Marko Kungla.
-// Source code is provider under MIT License.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package vars_test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sort"
 
-	"github.com/mkungla/vars/v6"
+	"github.com/happy-sdk/vars"
 )
 
 func ExampleValue() {
-	vnil := vars.NewValue(nil)
-	fmt.Printf("%t\n", vnil.Type() == vars.TypeUnknown)
+	vnil, _ := vars.NewValue(nil)
+	fmt.Printf("%t\n", vnil.Kind() == vars.KindInvalid)
 	fmt.Println(vnil.String())
+	fmt.Println("")
 
-	v := vars.NewValue(123456)
-	fmt.Printf("%t\n", v.Type() == vars.TypeInt)
+	v, _ := vars.New("eg", 123456, false)
+
+	fmt.Printf("%T %t\n", v.Kind(), v.Kind() == vars.KindInt)
 	fmt.Println(v.String())
-
-	fmt.Println(v.Int())
+	fmt.Println(v.Any())
 	fmt.Println(v.Empty())
+	fmt.Println(v.Len())
+
+	fmt.Println(v.Bool())
+	fmt.Println(v.Int())
+	fmt.Println(v.Int8())
+	fmt.Println(v.Int16())
+	fmt.Println(v.Int32())
 	fmt.Println(v.Int64())
+	fmt.Println(v.Uint())
+	fmt.Println(v.Uint8())
+	fmt.Println(v.Uint16())
+	fmt.Println(v.Uint32())
+	fmt.Println(v.Uint64())
 	fmt.Println(v.Float32())
 	fmt.Println(v.Float64())
-	fmt.Println(v.Len())
-	fmt.Println(v.Runes())
-	fmt.Println(v.Uint64())
+	fmt.Println(v.Complex64())
+	fmt.Println(v.Complex128())
 	fmt.Println(v.Uintptr())
+	fmt.Println(v.Fields())
 
 	// Output:
 	// true
 	// <nil>
-	// true
+	//
+	// vars.Kind true
 	// 123456
 	// 123456
 	// false
-	// 123456
-	// 123456
-	// 123456
 	// 6
-	// [49 50 51 52 53 54]
+	// false
+	// 123456
+	// 127
+	// 32767
 	// 123456
 	// 123456
+	// 123456
+	// 255
+	// 65535
+	// 123456
+	// 123456
+	// 123456
+	// 123456
+	// (123456+0i)
+	// (123456+0i)
+	// 123456
+	// [123456]
 }
 
-func ExampleCollection() {
-	collection := vars.ParseKeyValSlice([]string{
+func ExampleMap() {
+	collection, err := vars.ParseMapFromSlice([]string{
 		"key1=val1",
 		"key2=2",
 		"_key31=true",
@@ -55,14 +81,17 @@ func ExampleCollection() {
 		"_key33=true",
 		"_key34=true",
 	})
-	collection.Set("other4", "1.001")
+	if err != nil {
+		panic("did not expect error: " + err.Error())
+	}
+	collection.Store("other4", "1.001")
 
-	set := collection.GetWithPrefix("_key3")
+	set, _ := collection.LoadWithPrefix("_key3")
 
 	var keys []string
 
-	set.Range(func(key string, val vars.Value) bool {
-		keys = append(keys, key)
+	set.Range(func(v vars.Variable) bool {
+		keys = append(keys, v.Name())
 		return true
 	})
 	sort.Strings(keys)
@@ -79,14 +108,17 @@ func ExampleCollection() {
 	// 1.001
 }
 
-func ExampleCollection_envfile() {
-	content, err := ioutil.ReadFile("testdata/dot_env")
+func ExampleMap_envfile() {
+	content, err := os.ReadFile("testdata/dot_env")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	collection := vars.ParseFromBytes(content)
+	collection, err := vars.ParseMapFromBytes(content)
+	if err != nil {
+		panic("did not expect error: " + err.Error())
+	}
 	goarch := collection.Get("GOARCH")
 	fmt.Printf("GOARCH = %s\n", goarch)
 

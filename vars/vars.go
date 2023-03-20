@@ -1,350 +1,464 @@
-// Copyright 2020 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a license
-// that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
+// Package vars provides the API to parse variables from various input
+// formats/kinds to common key value pair. Or key value pair sets to Variable collections.
 package vars
 
 import (
 	"errors"
 	"fmt"
-	"regexp"
-	"strings"
-	"sync"
-	"time"
 )
-
-const (
-	TypeUnknown Type = iota
-	TypeString
-	TypeBool
-	TypeFloat32
-	TypeFloat64
-	TypeComplex64
-	TypeComplex128
-	TypeInt
-	TypeInt8
-	TypeInt16
-	TypeInt32
-	TypeInt64
-	TypeUint
-	TypeUint8
-	TypeUint16
-	TypeUint32
-	TypeUint64
-	TypeUintptr
-	TypeBytes
-	TypeRunes
-	TypeMap
-	TypeReflectVal
-	TypeDuration
-	TypeArray
-
-	signed   = true
-	unsigned = false
-
-	sdigits = "0123456789abcdefx"
-	udigits = "0123456789ABCDEFX"
-
-	nilAngleString = "<nil>"
-)
-
-//nolint: funlen, cyclop
-func (t Type) String() string {
-	switch t {
-	case TypeUnknown:
-		return "unknown"
-	case TypeString:
-		return "string"
-	case TypeBool:
-		return "bool"
-	case TypeFloat32:
-		return "float32"
-	case TypeFloat64:
-		return "float64"
-	case TypeComplex64:
-		return "complex64"
-	case TypeComplex128:
-		return "complex128"
-	case TypeInt:
-		return "int"
-	case TypeInt8:
-		return "int8"
-	case TypeInt16:
-		return "int16"
-	case TypeInt32:
-		return "int32"
-	case TypeInt64:
-		return "int64"
-	case TypeUint:
-		return "uint"
-	case TypeUint8:
-		return "uint8"
-	case TypeUint16:
-		return "uint16"
-	case TypeUint32:
-		return "uint32"
-	case TypeUint64:
-		return "uint64"
-	case TypeUintptr:
-		return "uint64"
-	case TypeBytes:
-		return "bytes"
-	case TypeRunes:
-		return "runes"
-	case TypeMap:
-		return "map"
-	case TypeReflectVal:
-		return "reflect"
-	case TypeDuration:
-		return "duration"
-	case TypeArray:
-		return "array"
-	}
-	return ""
-}
 
 var (
-
-	// ErrVariableKeyEmpty is used when variable key is empty string.
-	ErrVariableKeyEmpty = errors.New("variable key can not be empty")
-
-	// EmptyVar variable.
-	EmptyVar = Variable{} //nolint: gochecknoglobals
-
-	// parserPool is cached parser.
-	//nolint: gochecknoglobals
-	parserPool = sync.Pool{
-		New: func() interface{} { return new(parser) },
-	}
+	EmptyVariable = Variable{}
+	EmptyValue    = Value{}
 )
 
-type (
-	// Type represents type of raw value.
-	Type uint
+var (
+	ErrReadOnly = errors.New("readonly")
 
-	// Variable is universl representation of key val pair.
-	Variable struct {
-		key string
-		val Value
-	}
+	// Key errors
+	ErrKey                      = errors.New("key error")
+	ErrKeyPrefix                = fmt.Errorf("%w: key can not start with [0-9]", ErrKey)
+	ErrKeyIsEmpty               = fmt.Errorf("%w: key was empty string", ErrKey)
+	ErrKeyHasIllegalChar        = fmt.Errorf("%w: key has illegal characters", ErrKey)
+	ErrKeyHasIllegalStarterByte = fmt.Errorf("%w: key has illegal starter byte", ErrKey)
+	ErrKeyHasControlChar        = fmt.Errorf("%w: key contains some of unicode control character(s)", ErrKey)
+	ErrKeyNotValidUTF8          = fmt.Errorf("%w: provided key was not valid UTF-8 string", ErrKey)
+	ErrKeyHasNonPrintChar       = fmt.Errorf("%w: key contains some of non print character(s)", ErrKey)
+	ErrKeyOutOfRange            = fmt.Errorf("%w: key contained utf8 character out of allowed range", ErrKey)
 
-	// Value describes the variable value.
-	Value struct {
-		vtype Type
-		raw   any
-		str   string
-	}
+	// Value errors
+	ErrValue        = errors.New("value error")
+	ErrValueInvalid = fmt.Errorf("%w: invalid value", ErrValue)
+	ErrValueConv    = fmt.Errorf("%w: failed to convert value", ErrValue)
+	// Parser errors
 
-	// Collection is like a Go sync.Map safe for concurrent use
-	// by multiple goroutines without additional locking or coordination.
-	// Loads, stores, and deletes run in amortized constant time.
-	//
-	// The zero Map is empty and ready for use.
-	// A Map must not be copied after first use.
-	Collection struct {
-		m   sync.Map
-		len int64
-	}
-
-	// parser is used to store a printer's state and is reused with
-	// sync.Pool to avoid allocations.
-	parser struct {
-		buf parserBuffer
-		// arg holds the current value as an interface{}.
-		arg interface{}
-		// erroring is set when printing an error
-		// string to guard against calling handleMethods.
-		erroring bool
-		// fmt is used to format basic items such as integers or strings.
-		fmt parserFmt
-	}
-
-	// parserFmt is the raw formatter used by Printf etc.
-	// It prints into a buffer that must be set up separately.
-	parserFmt struct {
-		parserFmtFlags
-		buf *parserBuffer // buffer
-		// intbuf is large enough to store %b of an int64 with a sign and
-		// avoids padding at the end of the struct on 32 bit architectures.
-		intbuf [68]byte
-	}
-
-	// parseBuffer is simple []byte instead of bytes.Buffer to avoid large dependency.
-	parserBuffer []byte
-
-	// parser fmt flags placed in a separate struct for easy clearing.
-	parserFmtFlags struct {
-		plus bool
-	}
+	// ErrRange indicates that a value is out of range for the target type.
+	ErrRange = fmt.Errorf("%w: value out of range", ErrValue)
+	// ErrSyntax indicates that a value does not have the right syntax for the target type.
+	ErrSyntax = fmt.Errorf("%w: invalid syntax", ErrValue)
 )
 
-// New return untyped Variable, If error occurred while parsing
-// Variable represents default 0, nil value.
-func New(key string, val interface{}) Variable {
-	return Variable{
-		key: key,
-		val: NewValue(val),
-	}
-}
-
-// NewValue return Value, If error occurred while parsing
-// VAR represents default 0, nil value.
-func NewValue(val any) Value {
-	if vv, ok := val.(Value); ok {
-		return vv
-	}
-	p := getParser()
-	t, raw := p.printArg(val)
-	s := Value{
-		vtype: t,
-		raw:   raw,
-		str:   string(p.buf),
-	}
-	p.free()
-	if t == TypeUnknown && len(s.str) == 0 {
-		s.str = fmt.Sprint(s.raw)
-	}
-	return s
-}
-
-// NewFromKeyVal parses variable from single "key=val" pair and
-// returns Variable.
-func NewFromKeyVal(kv string) (v Variable, err error) {
-	if len(kv) == 0 {
-		err = ErrVariableKeyEmpty
-		return
-	}
-	reg := regexp.MustCompile(`"([^"]*)"`)
-
-	var key string
-
-	kv = reg.ReplaceAllString(kv, "${1}")
-	l := len(kv)
-	for i := 0; i < l; i++ {
-		if kv[i] == '=' {
-			key = kv[:i]
-			v = New(key, kv[i+1:])
-			if i < l {
-				break
-			}
-		}
-	}
-
-	if err == nil && len(key) == 0 {
-		err = ErrVariableKeyEmpty
-	}
-	// VAR did not have any value
+// KindOf returns kind for provided  value.
+func KindOf(in any) (kind Kind) {
+	_, kind = underlyingValueOf(in, false)
 	return
 }
 
-// NewTyped parses variable and sets appropriately parser error for given type
-// if parsing to requested type fails.
-func NewTyped(key string, val string, vtype Type) (Variable, error) {
-	var variable Variable
-	var err error
-	value, err := NewTypedValue(val, vtype)
+// New parses key and value into Variable.
+// Error is returned when parsing of key or value fails.
+func New(name string, val any, ro bool) (Variable, error) {
+	name, err := parseKey(name)
 	if err != nil {
-		return variable, err
+		return EmptyVariable, err
 	}
-	if len(key) == 0 {
-		err = ErrVariableKeyEmpty
-	}
-	variable = Variable{
-		key: key,
-		val: value,
-	}
-	return variable, err
-}
-
-// NewTypedValue tries to parse value to given type.
-//nolint: cyclop
-func NewTypedValue(val string, vtype Type) (Value, error) {
-	var v string
-	var err error
-	var raw interface{}
-	if vtype == TypeString {
-		return Value{
-			str:   val,
-			vtype: TypeString,
-		}, err
-	}
-	switch vtype {
-	case TypeBool:
-		raw, v, err = parseBool(val)
-	case TypeFloat32:
-		var rawd float64
-		rawd, v, err = parseFloat(val, 32)
-		raw = float32(rawd)
-	case TypeFloat64:
-		raw, v, err = parseFloat(val, 64)
-	case TypeComplex64:
-		raw, v, err = parseComplex64(val)
-	case TypeComplex128:
-		raw, v, err = parseComplex128(val)
-	case TypeInt, TypeInt8, TypeInt16, TypeInt32, TypeInt64:
-		raw, v, err = parseInts(val, vtype)
-	case TypeUint, TypeUint8, TypeUint16, TypeUint32, TypeUint64:
-		raw, v, err = parseUints(val, vtype)
-	case TypeUintptr:
-		var rawd uint64
-		rawd, v, err = parseUint(val, 10, 64)
-		raw = uintptr(rawd)
-	case TypeBytes:
-		raw, v, err = parseBytes(val)
-	case TypeDuration:
-		raw, err = time.ParseDuration(val)
-		// we keep uint64 rep
-		v = fmt.Sprintf("%d", raw)
-	case TypeMap:
-	case TypeReflectVal:
-	case TypeRunes:
-	case TypeString:
-	case TypeUnknown:
-		fallthrough
-	default:
-		v = val
-	}
-
-	return Value{
-		raw:   raw,
-		vtype: vtype,
-		str:   v,
+	v, err := NewValue(val)
+	return Variable{
+		name: name,
+		val:  v,
+		ro:   ro,
 	}, err
 }
 
-// ParseKeyValSlice parses variables from any []"key=val" slice and
-// returns Collection.
-func ParseKeyValSlice(kv []string) *Collection {
-	vars := new(Collection)
-	if len(kv) == 0 {
-		return vars
+func String(key string, val string) Variable {
+	return Variable{
+		name: key,
+		val: Value{
+			raw: val,
+			str: val,
+		},
 	}
-	reg := regexp.MustCompile(`"([^"]*)"`)
+}
 
-NextVar:
-	for _, v := range kv {
-		v = reg.ReplaceAllString(v, "${1}")
-		l := len(v)
-		if l == 0 {
-			continue
+func StringValue(val string) Value {
+	return Value{
+		raw: val,
+		str: val,
+	}
+}
+
+func NewAs(name string, val any, ro bool, kind Kind) (Variable, error) {
+	v, err := NewValueAs(val, kind)
+	if err != nil {
+		return EmptyVariable, err
+	}
+	return New(name, v, ro)
+}
+
+func EmptyNamedVariable(name string) (Variable, error) {
+	v := EmptyVariable
+	name, err := parseKey(name)
+	if err != nil {
+		return EmptyVariable, err
+	}
+	v.name = name
+	return v, nil
+}
+
+// ParseVariableFromString parses variable from single key=val pair and returns a Variable
+// if parsing is successful. EmptyVariable and error is returned when parsing fails.
+func ParseVariableFromString(kv string) (Variable, error) {
+	if len(kv) == 0 {
+		return EmptyVariable, ErrKey
+	}
+	k, v, _ := stringsCut(kv, '=')
+
+	key, err := parseKey(k)
+	if err != nil {
+		return EmptyVariable, fmt.Errorf("%w: failed to parse variable key", err)
+	}
+
+	return New(key, normalizeValue(v), false)
+}
+
+// NewValue parses provided val into Value
+// Error is returned if parsing fails.
+func NewValue(val any) (Value, error) {
+
+	if vv, ok := val.(Value); ok {
+		if vv.kind == KindInvalid {
+			return EmptyValue, fmt.Errorf("%w: %#v", ErrValueInvalid, val)
 		}
-		for i := 0; i < l; i++ {
-			if v[i] == '=' {
-				vars.Store(v[:i], v[i+1:])
-				if i < l {
-					continue NextVar
+		return vv, nil
+	}
+
+	if vv, ok := val.(Variable); ok {
+		if vv.Kind() == KindInvalid {
+			return EmptyValue, fmt.Errorf("%w: variable value %#v", ErrValueInvalid, val)
+		}
+		return vv.val, nil
+	}
+	p := getParser()
+	defer p.free()
+
+	kind, err := p.parseValue(val)
+	v := Value{
+		raw:      p.val,
+		kind:     kind,
+		str:      string(p.buf),
+		isCustom: p.isCustom,
+	}
+	return v, err
+}
+
+func NewValueAs(val any, kind Kind) (Value, error) {
+	p := getParser()
+	akind, err := p.parseValue(val)
+	if err != nil {
+		p.free()
+		return EmptyValue, err
+	}
+	if kind == akind {
+		defer p.free()
+		return Value{
+			raw:      p.val,
+			kind:     kind,
+			str:      string(p.buf),
+			isCustom: p.isCustom,
+		}, nil
+	}
+	str := string(p.buf)
+	p.free()
+
+	if v, err := convert(val, akind, kind); err == nil {
+		return v, nil
+	}
+
+	return ParseValueAs(str, kind)
+}
+
+func convertInt64(val int64, to Kind) (Value, error) {
+	v := Value{
+		kind: to,
+	}
+	switch to {
+	case KindBool:
+		if val == 0 {
+			v.raw = false
+		} else if val == 1 {
+			v.raw = true
+		}
+	case KindInt:
+		v.raw = int(val)
+	case KindInt8:
+		v.raw = int8(val)
+	case KindInt16:
+		v.raw = int16(val)
+	case KindInt32:
+		v.raw = int32(val)
+	case KindInt64:
+		v.raw = val
+	case KindUint:
+		v.raw = uint(val)
+	case KindUint8:
+		v.raw = uint8(val)
+	case KindUint16:
+		v.raw = uint16(val)
+	case KindUint32:
+		v.raw = uint32(val)
+	case KindUint64:
+		v.raw = uint64(val)
+	case KindUintptr:
+		v.raw = uintptr(val)
+	case KindFloat32:
+		v.raw = float32(val)
+	case KindFloat64:
+		v.raw = float64(val)
+	case KindComplex64:
+		v.raw = complex64(complex(float64(val), 0))
+	case KindComplex128:
+		v.raw = complex(float64(val), 0)
+	}
+	if v.raw != nil {
+		return v, nil
+	}
+	return EmptyValue, fmt.Errorf("%w: %d to %s", ErrValueConv, val, to.String())
+}
+
+func convertUint64(val uint64, to Kind) (Value, error) {
+	v := Value{
+		kind: to,
+	}
+	switch to {
+	case KindBool:
+		if val == 0 {
+			v.raw = false
+		} else if val == 1 {
+			v.raw = true
+		}
+	case KindInt:
+		v.raw = int(val)
+	case KindInt8:
+		v.raw = int8(val)
+	case KindInt16:
+		v.raw = int16(val)
+	case KindInt32:
+		v.raw = int32(val)
+	case KindInt64:
+		v.raw = val
+	case KindUint:
+		v.raw = uint(val)
+	case KindUint8:
+		v.raw = uint8(val)
+	case KindUint16:
+		v.raw = uint16(val)
+	case KindUint32:
+		v.raw = uint32(val)
+	case KindUint64:
+		v.raw = uint64(val)
+	case KindUintptr:
+		v.raw = uintptr(val)
+	case KindFloat32:
+		v.raw = float32(val)
+	case KindFloat64:
+		v.raw = float64(val)
+	case KindComplex64:
+		v.raw = complex64(complex(float64(val), 0))
+	case KindComplex128:
+		v.raw = complex(float64(val), 0)
+	}
+	if v.raw != nil {
+		return v, nil
+	}
+	return EmptyValue, fmt.Errorf("%w: %d to %s", ErrValueConv, val, to.String())
+}
+
+func convertFloat64(val float64, to Kind) (Value, error) {
+	v := Value{
+		kind: to,
+	}
+	switch to {
+	case KindBool:
+		if val == 0 {
+			v.raw = false
+		} else if val == 1 {
+			v.raw = true
+		}
+	case KindInt:
+		v.raw = int(val)
+	case KindInt8:
+		v.raw = int8(val)
+	case KindInt16:
+		v.raw = int16(val)
+	case KindInt32:
+		v.raw = int32(val)
+	case KindInt64:
+		v.raw = val
+	case KindUint:
+		v.raw = uint(val)
+	case KindUint8:
+		v.raw = uint8(val)
+	case KindUint16:
+		v.raw = uint16(val)
+	case KindUint32:
+		v.raw = uint32(val)
+	case KindUint64:
+		v.raw = uint64(val)
+	case KindUintptr:
+		v.raw = uintptr(val)
+	case KindFloat32:
+		v.raw = float32(val)
+	case KindFloat64:
+		v.raw = float64(val)
+	case KindComplex64:
+		v.raw = complex64(complex(float64(val), 0))
+	case KindComplex128:
+		v.raw = complex(float64(val), 0)
+	}
+	if v.raw != nil {
+		return v, nil
+	}
+	return EmptyValue, fmt.Errorf("%w: %f to %s", ErrValueConv, val, to.String())
+}
+
+func convert(raw any, from, to Kind) (Value, error) {
+	p := getParser()
+	defer p.free()
+
+	if from >= KindInt && from <= KindInt64 {
+		val, ok := raw.(int64)
+		if ok {
+			if v, err := convertInt64(val, to); err == nil {
+				if _, err := p.parseValue(v); err != nil {
+					return EmptyValue, err
 				}
+				v.str = string(p.buf)
+				return v, nil
 			}
 		}
-		// VAR did not have any value
-		vars.Store(strings.TrimRight(v[:l], "="), "")
+	} else if from >= KindUint && from <= KindUintptr {
+		val, ok := raw.(uint64)
+		if ok {
+			if v, err := convertUint64(val, to); err == nil {
+				if _, err := p.parseValue(v); err != nil {
+					return EmptyValue, err
+				}
+				v.str = string(p.buf)
+				return v, nil
+			}
+		}
+	} else if from == KindFloat32 || from == KindFloat64 {
+		val, ok := raw.(float64)
+		if ok {
+			if v, err := convertFloat64(val, to); err == nil {
+				if _, err := p.parseValue(v); err != nil {
+					return EmptyValue, err
+				}
+				v.str = string(p.buf)
+				return v, nil
+			}
+		}
 	}
-	return vars
+
+	return EmptyValue, fmt.Errorf("%w: %v to %s", ErrValueConv, raw, to.String())
+}
+
+func ParseValueAs(val string, kind Kind) (Value, error) {
+	if kind == KindString {
+		return Value{
+			kind: KindString,
+			str:  val,
+			raw:  val,
+		}, nil
+	}
+	var str string
+	var err error
+	var raw any
+	switch kind {
+	case KindBool:
+		raw, str, err = parseBool(val)
+	case KindFloat32:
+		var rawd float64
+		rawd, str, err = parseFloat(val, 32)
+		raw = float32(rawd)
+	case KindFloat64:
+		raw, str, err = parseFloat(val, 64)
+	case KindComplex64:
+		raw, str, err = parseComplex64(val)
+	case KindComplex128:
+		raw, str, err = parseComplex128(val)
+	case KindInt, KindInt8, KindInt16, KindInt32, KindInt64:
+		raw, str, err = parseInts(val, kind)
+	case KindUint, KindUint8, KindUint16, KindUint32, KindUint64:
+		raw, str, err = parseUints(val, kind)
+	case KindUintptr:
+		var rawd uint64
+		rawd, str, err = parseUint(val, 10, 64)
+		raw = uintptr(rawd)
+	default:
+		err = fmt.Errorf("%w: can not create kind value %s from %s", ErrValue, kind.String(), val)
+	}
+
+	if err != nil {
+		err = fmt.Errorf("%w: can not parse %s as %s", err, val, kind.String())
+		kind = KindInvalid
+	}
+
+	return Value{
+		raw:  raw,
+		kind: kind,
+		str:  str,
+	}, err
+}
+
+// ParseKinddVariable parses variable and returns parser error for given kind
+// if parsing to requested kind fails.
+func ParseVariableAs(key, val string, ro bool, kind Kind) (Variable, error) {
+	v, err := ParseValueAs(val, kind)
+	if err != nil {
+		return EmptyVariable, err
+	}
+	return New(key, v, ro)
+}
+
+func AsVariable[VAR VariableIface[VAL], VAL ValueIface](in Variable) VAR {
+	var v VariableIface[VAL]
+	v = GenericVariable[VAL]{
+		ro:   in.ReadOnly(),
+		name: in.Name(),
+		val:  in.Value(),
+	}
+	return v.(VAR)
+}
+
+func ValueOf(val any) Value {
+	v, _ := NewValue(val)
+	return v
 }
 
 // ParseFromBytes parses []bytes to string, creates []string by new line
 // and calls ParseFromStrings.
-func ParseFromBytes(b []byte) *Collection {
-	slice := strings.Split(string(b[0:]), "\n")
-	return ParseKeyValSlice(slice)
+func ParseMapFromBytes(b []byte) (*Map, error) {
+	slice := stringsSplit(string(b[0:]), '\n')
+	return ParseMapFromSlice(slice)
+}
+
+// ParseKeyValSlice parses variables from any []"key=val" slice and
+// returns Collection.
+func ParseMapFromSlice(kv []string) (*Map, error) {
+	vars := new(Map)
+
+	if len(kv) == 0 {
+		return vars, nil
+	}
+
+	for _, v := range kv {
+		// allow empty lines
+		if len(v) == 0 {
+			continue
+		}
+		vv, err := ParseVariableFromString(v)
+		if err != nil {
+			return nil, err
+		}
+		vars.Store(vv.Name(), vv.Value())
+	}
+	return vars, nil
+}
+
+func errorf(format string, a ...any) error {
+	return fmt.Errorf(format, a...)
 }
