@@ -60,33 +60,32 @@ func main() {
   fmt.Println(v.Complex128())
   fmt.Println(v.Uintptr())
   fmt.Println(v.Fields())
-
-	// Output:
-	// true
-	// <nil>
-	//
-	// vars.Kind true
-	// 123456
-	// 123456
-	// false
-	// 6
-	// false
-	// 123456
-	// 127
-	// 32767
-	// 123456
-	// 123456
-	// 123456
-	// 255
-	// 65535
-	// 123456
-	// 123456
-	// 123456
-	// 123456
-	// (123456+0i)
-	// (123456+0i)
-	// 123456
-	// [123456]
+  // Output:
+  // true
+  // <nil>
+  //
+  // vars.Kind true
+  // 123456
+  // 123456
+  // false
+  // 6
+  // false
+  // 123456
+  // 127
+  // 32767
+  // 123456
+  // 123456
+  // 123456
+  // 255
+  // 65535
+  // 123456
+  // 123456
+  // 123456
+  // 123456
+  // (123456+0i)
+  // (123456+0i)
+  // 123456
+  // [123456]
 }
 ```
 
@@ -105,40 +104,40 @@ import (
 
 func main() {
   collection, err := vars.ParseMapFromSlice([]string{
-		"key1=val1",
-		"key2=2",
-		"_key31=true",
-		"_key32=true",
-		"_key33=true",
-		"_key34=true",
-	})
+    "key1=val1",
+    "key2=2",
+    "_key31=true",
+    "_key32=true",
+    "_key33=true",
+    "_key34=true",
+  })
   if err != nil {
-		panic("did not expect error: " + err.Error())
-	}
-	if err := collection.Store("other4", "1.001"); err != nil {
-		panic("did not expect error: " + err.Error())
-	}
+    panic("did not expect error: " + err.Error())
+  }
+  if err := collection.Store("other4", "1.001"); err != nil {
+    panic("did not expect error: " + err.Error())
+  }
 
-	set, _ := collection.LoadWithPrefix("_key3")
+  set, _ := collection.LoadWithPrefix("_key3")
 
-	var keys []string
+  var keys []string
 
-	set.Range(func(v vars.Variable) bool {
-		keys = append(keys, v.Name())
-		return true
-	})
-	sort.Strings(keys)
-	for _, k := range keys {
-		fmt.Println(k)
-	}
-	fmt.Println(collection.Get("other4").Float64())
+  set.Range(func(v vars.Variable) bool {
+    keys = append(keys, v.Name())
+    return true
+  })
+  sort.Strings(keys)
+  for _, k := range keys {
+    fmt.Println(k)
+  }
+  fmt.Println(collection.Get("other4").Float64())
 
-	// Output:
-	// _key31
-	// _key32
-	// _key33
-	// _key34
-	// 1.001
+  // Output:
+  // _key31
+  // _key32
+  // _key33
+  // _key34
+  // 1.001
 }
 ```
 
@@ -155,20 +154,20 @@ import (
 
 func main() {
   content, err := os.ReadFile("testdata/dot_env")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
 
-	collection, err := vars.ParseMapFromBytes(content)
-	if err != nil {
-		panic("did not expect error: " + err.Error())
-	}
-	goarch := collection.Get("GOARCH")
-	fmt.Printf("GOARCH = %s\n", goarch)
+  collection, err := vars.ParseMapFromBytes(content)
+  if err != nil {
+    panic("did not expect error: " + err.Error())
+  }
+  goarch := collection.Get("GOARCH")
+  fmt.Printf("GOARCH = %s\n", goarch)
 
-	// Output:
-	// GOARCH = amd64
+  // Output:
+  // GOARCH = amd64
 }
 ```
 
