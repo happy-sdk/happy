@@ -10,7 +10,7 @@ package bexp_test
 // 	"strings"
 // 	"testing"
 
-// 	"github.com/mkungla/bexp/v3"
+// 	"github.com/happy-sdk/bexp"
 // 	"github.com/stretchr/testify/assert"
 // )
 

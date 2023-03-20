@@ -4,13 +4,13 @@ Go implementation of Brace Expansion mechanism to generate arbitrary strings.
 
 Implementing: [3.5.1 Brace Expansion][bash-be]
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/bexp/v3)](https://pkg.go.dev/github.com/mkungla/bexp/v3)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/bexp)](https://pkg.go.dev/github.com/happy-sdk/bexp)
 ![license](https://img.shields.io/github/license/mkungla/bexp)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/bexp)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
 ![tests](https://github.com/mkungla/bexp/workflows/tests/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/bexp/v3)](https://goreportcard.com/report/github.com/mkungla/bexp/v3)
+[![Go Report Card](https://goreportcard.com/badge/github.com/happy-sdk/bexp)](https://goreportcard.com/report/github.com/happy-sdk/bexp)
 [![Coverage Status](https://coveralls.io/repos/github/mkungla/bexp/badge.svg?branch=main)](https://coveralls.io/github/mkungla/bexp?branch=main)
 
 [![benchmarks](https://github.com/mkungla/bexp/workflows/benchmarks/badge.svg)](https://dashboard.bencher.orijtech.com/graphs?tab=1&branch=&repo=https%3A%2F%2Fgithub.com%2Fmkungla%2Fbexp.git&start=1670554071&end=1671158871&searchTerm=&yScale=linear&highlight=)
@@ -31,7 +31,7 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 
 ## Usage
 
-`go get github.com/mkungla/bexp/v3`
+`go get github.com/happy-sdk/bexp`
 
 ## Get string slice
 
@@ -41,7 +41,7 @@ package main
 import (
   "fmt"
 
-  "github.com/mkungla/bexp/v3"
+  "github.com/happy-sdk/bexp"
 )
 
 func main() {
@@ -96,7 +96,7 @@ package main
 import (
   "log"
 
-  "github.com/mkungla/bexp/v3"
+  "github.com/happy-sdk/bexp"
 )
 
 func main() {
@@ -131,7 +131,7 @@ import (
   "log"
   "math"
 
-  "github.com/mkungla/bexp/v3"
+  "github.com/happy-sdk/bexp"
 )
 
 func getCenterTile(lat, long float64, zoom int) (z, x, y int) {
@@ -197,7 +197,7 @@ import (
   "errors"
   "fmt"
 
-  "github.com/mkungla/bexp/v3"
+  "github.com/happy-sdk/bexp"
 )
 
 func main() {
@@ -224,7 +224,7 @@ import (
   "fmt"
   "os"
 
-  "github.com/mkungla/bexp/v3"
+  "github.com/happy-sdk/bexp"
 )
 
 func main() {
@@ -270,7 +270,7 @@ import (
   "fmt"
   "os"
 
-  "github.com/mkungla/bexp/v3"
+  "github.com/happy-sdk/bexp"
 )
 
 func main() {

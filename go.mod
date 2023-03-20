@@ -1,3 +1,3 @@
-module github.com/mkungla/bexp/v3
+module github.com/happy-sdk/bexp
 
 go 1.18
