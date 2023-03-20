@@ -1,8 +1,9 @@
-module github.com/mkungla/varflag/v6
+module github.com/happy-sdk/varflag
 
-go 1.16
+go 1.20
 
 require (
-	github.com/mkungla/bexp/v3 v3.0.0
-	github.com/mkungla/vars/v6 v6.0.0-20220802222646-723d0cb1ffae
+	github.com/happy-sdk/bexp v1.0.0
+	github.com/happy-sdk/testutils v0.1.0
+	github.com/happy-sdk/vars v0.1.0
 )

@@ -1,6 +1,6 @@
-// Copyright 2020 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a license
-// that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -9,7 +9,6 @@ import (
 	"math"
 	"strconv"
 	"testing"
-	"time"
 )
 
 func BenchmarkString(b *testing.B) {
@@ -22,20 +21,6 @@ func BenchmarkString(b *testing.B) {
 				b.Error(err)
 			}
 
-			f.Value()
-		}
-	})
-}
-
-func BenchmarkDuration(b *testing.B) {
-	args := []string{"/bin/app", "--duration", "1h30s"}
-
-	b.Run("pkg:duration", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			f, _ := Duration("duration", 1*time.Second, "")
-			if _, err := f.Parse(args); err != nil {
-				b.Error(err)
-			}
 			f.Value()
 		}
 	})
@@ -97,7 +82,7 @@ func BenchmarkOption(b *testing.B) {
 	args := []string{"/bin/app", "--option", "opt1", "--option", "opt2"}
 	b.Run("pkg:uint", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			f, _ := Option("option", []string{"defaultOpt"}, "", []string{"opt1", "opt2", "opt3", "defaultOpt"})
+			f, _ := Option("option", []string{"defaultOpt"}, []string{"opt1", "opt2", "opt3", "defaultOpt"}, "")
 			if _, err := f.Parse(args); err != nil {
 				b.Error(err)
 			}

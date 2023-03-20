@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -8,23 +8,38 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mkungla/vars/v6"
+	"github.com/happy-sdk/vars"
 )
 
+// BoolFlag is boolean flag type with default value "false".
+type BoolFlag struct {
+	Common
+	val bool
+}
+
 // Bool returns new bool flag. Argument "a" can be any nr of aliases.
-func Bool(name string, value bool, usage string, aliases ...string) (*BoolFlag, error) {
+func Bool(name string, value bool, usage string, aliases ...string) (flag *BoolFlag, err error) {
 	if !ValidFlagName(name) {
 		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
 
-	f := &BoolFlag{}
-	f.name = strings.TrimLeft(name, "-")
-	f.val = value
-	f.aliases = normalizeAliases(aliases)
-	f.usage = usage
-	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeBool)
-	f.variable, _ = vars.NewTyped(name, "false", vars.TypeBool)
-	return f, nil
+	flag = &BoolFlag{}
+	flag.name = strings.TrimLeft(name, "-")
+	flag.val = value
+	flag.aliases = normalizeAliases(aliases)
+	flag.usage = usage
+	flag.defval, err = vars.NewAs(name, value, true, vars.KindBool)
+	if err != nil {
+		return nil, err
+	}
+	flag.variable, err = vars.NewAs(name, value, true, vars.KindBool)
+	return flag, err
+}
+
+func BoolFunc(name string, value bool, usage string, aliases ...string) FlagCreateFunc {
+	return func() (Flag, error) {
+		return Bool(name, value, usage, aliases...)
+	}
 }
 
 // Parse bool flag.

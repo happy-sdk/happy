@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.package flags
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -10,7 +10,7 @@ import (
 )
 
 func TestOptionFlag(t *testing.T) {
-	flag, _ := Option("some-flag", []string{}, "", []string{"a", "b", "c"}, "s")
+	flag, _ := Option("some-flag", []string{}, []string{"a", "b", "c"}, "", "s")
 	if ok, err := flag.Parse([]string{"--some-flag=a"}); !ok || err != nil {
 		t.Error("expected option flag parser to return ok, ", ok, err)
 	}
@@ -21,7 +21,7 @@ func TestOptionFlag(t *testing.T) {
 }
 
 func TestOptionFlagFalse(t *testing.T) {
-	flag, _ := Option("some-flag", []string{}, "", []string{"a", "b", "c"}, "s")
+	flag, _ := Option("some-flag", []string{}, []string{"a", "b", "c"}, "", "s")
 	if present, err := flag.Parse([]string{"--some-flag=d"}); !errors.Is(err, ErrInvalidValue) {
 		t.Error("expected option flag parser to return !present and err, ", present, err)
 	}
@@ -32,7 +32,7 @@ func TestOptionFlagFalse(t *testing.T) {
 }
 
 func TestOptionFlagEmpty(t *testing.T) {
-	flag, _ := Option("some-flag", []string{}, "", []string{"a", "b", "c"}, "s")
+	flag, _ := Option("some-flag", []string{}, []string{"a", "b", "c"}, "", "s")
 	if present, err := flag.Parse([]string{"--some-flag"}); !errors.Is(err, ErrMissingValue) {
 		t.Error("expected option flag parser to return present and err, ", present, err)
 	}
@@ -58,7 +58,7 @@ func TestOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, err := Option(tt.name, []string{}, "", tt.opts)
+			flag, err := Option(tt.name, []string{}, tt.opts, "")
 			if len(tt.opts) == 0 {
 				if !errors.Is(err, ErrMissingOptions) {
 					t.Error("expected error while creating opt flag got: ", err)
@@ -83,7 +83,7 @@ func TestOptions(t *testing.T) {
 func TestOptionName(t *testing.T) {
 	for _, tt := range testflags() {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, err := Option(tt.name, []string{}, "", []string{"a"})
+			flag, err := Option(tt.name, []string{}, []string{"a"}, "")
 			if !tt.valid {
 				if err == nil {
 					t.Errorf("invalid flag %q expected error got <nil>", tt.name)
@@ -107,7 +107,7 @@ func TestMultiOpt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, _ := Option(tt.name, []string{}, "", tt.opts)
+			flag, _ := Option(tt.name, []string{}, tt.opts, "")
 
 			var args []string
 			for _, o := range tt.opts {
@@ -138,7 +138,7 @@ func TestOptionFlagDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag, _ := Option(tt.name, tt.defaults, "", tt.opts)
+			flag, _ := Option(tt.name, tt.defaults, tt.opts, "")
 
 			args := []string{"random", "args"}
 			_, err := flag.Parse(args)

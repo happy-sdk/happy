@@ -1,19 +1,21 @@
-// Copyright 2021 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
 import (
 	"os"
 	"testing"
+
+	"github.com/happy-sdk/testutils"
 )
 
-//nolint: funlen, cyclop
+// nolint: funlen, cyclop
 func TestFlagSet(t *testing.T) {
 	args := []string{
-		os.Args[0], "cmd1", "--flag1", "val1", "--flag2", "flag2-value",
-		"arg1", "--flag3=on", "-v", // global flag can be any place
+		os.Args[0], "cmd1", "--flag1", "flag1-value", "--flag2", "flag2-value",
+		"cmd-arg", "--flag3=on", "-v", // global flag can be any place
 		"subcmd", "--flag4", "val 4 flag", "arg2", "arg3", "-x", "on", // global flag can be any place
 	}
 
@@ -24,7 +26,7 @@ func TestFlagSet(t *testing.T) {
 	v, _ := Bool("verbose", false, "increase verbosity", "v")
 	x, _ := Bool("x", false, "print commands")
 	r, _ := Bool("random", false, "random flag")
-	global.Add(v, x, r)
+	testutils.NoError(t, global.Add(v, x, r))
 
 	flag1, _ := New("flag1", "", "first flag for first cmd")
 	flag2, _ := New("flag2", "", "another flag for first cmd")
@@ -33,27 +35,28 @@ func TestFlagSet(t *testing.T) {
 	if err != nil {
 		t.Error("did not expect error got ", err)
 	}
-	cmd1.Add(flag1, flag2, flag3)
+	testutils.NoError(t, cmd1.Add(flag1, flag2, flag3))
 
 	flag5, _ := New("flag5", "", "flag5 for second cmd")
 	cmd2, err := NewFlagSet("cmd2", 0)
 	if err != nil {
 		t.Error("did not expect error got ", err)
 	}
-	cmd2.Add(flag5)
+	testutils.NoError(t, cmd2.Add(flag5))
 
 	subcmd, err := NewFlagSet("subcmd", 1)
 	if err != nil {
 		t.Error("did not expect error got ", err)
 	}
 	flag4, _ := New("flag4", "", "flag4 for sub command")
-	subcmd.Add(flag4)
-	cmd1.AddSet(subcmd)
-	global.AddSet(cmd1, cmd2)
+	testutils.NoError(t, subcmd.Add(flag4))
+	testutils.NoError(t, cmd1.AddSet(subcmd))
+	testutils.NoError(t, global.AddSet(cmd1, cmd2))
 
 	if err := global.Parse(args); err != nil {
 		t.Error("did not expect error got ", err)
 	}
+
 	if !v.Present() || !v.Value() {
 		t.Error("expected verbose flag", v.Present(), v.Value())
 	}
@@ -72,12 +75,9 @@ func TestFlagSet(t *testing.T) {
 	if cmd2.Present() {
 		t.Error("expected cmd2 not to be present", cmd2.Present())
 	}
-	if cmd1.Name() != "cmd1" {
-		t.Error("expected cmd name cmd1 got ", cmd1.Name())
-	}
-	if subcmd.Name() != "subcmd" {
-		t.Error("expected subcmd name subcmd got ", subcmd.Name())
-	}
+
+	testutils.Equal(t, "cmd1", cmd1.Name(), "unexpected cmd name")
+	testutils.Equal(t, "subcmd", subcmd.Name(), "unexpected cmd name")
 
 	if !flag1.Present() {
 		t.Error("expected flag1 ", flag1.Present(), flag1.Value())
@@ -94,25 +94,20 @@ func TestFlagSet(t *testing.T) {
 	if flag5.Present() {
 		t.Error("expected no flag5", flag4.Present(), flag4.Value())
 	}
+	testutils.Equal(t, 0, len(global.Args()), "expected no global args got %v", global.Args())
+	testutils.Equal(t, 1, len(cmd1.Args()), "expected cmd1 to have 1 args got %v", cmd1.Args())
+	testutils.Equal(t, "cmd-arg", cmd1.Args()[0].String(), "expected cmd1 to have 1 args got %v", cmd1.Args())
+	testutils.Equal(t, 0, len(cmd2.Args()), "expected no cmd2 args got %v", cmd2.Args())
 
-	if len(global.Args()) != 0 {
-		t.Error("expected no global args got ", global.Args())
-	}
-	if len(cmd2.Args()) != 0 {
-		t.Error("expected no cmd2 args got ", cmd2.Args())
-	}
-	if len(cmd1.Args()) != 1 {
-		t.Error("expected cmd1 to have 1 arg got ", cmd1.Args())
-	}
-	if len(subcmd.Args()) != 2 {
-		t.Error("expected subcmd to have 2 arg got ", subcmd.Args())
-	}
-	// if global.GetActiveSetName() != "subcmd" {
-	// 	t.Error("expected active cmd/set to be subcmd got ", global.GetActiveSetName())
-	// }
-	if subcmd.Pos() != 2 {
-		t.Error("expected subcmd pos to be 2 got ", subcmd.Pos())
-	}
+	testutils.Equal(t, 2, len(subcmd.Args()), "expected subcmd to have 2 args got %v", subcmd.Args())
+
+	active := global.GetActiveSets()
+	testutils.Equal(t, 3, len(active), "active set len should be 3")
+	testutils.Equal(t, "/", active[0].Name(), "first set should be /")
+	testutils.Equal(t, "cmd1", active[1].Name(), "invalid set name for 2nd set")
+	testutils.Equal(t, "subcmd", active[2].Name(), "invalid set name for 3rd set")
+	testutils.Equal(t, 2, subcmd.Pos(), "expected subcmd pos to be 2")
+	// testutils.Equal(t, "subcmd", [0].Name(), "invalid active set name")
 }
 
 func TestFlagSetName(t *testing.T) {
@@ -157,11 +152,11 @@ func TestShaddowFlags(t *testing.T) {
 	}
 
 	f1, _ := New("flag", "", "")
-	cmd1.Add(f1)
+	testutils.NoError(t, cmd1.Add(f1))
 	f2, _ := New("flag", "", "")
-	cmd2.Add(f2)
+	testutils.NoError(t, cmd2.Add(f2))
 
-	global.AddSet(cmd1, cmd2)
+	testutils.NoError(t, global.AddSet(cmd1, cmd2))
 	if err := global.Parse(args); err != nil {
 		t.Error("did not expect error got ", err)
 	}

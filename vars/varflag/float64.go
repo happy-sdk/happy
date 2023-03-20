@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -8,30 +8,45 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mkungla/vars/v6"
+	"github.com/happy-sdk/vars"
 )
 
+// Float64Flag defines a float64 flag with specified name.
+type Float64Flag struct {
+	Common
+	val float64
+}
+
 // Float64 returns new float flag. Argument "a" can be any nr of aliases.
-func Float64(name string, value float64, usage string, aliases ...string) (*Float64Flag, error) {
+func Float64(name string, value float64, usage string, aliases ...string) (flag *Float64Flag, err error) {
 	if !ValidFlagName(name) {
 		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
 
-	f := &Float64Flag{}
-	f.name = strings.TrimLeft(name, "-")
-	f.val = value
-	f.aliases = normalizeAliases(aliases)
-	f.usage = usage
-	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeFloat64)
-	f.variable = f.defval
-	return f, nil
+	flag = &Float64Flag{}
+	flag.name = strings.TrimLeft(name, "-")
+	flag.val = value
+	flag.aliases = normalizeAliases(aliases)
+	flag.usage = usage
+	flag.defval, err = vars.NewAs(name, value, true, vars.KindFloat64)
+	if err != nil {
+		return nil, err
+	}
+	flag.variable, err = vars.NewAs(name, value, false, vars.KindFloat64)
+	return flag, err
+}
+
+func Float64Func(name string, value float64, usage string, aliases ...string) FlagCreateFunc {
+	return func() (Flag, error) {
+		return Float64(name, value, usage, aliases...)
+	}
 }
 
 // Parse float flag.
 func (f *Float64Flag) Parse(args []string) (bool, error) {
 	return f.parse(args, func(vv []vars.Variable) (err error) {
 		if len(vv) > 0 {
-			val, err := vars.NewTyped(f.name, vv[0].String(), vars.TypeFloat64)
+			val, err := vars.ParseVariableAs(f.name, vv[0].String(), false, vars.KindFloat64)
 			if err != nil {
 				return fmt.Errorf("%w: %q", ErrInvalidValue, err)
 			}

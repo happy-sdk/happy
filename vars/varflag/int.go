@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -8,29 +8,44 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mkungla/vars/v6"
+	"github.com/happy-sdk/vars"
 )
 
+// IntFlag defines an int flag with specified name,.
+type IntFlag struct {
+	Common
+	val int
+}
+
 // Int returns new int flag. Argument "a" can be any nr of aliases.
-func Int(name string, value int, usage string, aliases ...string) (*IntFlag, error) {
+func Int(name string, value int, usage string, aliases ...string) (flag *IntFlag, err error) {
 	if !ValidFlagName(name) {
 		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
-	f := &IntFlag{}
-	f.usage = usage
-	f.name = strings.TrimLeft(name, "-")
-	f.val = value
-	f.aliases = normalizeAliases(aliases)
-	f.defval, _ = vars.NewTyped(f.name, fmt.Sprint(value), vars.TypeInt)
-	f.variable = f.defval
-	return f, nil
+	flag = &IntFlag{}
+	flag.usage = usage
+	flag.name = strings.TrimLeft(name, "-")
+	flag.val = value
+	flag.aliases = normalizeAliases(aliases)
+	flag.defval, err = vars.NewAs(name, value, true, vars.KindInt)
+	if err != nil {
+		return nil, err
+	}
+	flag.variable, err = vars.NewAs(name, value, false, vars.KindInt)
+	return flag, err
+}
+
+func IntFunc(name string, value int, usage string, aliases ...string) FlagCreateFunc {
+	return func() (Flag, error) {
+		return Int(name, value, usage, aliases...)
+	}
 }
 
 // Parse int flag.
 func (f *IntFlag) Parse(args []string) (bool, error) {
 	return f.parse(args, func(vv []vars.Variable) (err error) {
 		if len(vv) > 0 {
-			val, err := vars.NewTyped(f.name, vv[0].String(), vars.TypeInt)
+			val, err := vars.ParseVariableAs(f.name, vv[0].String(), false, vars.KindInt)
 			if err != nil {
 				return fmt.Errorf("%w: %q", ErrInvalidValue, err)
 			}

@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -8,22 +8,82 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
-	"github.com/mkungla/vars/v6"
+	"github.com/happy-sdk/vars"
 )
+
+// Common is default string flag. Common flag ccan be used to
+// as base for custom flags by owerriding .Parse func.
+type Common struct {
+	mu sync.RWMutex
+	// name of this flag
+	name string
+	// aliases for this flag
+	aliases []string
+	// hide from help menu
+	hidden bool
+	// global is set to true if value was parsed before any command or arg occurred
+	global bool
+	// position in os args how many commands where before that flag
+	pos int
+	// usage string
+	usage string
+	// isPresent enables to mock removal and .Unset the flag it reports whether flag was "present"
+	isPresent bool
+	// value for this flag
+	variable vars.Variable
+	// is this flag required
+	required bool
+	// default value
+	defval vars.Variable
+	// flag already parsed
+	parsed bool
+	// potential command after which this flag was found
+	command string
+	// arg or args based on which this flag was parsed
+	in []string
+}
+
+// New returns new common string flag. Argument "a" can be any nr of aliases.
+func New(name string, value string, usage string, aliases ...string) (*Common, error) {
+	if !ValidFlagName(name) {
+		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
+	}
+
+	d, err := vars.New(name, value, false)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to set default value for %s flag", ErrFlag, name)
+	}
+	f := &Common{
+		name:    strings.TrimLeft(name, "-"),
+		aliases: normalizeAliases(aliases),
+		defval:  d,
+		usage:   usage,
+	}
+
+	f.variable = d
+	return f, nil
+}
 
 // Name returns primary name for the flag usually that is long option.
 func (f *Common) Name() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.name
 }
 
 // Default sets flag default.
 func (f *Common) Default() vars.Variable {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.defval
 }
 
 // Usage returns a usage description for that flag.
 func (f *Common) Usage() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	if !f.defval.Empty() {
 		return fmt.Sprintf("%s - default: %q", f.usage, f.defval.String())
 	}
@@ -32,6 +92,8 @@ func (f *Common) Usage() string {
 
 // Flag returns flag with leading - or --.
 func (f *Common) Flag() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	if len(f.name) == 1 {
 		return "-" + f.name
 	}
@@ -40,12 +102,16 @@ func (f *Common) Flag() string {
 
 // Aliases returns all aliases for the flag together with primary "name".
 func (f *Common) Aliases() []string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.aliases
 }
 
-// AliasesString returns string representing flag aliases.
+// UsageAliases returns string representing flag aliases.
 // e.g. used in help menu.
-func (f *Common) AliasesString() string {
+func (f *Common) UsageAliases() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	if len(f.aliases) <= 1 {
 		return ""
 	}
@@ -62,7 +128,7 @@ func (f *Common) AliasesString() string {
 }
 
 // IsHidden reports whether flag should be visible in help menu.
-func (f *Common) IsHidden() bool {
+func (f *Common) Hidden() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.hidden
@@ -78,13 +144,13 @@ func (f *Common) Hide() {
 // IsGlobal reports whether this flag is global.
 // By default all flags are global flags. You can mark flag non-global
 // by calling .BelongsTo(cmdname string).
-func (f *Common) IsGlobal() bool {
+func (f *Common) Global() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.global
 }
 
-// BelongsTo marks flag non global and belonging to provided named command.
+// AttachTo marks flag non global and belonging to provided named command.
 // Parsing the flag will only succeed if naemd command was found before the flag.
 // This is useful to have same flag both global and sub command level.
 // Special case is .BelongsTo("*") which marks flag to be parsed
@@ -93,7 +159,7 @@ func (f *Common) IsGlobal() bool {
 // you can define 2 BoolFlag's with name "verbose" and alias "v"
 // and mark one of these with BelongsTo("*").
 // BelongsTo(os.Args[0] | "/") are same as global and will be.
-func (f *Common) BelongsTo(cmdname string) {
+func (f *Common) AttachTo(cmdname string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if len(f.command) == 0 {
@@ -104,7 +170,7 @@ func (f *Common) BelongsTo(cmdname string) {
 // CommandName returns empty string if command is not set with .BelongsTo
 // When BelongsTo is set to wildcard "*" then this function will return
 // name of the command which triggered this flag to be parsed.
-func (f *Common) CommandName() string {
+func (f *Common) BelongsTo() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.command
@@ -125,7 +191,7 @@ func (f *Common) Unset() {
 	if !f.defval.Empty() {
 		f.variable = f.defval
 	} else {
-		f.variable = vars.New(f.name, "")
+		f.variable, _ = vars.EmptyNamedVariable(f.name)
 	}
 	f.isPresent = false
 }
@@ -137,7 +203,7 @@ func (f *Common) Present() bool {
 	return f.isPresent
 }
 
-// Var returns vars.Variable for this flag.
+// V returns vars.Variable for this flag.
 // where key is flag and Value flags value.
 func (f *Common) Var() vars.Variable {
 	f.mu.RLock()
@@ -160,7 +226,7 @@ func (f *Common) Value() string {
 }
 
 // Required sets this flag as required.
-func (f *Common) Required() {
+func (f *Common) MarkAsRequired() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if !f.required {
@@ -169,7 +235,7 @@ func (f *Common) Required() {
 }
 
 // IsRequired returns true if this flag is required.
-func (f *Common) IsRequired() bool {
+func (f *Common) Required() bool {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.required
@@ -196,32 +262,28 @@ func (f *Common) String() string {
 	return f.defval.String()
 }
 
-func (f *Common) input() []string {
+func (f *Common) Input() []string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.in
-}
-
-func (f *Common) setCommandName(cmdname string) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.command = cmdname
 }
 
 // Parse value for the flag from given string.
 // It returns true if flag has been parsed
 // and error if flag has been already parsed.
 func (f *Common) parse(args []string, read func([]vars.Variable) error) (bool, error) {
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	name := f.name
 	if f.parsed || f.isPresent {
 		return f.isPresent, fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, f.name)
 	}
 
 	if len(args) == 0 {
-		return false, fmt.Errorf("%s, %w: no arguments", f.name, ErrParse)
+		return false, fmt.Errorf("%s, %w: no arguments", name, ErrParse)
 	}
 
-	f.mu.Lock()
-	defer f.mu.Unlock()
 	err := f.parseArgs(args, read)
 
 	return f.isPresent, err
@@ -296,7 +358,7 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, erro
 		}
 
 		// handle bool flags
-		if f.variable.Type() == vars.TypeBool {
+		if f.variable.Kind() == vars.KindBool {
 			var value vars.Variable
 			falsestr := "false"
 			bval := "true" //nolint: goconst
@@ -311,12 +373,16 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, erro
 				}
 			}
 			// no need for err check since we only pass valid strings
-			value, _ = vars.NewTyped(f.name, bval, vars.TypeBool)
+			value, _ = vars.NewAs(f.name, bval, false, vars.KindBool)
 			f.isPresent = true
 			values = append(values, value)
 			continue
 		}
 		if len(pargs) == pose {
+			if !f.defval.Empty() {
+				f.isPresent = true
+				continue
+			}
 			return values, fmt.Errorf("%w: %s", ErrMissingValue, f.name)
 		}
 
@@ -326,7 +392,11 @@ func (f *Common) parseValues(poses []int, pargs []string) ([]vars.Variable, erro
 		value := pargs[pose]
 		f.in = append(f.in, pargs[pose])
 		// if we get other flags we can validate is value a flag or not
-		values = append(values, vars.New(f.name, value))
+		v, err := vars.New(f.name, value, false)
+		if err != nil {
+			return nil, err
+		}
+		values = append(values, v)
 	}
 
 	return values, nil
@@ -353,15 +423,15 @@ func (f *Common) normalize(args []string) (pos []int, pargs []string, err error)
 		if strings.Contains(arg, "=") {
 			var curr vars.Variable
 			// no need for err check we alwways have key=val
-			curr, _ = vars.NewFromKeyVal(arg)
-			currflag = strings.TrimLeft(curr.Key(), "-")
+			curr, _ = vars.ParseVariableFromString(arg)
+			currflag = strings.TrimLeft(curr.Name(), "-")
 			// handle only possible errors
 			if len(currflag) == 0 {
 				err = fmt.Errorf("%w: invalid argument -=", ErrParse)
 				return
 			}
 			split = true
-			pargs = append(pargs, curr.Key(), curr.String())
+			pargs = append(pargs, curr.Name(), curr.String())
 		} else {
 			pargs = append(pargs, arg)
 		}
@@ -388,12 +458,4 @@ func (f *Common) normalize(args []string) (pos []int, pargs []string, err error)
 		}
 	}
 	return pos, pargs, err
-}
-
-func normalizeAliases(a []string) []string {
-	aliases := []string{}
-	for _, alias := range a {
-		aliases = append(aliases, strings.TrimLeft(alias, "-"))
-	}
-	return aliases
 }

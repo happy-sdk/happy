@@ -2,13 +2,13 @@
 
 Package flag implements command-line flag parsing into vars.Variables for easy type handling with additional flag types.
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/varflag/v6)](https://pkg.go.dev/github.com/mkungla/varflag/v6)
-![license](https://img.shields.io/github/license/mkungla/varflag)
-![GitHub last commit](https://img.shields.io/github/last-commit/mkungla/varflag)
-![tests](https://github.com/mkungla/varflag/workflows/test/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mkungla/varflag)](https://goreportcard.com/report/github.com/mkungla/varflag)
-[![Coverage Status](https://coveralls.io/repos/github/mkungla/varflag/badge.svg?branch=main)](https://coveralls.io/github/mkungla/varflag?branch=main)
-[![benchmarks](https://img.shields.io/badge/benchmark-result-green)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fmkungla%varflag.git)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/varflag)](https://pkg.go.dev/github.com/happy-sdk/varflag)
+![license](https://img.shields.io/github/license/happy-sdk/varflag)
+![GitHub last commit](https://img.shields.io/github/last-commit/happy-sdk/varflag)
+![tests](https://github.com/happy-sdk/varflag/workflows/test/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/happy-sdk/varflag)](https://goreportcard.com/report/github.com/happy-sdk/varflag)
+[![Coverage Status](https://coveralls.io/repos/github/happy-sdk/varflag/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/varflag?branch=main)
+<!-- [![benchmarks](https://img.shields.io/badge/benchmark-result-green)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fhappy-sdk%varflag.git) -->
 
 - [varflag](#varflag)
 - [Flags](#flags)
@@ -28,9 +28,9 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
 # Flags
 
 > note that major version ensures compatibility with
-> https://github.com/mkungla/vars package
+> https://github.com/happy-sdk/vars package
 
-`go get github.com/mkungla/varflag/v6`
+`go get github.com/happy-sdk/varflag`
 
 ## String flag
 
@@ -41,7 +41,7 @@ import (
   "fmt"
   "log"
   "os"
-  "github.com/mkungla/varflag/v6"
+  "github.com/happy-sdk/varflag"
 )
 
 func main() {
@@ -241,7 +241,7 @@ fmt.Printf("%-12s%#v\n", "value", f.Value())
 
 ## Bash Brace Expansion Flag
 
-uses [githubc.com/mkungla/bexp](https://github.com/mkungla/bexp) for Brace Expansion
+uses [githubc.com/happy-sdk/bexp](https://github.com/happy-sdk/bexp) for Brace Expansion
 
 ```go
 os.Args = []string{"/bin/app", "--images", "image-{0..2}.jpg"}

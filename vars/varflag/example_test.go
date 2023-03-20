@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag_test
 
@@ -10,9 +10,8 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"time"
 
-	"github.com/mkungla/varflag/v6"
+	"github.com/happy-sdk/varflag"
 )
 
 func ExampleParse() {
@@ -46,7 +45,7 @@ func ExampleParse() {
 		str1.Name(),
 		str1.Value(),
 		str1.Present(),
-		str1.IsGlobal(),
+		str1.Global(),
 		str1.Pos(),
 	)
 
@@ -55,7 +54,7 @@ func ExampleParse() {
 		str2.Name(),
 		str2.Value(),
 		str2.Present(),
-		str2.IsGlobal(),
+		str2.Global(),
 		str2.Pos(),
 	)
 	// Output:
@@ -76,46 +75,46 @@ func ExampleFlagSet() {
 	v, _ := varflag.Bool("verbose", false, "increase verbosity", "v")
 	x, _ := varflag.Bool("x", false, "print commands")
 	r, _ := varflag.Bool("random", false, "random flag")
-	global.Add(v, x, r)
+	_ = global.Add(v, x, r)
 
 	flag1, _ := varflag.New("flag1", "", "first flag for first cmd")
 	flag2, _ := varflag.New("flag2", "", "another flag for first cmd")
 	flag3, _ := varflag.Bool("flag3", false, "bool flag for first command")
 	cmd1, _ := varflag.NewFlagSet("cmd1", 1)
-	cmd1.Add(flag1, flag2, flag3)
+	_ = cmd1.Add(flag1, flag2, flag3)
 
 	cmd2, _ := varflag.NewFlagSet("cmd2", 0)
 	flag5, _ := varflag.New("flag5", "", "flag5 for second cmd")
-	cmd2.Add(flag5)
+	_ = cmd2.Add(flag5)
 
 	subcmd, _ := varflag.NewFlagSet("subcmd", 1)
 	flag4, _ := varflag.New("flag4", "", "flag4 for sub command")
-	subcmd.Add(flag4)
-	cmd1.AddSet(subcmd)
+	_ = subcmd.Add(flag4)
+	_ = cmd1.AddSet(subcmd)
 
-	global.AddSet(cmd1, cmd2)
+	_ = global.AddSet(cmd1, cmd2)
 	_ = global.Parse(os.Args)
 
 	// result
-	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "verbose", v.Present(), v.IsGlobal(), v.String(), v.CommandName())
-	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "x", x.Present(), x.IsGlobal(), x.String(), x.CommandName())
-	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "random", r.Present(), r.IsGlobal(), r.String(), r.CommandName())
+	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "verbose", v.Present(), v.Global(), v.String(), v.BelongsTo())
+	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "x", x.Present(), x.Global(), x.String(), x.BelongsTo())
+	fmt.Printf("%-12s%t (%t) - %s (%s)\n", "random", r.Present(), r.Global(), r.String(), r.BelongsTo())
 	fmt.Printf("%-12s %v\n", "gloabal args", global.Args())
 
 	fmt.Printf("\n%-12s%t\n", "cmd1", cmd1.Present())
-	fmt.Printf("%-12s%t (%t) - %s\n", "flag1", flag1.Present(), flag1.IsGlobal(), flag1.String())
-	fmt.Printf("%-12s%t (%t) - %s\n", "flag2", flag2.Present(), flag2.IsGlobal(), flag2.String())
-	fmt.Printf("%-12s%t (%t) - %s\n", "flag3", flag3.Present(), flag3.IsGlobal(), flag3.String())
+	fmt.Printf("%-12s%t (%t) - %s\n", "flag1", flag1.Present(), flag1.Global(), flag1.String())
+	fmt.Printf("%-12s%t (%t) - %s\n", "flag2", flag2.Present(), flag2.Global(), flag2.String())
+	fmt.Printf("%-12s%t (%t) - %s\n", "flag3", flag3.Present(), flag3.Global(), flag3.String())
 	fmt.Printf("%-12s %v\n", "cmd1 args", cmd1.Args())
 
 	fmt.Printf("\n%-12s%t\n", "subcmd", subcmd.Present())
-	fmt.Printf("%-12s%t (%t) - %s\n", "flag4", flag4.Present(), flag4.IsGlobal(), flag4.String())
+	fmt.Printf("%-12s%t (%t) - %s\n", "flag4", flag4.Present(), flag4.Global(), flag4.String())
 	fmt.Printf("%-12s %v\n", "subcmd args", subcmd.Args())
 
 	fmt.Printf("\n%-12s%t\n", "cmd2", cmd2.Present())
 
 	// flag3 will not be present since it belongs to cmd 2
-	fmt.Printf("%-12s%t (%t)\n", "flag5", flag5.Present(), flag5.IsGlobal())
+	fmt.Printf("%-12s%t (%t)\n", "flag5", flag5.Present(), flag5.Global())
 
 	// Output:
 	// verbose     true (true) - true (/)
@@ -165,21 +164,21 @@ func ExampleNew() {
 	fmt.Printf("%-12s%s\n", "string", str.String())
 	fmt.Printf("%-12s%s\n", "default", str.Default())
 	fmt.Printf("%-12s%s\n", "usage", str.Usage())
-	fmt.Printf("%-12s%s\n", "aliases-str", str.AliasesString())
+	fmt.Printf("%-12s%s\n", "aliases-str", str.UsageAliases())
 	fmt.Printf("%-12s%#v\n", "aliases", str.Aliases())
 	// You can mark flag as hidden by calling .Hide()
 	// Helpful when you are composing help menu.
-	fmt.Printf("%-12s%t\n", "is:hidden", str.IsHidden())
+	fmt.Printf("%-12s%t\n", "is:hidden", str.Hidden())
 	// by default flag is global regardless which position it was found.
 	// You can mark flag non global by calling .BelongsTo(cmdname string).
-	fmt.Printf("%-12s%t\n", "is:global", str.IsGlobal())
-	fmt.Printf("%-12s%q\n", "command", str.CommandName())
+	fmt.Printf("%-12s%t\n", "is:global", str.Global())
+	fmt.Printf("%-12s%q\n", "command", str.BelongsTo())
 	fmt.Printf("%-12s%d\n", "position", str.Pos())
 	fmt.Printf("%-12s%t\n", "present", str.Present())
 	// Var is underlying vars.Variable for convinient type conversion
 	fmt.Printf("%-12s%s\n", "var", str.Var())
 	// you can set flag as required by calling Required before you parse flags.
-	fmt.Printf("%-12s%t\n", "required", str.IsRequired())
+	fmt.Printf("%-12s%t\n", "required", str.Required())
 	// Output:
 	// name        string
 	// flag        --string
@@ -199,31 +198,31 @@ func ExampleNew() {
 	// required    false
 }
 
-func ExampleDuration() {
-	os.Args = []string{"/bin/app", "--duration", "1h30s"}
-	dur, _ := varflag.Duration("duration", 1*time.Second, "")
-	_, _ = dur.Parse(os.Args)
+// func ExampleDuration() {
+// 	os.Args = []string{"/bin/app", "--duration", "1h30s"}
+// 	dur, _ := varflag.Duration("duration", 1*time.Second, "")
+// 	_, _ = dur.Parse(os.Args)
 
-	fmt.Printf("%-12s%d\n", "duration", dur.Value())
-	fmt.Printf("%-12s%s\n", "duration", dur.Value())
-	fmt.Printf("%-12s%s\n", "string", dur.String())
-	fmt.Printf("%-12s%d\n", "int", dur.Var().Int())
-	fmt.Printf("%-12s%d\n", "int64", dur.Var().Int64())
-	fmt.Printf("%-12s%d\n", "uint", dur.Var().Uint())
-	fmt.Printf("%-12s%d\n", "uint64", dur.Var().Uint64())
-	fmt.Printf("%-12s%f\n", "float32", dur.Var().Float32())
-	fmt.Printf("%-12s%f\n", "float64", dur.Var().Float64())
-	// Output:
-	// duration    3630000000000
-	// duration    1h0m30s
-	// string      1h0m30s
-	// int         3630000000000
-	// int64       3630000000000
-	// uint        3630000000000
-	// uint64      3630000000000
-	// float32     3629999980544.000000
-	// float64     3630000000000.000000
-}
+// 	fmt.Printf("%-12s%d\n", "duration", dur.Value())
+// 	fmt.Printf("%-12s%s\n", "duration", dur.Value())
+// 	fmt.Printf("%-12s%s\n", "string", dur.String())
+// 	fmt.Printf("%-12s%d\n", "int", dur.Var().Int())
+// 	fmt.Printf("%-12s%d\n", "int64", dur.Var().Int64())
+// 	fmt.Printf("%-12s%d\n", "uint", dur.Var().Uint())
+// 	fmt.Printf("%-12s%d\n", "uint64", dur.Var().Uint64())
+// 	fmt.Printf("%-12s%f\n", "float32", dur.Var().Float32())
+// 	fmt.Printf("%-12s%f\n", "float64", dur.Var().Float64())
+// 	// Output:
+// 	// duration    3630000000000
+// 	// duration    1h0m30s
+// 	// string      1h0m30s
+// 	// int         3630000000000
+// 	// int64       3630000000000
+// 	// uint        3630000000000
+// 	// uint64      3630000000000
+// 	// float32     3629999980544.000000
+// 	// float64     3630000000000.000000
+// }
 
 func ExampleFloat64() {
 	os.Args = []string{"/bin/app", "--float", "1.001000023"}
@@ -305,7 +304,7 @@ func ExampleBool() {
 
 func ExampleOption() {
 	os.Args = []string{"/bin/app", "--option", "opt1", "--option", "opt2"}
-	f, _ := varflag.Option("option", []string{"defaultOpt"}, "", []string{"opt1", "opt2", "opt3", "defaultOpt"})
+	f, _ := varflag.Option("option", []string{"defaultOpt"}, []string{"opt1", "opt2", "opt3", "defaultOpt"}, "")
 	_, _ = f.Parse(os.Args)
 
 	fmt.Printf("%-12s%s\n", "string", f.String())

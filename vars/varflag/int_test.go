@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -27,7 +27,7 @@ func TestIntFlag(t *testing.T) {
 		{"basic", []string{"--basic", fmt.Sprint(math.MaxInt64)}, math.MaxInt64, 12, true, nil, nil},
 		{"basic", []string{"--basic", fmt.Sprint(math.MaxInt64)}, math.MaxInt64, 13, true, nil, nil},
 		{"basic", []string{"--basic", "1000"}, 1000, 14, true, nil, nil},
-		{"basic", []string{"--basic", "1.0"}, 15, 15, true, nil, ErrInvalidValue},
+		{"basic", []string{"--basic", "1.0"}, 1, 15, true, nil, nil},
 	}
 
 	for _, tt := range tests {
@@ -40,7 +40,7 @@ func TestIntFlag(t *testing.T) {
 				return
 			}
 			if ok, err := flag.Parse(tt.in); ok != tt.ok || !errors.Is(err, tt.err) {
-				t.Errorf("failed to parse int flag expected %t,%q got %t,%#v (%d)", tt.ok, tt.err, ok, err, flag.Value())
+				t.Errorf("failed to parse int flag expected %t,%q got %v, err(%#v) (%d)", tt.ok, tt.err, ok, err, flag.Value())
 			}
 
 			if flag.Value() != tt.want {

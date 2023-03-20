@@ -1,6 +1,6 @@
-// Copyright 2021 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -8,25 +8,33 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mkungla/bexp/v3"
-
-	"github.com/mkungla/vars/v6"
+	"github.com/happy-sdk/bexp"
+	"github.com/happy-sdk/vars"
 )
 
+// BexpFlag expands flag args with bash brace expansion.
+type BexpFlag struct {
+	Common
+	val []string
+}
+
 // Bexp returns new Bash Brace Expansion flag.
-func Bexp(name string, value string, usage string, aliases ...string) (*BexpFlag, error) {
+func Bexp(name string, value string, usage string, aliases ...string) (flag *BexpFlag, err error) {
 	if !ValidFlagName(name) {
 		return nil, fmt.Errorf("%w: flag name %q is not valid", ErrFlag, name)
 	}
 
-	f := &BexpFlag{}
-	f.name = strings.TrimLeft(name, "-")
-	f.aliases = normalizeAliases(aliases)
-	f.defval = vars.New(f.name, value)
-	f.usage = usage
-	f.val = []string{}
-	f.variable = vars.New(name, "")
-	return f, nil
+	flag = &BexpFlag{}
+	flag.name = strings.TrimLeft(name, "-")
+	flag.aliases = normalizeAliases(aliases)
+	flag.defval, err = vars.NewAs(name, value, false, vars.KindString)
+	if err != nil {
+		return nil, err
+	}
+	flag.usage = usage
+	flag.val = []string{}
+	flag.variable, err = vars.NewAs(name, value, false, vars.KindString)
+	return flag, err
 }
 
 // Parse BexpFlag.
@@ -45,7 +53,7 @@ func (f *BexpFlag) Parse(args []string) (ok bool, err error) {
 	if !ok {
 		f.val = defaults
 	}
-	f.variable = vars.New(f.name, strings.Join(f.val, "|"))
+	f.variable, err = vars.New(f.name, strings.Join(f.val, "|"), false)
 	return ok, err
 }
 
@@ -65,7 +73,7 @@ func (f *BexpFlag) Unset() {
 	defer f.mu.Unlock()
 	defaults := bexp.Parse(f.defval.String())
 
-	f.variable = vars.New(f.name, strings.Join(defaults, "|"))
+	f.variable, _ = vars.New(f.name, strings.Join(defaults, "|"), false)
 	f.isPresent = false
 	f.val = defaults
 }

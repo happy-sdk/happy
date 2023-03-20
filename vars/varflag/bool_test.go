@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mkungla/vars/v6"
+	"github.com/happy-sdk/vars"
 )
 
 func TestBoolFlagPresent(t *testing.T) {
@@ -72,8 +72,8 @@ func TestBoolFlagValues(t *testing.T) {
 			if flag.String() != tt.str {
 				t.Errorf("expected bool value to be %q got %q", tt.str, flag.String())
 			}
-			if flag.Var().Type() != vars.TypeBool {
-				t.Errorf("expected bool value Type to be TypeBool got %v", flag.Var().Type())
+			if flag.Var().Kind() != vars.KindBool {
+				t.Errorf("expected bool value Type to be TypeBool got %v", flag.Var().Kind())
 			}
 			flag.Unset()
 			if flag.Present() {
@@ -105,8 +105,8 @@ func TestBoolFlagValuesWithoutEq(t *testing.T) {
 			if flag.String() != tt.str {
 				t.Errorf("expected bool value to be %q got %q", tt.str, flag.String())
 			}
-			if flag.Var().Type() != vars.TypeBool {
-				t.Errorf("expected bool value Type to be TypeBool got %v", flag.Var().Type())
+			if flag.Var().Kind() != vars.KindBool {
+				t.Errorf("expected bool value Type to be TypeBool got %v", flag.Var().Kind())
 			}
 			flag.Unset()
 			if flag.Present() {

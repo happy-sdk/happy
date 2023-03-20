@@ -1,6 +1,6 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/happy-sdk/testutils"
 )
 
 type testflag struct {
@@ -143,8 +145,8 @@ func TestAliases(t *testing.T) {
 				)
 			}
 
-			if len(tt.aliases) > 0 && len(flag.AliasesString()) <= len(tt.aliases) {
-				t.Errorf("unexpected alias string %q", flag.AliasesString())
+			if len(tt.aliases) > 0 && len(flag.UsageAliases()) <= len(tt.aliases) {
+				t.Errorf("unexpected alias string %q", flag.UsageAliases())
 			}
 		})
 	}
@@ -158,7 +160,7 @@ func TestAliasesString(t *testing.T) {
 			}
 			flag, _ := New(tt.name, "", "", tt.aliases...)
 			if len(tt.aliases) > 0 {
-				str := flag.AliasesString()
+				str := flag.UsageAliases()
 				for _, a := range tt.aliases {
 					if !strings.Contains(str, a) {
 						t.Errorf(
@@ -169,7 +171,7 @@ func TestAliasesString(t *testing.T) {
 						)
 					}
 				}
-			} else if len(flag.AliasesString()) != 0 {
+			} else if len(flag.UsageAliases()) != 0 {
 				t.Error("expected no aliases for flag")
 			}
 		})
@@ -186,8 +188,8 @@ func TestIsHidden(t *testing.T) {
 			if tt.hidden {
 				flag.Hide()
 			}
-			if tt.hidden != flag.IsHidden() {
-				t.Errorf("flag should be hidden (%t) got (%t)", tt.hidden, flag.IsHidden())
+			if tt.hidden != flag.Hidden() {
+				t.Errorf("flag should be hidden (%t) got (%t)", tt.hidden, flag.Hidden())
 			}
 		})
 	}
@@ -200,7 +202,7 @@ func TestGlobal(t *testing.T) {
 				return
 			}
 			flag, _ := New(tt.name, "", "")
-			if flag.IsGlobal() {
+			if flag.Global() {
 				t.Error("flag should not be global by default")
 			}
 
@@ -208,7 +210,7 @@ func TestGlobal(t *testing.T) {
 				t.Error(err)
 			}
 
-			if !flag.IsGlobal() {
+			if !flag.Global() {
 				t.Error("flag should be global after parsing from generic string")
 			}
 
@@ -216,7 +218,7 @@ func TestGlobal(t *testing.T) {
 			if _, err := flag2.Parse([]string{os.Args[0], "--" + tt.name, "some-value"}); err != nil {
 				t.Error(err)
 			}
-			if !flag2.IsGlobal() {
+			if !flag2.Global() {
 				t.Error("flag should be global after parsing from os args")
 			}
 		})
@@ -230,39 +232,39 @@ func TestNotGlobal(t *testing.T) {
 				return
 			}
 			flag, _ := New(tt.name, "", "")
-			if flag.IsGlobal() {
+			if flag.Global() {
 				t.Error("flag should not be global by default")
 			}
 
-			flag.BelongsTo("target-cmd")
+			flag.AttachTo("target-cmd")
 			if _, err := flag.Parse([]string{"app", "arg1", "arg2", "target-cmd", "arg", "--" + tt.name, "some-value"}); err != nil {
 				t.Error(err)
 			}
-			if flag.IsGlobal() {
+			if flag.Global() {
 				t.Error("flag should not be global after parsing from args containing target-cmd")
 			}
 
 			flag2, _ := New(tt.name, "", "")
-			flag2.BelongsTo("*")
+			flag2.AttachTo("*")
 			if _, err := flag2.Parse([]string{os.Args[0], "--" + tt.name, "some-value"}); err != nil {
 				t.Error(err)
 			}
 
-			if flag2.IsGlobal() {
+			if flag2.Global() {
 				t.Error("flag should not be global with BelongsTo(\"*\")")
 			}
 
 			flag3, _ := New(tt.name, "", "")
-			flag3.BelongsTo("*")
+			flag3.AttachTo("*")
 
 			if _, err := flag3.Parse([]string{"/bin/app", "sub-cmd", "--" + tt.name, "some-value"}); err != nil {
 				t.Error(err)
 			}
-			if flag3.IsGlobal() {
+			if flag3.Global() {
 				t.Error("flag should not be global after parsing from os args containing cmds")
 			}
-			if flag3.CommandName() != "sub-cmd" {
-				t.Errorf("expected flag command to be %q got %q", "sub-cmd", flag3.CommandName())
+			if flag3.BelongsTo() != "sub-cmd" {
+				t.Errorf("expected flag command to be %q got %q", "sub-cmd", flag3.BelongsTo())
 			}
 		})
 	}
@@ -328,10 +330,10 @@ func TestRequired(t *testing.T) {
 			}
 			flag, _ := New(tt.name, "", "")
 			if tt.required {
-				flag.Required()
+				flag.MarkAsRequired()
 			}
-			if tt.required != flag.IsRequired() {
-				t.Error("flag should not be global by default")
+			if tt.required != flag.Required() {
+				testutils.Equal(t, tt.required, flag.Required(), "checking is flag required")
 			}
 
 			if tt.required {
@@ -440,7 +442,7 @@ func TestVariable(t *testing.T) {
 			}
 			flag, _ := New(tt.name, "", "")
 			args := []string{flag.Flag(), tval}
-			if flag.IsGlobal() {
+			if flag.Global() {
 				t.Error("flag should be global by default")
 			}
 
@@ -451,12 +453,12 @@ func TestVariable(t *testing.T) {
 			if err != nil {
 				t.Errorf("dif not expect error while parsing %q got %q", tt.name, err)
 			}
-			if !flag.IsGlobal() {
+			if !flag.Global() {
 				t.Error("flag should be global")
 			}
 			v := flag.Var()
-			if v.Key() != tt.name {
-				t.Errorf("expected flag var.Key() to eq %q got %q", tt.name, v.Key())
+			if v.Name() != tt.name {
+				t.Errorf("expected flag var.Key() to eq %q got %q", tt.name, v.Name())
 			}
 			if v.String() != tval {
 				t.Errorf("expected flag var.String() to eq %q got %q", tval, v.String())

@@ -1,15 +1,46 @@
-// Copyright 2016 Marko Kungla. All rights reserved.
-// Use of this source code is governed by a The Apache-style
-// license that can be found in the LICENSE file.
+// Copyright 2022 Marko Kungla
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
 
 package varflag
 
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"sync"
 
-	"github.com/mkungla/vars/v6"
+	"github.com/happy-sdk/vars"
 )
+
+// FlagSet holds collection of flags for parsing
+// e.g. global, sub command or custom flag collection.
+type FlagSet struct {
+	mu      sync.RWMutex
+	name    string
+	argsn   int
+	present bool
+	flags   []Flag
+	sets    []Flags
+	args    []vars.Value
+	pos     int
+}
+
+// NewFlagSet is wrapper to parse flags together.
+// e.g. under specific command. Where "name" is command name
+// to search before parsing the flags under this set.
+// argsn is number of command line arguments allowed within this set.
+// If argsn is -gt 0 then parser will stop after finding argsn+1 argument
+// which is not a flag.
+func NewFlagSet(name string, argsn int) (*FlagSet, error) {
+	if name == "/" || (len(os.Args) > 0 && name == filepath.Base(os.Args[0]) || name == os.Args[0]) {
+		name = "/"
+	} else if !ValidFlagName(name) {
+		return nil, fmt.Errorf("%w: name %q is not valid for flag set", ErrFlag, name)
+	}
+	return &FlagSet{name: name, argsn: argsn}, nil
+}
 
 // Name returns name of the flag set.
 func (s *FlagSet) Name() string {
@@ -26,13 +57,20 @@ func (s *FlagSet) Len() int {
 }
 
 // Add flag to flag set.
-func (s *FlagSet) Add(flag ...Flag) {
+func (s *FlagSet) Add(flag ...Flag) error {
+
+	for _, f := range flag {
+		_, err := s.Get(f.Name())
+		if !errors.Is(err, ErrNoNamedFlag) {
+			return fmt.Errorf("%w: %s", ErrFlagExists, f.Name())
+		}
+		f.AttachTo(s.name)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for _, f := range flag {
-		f.BelongsTo(s.name)
-	}
+
 	s.flags = append(s.flags, flag...)
+	return nil
 }
 
 // Get flag of current set.
@@ -40,7 +78,6 @@ func (s *FlagSet) Get(name string) (Flag, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, f := range s.flags {
-
 		if f.Name() == name {
 			return f, nil
 		}
@@ -49,14 +86,15 @@ func (s *FlagSet) Get(name string) (Flag, error) {
 }
 
 // AddSet adds flag set.
-func (s *FlagSet) AddSet(set ...Flags) {
+func (s *FlagSet) AddSet(set ...Flags) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.sets = append(s.sets, set...)
+	return nil
 }
 
 // GetSetTree
-func (s *FlagSet) GetActiveSetTree() []Flags {
+func (s *FlagSet) GetActiveSets() []Flags {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -65,10 +103,11 @@ func (s *FlagSet) GetActiveSetTree() []Flags {
 	if s.Present() {
 		for _, set := range s.sets {
 			if set.Present() {
-				tree = append(tree, set.GetActiveSetTree()...)
+				tree = append(tree, set.GetActiveSets()...)
 			}
 		}
 	}
+
 	return tree
 }
 
@@ -114,18 +153,13 @@ func (s *FlagSet) Sets() []Flags {
 	return s.sets
 }
 
-// ////////////////////////////////////////////////////////////////////////////
-// some shameful cognitive complexity
-// ////////////////////////////////////////////////////////////////////////////
-
 // Parse all flags recursively.
-//nolint: gocognit, cyclop
 func (s *FlagSet) Parse(args []string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	var currargs []string
-	if s.name != "/" && s.name != "*" {
+	if s.name != "/" && s.name != "*" && s.name != filepath.Base(os.Args[0]) {
 		for i, arg := range args {
 			if arg == s.name {
 				s.pos = i
@@ -152,7 +186,7 @@ func (s *FlagSet) Parse(args []string) error {
 		}
 		// this flag need to be removed from sub command args
 		if gflag.Present() {
-			currargs = slicediff(currargs, gflag.input())
+			currargs = slicediff(currargs, gflag.Input())
 		}
 	}
 
@@ -203,43 +237,21 @@ includessubset:
 
 	// filter flags
 	used := []string{}
-	if args[0] == s.name {
-		used = append(used, s.name)
+	if args[0] == s.name || args[0] == os.Args[0] {
+		used = append(used, args[0])
 	}
-	// for _, flag := range s.flags {
-	// 	if !flag.Present() {
-	// 		// get the flag arg
-	// 		// we can not use flag pos since flag was positioned after argument
-	// 		if flag.Pos() == 0 {
-	// 			return fmt.Errorf("%w: flag %s position was 0", ErrParse, flag.Name())
-	// 		}
-	// 		pose := flag.Pos() - 1
-	// 		arg := args[pose]
-	// 		// is flag key=val
-	// 		if strings.Contains(arg, "=") {
-	// 			used = append(used, args[pose])
-	// 			continue
-	// 		}
-	// 		// bool flag
-	// 		if _, ok := flag.(*BoolFlag); ok {
-	// 			used = append(used, args[pose])
-	// 			if len(args) > pose {
-	// 				val := args[pose+1]
-	// 				if val == "true" || val == "1" || val == "on" || val == "false" || val == "0" || val == "off" {
-	// 					used = append(used, val)
-	// 				}
-	// 			}
-	// 		} else {
-	// 			// flag with value
-	// 			// should be safe to use index +1 since
-	// 			// flag was parsed correctly
-	// 			used = append(used, args[pose], args[pose+1])
-	// 		}
-	// 	}
-	// }
+
 	sargs := slicediff(args, used)
 	for _, arg := range sargs {
-		s.args = append(s.args, vars.NewValue(arg))
+		a, err := vars.NewValue(arg)
+		if err != nil {
+			return err
+		}
+		if s.argsn == -1 || len(s.args) <= s.argsn {
+			s.args = append(s.args, a)
+		} else {
+			break
+		}
 	}
 	return nil
 }
