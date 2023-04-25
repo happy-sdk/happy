@@ -1,3 +1,0 @@
-go test fuzz v1
-string("🛡")
-string("\xed\xa1\x81̥")

@@ -7,8 +7,8 @@ package happy
 import (
 	"fmt"
 
-	"github.com/mkungla/happy/pkg/vars"
-	"github.com/mkungla/happy/pkg/version"
+	"github.com/happy-sdk/happy/pkg/version"
+	"github.com/happy-sdk/vars"
 	"golang.org/x/mod/semver"
 )
 

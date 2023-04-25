@@ -10,9 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mkungla/happy/pkg/address"
-	"github.com/mkungla/happy/pkg/vars"
-	"github.com/mkungla/happy/pkg/version"
+	"github.com/happy-sdk/happy/logging"
+	"github.com/happy-sdk/happy/pkg/address"
+	"github.com/happy-sdk/happy/pkg/version"
+	"github.com/happy-sdk/vars"
 	"golang.org/x/mod/semver"
 )
 
@@ -288,8 +289,15 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 			validator: noopvalidator,
 		},
 		{
+			key:       "app.cli.x",
+			value:     false,
+			desc:      "indicate that external commands should be printed.",
+			kind:      ConfigOption,
+			validator: noopvalidator,
+		},
+		{
 			key:   "app.throttle.ticks",
-			value: time.Duration(time.Millisecond * 100),
+			value: time.Duration(time.Second / 60),
 			desc:  "Interfal target for system and service ticks",
 			kind:  ReadOnlyOption | SettingsOption,
 			validator: func(key string, val vars.Value) error {
@@ -331,7 +339,7 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 		},
 		{
 			key:       "log.level",
-			value:     LogLevelTask,
+			value:     logging.LevelTask,
 			desc:      "Log level for applicaton",
 			kind:      ReadOnlyOption | SettingsOption,
 			validator: noopvalidator,
@@ -344,16 +352,9 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 			validator: noopvalidator,
 		},
 		{
-			key:       "log.colors",
-			value:     true,
-			desc:      "enable colored log output",
-			kind:      ReadOnlyOption | SettingsOption,
-			validator: noopvalidator,
-		},
-		{
-			key:       "log.stdlog",
-			value:     false,
-			desc:      "set configured logger as slog.Default",
+			key:       "log.handler",
+			value:     logging.WithColoredHandler,
+			desc:      "log handler for logger",
 			kind:      ReadOnlyOption | ConfigOption,
 			validator: noopvalidator,
 		},
@@ -361,6 +362,13 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 			key:       "log.secrets",
 			value:     "",
 			desc:      "comma separated list of attr key to mask value with ****",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "log.timestamp",
+			value:     "15:04:05.999",
+			desc:      "timestamp format",
 			kind:      ReadOnlyOption | ConfigOption,
 			validator: noopvalidator,
 		},

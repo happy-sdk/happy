@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mkungla/happy/sdk/testutils"
+	"github.com/happy-sdk/testutils"
 )
 
 type ApplicationTestSuite struct {
@@ -38,8 +38,9 @@ func (s *ApplicationTestSuite) Test(t *testing.T) {
 
 	// Run the application
 	s.App.exitOs = false
-	s.App.exitFunc = append(s.App.exitFunc, func(code int) {
+	s.App.exitFunc = append(s.App.exitFunc, func(code int) error {
 		testutils.Equal(t, s.exitCode, code)
+		return nil
 	})
 	s.App.Main()
 

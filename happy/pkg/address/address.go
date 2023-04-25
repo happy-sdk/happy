@@ -143,8 +143,8 @@ func Current() (*Address, error) {
 
 		if info.Path == "command-line-arguments" {
 			return nil, errors.Join(
-				fmt.Errorf("%w: unable to rad module info", ErrAddr),
-				fmt.Errorf("%w: possible reason go run main.go vs go run .", ErrAddr),
+				fmt.Errorf("%w: unable to read module info", ErrAddr),
+				fmt.Errorf("%w: possible reason go run main.go vs go run ./", ErrAddr),
 			)
 		} else {
 			name = info.Path

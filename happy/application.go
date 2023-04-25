@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mkungla/happy/pkg/hlog"
-	"github.com/mkungla/happy/pkg/varflag"
-	"github.com/mkungla/happy/pkg/vars"
-	"github.com/mkungla/happy/pkg/version"
+	"github.com/happy-sdk/happy/logging"
+	"github.com/happy-sdk/happy/pkg/version"
+	"github.com/happy-sdk/varflag"
+	"github.com/happy-sdk/vars"
 	"golang.org/x/exp/slog"
 )
 
@@ -44,10 +44,6 @@ type Application struct {
 	running     bool
 	initialized time.Time
 
-	// logger
-	logger *hlog.Logger
-	lvl    *slog.LevelVar
-
 	// exit handler
 	exitOs     bool
 	exitFunc   []func(code int) error
@@ -57,39 +53,77 @@ type Application struct {
 	profile    string
 	migrations map[string]migration
 
-	firstuse     bool
-	state        *persistentState
-	setupNextRun bool
+	firstuse        bool
+	persistentState *persistentState
+	setupNextRun    bool
+
+	state state
+}
+
+type state struct {
+}
+
+func NewWithLogger[L Logger[LVL], LVL LogLevelIface](logger L, level LVL, opts ...OptionArg) *Application {
+	logger.SetLevel(level)
+
+	a := &Application{
+		engine:      newEngine(),
+		initialized: time.Now(),
+		exitOs:      true,
+	}
+
+	err := a.configureApplication(opts)
+
+	secretsCnf := a.session.Get("log.secrets").String()
+
+	var secrets []string
+	if len(secretsCnf) > 0 {
+		keys := strings.Split(secretsCnf, ",")
+		for _, secret := range keys {
+			secrets = append(secrets, strings.TrimSpace(secret))
+		}
+	}
+	loggerConf := logging.Config{
+		AddSource:      a.session.Get("log.source").Bool(),
+		Level:          logging.Level(a.session.Get("log.level").Int()),
+		Secrets:        secrets,
+		TimeLayout:     a.session.Get("log.timestamp").String(),
+		DefaultHandler: logging.HandlerKind(a.session.Get("log.handler").Uint8()),
+	}
+	loggerConf.Colors = a.session.Get("log.colors").Bool()
+
+	a.session.logger, err = logging.New(loggerConf)
+	if a.session.Get("log.stdlog").Bool() {
+		a.session.logger.NotImplemented("setting happy.Logger as slog.Default is not implemented")
+	}
+
+	// if lerr := a.configureLogger(logger); lerr != nil {
+	// 	fmt.Fprintf(os.Stderr, "%s: \n", lerr.Error())
+	// 	a.exit(1)
+	// }
+
+	if err != nil {
+		a.session.Log().Error("config error", err)
+		a.exit(1)
+	}
+
+	if err := a.configureRootCommand(); err != nil {
+		a.session.Log().Error("failed to create root command", err)
+	}
+	return a
 }
 
 // New returns new happy application instance.
 // It panics if there is critical internal error or bug.
 func New(opts ...OptionArg) *Application {
-	a := &Application{
-		engine:      newEngine(),
-		initialized: time.Now(),
-		exitOs:      true,
-		lvl:         &slog.LevelVar{},
-	}
-	err := a.configureApplication(opts)
+	logger := &logger[LogLevel]{}
 
-	a.configureLogger()
-
-	if err != nil {
-		a.logger.Error("config error", err)
-		a.exit(1)
-	}
-
-	if err := a.configureRootCommand(); err != nil {
-		a.logger.Error("failed to create root command", err)
-	}
-
-	return a
+	return NewWithLogger(logger, LevelTask, opts...)
 }
 
 func (a *Application) Main() {
 	if a.running {
-		a.logger.Warn("multiple calls to app.Main() prohibited")
+		a.session.Log().Warn("multiple calls to app.Main() prohibited")
 		return
 	}
 	a.running = true
@@ -103,7 +137,7 @@ func (a *Application) Main() {
 
 	// initialize application
 	if err := a.initialize(); err != nil {
-		a.logger.Error("initialization failed", err)
+		a.session.Log().Error("initialization failed", err)
 		a.exit(1)
 		return
 	}
@@ -116,7 +150,7 @@ func (a *Application) Main() {
 			} else if opt.kind&SettingsOption != 0 {
 				group = "settings"
 			}
-			a.logger.Warn("option not used", slog.Group(group,
+			a.session.Log().Warn("option not used", slog.Group(group,
 				slog.String("key", opt.key),
 				slog.Any("value", opt.value),
 				slog.Bool("readOnly", opt.kind&ReadOnlyOption == ReadOnlyOption),
@@ -125,7 +159,7 @@ func (a *Application) Main() {
 	}
 	if a.activeCmd.doAction == nil {
 		if err := a.clihelp(); err != nil {
-			a.logger.Error("help error", err)
+			a.session.Log().Error("help error", err)
 		}
 		return
 	}
@@ -208,7 +242,7 @@ func (a *Application) OnMigrate(ver string, up, down ActionMigrate) {
 }
 
 func (a *Application) Cron(setup func(schedule CronScheduler)) {
-	a.logger.NotImplemented("use service for cron")
+	a.session.Log().NotImplemented("use service for cron")
 }
 
 func (a *Application) WithAddons(addon ...*Addon) {
@@ -266,35 +300,35 @@ func (a *Application) Setting(key string, value any, description string, validat
 
 func (a *Application) shutdown() {
 	if err := a.engine.stop(a.session); err != nil {
-		a.logger.Error("failed to stop engine", err)
+		a.session.Log().Error("failed to stop engine", err)
 	}
 	// Destroy session
 	a.session.Destroy(nil)
 	if err := a.session.Err(); err != nil && !errors.Is(err, ErrSessionDestroyed) {
-		a.logger.Warn("session", slog.String("err", err.Error()))
+		a.session.Log().Warn("session", slog.String("err", err.Error()))
 	}
 
 }
 
 func (a *Application) exit(code int) {
-	a.logger.SystemDebug("shutting down", slog.Int("exit.code", code))
+	a.session.Log().SystemDebug("shutting down", slog.Int("exit.code", code))
 
 	for _, fn := range a.exitFunc {
 		if err := fn(code); err != nil {
-			a.logger.Error("exit func", err)
+			a.session.Log().Error("exit func", err)
 		}
 	}
 
 	a.shutdown()
 
-	a.logger.SystemDebug("shutdown complete", slog.Duration("uptime", a.engine.uptime()))
+	a.session.Log().SystemDebug("shutdown complete", slog.Duration("uptime", a.engine.uptime()))
 
 	if a.exitCh != nil {
 		a.exitCh <- struct{}{}
 	}
 
 	if err := a.save(); err != nil {
-		a.logger.Error("failed to save state", err)
+		a.session.Log().Error("failed to save state", err)
 	}
 	if a.exitOs {
 		os.Exit(code)
@@ -386,9 +420,9 @@ func (a *Application) initializePaths() error {
 func (a *Application) initialize() error {
 	defer func() {
 		dur := time.Since(a.initialized)
-		a.logger.SystemDebug(
+		a.session.Log().SystemDebug(
 			"initialization",
-			a.session.Get("app.version"),
+			slog.String("version", a.session.Get("app.version").String()),
 			slog.Duration("took", dur),
 		)
 	}()
@@ -414,22 +448,22 @@ func (a *Application) initialize() error {
 
 	// print application version and exit
 	if a.rootCmd.flag("version").Present() {
-		a.lvl.Set(100)
+		a.session.logger.SetLevel(logging.LevelQuiet)
 		a.printVersion()
 		a.exit(0)
 	}
 
 	// set log verbosity from flags
 	if a.rootCmd.flag("system-debug").Var().Bool() {
-		a.lvl.Set(slog.Level(hlog.LevelSystemDebug))
+		a.session.logger.SetLevel(logging.LevelSystemDebug)
 	} else if a.rootCmd.flag("debug").Var().Bool() {
-		a.lvl.Set(slog.Level(hlog.LevelDebug))
+		a.session.logger.SetLevel(logging.LevelDebug)
 	} else if a.rootCmd.flag("verbose").Var().Bool() {
-		a.lvl.Set(slog.Level(hlog.LevelInfo))
+		a.session.logger.SetLevel(logging.LevelInfo)
 	}
 
 	a.profile = a.rootCmd.flag("profile").Var().String()
-	a.logger.SystemDebug("using profile", slog.String("profile", a.profile))
+	a.session.Log().SystemDebug("using profile", slog.String("profile", a.profile))
 	if err := a.initializePaths(); err != nil {
 		return err
 	} else {
@@ -445,25 +479,29 @@ func (a *Application) initialize() error {
 	// show help
 	if a.rootCmd.flag("help").Present() {
 		if err := a.clihelp(); err != nil {
-			a.logger.Error("failed to create help view", err)
+			a.session.Log().Error("failed to create help view", err)
 		}
 		a.shutdown()
 		os.Exit(0)
 		return nil
 	}
 	// set x flag to session
-	a.session.x = a.rootCmd.flag("x").Present()
+	// is flag x set to indicate that
+	// external commands should be printed.
+	if err := a.session.Set("app.cli.x", a.rootCmd.flag("x").Present()); err != nil {
+		return err
+	}
 
-	a.logger.Debug(
+	a.session.Log().Debug(
 		"enable logging",
-		slog.String("level", hlog.Level(a.lvl.Level()).String()),
+		slog.String("level", a.session.logger.Level().String()),
 		slog.String("cmd", a.activeCmd.name),
 	)
 
 	// loaded persistent state
-	if a.state != nil {
-		a.logger.SystemDebug("loaded settings from",
-			slog.String("file", a.state.cfile),
+	if a.persistentState != nil {
+		a.session.Log().SystemDebug("loaded settings from",
+			slog.String("file", a.persistentState.cfile),
 		)
 	}
 
@@ -471,8 +509,8 @@ func (a *Application) initialize() error {
 		return err
 	}
 
-	a.logger.SystemDebug("initialize", slog.Bool("first.use", a.firstuse))
-	if a.firstuse || (a.state != nil && a.state.SetupNextRun) {
+	a.session.Log().SystemDebug("initialize", slog.Bool("first.use", a.firstuse))
+	if a.firstuse || (a.persistentState != nil && a.persistentState.SetupNextRun) {
 		if err := a.firstUse(); err != nil {
 			// Set it so that installer rruns again on next run
 			// If there were user errors on setup.
@@ -480,7 +518,7 @@ func (a *Application) initialize() error {
 			return err
 		}
 		a.setupNextRun = false
-		a.logger.Ok("setup complete")
+		a.session.Log().Ok("setup complete")
 	}
 
 	// apply pending options for app settings if set
@@ -576,12 +614,12 @@ func (a *Application) load() error {
 		return err
 	}
 
-	if err := json.Unmarshal(data, &a.state); err != nil {
+	if err := json.Unmarshal(data, &a.persistentState); err != nil {
 		return err
 	}
-	a.state.cfile = cfile
+	a.persistentState.cfile = cfile
 
-	for _, setting := range a.state.Settings {
+	for _, setting := range a.persistentState.Settings {
 		// override predef options
 		varval, err := vars.NewValueAs(setting.Value, vars.Kind(setting.Kind))
 		if err != nil {
@@ -617,7 +655,7 @@ func (a *Application) save() error {
 		return nil
 	}
 	if !a.activeCmd.allowOnFreshInstall {
-		a.logger.SystemDebug("skip saving")
+		a.session.Log().SystemDebug("skip saving")
 		return nil
 	}
 	cpath := a.session.Get("app.path.config").String()
@@ -701,19 +739,19 @@ func (a *Application) setActiveCommand() error {
 
 func (a *Application) execute() {
 	if err := a.session.start(); err != nil {
-		a.logger.Error("failed to start session", err)
+		a.session.Log().Error("failed to start session", err)
 		a.exit(1)
 		return
 	}
 
 	if err := a.engine.start(a.session); err != nil {
-		a.logger.Error("failed to start the engine", err)
+		a.session.Log().Error("failed to start the engine", err)
 		a.exit(1)
 		return
 	}
 
 	if a.isDev {
-		a.logger.Notice("development mode",
+		a.session.Log().Notice("development mode",
 			slog.Bool("enabled", true),
 			slog.String("profile", a.profile),
 		)
@@ -721,13 +759,13 @@ func (a *Application) execute() {
 
 	// execute before action chain
 	if err := a.executeBeforeActions(); err != nil {
-		a.logger.Error("prerequisites failed", err)
+		a.session.Log().Error("prerequisites failed", err)
 		a.exit(1)
 		return
 	}
 
 	// block until session is ready
-	a.logger.SystemDebug("waiting session...")
+	a.session.Log().SystemDebug("waiting session...")
 	<-a.session.Ready()
 
 	if a.session.Err() != nil {
@@ -736,7 +774,7 @@ func (a *Application) execute() {
 	}
 
 	cmdtree := strings.Join(a.activeCmd.parents, ".") + "." + a.activeCmd.name
-	a.logger.SystemDebug("session ready: execute", slog.String("action", "Do"), slog.String("command", cmdtree))
+	a.session.Log().SystemDebug("session ready: execute", slog.String("action", "Do"), slog.String("command", cmdtree))
 
 	err := a.activeCmd.callDoAction(a.session)
 	if err != nil {
@@ -801,9 +839,10 @@ func (a *Application) configureApplication(opts []OptionArg) (err error) {
 	return errors.Join(errs...)
 }
 
-func (a *Application) configureLogger() {
-	a.lvl.Set(slog.Level(a.session.Get("log.level").Int()))
+func (a *Application) configureLogger(logger Logger[LogLevelIface]) (err error) {
+
 	secretsCnf := a.session.Get("log.secrets").String()
+
 	var secrets []string
 	if len(secretsCnf) > 0 {
 		keys := strings.Split(secretsCnf, ",")
@@ -811,22 +850,20 @@ func (a *Application) configureLogger() {
 			secrets = append(secrets, strings.TrimSpace(secret))
 		}
 	}
-	handler := hlog.Config{
-		Options: slog.HandlerOptions{
-			AddSource: a.session.Get("log.source").Bool(),
-			Level:     a.lvl,
-			// ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			// 	return a
-			// },
-		},
-		Colors:  a.session.Get("log.colors").Bool(),
-		Secrets: secrets,
-		JSON:    false,
-	}.NewHandler(os.Stdout)
+	loggerConf := logging.Config{
+		AddSource:      a.session.Get("log.source").Bool(),
+		Level:          logging.Level(a.session.Get("log.level").Int()),
+		Secrets:        secrets,
+		TimeLayout:     a.session.Get("log.timestamp").String(),
+		DefaultHandler: logging.HandlerKind(a.session.Get("log.handler").Uint8()),
+	}
+	loggerConf.Colors = a.session.Get("log.colors").Bool()
 
-	a.logger = hlog.New(handler)
-	a.session.logger = a.logger
-	hlog.SetDefault(a.logger, a.session.Get("log.stdlog").Bool())
+	a.session.logger, err = logging.New(loggerConf)
+	if a.session.Get("log.stdlog").Bool() {
+		a.session.logger.NotImplemented("setting happy.Logger as slog.Default is not implemented")
+	}
+	return err
 }
 
 func (a *Application) configureRootCommand() error {
@@ -877,7 +914,7 @@ func (a *Application) configureRootCommand() error {
 }
 
 func (a *Application) executeBeforeActions() error {
-	a.logger.SystemDebug("execute before actions")
+	a.session.Log().SystemDebug("execute before actions")
 	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callBeforeAction(a.session); err != nil {
 			return err
@@ -890,42 +927,42 @@ func (a *Application) executeBeforeActions() error {
 }
 
 func (a *Application) executeAfterFailureActions(err error) {
-	a.logger.Error("execute after failure actions", err)
+	a.session.Log().Error("execute after failure actions", err)
 
 	if err := a.activeCmd.callAfterFailureAction(a.session, err); err != nil {
-		a.logger.Error("command after failure action", err)
+		a.session.Log().Error("command after failure action", err)
 	}
 
 	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callAfterFailureAction(a.session, err); err != nil {
-			a.logger.Error("app after failure action", err)
+			a.session.Log().Error("app after failure action", err)
 		}
 	}
 }
 
 func (a *Application) executeAfterSuccessActions() {
-	a.logger.SystemDebug("execute after success actions")
+	a.session.Log().SystemDebug("execute after success actions")
 	if err := a.activeCmd.callAfterSuccessAction(a.session); err != nil {
-		a.logger.Error("command after success action", err)
+		a.session.Log().Error("command after success action", err)
 	}
 
 	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callAfterSuccessAction(a.session); err != nil {
-			a.logger.Error("app after success action", err)
+			a.session.Log().Error("app after success action", err)
 		}
 	}
 }
 
 func (a *Application) executeAfterAlwaysActions(err error) {
-	a.logger.SystemDebug("execute after always actions")
+	a.session.Log().SystemDebug("execute after always actions")
 
 	if err := a.activeCmd.callAfterAlwaysAction(a.session); err != nil {
-		a.logger.Error("command after always action", err)
+		a.session.Log().Error("command after always action", err)
 	}
 
 	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callAfterAlwaysAction(a.session); err != nil {
-			a.logger.Error("app after always action", err)
+			a.session.Log().Error("app after always action", err)
 		}
 	}
 
@@ -949,7 +986,7 @@ func (a *Application) registerAddonCommands() error {
 	}
 
 	if provided {
-		a.logger.SystemDebug("attached commands provided by addons")
+		a.session.Log().SystemDebug("attached commands provided by addons")
 	}
 
 	return nil
@@ -1019,8 +1056,8 @@ func (a *Application) registerAddons() error {
 			if err := a.session.Set(globalkey, opt.value); err != nil {
 				return err
 			}
-
 		}
+
 		if len(pendingOpts) != len(a.pendingOpts) {
 			a.pendingOpts = pendingOpts
 		}
@@ -1034,8 +1071,17 @@ func (a *Application) registerAddons() error {
 				return err
 			}
 		}
+
+		// Apply initial value
+		for _, opt := range opts.db.All() {
+			key := addon.info.Name + "." + opt.Name()
+			if err := a.session.Set(key, opt.Any()); err != nil {
+				return err
+			}
+		}
+
 		provided = true
-		a.logger.Debug(
+		a.session.Log().Debug(
 			"registered addon",
 			slog.Group("addon",
 				slog.String("name", addon.info.Name),
@@ -1062,7 +1108,7 @@ func (a *Application) registerAddons() error {
 		}
 	}
 	if provided {
-		a.logger.SystemDebug("registeration of addons completed")
+		a.session.Log().SystemDebug("registeration of addons completed")
 	}
 
 	return nil
@@ -1081,7 +1127,7 @@ func (a *Application) registerInternalEvents() error {
 			return err
 		}
 	}
-	a.logger.SystemDebug("registered system events")
+	a.session.Log().SystemDebug("registered system events")
 	return nil
 }
 
@@ -1093,9 +1139,9 @@ func (a *Application) migrate() error {
 		return fmt.Errorf("%w: app.fs.enabled must be enabled to use migrations", ErrApplication)
 	}
 	// check has any migrations executed earlier
-	a.logger.Debug("preparing migrations...")
-	if a.state.LastMigration == "" {
-		a.logger.SystemDebug("no previous migrations applied")
+	a.session.Log().Debug("preparing migrations...")
+	if a.persistentState.LastMigration == "" {
+		a.session.Log().SystemDebug("no previous migrations applied")
 	}
 
 	// currver := a.session.Get("app.version").String()

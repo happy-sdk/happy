@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/mkungla/happy"
+	"github.com/happy-sdk/happy"
 )
 
 func Info() *happy.Command {

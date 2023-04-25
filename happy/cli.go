@@ -13,8 +13,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mkungla/happy/pkg/hlog"
-	"github.com/mkungla/happy/pkg/varflag"
+	"github.com/happy-sdk/varflag"
 )
 
 type help struct {
@@ -95,15 +94,15 @@ func (h *view) printBanner() error {
 	if err := h.banner.parseTmpl("header-tmpl", h.Info, 0); err != nil {
 		return err
 	}
-	fmt.Fprintln(
-		os.Stdout,
-		hlog.Colorize(
-			h.banner.buffer.String(),
-			hlog.FgYellow,
-			0,
-			0,
-		),
-	)
+	// fmt.Fprintln(
+	// 	os.Stdout,
+	// 	hlog.Colorize(
+	// 		h.banner.buffer.String(),
+	// 		hlog.FgYellow,
+	// 		0,
+	// 		0,
+	// 	),
+	// )
 	return nil
 }
 

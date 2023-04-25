@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/mkungla/happy/pkg/varflag"
-	"github.com/mkungla/happy/pkg/vars"
+	"github.com/happy-sdk/varflag"
+	"github.com/happy-sdk/vars"
 	"golang.org/x/exp/slog"
 )
 

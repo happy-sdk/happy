@@ -11,17 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mkungla/happy/pkg/address"
-	"github.com/mkungla/happy/pkg/vars"
-	"github.com/robfig/cron/v3"
+	"github.com/happy-sdk/cron"
+	"github.com/happy-sdk/happy/pkg/address"
+	"github.com/happy-sdk/vars"
 	"golang.org/x/exp/slog"
 )
 
 type Service struct {
 	name string
-
-	EventListener
-	TickerFuncs
 
 	initializeAction Action
 	startAction      Action

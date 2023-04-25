@@ -6,7 +6,7 @@ Package happy is a powerful tool for developers looking to bring their ideas to 
 
 :warning: *Happy is very early in development phase and is not intended for production use.*  
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/mkungla/happy)](https://pkg.go.dev/github.com/mkungla/happy)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy)](https://pkg.go.dev/github.com/happy-sdk/happy)
 
 ## Creating application
 
@@ -20,7 +20,7 @@ package main
 
 import (
   "errors"
-  "github.com/mkungla/happy"
+  "github.com/happy-sdk/happy"
 )
 
 func main() {
@@ -118,7 +118,7 @@ Addons provide a simple way to bundle commands and services into a single Go pac
 package main
 
 import (
-  "github.com/mkungla/happy"
+  "github.com/happy-sdk/happy"
   "helloworld"
 )
 
@@ -134,7 +134,7 @@ func main() {
 // helloworld/addon.go
 package helloworld
 
-import "github.com/mkungla/happy"
+import "github.com/happy-sdk/happy"
 
 func Addon() *happy.Addon {
   addon := happy.NewAddon(
@@ -211,7 +211,7 @@ go run ./examples/kitchensink/ hello -h
 
 ## Credits
 
-[![GitHub contributors](https://img.shields.io/github/contributors/mkungla/happy?style=flat-square)](https://github.com/mkungla/happy/graphs/contributors)
+[![GitHub contributors](https://img.shields.io/github/contributors/mkungla/happy?style=flat-square)](https://github.com/happy-sdk/happy/graphs/contributors)
 
 <sub>**Happy banner design.**</sub>  
 <sup>Happy banner was designed by Egon Elbre <a href="https://egonelbre.com/" target="_blank">egonelbre.com</a></sup>

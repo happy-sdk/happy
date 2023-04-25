@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mkungla/happy/pkg/varflag"
-	"github.com/mkungla/happy/pkg/vars"
+	"github.com/happy-sdk/varflag"
+	"github.com/happy-sdk/vars"
 )
 
 var (
@@ -64,17 +64,6 @@ type Event interface {
 type EventListener interface {
 	OnEvent(scope, key string, cb ActionWithEvent)
 	OnAnyEvent(ActionWithEvent)
-}
-
-type TickerFuncs interface {
-	// OnTick enables you to define func body for operation set
-	// to call in minimal timeframe until session is valid and
-	// service is running.
-	OnTick(ActionTick)
-
-	// OnTock is helper called right after OnTick to separate
-	// your primary operations and post prossesing logic.
-	OnTock(ActionTick)
 }
 
 type Args interface {
@@ -139,7 +128,7 @@ func registerEvent(scope, key, desc string, example *vars.Map) Event {
 	if example == nil && desc != "" {
 		example = new(vars.Map)
 	}
-	example.Store("happy.app.event.description", desc)
+	_ = example.Store("happy.app.event.description", desc)
 	return NewEvent(scope, key, example, nil)
 }
 
@@ -172,6 +161,7 @@ func (ev *happyEvent) Payload() *vars.Map {
 
 type API interface {
 	Get(key string) vars.Variable
+	Set(key string, val any) error
 }
 
 func GetAPI[A API](sess *Session, addonName string) (api A, err error) {

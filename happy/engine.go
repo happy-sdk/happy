@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mkungla/happy/pkg/address"
-	"github.com/mkungla/happy/pkg/vars"
+	"github.com/happy-sdk/happy/pkg/address"
+	"github.com/happy-sdk/vars"
 	"golang.org/x/exp/slog"
 )
 

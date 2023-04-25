@@ -13,9 +13,11 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
-	"github.com/mkungla/happy"
+	"github.com/happy-sdk/happy"
 	"golang.org/x/exp/slog"
+	"golang.org/x/term"
 )
 
 var (
@@ -79,10 +81,20 @@ func AskForInput(q string) string {
 	return strings.TrimSpace(response)
 }
 
+func AskForSecret(q string) string {
+	fmt.Fprintln(os.Stdout, q)
+	bpasswd, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		return ""
+	}
+	return strings.TrimSpace(string(bpasswd))
+}
+
 func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
-	if sess.X() {
+	if sess.Get("app.cli.x").Bool() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
 	}
 
@@ -140,7 +152,7 @@ func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
 func execCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
-	if sess.X() {
+	if sess.Get("app.cli.x").Bool() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
 	}
 
@@ -162,7 +174,7 @@ func execCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 	if errors.As(err, &ee) {
 		fmt.Println(string(ee.Stderr))
 		sess.Log().Error("cmd error", ee)
-		return nil, err
+		return out, err
 	}
-	return nil, err
+	return out, err
 }

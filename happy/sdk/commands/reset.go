@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mkungla/happy"
+	"github.com/happy-sdk/happy"
 )
 
 func Reset() *happy.Command {

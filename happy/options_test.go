@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mkungla/happy/pkg/vars"
-	"github.com/mkungla/happy/sdk/testutils"
+	"github.com/happy-sdk/testutils"
+	"github.com/happy-sdk/vars"
 )
 
 func TestAppDefaultOptions(t *testing.T) {

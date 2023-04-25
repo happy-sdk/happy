@@ -7,7 +7,7 @@ package happy
 import (
 	"testing"
 
-	"github.com/mkungla/happy/sdk/testutils"
+	"github.com/happy-sdk/testutils"
 )
 
 func TestAppDefaultInstance(t *testing.T) {

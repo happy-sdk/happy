@@ -12,15 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mkungla/happy/pkg/hlog"
-	"github.com/mkungla/happy/pkg/vars"
+	"github.com/happy-sdk/happy/logging"
+	"github.com/happy-sdk/vars"
 	"golang.org/x/exp/slog"
 )
 
 type Session struct {
 	mu sync.RWMutex
 
-	logger *hlog.Logger
+	logger *logging.Logger
 	opts   *Options
 
 	ready      context.Context
@@ -35,10 +35,6 @@ type Session struct {
 	apis map[string]API
 
 	disposed bool
-
-	// is flag x set to indicate that
-	// external commands should be printed.
-	x bool
 }
 
 // Ready returns channel which blocks until session considers application to be ready.
@@ -61,14 +57,6 @@ func (s *Session) Err() error {
 	defer s.mu.RUnlock()
 	err := s.err
 	return err
-}
-
-// X Returns true when session expects that commands executed would be printed.
-// To set this true run application with -x flag
-func (s *Session) X() bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.x
 }
 
 func (s *Session) ServiceInfo(svcurl string) (*ServiceInfo, error) {
@@ -126,7 +114,7 @@ func (s *Session) Deadline() (deadline time.Time, ok bool) {
 	return
 }
 
-func (s *Session) Log() *hlog.Logger {
+func (s *Session) Log() *logging.Logger {
 	return s.logger
 }
 
@@ -219,6 +207,7 @@ func (s *Session) Settings() *vars.Map {
 			settings.Store(cnf.key, val)
 		}
 	}
+
 	return settings
 }
 

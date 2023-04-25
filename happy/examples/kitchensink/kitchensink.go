@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mkungla/happy"
-	"github.com/mkungla/happy/pkg/varflag"
-	"github.com/mkungla/happy/pkg/vars"
+	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/varflag"
+	"github.com/happy-sdk/vars"
 	"golang.org/x/exp/slog"
 )
 
