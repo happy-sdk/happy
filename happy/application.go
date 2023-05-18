@@ -710,30 +710,12 @@ func (a *Application) setActiveCommand() error {
 		return nil
 	}
 
-	var (
-		activeCmd *Command
-		exists    bool
-	)
-
-	// skip root cmd
-	for _, set := range settree[1:] {
-		name := set.Name()
-		if activeCmd == nil {
-			activeCmd, exists = a.rootCmd.getSubCommand(name)
-			if !exists {
-				return fmt.Errorf("%w: unknown command: %s", ErrApplication, name)
-			}
-			continue
-		}
-		activeCmd, exists = activeCmd.getSubCommand(set.Name())
-		if !exists {
-			return fmt.Errorf("%w: unknown subcommand: %s for %s", ErrApplication, name, activeCmd.name)
-		}
-		break
+	// Handle subcommand
+	activeCmd, err := a.rootCmd.getActiveCommand()
+	if err != nil {
+		return err
 	}
-
 	a.activeCmd = activeCmd
-
 	return nil
 }
 
@@ -915,14 +897,17 @@ func (a *Application) configureRootCommand() error {
 
 func (a *Application) executeBeforeActions() error {
 	a.session.Log().SystemDebug("execute before actions")
+
 	if a.rootCmd != a.activeCmd {
 		if err := a.rootCmd.callBeforeAction(a.session); err != nil {
 			return err
 		}
 	}
+
 	if err := a.activeCmd.callBeforeAction(a.session); err != nil {
 		return err
 	}
+
 	return nil
 }
 

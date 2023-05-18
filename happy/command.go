@@ -254,13 +254,35 @@ func (c *Command) flag(name string) varflag.Flag {
 }
 
 func (c *Command) getSubCommand(name string) (cmd *Command, exists bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if cmd, exists := c.subCommands[name]; exists {
 		return cmd, exists
 	}
 	return
 }
 
-func (c *Command) callBeforeAction(session *Session) error {
+func (c *Command) getActiveCommand() (*Command, error) {
+	subtree := c.flags.GetActiveSets()
+
+	// Skip self
+	for _, subset := range subtree[1:] {
+		cmd, exists := c.getSubCommand(subset.Name())
+		if exists {
+			return cmd.getActiveCommand()
+		}
+	}
+
+	args := c.flags.Args()
+	if !c.flags.AcceptsArgs() && len(args) > 0 {
+		return nil, fmt.Errorf("%w: unknown subcommand: %s for %s", ErrApplication, args[0].String(), c.name)
+	}
+
+	return c, nil
+}
+
+func (c *Command) callBeforeAction(sess *Session) error {
 	if c.beforeAction == nil {
 		return nil
 	}
@@ -271,7 +293,7 @@ func (c *Command) callBeforeAction(session *Session) error {
 		argn:  uint(len(c.flags.Args())),
 	}
 
-	if err := c.beforeAction(session, args); err != nil {
+	if err := c.beforeAction(sess, args); err != nil {
 		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	return nil
