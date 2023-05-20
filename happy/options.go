@@ -428,6 +428,13 @@ func getDefaultCommandOpts() []OptionArg {
 			kind:      ReadOnlyOption | ConfigOption,
 			validator: noopvalidator,
 		},
+		{
+			key:       "argc.max",
+			value:     0,
+			desc:      "Maximum argument count for command",
+			kind:      ReadOnlyOption | ConfigOption,
+			validator: noopvalidator,
+		},
 	}
 	return opts
 }

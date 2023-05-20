@@ -912,7 +912,7 @@ func (a *Application) executeBeforeActions() error {
 }
 
 func (a *Application) executeAfterFailureActions(err error) {
-	a.session.Log().Error("execute after failure actions", err)
+	a.session.Log().Error("failure", err)
 
 	if err := a.activeCmd.callAfterFailureAction(a.session, err); err != nil {
 		a.session.Log().Error("command after failure action", err)
@@ -926,7 +926,7 @@ func (a *Application) executeAfterFailureActions(err error) {
 }
 
 func (a *Application) executeAfterSuccessActions() {
-	a.session.Log().SystemDebug("execute after success actions")
+	a.session.Log().SystemDebug("success")
 	if err := a.activeCmd.callAfterSuccessAction(a.session); err != nil {
 		a.session.Log().Error("command after success action", err)
 	}

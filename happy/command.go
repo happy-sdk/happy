@@ -47,10 +47,6 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	c.errs = append(c.errs, err)
 	c.name = n
 
-	flags, err := varflag.NewFlagSet(name, -1)
-	c.errs = append(c.errs, err)
-	c.flags = flags
-
 	opts, err := NewOptions("command", getDefaultCommandOpts())
 	c.errs = append(c.errs, err)
 
@@ -59,9 +55,14 @@ func NewCommand(name string, options ...OptionArg) *Command {
 			c.errs = append(c.errs, err)
 		}
 	}
+
 	if err := opts.setDefaults(); err != nil {
 		c.errs = append(c.errs, err)
 	}
+
+	flags, err := varflag.NewFlagSet(name, opts.Get("argc.max").Int())
+	c.errs = append(c.errs, err)
+	c.flags = flags
 
 	c.usage = opts.Get("usage").String()
 	c.desc = opts.Get("description").String()
