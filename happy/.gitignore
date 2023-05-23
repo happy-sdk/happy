@@ -21,6 +21,14 @@
 # Output of e.g go coverage tool or other maintenance commands.
 *.out
 
+################################################################################
+# DIRECTORIES to ignore
+################################################################################
+dist/
+
+################################################################################
+# exception rules
+################################################################################
 # so that git would keep placeholder directory
 !**/*.dirkeep
 # so that go embed would include the dir

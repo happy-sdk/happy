@@ -6,6 +6,9 @@ release:
     owner: happy-sdk
     name: happy
 
+builds:
+- skip: true
+
 checksum:
   name_template: '{{ .ProjectName }}-{{ .Version }}-checksums.txt'
 
