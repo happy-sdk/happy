@@ -6,12 +6,11 @@ import (
 )
 
 func main() {
-	app := happy.New()
+	app := happy.New(
+		happy.Option("app.description", "A simple hello application"),
+	)
 
-	app.Help(`
-  A simple hello application
-
-  Usage:
+	app.Help(`Example:
   - go run ./examples/hello/
   - go run ./examples/hello/ nickname
 

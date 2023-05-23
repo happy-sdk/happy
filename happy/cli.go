@@ -5,319 +5,144 @@
 package happy
 
 import (
-	"bytes"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
-	"text/template"
 	"time"
-
-	"github.com/happy-sdk/varflag"
 )
 
-type help struct {
-	padding uint8
-	colored bool
-}
-
-func (h *help) banner(a *Application) {
-	h.printColoredln(fmt.Sprintf("HELP\n  %s", a.session.Get("app.name")))
-}
-
-func (h *help) println(line string) {
-	fmt.Println(line)
-}
-func (h *help) printColoredln(line string) {
-	if h.colored {
-		h.println(line)
-		return
+func (a *Application) help() error {
+	fmt.Println(a.session.Get("app.name").String() + " " + a.session.Get("app.version").String() + "\n")
+	if crby := a.session.Get("app.copyright.by").String(); crby != "" {
+		since := a.session.Get("app.copyright.since").Int()
+		year := time.Now().In(a.timeLocation).Year()
+		yearstr := fmt.Sprint(year)
+		if since > 0 && since < year {
+			yearstr = fmt.Sprintf("%d - %d", since, year)
+		}
+		fmt.Printf("  Copyright © %s %s\n", crby, yearstr)
 	}
-	fmt.Println(line)
-}
 
-// // DEPRECATED
-type view struct {
-	banner cliTmplParser
-	Info   struct {
-		Name           string
-		CopyrightBy    string
-		CopyrightSince int
-		License        string
-		Version        string
-		Description    string
+	if lic := a.session.Get("app.license").String(); lic != "" {
+		fmt.Printf("  %s\n", lic)
 	}
-}
 
-func (a *Application) clihelp() error {
-	a.session.Log().Deprecated("clihelp is deprecated")
-	view := &view{}
-	view.Info.Name = a.session.Get("app.name").String()
-	view.Info.Version = a.session.Get("app.version").String()
-	view.Info.CopyrightBy = a.session.Get("app.copyright.by").String()
-	view.Info.CopyrightSince = a.session.Get("app.copyright.since").Int()
-	view.Info.License = a.session.Get("app.license").String()
-	view.Info.Description = a.session.Get("app.description").String()
-
-	view.banner.setTemplate(` {{ .Name }}{{ if .CopyrightBy }}
-  Copyright © {{ if .CopyrightSince }}{{ .CopyrightSince }} {{ end }}{{ if (gt funcYear  .CopyrightSince) }}- {{ funcYear }} {{ end }}{{ .CopyrightBy }}. All rights reserved.{{end}}{{ if .License }}
-  License:      {{ .License }}{{ end }}{{ if .Version }}
-  {{ .Version }}{{end}}
-  {{ if .Description }}
-  {{ .Description }}{{end}}
-  `)
-
-	if err := view.printBanner(); err != nil {
-		return err
+	if desc := a.session.Get("app.description").String(); desc != "" {
+		fmt.Printf("  %s\n", desc)
 	}
+	fmt.Println("")
 
 	settree := a.rootCmd.flags.GetActiveSets()
 	name := settree[len(settree)-1].Name()
 	if name == "/" {
-		help := helpGlobal{
-			Commands: a.rootCmd.subCommands,
-			Flags:    a.rootCmd.flags.Flags(),
+		if a.helpMsg != "" {
+			fmt.Println(a.helpMsg + "\n")
 		}
-		if err := help.print(); err != nil {
+
+		if err := a.printHelp(a.session); err != nil {
 			return err
 		}
 	} else {
-		helpCmd := helpCommand{}
-		if err := helpCmd.print(a.session, a.activeCmd); err != nil {
+		if err := printCommandHelp(a.session, a.activeCmd); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (h *view) printBanner() error {
-	if err := h.banner.parseTmpl("header-tmpl", h.Info, 0); err != nil {
-		return err
-	}
-	// fmt.Fprintln(
-	// 	os.Stdout,
-	// 	hlog.Colorize(
-	// 		h.banner.buffer.String(),
-	// 		hlog.FgYellow,
-	// 		0,
-	// 		0,
-	// 	),
-	// )
-	return nil
-}
+func (a *Application) printHelp(sess *Session) error {
+	name := a.rootCmd.Name()
 
-// TmplParser enables to parse templates for cli apps.
-type cliTmplParser struct {
-	tmpl   string
-	buffer bytes.Buffer
-	t      *template.Template
-}
+	fmt.Printf("USAGE:\n")
+	fmt.Printf("  %s [global-flags]\n", name)
+	fmt.Printf("  %s command\n", name)
+	fmt.Printf("  %s command [command-flags] [arguments]\n", name)
+	fmt.Printf("  %s [global-flags] command [command-flags] [arguments]\n", name)
+	fmt.Printf("  %s [global-flags] command ...subcommand [command-flags] [arguments]\n\n", name)
 
-// SetTemplate sets template to be parsed.
-func (t *cliTmplParser) setTemplate(tmpl string) {
-	t.tmpl = tmpl
-}
+	fmt.Printf("COMMANDS:\n")
 
-// ParseTmpl parses template for cli application
-// arg name is template name, arg info is common passed to template
-// and elapsed is time duration used by specific type of templates and can usually set to "0".
-func (t *cliTmplParser) parseTmpl(name string, h interface{}, elapsed time.Duration) error {
-	t.t = template.New(name)
-	t.t.Funcs(template.FuncMap{
-		"funcTextBold":    t.textBold,
-		"funcCmdCategory": t.cmdCategory,
-		"funcCmdName":     t.cmdName,
-		"funcFlagName":    t.flagName,
-		"funcDate":        t.dateOnly,
-		"funcYear":        t.year,
-		"funcElapsed":     func() string { return elapsed.String() },
-	})
-	tmpl, err := t.t.Parse(t.tmpl)
-	if err != nil {
-		return err
-	}
-	err = tmpl.Execute(&t.buffer, h)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (t *cliTmplParser) cmdCategory(s string) string {
-	if s == "" {
-		return s
-	}
-	return strings.ToUpper(s)
-}
-
-func (t *cliTmplParser) cmdName(s string) string {
-	if s == "" {
-		return s
-	}
-	return fmt.Sprintf("\033[1m %-20s\033[0m", s)
-}
-
-func (t *cliTmplParser) flagName(s string, a string) string {
-	if s == "" {
-		return s
-	}
-	if len(a) > 0 {
-		s += ", " + a
-	}
-	return fmt.Sprintf("%-25s", s)
-}
-
-func (t *cliTmplParser) textBold(s string) string {
-	if s == "" {
-		return s
-	}
-	return fmt.Sprintf("\033[1m%s\033[0m", s)
-}
-
-func (t *cliTmplParser) dateOnly(ts time.Time) string {
-	y, m, d := ts.Date()
-	return fmt.Sprintf("%.2d-%.2d-%d", d, m, y)
-}
-
-func (t *cliTmplParser) year() int {
-	return time.Now().Year()
-}
-
-// HelpGlobal used to show help for application.
-type helpGlobal struct {
-	cliTmplParser
-	Name                string
-	Commands            map[string]*Command
-	Flags               []varflag.Flag
-	PrimaryCommands     []*Command
-	CommandsCategorized map[string][]*Command
-}
-
-// Print application help.
-func (h *helpGlobal) print() error {
-	h.Name = filepath.Base(os.Args[0])
-	h.setTemplate(helpGlobalTmpl)
-
-	for _, cmd := range h.Commands {
+	var (
+		primaryCommands     []*Command
+		commandsCategorized map[string][]*Command
+	)
+	for _, cmd := range a.activeCmd.getSubCommands() {
 		cat := cmd.category
 		if cat == "" {
-			h.PrimaryCommands = append(h.PrimaryCommands, cmd)
+			primaryCommands = append(primaryCommands, cmd)
 		} else {
-			if h.CommandsCategorized == nil {
-				h.CommandsCategorized = make(map[string][]*Command)
+			if commandsCategorized == nil {
+				commandsCategorized = make(map[string][]*Command)
 			}
-			h.CommandsCategorized[cat] = append(h.CommandsCategorized[cat], cmd)
-		}
-	}
-	err := h.parseTmpl("help-global-tmpl", h, time.Duration(0))
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	fmt.Fprintln(os.Stdout, h.buffer.String())
-	return nil
-}
-
-// HelpCommand is used to display help for command.
-
-type helpCommand struct {
-	cliTmplParser
-	Command *command
-	Usage   string
-	Flags   []varflag.Flag
-}
-
-type command struct {
-	Name        string
-	Usage       string
-	SubCommands []command
-	Flags       varflag.Flags
-	Description string
-}
-
-func (h *helpCommand) print(sess *Session, cmd *Command) error {
-	sess.Log().Deprecated("helpCommand.print is deprecated")
-
-	h.Command = &command{
-		Name:        cmd.name,
-		Usage:       cmd.Usage(),
-		Flags:       cmd.flags,
-		Description: cmd.Description(),
-	}
-	h.setTemplate(helpCommandTmpl)
-	usage := []string{""}
-	// usage := []string{filepath.Base(os.Args[0])}
-	usage = append(usage, cmd.parents...)
-	usage = append(usage, cmd.name)
-	if cmd.flags.Len() > 0 {
-		usage = append(usage, "[flags]")
-	}
-
-	if cmd.subCommands != nil {
-		usage = append(usage, "[subcommands]")
-		for _, subcmd := range cmd.subCommands {
-			subCmd := command{
-				Name:        subcmd.name,
-				Usage:       subcmd.Usage(),
-				Flags:       subcmd.flags,
-				Description: subcmd.desc,
-			}
-			h.Command.SubCommands = append(h.Command.SubCommands, subCmd)
+			commandsCategorized[cat] = append(commandsCategorized[cat], cmd)
 		}
 	}
 
-	if cmd.flags.AcceptsArgs() {
-		usage = append(usage, "[args]")
+	if len(primaryCommands) > 0 {
+		for _, cmd := range primaryCommands {
+			fmt.Printf("  %s %s\n", cmd.Name(), cmd.Usage())
+		}
 	}
-	h.Usage = strings.Join(usage, " ")
-	h.Flags = append(h.Flags, cmd.flags.Flags()...)
-	if cmd.parent != nil {
-		h.Flags = append(h.Flags, cmd.parent.flags.Flags()...)
+	if len(commandsCategorized) > 0 {
+		for cat, cmds := range commandsCategorized {
+			fmt.Printf("  %s\n", strings.ToUpper(cat))
+			for _, cmd := range cmds {
+				fmt.Printf("  %-20s %s\n", cmd.Name(), cmd.Usage())
+			}
+		}
 	}
-	err := h.parseTmpl("help-global-tmpl", h, time.Duration(0))
-	if err != nil {
-		fmt.Println(err)
-		return err
+
+	fmt.Printf("\nGLOBAL FLAGS:\n")
+	for _, flag := range a.rootCmd.flags.Flags() {
+		if !flag.Hidden() {
+			fmt.Printf("  %-20s %s\n", flag.Flag(), flag.Usage())
+		}
 	}
-	fmt.Fprintln(os.Stdout, h.buffer.String())
+
+	fmt.Println()
 	return nil
 }
 
-var (
-	helpGlobalTmpl = `
- USAGE:
-  {{ .Name }} command
-  {{ .Name }} command [command-flags] [arguments]
-  {{ .Name }} [global-flags] command [command-flags] [arguments]
-  {{ .Name }} [global-flags] command ...subcommand [command-flags] [arguments]
+func printCommandHelp(sess *Session, cmd *Command) error {
+	fmt.Printf("COMMAND: %s\n\n", cmd.Name())
+	if usage := cmd.Usage(); usage != "" {
+		fmt.Println(usage)
+	}
+	if desc := cmd.Description(); desc != "" {
+		fmt.Println(desc)
+	}
 
- COMMANDS:{{ if .PrimaryCommands }}
- {{ range $cmd := .PrimaryCommands }}
- {{ $cmd.Name | funcCmdName }}{{ $cmd.Usage }}{{ end }}{{ end }}
-{{ if .CommandsCategorized }}{{ range $cat, $cmds := .CommandsCategorized }}
- {{ $cat | funcCmdCategory }}{{ range $cmd := $cmds }}
- {{$cmd.Name | funcCmdName }}{{ $cmd.Usage }}{{ end }}
- {{ end }}{{ end }}
+	fmt.Printf("USAGE:\n")
 
- GLOBAL FLAGS:{{ if .Flags }}{{ range $flag := .Flags }}{{ if not .Hidden }}
- {{funcFlagName $flag.Flag $flag.UsageAliases }} {{ $flag.Usage }}{{ end }}{{ end }}{{ end }}
-`
+	var parents string
+	for _, c := range cmd.Parents() {
+		parents += c + " "
+	}
 
-	helpCommandTmpl = `  COMMAND: {{.Command.Name }}
-  {{ if gt (len .Command.Usage) 0 }}
-  {{funcTextBold .Command.Usage}}
-  {{ end }}
-  {{ if gt (len .Command.Description) 0 }}
-  {{.Command.Description}}
-  {{ end }}
-  USAGE:
-  {{ funcTextBold .Usage }}
-{{ if .Command.SubCommands }}
- {{ print "Subcommands" | funcCmdCategory }}
-{{ range $cmd := .Command.SubCommands }}
-{{ $cmd.Name | funcCmdName }}{{ $cmd.Usage }}{{ end }}
-{{ end }}
-{{ if gt .Command.Flags.Len 0 }} Accepts following flags:
-{{ range $flag := .Flags }}{{ if not .Hidden }}
- {{funcFlagName $flag.Flag $flag.UsageAliases }} {{ $flag.Usage }}{{ end }}{{ end }}{{ end }}`
-)
+	fmt.Printf("  %s %s\n", parents, cmd.Name())
+	fmt.Printf("  %s [global-flags] %s\n", parents, cmd.Name())
+	fmt.Printf("  %s %s [command-flags] [arguments]\n", parents, cmd.Name())
+	fmt.Printf("  %s [global-flags] %s [command-flags] [arguments]\n", parents, cmd.Name())
+	fmt.Printf("  %s [global-flags] %s ...subcommand [command-flags] [arguments]\n\n", parents, cmd.Name())
+
+	scmds := cmd.getSubCommands()
+	if len(scmds) > 0 {
+		fmt.Println("Subcommands")
+		for _, subcmd := range scmds {
+			fmt.Printf("  %-20s %s\n", subcmd.Name(), subcmd.Usage())
+		}
+	}
+
+	flags := cmd.getFlags()
+
+	if flags.Len() > 0 {
+		fmt.Println("Accepts following flags:")
+		for _, flag := range flags.Flags() {
+			if !flag.Hidden() {
+				fmt.Printf("  %-20s %s\n", flag.Flag(), flag.Usage())
+			}
+		}
+	}
+
+	fmt.Println("")
+	return nil
+}

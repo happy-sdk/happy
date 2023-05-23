@@ -255,7 +255,7 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 		},
 		{
 			key:       "app.copyright.by",
-			value:     "",
+			value:     "The Happy Authors",
 			desc:      "Copyright owner",
 			kind:      ReadOnlyOption | ConfigOption,
 			validator: noopvalidator,
@@ -283,7 +283,7 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 		},
 		{
 			key:       "app.license",
-			value:     "",
+			value:     "Apache-2.0 license",
 			desc:      "License",
 			kind:      ReadOnlyOption | ConfigOption,
 			validator: noopvalidator,
@@ -335,6 +335,16 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 					return fmt.Errorf("%w: %s must be boolean got %s(%s)", ErrOptionValidation, key, val.Kind(), val.String())
 				}
 				return nil
+			},
+		},
+		{
+			key:   "app.time.location",
+			value: "UTC",
+			desc:  "set global time location with the given name, If the name is \"\" or \"UTC\", LoadLocation returns UTC.",
+			kind:  ReadOnlyOption | ConfigOption,
+			validator: func(key string, val vars.Value) (err error) {
+				_, err = time.LoadLocation(val.String())
+				return err
 			},
 		},
 		{

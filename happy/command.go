@@ -97,6 +97,12 @@ func (c *Command) Description() string {
 	return c.desc
 }
 
+func (c *Command) Parents() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.parents
+}
+
 func (c *Command) tryLock(method string) bool {
 	if !c.mu.TryLock() {
 		slog.Warn(
@@ -254,12 +260,28 @@ func (c *Command) flag(name string) varflag.Flag {
 	return f
 }
 
+func (c *Command) getFlags() varflag.Flags {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.flags
+}
+
 func (c *Command) getSubCommand(name string) (cmd *Command, exists bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if cmd, exists := c.subCommands[name]; exists {
 		return cmd, exists
+	}
+	return
+}
+func (c *Command) getSubCommands() (cmds []*Command) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for _, cmd := range c.subCommands {
+		cmds = append(cmds, cmd)
 	}
 	return
 }

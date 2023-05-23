@@ -58,6 +58,9 @@ type Application struct {
 	setupNextRun    bool
 
 	state state
+
+	helpMsg      string
+	timeLocation *time.Location
 }
 
 type state struct {
@@ -72,7 +75,18 @@ func NewWithLogger[L Logger[LVL], LVL LogLevelIface](logger L, level LVL, opts .
 		exitOs:      true,
 	}
 
-	err := a.configureApplication(opts)
+	if err := a.configureApplication(opts); err != nil {
+		a.session.Log().Error("config error", err)
+		a.exit(1)
+	}
+
+	// Load gloabl time location
+	if location, err := time.LoadLocation(a.session.Get("time.location").String()); err == nil {
+		a.timeLocation = location
+	} else {
+		a.session.Log().Error("invalid time location", err, slog.String("location", a.session.Get("time.location").String()))
+		a.exit(1)
+	}
 
 	secretsCnf := a.session.Get("log.secrets").String()
 
@@ -92,7 +106,13 @@ func NewWithLogger[L Logger[LVL], LVL LogLevelIface](logger L, level LVL, opts .
 	}
 	loggerConf.Colors = a.session.Get("log.colors").Bool()
 
-	a.session.logger, err = logging.New(loggerConf)
+	log, err := logging.New(loggerConf)
+	if err != nil {
+		a.session.Log().Error("config error", err)
+		a.exit(1)
+	}
+	a.session.logger = log
+
 	if a.session.Get("log.stdlog").Bool() {
 		a.session.logger.NotImplemented("setting happy.Logger as slog.Default is not implemented")
 	}
@@ -158,7 +178,7 @@ func (a *Application) Main() {
 		}
 	}
 	if a.activeCmd.doAction == nil {
-		if err := a.clihelp(); err != nil {
+		if err := a.help(); err != nil {
 			a.session.Log().Error("help error", err)
 		}
 		return
@@ -243,6 +263,10 @@ func (a *Application) OnMigrate(ver string, up, down ActionMigrate) {
 
 func (a *Application) Cron(setup func(schedule CronScheduler)) {
 	a.session.Log().NotImplemented("use service for cron")
+}
+
+func (a *Application) Help(msg string) {
+	a.helpMsg = msg
 }
 
 func (a *Application) WithAddons(addon ...*Addon) {
@@ -478,7 +502,7 @@ func (a *Application) initialize() error {
 
 	// show help
 	if a.rootCmd.flag("help").Present() {
-		if err := a.clihelp(); err != nil {
+		if err := a.help(); err != nil {
 			a.session.Log().Error("failed to create help view", err)
 		}
 		a.shutdown()

@@ -6,28 +6,12 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/logging"
 	"github.com/happy-sdk/varflag"
 	"github.com/happy-sdk/vars"
 	"golang.org/x/exp/slog"
 )
 
-// A simple hello application
-//
-// Usage:
-// - go run ./examples/kitchensink/
-//
-// Increase verbosity
-// - go run ./examples/kitchensink/ --verbose
-// - go run ./examples/kitchensink/ --debug
-// - go run ./examples/kitchensink/ --system-debug
-//
-// Hello command
-// - go run ./examples/kitchensink/ hello --name me --repeat 10
-// - go run ./examples/kitchensink/ hello -n me -r 10
-// - go run ./examples/kitchensink/ hello -h
-//
-// Help
-// - go run ./examples/kitchensink/ -h
 func main() {
 	app := happy.New(
 		happy.Option("app.name", "Happy Kitchensink"),
@@ -39,13 +23,26 @@ func main() {
 		happy.Option("app.host.addr", "happy://localhost/kitchensink"),
 		happy.Option("app.version", "v0.1.0"),
 		happy.Option("app.settings.persistent", false),
-		happy.Option("log.level", happy.LogLevelWarn),
+		happy.Option("log.level", logging.LevelWarn),
 		happy.Option("log.source", false),
-		happy.Option("log.colors", true),
-		happy.Option("log.stdlog", true),
 		happy.Option("log.secrets", "password,apiKey"),
 	)
 
+	app.Help(`Example:
+  - go run ./examples/kitchensink/
+
+  Increase verbosity
+  - go run ./examples/kitchensink/ --verbose
+  - go run ./examples/kitchensink/ --debug
+  - go run ./examples/kitchensink/ --system-debug
+
+  Hello command
+  - go run ./examples/kitchensink/ hello --name me --repeat 10
+  - go run ./examples/kitchensink/ hello -n me -r 10
+  - go run ./examples/kitchensink/ hello -h
+
+  Help
+  - go run ./examples/kitchensink/ -h`)
 	// Add commands,
 	app.AddCommand(helloCommand())
 
@@ -78,7 +75,7 @@ func main() {
 	})
 
 	app.Do(func(sess *happy.Session, args happy.Args) error {
-		sess.Log().Println("Ctrl+C to exit or wait 30 seconds")
+		sess.Log().Msg("Ctrl+C to exit or wait 30 seconds")
 		time.Sleep(time.Second * 2) // dummy delay to start our renderer
 		// you can start and stop services with loader as "background" inBefore is used
 		// or start it from any place by dispatching event.
@@ -96,7 +93,7 @@ func main() {
 			"happy://localhost/kitchensink/service/renderer",
 		))
 		fmt.Println("")
-		sess.Log().Ok("asked render service to stop", task.LogAttr())
+		sess.Log().Ok("asked render service to stop", task)
 		<-sess.Done()
 
 		api, err := happy.GetAPI[*RendererAPI](sess, "renderer")
@@ -141,7 +138,7 @@ func helloCommand() *happy.Command {
 	cmd.Do(func(sess *happy.Session, args happy.Args) error {
 		r := args.Flag("repeat").Var().Int()
 		for i := 0; i < r; i++ {
-			sess.Log().Println("hello", slog.String("name", args.Flag("name").String()))
+			sess.Log().Msg("hello", slog.String("name", args.Flag("name").String()))
 		}
 		return nil
 	})
@@ -175,7 +172,7 @@ func simpleBackgroundService() *happy.Service {
 	// svc.OnTock(func(sess *happy.Session, delta time.Duration, tps int) error {})
 
 	svc.OnEvent("kitchen", "message", func(sess *happy.Session, ev happy.Event) error {
-		sess.Log().Println("kitchen:", ev.Payload().Get("message"))
+		sess.Log().Msg("kitchen:", ev.Payload().Get("message"))
 		return nil
 	})
 
@@ -191,7 +188,7 @@ func simpleBackgroundService() *happy.Service {
 				attrs = append(attrs, entry)
 			}
 		}
-		sess.Log().Println("recived event: ", attrs...)
+		sess.Log().Msg("recived event: ", attrs...)
 		return nil
 	})
 
@@ -236,7 +233,8 @@ type RendererAPI struct {
 	total int
 }
 
-func (*RendererAPI) Get(key string) vars.Variable { return vars.EmptyVariable }
+func (*RendererAPI) Get(key string) vars.Variable  { return vars.EmptyVariable }
+func (*RendererAPI) Set(key string, val any) error { return nil }
 
 func (api *RendererAPI) TotalFrames() int {
 	return api.total
