@@ -31,9 +31,9 @@ tasks:
     desc: create new tag
     cmds:
       - echo "🎉 Release version {{.NEXT}} 🚀"
-      - git add -A
-      - |
-        git commit -sm "chore: 🔧 prepare release of {{.NEXT}}"
+      # - git add -A
+      # - |
+      #   git commit -sm "chore: 🔧 prepare release of {{.NEXT}}"
       - git tag -sm "{{.NEXT}}" {{.NEXT}}
       - git push
       - git push --tags
