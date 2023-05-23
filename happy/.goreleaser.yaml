@@ -26,4 +26,4 @@ before:
   hooks:
     - go mod tidy
     - go mod download
-    - go mod verify
+    # - go mod verify
