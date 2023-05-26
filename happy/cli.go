@@ -23,11 +23,11 @@ func (a *Application) help() error {
 	}
 
 	if lic := a.session.Get("app.license").String(); lic != "" {
-		fmt.Printf("  %s\n", lic)
+		fmt.Printf("  License - %s\n", lic)
 	}
 
 	if desc := a.session.Get("app.description").String(); desc != "" {
-		fmt.Printf("  %s\n", desc)
+		fmt.Printf("\n%s\n", desc)
 	}
 	fmt.Println("")
 
@@ -79,14 +79,14 @@ func (a *Application) printHelp(sess *Session) error {
 
 	if len(primaryCommands) > 0 {
 		for _, cmd := range primaryCommands {
-			fmt.Printf("  %s %s\n", cmd.Name(), cmd.Usage())
+			fmt.Printf("  %-25s %s\n", cmd.Name(), cmd.Usage())
 		}
 	}
 	if len(commandsCategorized) > 0 {
 		for cat, cmds := range commandsCategorized {
-			fmt.Printf("  %s\n", strings.ToUpper(cat))
+			fmt.Printf(" \n%s\n", strings.ToUpper(cat))
 			for _, cmd := range cmds {
-				fmt.Printf("  %-20s %s\n", cmd.Name(), cmd.Usage())
+				fmt.Printf("  %-25s %s\n", cmd.Name(), cmd.Usage())
 			}
 		}
 	}
@@ -94,7 +94,7 @@ func (a *Application) printHelp(sess *Session) error {
 	fmt.Printf("\nGLOBAL FLAGS:\n")
 	for _, flag := range a.rootCmd.flags.Flags() {
 		if !flag.Hidden() {
-			fmt.Printf("  %-20s %s\n", flag.Flag(), flag.Usage())
+			fmt.Printf("  %-25s %s\n", flag.Flag(), flag.Usage())
 		}
 	}
 
@@ -108,21 +108,21 @@ func printCommandHelp(sess *Session, cmd *Command) error {
 		fmt.Println(usage)
 	}
 	if desc := cmd.Description(); desc != "" {
-		fmt.Println(desc)
+		fmt.Printf("\n%s\n", desc)
 	}
 
-	fmt.Printf("USAGE:\n")
+	fmt.Printf("\nUSAGE:\n")
 
 	var parents string
 	for _, c := range cmd.Parents() {
 		parents += c + " "
 	}
 
-	fmt.Printf("  %s %s\n", parents, cmd.Name())
-	fmt.Printf("  %s [global-flags] %s\n", parents, cmd.Name())
-	fmt.Printf("  %s %s [command-flags] [arguments]\n", parents, cmd.Name())
-	fmt.Printf("  %s [global-flags] %s [command-flags] [arguments]\n", parents, cmd.Name())
-	fmt.Printf("  %s [global-flags] %s ...subcommand [command-flags] [arguments]\n\n", parents, cmd.Name())
+	fmt.Printf("  %s%s\n", parents, cmd.Name())
+	fmt.Printf("  %s[global-flags] %s\n", parents, cmd.Name())
+	fmt.Printf("  %s%s [command-flags] [arguments]\n", parents, cmd.Name())
+	fmt.Printf("  %s[global-flags] %s [command-flags] [arguments]\n", parents, cmd.Name())
+	fmt.Printf("  %s[global-flags] %s ...subcommand [command-flags] [arguments]\n\n", parents, cmd.Name())
 
 	scmds := cmd.getSubCommands()
 	if len(scmds) > 0 {
