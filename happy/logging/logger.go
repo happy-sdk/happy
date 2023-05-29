@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"golang.org/x/exp/slices"
+	"golang.org/x/exp/slog"
 )
 
 type Logger struct {
@@ -91,9 +92,14 @@ func (l *Logger) Info(msg string, args ...any) {
 
 // Task logs at logging.LevelTask and returns slog group with task info
 // which can be used as logging attribute argument when logging task related events.
-func (l *Logger) Task(msg string, args ...any) any {
-	l.LogDepth(l.ctx, 1, LevelTask, msg, nil, args...)
-	return nil
+func (l *Logger) Task(name, description string) TaskInfo {
+	t := TaskInfo{
+		Name:        name,
+		Description: description,
+		startedAt:   time.Now(),
+	}
+	l.LogDepth(l.ctx, 1, LevelTask, t.Name, nil, slog.String("description", t.Description))
+	return t
 }
 
 // Ok logs at logging.LevelOk.
@@ -146,7 +152,7 @@ func (l *Logger) Log(level Level, msg string, args ...any) {
 	l.LogDepth(l.ctx, 1, level, msg, nil, args...)
 }
 
-func (l *Logger) HTTP(status int, msg string, args ...any) {
+func (l *Logger) HTTP(status int, path string, args ...any) {
 
 }
 
