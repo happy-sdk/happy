@@ -52,6 +52,7 @@ const (
 	ReadOnlyOption
 	SettingsOption
 	ConfigOption
+	RuntimeOption
 )
 
 var (

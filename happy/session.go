@@ -235,7 +235,7 @@ func (s *Session) Opts() *vars.Map {
 	for _, opt := range s.opts.db.All() {
 		cnf, ok := s.opts.config[opt.Name()]
 		if ok {
-			if cnf.kind&ConfigOption == 0 && cnf.kind&SettingsOption == 0 {
+			if cnf.kind&RuntimeOption != 0 {
 				opts.Store(cnf.key, s.opts.Get(cnf.key).Value())
 			}
 		} else {
