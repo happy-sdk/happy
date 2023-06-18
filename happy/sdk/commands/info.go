@@ -23,7 +23,7 @@ func Info() *happy.Command {
 
 	cmd.Do(func(sess *happy.Session, args happy.Args) error {
 		// RUNTIME
-		opts := sess.RuntimeOpts()
+		opts := sess.Opts()
 		if opts == nil {
 			sess.Log().Warn("no runtime options")
 			return nil

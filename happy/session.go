@@ -191,6 +191,8 @@ func (s *Session) API(addonName string) (API, error) {
 	return api, nil
 }
 
+// Settings returns a map of all settings which are defined by application
+// and are user configurable.
 func (s *Session) Settings() *vars.Map {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -211,6 +213,7 @@ func (s *Session) Settings() *vars.Map {
 	return settings
 }
 
+// Config returns a map of all config options which are defined by application
 func (s *Session) Config() *vars.Map {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -223,7 +226,9 @@ func (s *Session) Config() *vars.Map {
 	return config
 }
 
-func (s *Session) RuntimeOpts() *vars.Map {
+// Opts returns a map of all options which are defined by application
+// turing current session life cycle.
+func (s *Session) Opts() *vars.Map {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	opts := &vars.Map{}

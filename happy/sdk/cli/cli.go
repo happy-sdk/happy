@@ -55,6 +55,7 @@ func AskForConfirmation(q string) bool {
 	fmt.Fprintln(os.Stdout, q, "(y/Y)es or (n/N)o?")
 
 	if _, err := fmt.Scanln(&response); err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
 		return false
 	}
 
@@ -73,12 +74,17 @@ func AskForConfirmation(q string) bool {
 }
 
 func AskForInput(q string) string {
-	var response string
 	fmt.Fprintln(os.Stdout, q)
-	if _, err := fmt.Scanln(&response); err != nil {
+	reader := bufio.NewReader(os.Stdin)
+	response, err := reader.ReadString('\n')
+	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(response)
+
+	// Remove the newline character at the end
+	response = strings.TrimSuffix(response, "\n")
+
+	return response
 }
 
 func AskForSecret(q string) string {

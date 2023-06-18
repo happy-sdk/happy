@@ -1013,7 +1013,7 @@ func (a *Application) registerAddons() error {
 			return err
 		}
 		// first use
-		rtopts := a.session.RuntimeOpts()
+		rtopts := a.session.Opts()
 		if rtopts != nil {
 			for _, rtopt := range rtopts.All() {
 				if !strings.HasPrefix(rtopt.Name(), addon.info.Name+".") {
