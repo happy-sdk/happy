@@ -31,32 +31,23 @@ var (
 	ErrPanic          = errors.New("there was panic, check logs for more info")
 )
 
-// ExecCommand wraps ExecCommandRaw to return output as string.
+// ExecCommand wraps ExecCommandRaw to trim the output and return it as a string.
+// If an error occurs during execution, it is returned along with the output.
 func ExecCommand(sess *happy.Session, cmd *exec.Cmd) (string, error) {
 	out, err := ExecCommandRaw(sess, cmd)
 	return string(bytes.TrimSpace(out)), err
 }
 
-// ExecCommandRaw wraps and executes provided command and returns its
-// CombinedOutput. It ensures that -x flag is taken into account and
-// Command is Session Context aware.
+// ExecCommandRaw wraps and executes the provided command, returning its combined
+// output as a byte slice. It ensures that the -x flag is taken into account, and
+// that the command is context-aware in relation to the session.
+// If an error occurs during execution, it is logged and returned along with the output.
 func ExecCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
-	if sess.Get("app.cli.x").Bool() {
-		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
-	}
+	xcmd := prepareCommand(sess, cmd)
 
-	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
-	scmd.Env = cmd.Env
-	scmd.Dir = cmd.Dir
-	scmd.Stdin = cmd.Stdin
-	scmd.Stdout = cmd.Stdout
-	scmd.Stderr = cmd.Stderr
-	scmd.ExtraFiles = cmd.ExtraFiles
-	cmd = scmd
-
-	out, err := cmd.CombinedOutput()
+	out, err := xcmd.CombinedOutput()
 	if err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
@@ -65,35 +56,25 @@ func ExecCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 		}
 		return out, err
 	}
-	sess.Log().Debug(cmd.String(), slog.Int("exit", 0))
+	sess.Log().Debug(xcmd.String(), slog.Int("exit", 0))
 	return out, nil
 }
 
-// RunCommand wraps and executes provided command and writes
-// its Stdout and Stderr. It ensures that -x flag is taken
-// into account and Command is Session Context aware.
+// RunCommand wraps and executes the provided command, writing its Stdout and Stderr.
+// It ensures that the -x flag is taken into account, and that the command is
+// context-aware in relation to the session. If an error occurs during execution,
+// the command is stopped, and the error is returned.
 func RunCommand(sess *happy.Session, cmd *exec.Cmd) error {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
-	if sess.Get("app.cli.x").Bool() {
-		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
-	}
+	xcmd := prepareCommand(sess, cmd)
 
-	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
-	scmd.Env = cmd.Env
-	scmd.Dir = cmd.Dir
-	scmd.Stdin = cmd.Stdin
-	scmd.Stdout = cmd.Stdout
-	scmd.Stderr = cmd.Stderr
-	scmd.ExtraFiles = cmd.ExtraFiles
-	cmd = scmd
-
-	stderr, err := cmd.StderrPipe()
+	stderr, err := xcmd.StderrPipe()
 	if err != nil {
 		return err
 	}
 
-	stdout, err := cmd.StdoutPipe()
+	stdout, err := xcmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
@@ -101,24 +82,24 @@ func RunCommand(sess *happy.Session, cmd *exec.Cmd) error {
 	go scanPipe(stdout, os.Stdout)
 	go scanPipe(stderr, os.Stderr)
 
-	if err := cmd.Start(); err != nil {
+	if err := xcmd.Start(); err != nil {
 		return err
 	}
 
 	errChan := make(chan error)
 	go func() {
-		errChan <- cmd.Wait()
+		errChan <- xcmd.Wait()
 	}()
 
 	select {
 	case <-sess.Done():
 		// If the session is done, stop the command
-		if err := cmd.Process.Kill(); err != nil {
+		if err := xcmd.Process.Kill(); err != nil {
 			return err
 		}
 
 		if sess.Err() == context.Canceled {
-			sess.Log().Debug(cmd.String(), slog.Int("exit", 0))
+			sess.Log().Debug(xcmd.String(), slog.Int("exit", 0))
 			return nil
 		} else {
 			return sess.Err()
@@ -174,6 +155,21 @@ func AskForSecret(q string) string {
 		return ""
 	}
 	return strings.TrimSpace(string(bpasswd))
+}
+
+func prepareCommand(sess *happy.Session, cmd *exec.Cmd) *exec.Cmd {
+	if sess.Get("app.cli.x").Bool() {
+		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
+	}
+
+	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
+	scmd.Env = cmd.Env
+	scmd.Dir = cmd.Dir
+	scmd.Stdin = cmd.Stdin
+	scmd.Stdout = cmd.Stdout
+	scmd.Stderr = cmd.Stderr
+	scmd.ExtraFiles = cmd.ExtraFiles
+	return scmd
 }
 
 func scanPipe(pipe io.Reader, output io.Writer) {
