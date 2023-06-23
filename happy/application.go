@@ -783,10 +783,15 @@ func (a *Application) execute() {
 	a.session.Log().SystemDebug("session ready: execute", slog.String("action", "Do"), slog.String("command", cmdtree))
 
 	err := a.activeCmd.callDoAction(a.session)
-	if err != nil {
+	if !a.session.canRecover(err) {
 		a.executeAfterFailureActions(err)
 	} else {
 		a.executeAfterSuccessActions()
+	}
+
+	// Clear error if it is recoverable
+	if a.session.canRecover(err) {
+		err = nil
 	}
 	a.executeAfterAlwaysActions(err)
 }

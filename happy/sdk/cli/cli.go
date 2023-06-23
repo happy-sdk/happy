@@ -8,13 +8,13 @@ package cli
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/happy-sdk/happy"
@@ -86,27 +86,22 @@ func RunCommand(sess *happy.Session, cmd *exec.Cmd) error {
 		return err
 	}
 
-	errChan := make(chan error)
-	go func() {
-		errChan <- xcmd.Wait()
-	}()
-
-	select {
-	case <-sess.Done():
-		// If the session is done, stop the command
-		if err := xcmd.Process.Kill(); err != nil {
-			return err
+	exiterr := xcmd.Wait()
+	if exiterr != nil {
+		var ee *exec.ExitError
+		if errors.As(exiterr, &ee) {
+			// Print stderr if command failed and it has output
+			if len(ee.Stderr) > 0 {
+				fmt.Println("stderr:\n" + string(ee.Stderr))
+			}
 		}
-
-		if sess.Err() == context.Canceled {
-			sess.Log().Debug(xcmd.String(), slog.Int("exit", 0))
+		if xcmd.Terminated() {
+			fmt.Println("terminated", exiterr)
 			return nil
-		} else {
-			return sess.Err()
 		}
-	case err = <-errChan:
-		return err
+		return exiterr
 	}
+	return nil
 }
 
 // AskForConfirmation gets (y/Y)es or (n/N)o from cli input.
@@ -157,19 +152,50 @@ func AskForSecret(q string) string {
 	return strings.TrimSpace(string(bpasswd))
 }
 
-func prepareCommand(sess *happy.Session, cmd *exec.Cmd) *exec.Cmd {
+type Cmd struct {
+	*exec.Cmd
+	mu         sync.Mutex
+	terminated bool
+}
+
+func (cmd *Cmd) Terminated() bool {
+	cmd.mu.Lock()
+	defer cmd.mu.Unlock()
+	return cmd.terminated
+}
+
+func prepareCommand(sess *happy.Session, cmd *exec.Cmd) *Cmd {
+	if sess == nil {
+		panic("nil Session")
+	}
+
 	if sess.Get("app.cli.x").Bool() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
 	}
 
-	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
-	scmd.Env = cmd.Env
-	scmd.Dir = cmd.Dir
-	scmd.Stdin = cmd.Stdin
-	scmd.Stdout = cmd.Stdout
-	scmd.Stderr = cmd.Stderr
-	scmd.ExtraFiles = cmd.ExtraFiles
-	return scmd
+	xcmd := &Cmd{
+		Cmd: exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...),
+	}
+	xcmd.Env = cmd.Env
+	xcmd.Dir = cmd.Dir
+	xcmd.Stdin = cmd.Stdin
+	xcmd.Stdout = cmd.Stdout
+	xcmd.Stderr = cmd.Stderr
+	xcmd.ExtraFiles = cmd.ExtraFiles
+
+	xcmd.Cancel = func() error {
+		xcmd.mu.Lock()
+		xcmd.terminated = true
+		xcmd.mu.Unlock()
+
+		err := xcmd.Process.Signal(syscall.SIGTERM)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return xcmd
 }
 
 func scanPipe(pipe io.Reader, output io.Writer) {

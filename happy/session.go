@@ -23,18 +23,22 @@ type Session struct {
 	logger *logging.Logger
 	opts   *Options
 
-	ready      context.Context
-	readyFunc  context.CancelFunc
-	sig        context.Context
-	sigRelease context.CancelFunc
-	err        error
+	ready         context.Context
+	readyCancel   context.CancelFunc
+	terminate     context.Context // SIGINT or SIGTERM listener
+	terminateStop context.CancelFunc
+	kill          context.Context // SIGKILL listener
+	killStop      context.CancelFunc
+	err           error
 
 	done chan struct{}
 	evch chan Event
 	svss map[string]*ServiceInfo
 	apis map[string]API
 
-	disposed bool
+	allowUserCancel bool
+	terminated      bool
+	disposed        bool
 }
 
 // Ready returns channel which blocks until session considers application to be ready.
@@ -81,8 +85,8 @@ func (s *Session) Destroy(err error) {
 	// s.err is nil otherwise we would not be here
 	s.err = err
 
-	if s.readyFunc != nil {
-		s.readyFunc()
+	if s.readyCancel != nil {
+		s.readyCancel()
 	}
 	if s.err == nil {
 		s.err = ErrSessionDestroyed
@@ -90,9 +94,13 @@ func (s *Session) Destroy(err error) {
 
 	s.mu.Unlock()
 
-	if s.sigRelease != nil {
-		s.sigRelease()
-		s.sigRelease = nil
+	if s.terminateStop != nil {
+		s.terminateStop()
+		s.terminateStop = nil
+	}
+	if s.killStop != nil {
+		s.killStop()
+		s.terminateStop = nil
 	}
 
 	s.mu.Lock()
@@ -139,8 +147,19 @@ func (s *Session) Value(key any) any {
 			return v
 		}
 	case *int:
-		if s.sig != nil && s.sig.Err() != nil {
-			s.Destroy(s.sig.Err())
+		if s.terminate != nil && s.terminate.Err() != nil {
+			if s.allowUserCancel {
+				s.terminateStop()
+				s.terminate = nil
+				s.terminated = true
+				s.terminateStop = nil
+				return nil
+			}
+
+			s.Destroy(s.terminate.Err())
+		}
+		if s.kill != nil && s.kill.Err() != nil {
+			s.Destroy(s.kill.Err())
 		}
 		return nil
 	}
@@ -245,9 +264,26 @@ func (s *Session) Opts() *vars.Map {
 	return opts
 }
 
+// AllowUserCancel allows user to cancel application by pressing Ctrl+C
+// or sending SIGINT or SIGTERM while application is running.
+// By default this is not allowed. If you want to allow user to cancel
+// application, you call this method any point at application runtime.
+// Calling this method multiple times has no effect and triggers Warning
+// log message.
+func (s *Session) AllowUserCancel() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.allowUserCancel {
+		s.Log().Warn("AllowUserCancel: already allowed, it has no effect to call it mutilple times")
+		return
+	}
+	s.allowUserCancel = true
+}
+
 func (s *Session) start() error {
-	s.ready, s.readyFunc = context.WithCancel(context.Background())
-	s.sig, s.sigRelease = signal.NotifyContext(s, os.Interrupt, os.Kill)
+	s.ready, s.readyCancel = context.WithCancel(context.Background())
+	s.terminate, s.terminateStop = signal.NotifyContext(s, os.Interrupt)
+	s.kill, s.killStop = signal.NotifyContext(s, os.Kill)
 	s.evch = make(chan Event, 100)
 	s.Log().SystemDebug("session started")
 	return nil
@@ -255,9 +291,22 @@ func (s *Session) start() error {
 
 func (s *Session) setReady() {
 	s.mu.Lock()
-	s.readyFunc()
+	s.readyCancel()
 	s.mu.Unlock()
 	s.Log().SystemDebug("session ready")
+}
+
+func (s *Session) canRecover(err error) bool {
+	if err == nil {
+		return true
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.allowUserCancel && s.terminated {
+		s.Log().Warn("session terminated by user")
+		return true
+	}
+	return false
 }
 
 func (s *Session) registerAPI(addonName string, api API) error {
