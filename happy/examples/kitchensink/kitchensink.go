@@ -87,7 +87,7 @@ func main() {
 		// This sleep will ALWAYS block 10 seconds
 		// even when you Ctrl-C. That case graceful shutdown will start
 		// after reaching <-sess.Done() and falling trough since session is already destroyed.
-		task := sess.Log().Task("sleep 10 seconds before stopping render service")
+		task := sess.Log().Task("sleep", "sleep 10 seconds before stopping render service")
 		time.Sleep(time.Second * 10)
 		sess.Dispatch(happy.StopServicesEvent(
 			"happy://localhost/kitchensink/service/renderer",
