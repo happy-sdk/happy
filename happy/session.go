@@ -31,10 +31,11 @@ type Session struct {
 	killStop      context.CancelFunc
 	err           error
 
-	done chan struct{}
-	evch chan Event
-	svss map[string]*ServiceInfo
-	apis map[string]API
+	done   chan struct{}
+	closed chan struct{}
+	evch   chan Event
+	svss   map[string]*ServiceInfo
+	apis   map[string]API
 
 	allowUserCancel bool
 	terminated      bool
@@ -108,6 +109,9 @@ func (s *Session) Destroy(err error) {
 		close(s.evch)
 	}
 
+	if s.closed != nil {
+		close(s.closed)
+	}
 	if s.done != nil {
 		close(s.done)
 	}
@@ -128,7 +132,7 @@ func (s *Session) Log() *logging.Logger {
 
 // Done enables you to hook into chan to know when application exits
 // however DO NOT use that for graceful shutdown actions.
-// Use Application.AddExitFunc instead.
+// Use Application.AddExitFunc or Cloesed instead.
 func (s *Session) Done() <-chan struct{} {
 	s.mu.Lock()
 	if s.done == nil {
@@ -137,6 +141,20 @@ func (s *Session) Done() <-chan struct{} {
 	d := s.done
 	s.mu.Unlock()
 	return d
+}
+
+// Closed returns channel which blocks until session is closed.
+// It is ensured that Closed closes before root or command
+// Do after functions are called.
+func (s *Session) Closed() <-chan struct{} {
+	s.mu.Lock()
+	if s.closed == nil {
+		s.closed = make(chan struct{})
+	}
+	d := s.closed
+	s.mu.Unlock()
+	return d
+
 }
 
 // Value returns the value associated with this context for key, or nil
@@ -153,6 +171,10 @@ func (s *Session) Value(key any) any {
 				s.terminate = nil
 				s.terminated = true
 				s.terminateStop = nil
+				if s.closed != nil {
+					close(s.closed)
+					s.closed = nil
+				}
 				return nil
 			}
 
