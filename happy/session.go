@@ -145,7 +145,8 @@ func (s *Session) Done() <-chan struct{} {
 
 // Closed returns channel which blocks until session is closed.
 // It is ensured that Closed closes before root or command
-// Do after functions are called.
+// "Do" after functions are called. This is useful for graceful shutdown actions.
+// e.g using together with AllowUserCancel
 func (s *Session) Closed() <-chan struct{} {
 	s.mu.Lock()
 	if s.closed == nil {
