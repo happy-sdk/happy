@@ -23,6 +23,10 @@ func (v Version) String() string {
 	return string(v)
 }
 
+func (v Version) Build() string {
+	return strings.Trim(semver.Build(v.String()), "+")
+}
+
 // Current tryes to read version info from go module being built.
 func Current() Version {
 	bi, ok := debug.ReadBuildInfo()
@@ -65,6 +69,8 @@ func Current() Version {
 
 	if modified {
 		dirty = "." + vcs + "." + date
+	} else if len(date) > 0 {
+		dirty = "+" + date
 	}
 
 	return Version(fmt.Sprintf("%s.0.0-%s%s%s", major, PRE, revision, dirty))

@@ -847,6 +847,14 @@ func (a *Application) configureApplication(opts []OptionArg) (err error) {
 
 	a.isDev = version.IsDev(a.session.Get("app.version").String())
 
+	ver, err := version.Parse(a.session.Get("app.version").String())
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		build := ver.Build()
+		a.session.Set("app.version.build", build)
+	}
+
 	return errors.Join(errs...)
 }
 

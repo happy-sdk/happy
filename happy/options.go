@@ -327,6 +327,12 @@ func getDefaultApplicationConfig() ([]OptionArg, error) {
 			},
 		},
 		{
+			key:   "app.version.build",
+			value: "",
+			desc:  "Application build info from version",
+			kind:  ReadOnlyOption | ConfigOption,
+		},
+		{
 			key:   "app.settings.persistent",
 			value: false,
 			desc:  "persist settings across restarts",
