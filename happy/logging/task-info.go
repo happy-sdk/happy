@@ -7,7 +7,7 @@ package logging
 import (
 	"time"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 // TaskInfo is used to log task info

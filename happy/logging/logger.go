@@ -10,8 +10,9 @@ import (
 	"os"
 	"time"
 
-	"golang.org/x/exp/slices"
-	"golang.org/x/exp/slog"
+	"log/slog"
+
+	"slices"
 )
 
 type Logger struct {

@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"log/slog"
+
 	"github.com/happy-sdk/vars"
-	"golang.org/x/exp/slog"
 )
 
 // Keys for "built-in" attributes.

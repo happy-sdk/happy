@@ -9,9 +9,10 @@ import (
 	"fmt"
 	"sync"
 
+	"log/slog"
+
 	"github.com/happy-sdk/varflag"
 	"github.com/happy-sdk/vars"
-	"golang.org/x/exp/slog"
 )
 
 type Command struct {

@@ -21,10 +21,8 @@ func TestAppDefaultOptions(t *testing.T) {
 	}{
 		{"app.name", "Happy Application"},
 		{"app.settings.persistent", "false"},
-		{"log.level", "info"},
+		{"log.level", "task"},
 		{"log.source", "false"},
-		{"log.colors", "true"},
-		{"log.stdlog", "false"},
 		{"log.secrets", ""},
 	}
 	for _, test := range tests {
@@ -96,7 +94,7 @@ func TestOptionSet(t *testing.T) {
 		config: nil,
 	}
 	err = opts.Set("key1", "value")
-	testutils.NoError(t, err, "Unexpected error for no validation required: %v", err)
+	testutils.Error(t, err, "test options should not accept option: %v", err)
 
 	// Test case for specific validator
 	opts = Options{

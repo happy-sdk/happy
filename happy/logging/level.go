@@ -11,8 +11,9 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"log/slog"
+
 	"github.com/happy-sdk/vars"
-	"golang.org/x/exp/slog"
 )
 
 type Level int32

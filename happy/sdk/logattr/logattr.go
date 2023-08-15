@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 func GithubIssue(no int, owner, repo string) slog.Attr {
@@ -31,11 +31,12 @@ func GithubPR(pr int, owner, repo string) slog.Attr {
 type Task struct {
 	Name    string
 	Started time.Time
-	Args    []slog.Attr
+	Args    []any
 }
 
 func (t Task) LogAttr() slog.Attr {
-	args := append([]slog.Attr{
+	var args []any
+	args = append([]any{
 		slog.String("name", t.Name),
 		slog.Duration("elapsed", time.Since(t.Started)),
 		slog.Time("started", t.Started),

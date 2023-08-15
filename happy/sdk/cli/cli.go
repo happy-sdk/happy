@@ -17,8 +17,9 @@ import (
 	"sync"
 	"syscall"
 
+	"log/slog"
+
 	"github.com/happy-sdk/happy"
-	"golang.org/x/exp/slog"
 	"golang.org/x/term"
 )
 

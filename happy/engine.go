@@ -12,9 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"log/slog"
+
 	"github.com/happy-sdk/happy/pkg/address"
 	"github.com/happy-sdk/vars"
-	"golang.org/x/exp/slog"
 )
 
 // noop for tick | tock

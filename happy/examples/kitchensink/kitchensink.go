@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"log/slog"
+
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/logging"
 	"github.com/happy-sdk/varflag"
 	"github.com/happy-sdk/vars"
-	"golang.org/x/exp/slog"
 )
 
 func main() {

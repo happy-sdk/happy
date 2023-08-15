@@ -1,8 +1,9 @@
 package main
 
 import (
+	"log/slog"
+
 	"github.com/happy-sdk/happy"
-	"golang.org/x/exp/slog"
 )
 
 func main() {

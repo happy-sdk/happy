@@ -14,11 +14,12 @@ import (
 	"strings"
 	"time"
 
+	"log/slog"
+
 	"github.com/happy-sdk/happy/logging"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/varflag"
 	"github.com/happy-sdk/vars"
-	"golang.org/x/exp/slog"
 )
 
 type Application struct {

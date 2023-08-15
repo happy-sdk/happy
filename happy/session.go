@@ -12,9 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"log/slog"
+
 	"github.com/happy-sdk/happy/logging"
 	"github.com/happy-sdk/vars"
-	"golang.org/x/exp/slog"
 )
 
 type Session struct {
