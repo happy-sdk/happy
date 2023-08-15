@@ -1,8 +1,10 @@
 module github.com/happy-sdk/vars
 
-go 1.20
+go 1.21
+
+toolchain go1.21rc3
 
 require (
-	github.com/happy-sdk/testutils v0.1.0
-	golang.org/x/text v0.8.0
+	github.com/happy-sdk/testutils v0.2.0
+	golang.org/x/text v0.12.0
 )
