@@ -1,7 +1,3 @@
-// Copyright 2022 Marko Kungla
-// Licensed under the Apache License, Version 2.0.
-// See the LICENSE file.
-
 package testutils
 
 import (
@@ -147,6 +143,7 @@ func NotNil(tt TestingIface, value any, msgAndArgs ...any) bool {
 	return true
 }
 
+// Nil asserts that the specified value is nil.
 func Nil(tt TestingIface, value any, msgAndArgs ...any) bool {
 	if value != nil {
 		tt.Helper()
