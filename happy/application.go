@@ -16,7 +16,7 @@ import (
 
 	"log/slog"
 
-	"github.com/happy-sdk/happy/logging"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/varflag"
 	"github.com/happy-sdk/vars"
@@ -62,9 +62,6 @@ type Application struct {
 
 	helpMsg      string
 	timeLocation *time.Location
-}
-
-type state struct {
 }
 
 func NewWithLogger[L Logger[LVL], LVL LogLevelIface](logger L, level LVL, opts ...OptionArg) *Application {

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/happy-sdk/happy/logging"
 	"github.com/happy-sdk/happy/pkg/address"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/vars"
 	"golang.org/x/mod/semver"
