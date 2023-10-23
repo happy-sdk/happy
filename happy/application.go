@@ -58,8 +58,6 @@ type Application struct {
 	persistentState *persistentState
 	setupNextRun    bool
 
-	state state
-
 	helpMsg      string
 	timeLocation *time.Location
 }

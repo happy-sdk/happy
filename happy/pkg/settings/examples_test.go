@@ -3,7 +3,7 @@ package settings_test
 import (
 	"fmt"
 
-	"github.com/happy-sdk/settings"
+	"github.com/happy-sdk/pkg/settings"
 )
 
 func ExampleNew() {
