@@ -8,7 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/logging"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/varflag"
 	"github.com/happy-sdk/vars"
 )
