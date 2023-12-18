@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2022 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -22,10 +22,6 @@ func Info() *happy.Command {
 		happy.Option("addons.disabled", true),
 	)
 
-	cmd.Before(func(sess *happy.Session, args happy.Args) error {
-		sess.Set("application.info", "collected")
-		return nil
-	})
 	cmd.Do(func(sess *happy.Session, args happy.Args) error {
 		// RUNTIME
 		opts := sess.Opts()
