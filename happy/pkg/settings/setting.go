@@ -19,29 +19,6 @@ const (
 	SettingMutable   Mutability = 252
 )
 
-type Kind uint8
-
-const (
-	KindSettings = Kind(vars.KindInterface)
-	KindCustom   = Kind(vars.KindByteSlice)
-
-	KindInvalid = Kind(vars.KindInvalid)
-	KindBool    = Kind(vars.KindBool)
-	KindInt     = Kind(vars.KindInt)
-	KindUint    = Kind(vars.KindUint)
-	KindString  = Kind(vars.KindString)
-)
-
-func (k Kind) String() string {
-	switch k {
-	case KindCustom:
-		return "custom"
-	case KindSettings:
-		return "settings"
-	}
-	return vars.Kind(k).String()
-}
-
 type SettingSpec struct {
 	IsSet       bool
 	Kind        Kind

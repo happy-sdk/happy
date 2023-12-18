@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2022 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -21,7 +21,7 @@ import (
 // noop for tick | tock
 var nooptock = func(sess *Session, delta time.Duration, tps int) error { return nil }
 
-type Engine struct {
+type engine struct {
 	mu      sync.RWMutex
 	running bool
 	started time.Time
@@ -39,18 +39,18 @@ type Engine struct {
 
 	registry map[string]*serviceContainer
 	events   map[string]Event
+	address  string
 }
 
-func newEngine() *Engine {
-	engine := &Engine{
+func newEngine() *engine {
+	engine := &engine{
 		registry: make(map[string]*serviceContainer),
 		events:   make(map[string]Event),
 	}
-
 	return engine
 }
 
-func (e *Engine) start(sess *Session) error {
+func (e *engine) start(sess *Session) error {
 	sess.Log().SystemDebug("starting engine ...")
 	e.started = time.Now()
 	if e.tickAction == nil && e.tockAction != nil {
@@ -77,20 +77,23 @@ func (e *Engine) start(sess *Session) error {
 	return nil
 }
 
-func (e *Engine) uptime() time.Duration {
+func (e *engine) uptime() time.Duration {
+	if e.started.IsZero() {
+		return 0
+	}
 	return time.Since(e.started)
 }
 
-func (e *Engine) onTick(action ActionTick) {
+func (e *engine) onTick(action ActionTick) {
 	e.tickAction = action
 	return
 }
-func (e *Engine) onTock(action ActionTock) {
+func (e *engine) onTock(action ActionTock) {
 	e.tockAction = action
 	return
 }
 
-func (e *Engine) startEventDispatcher(sess *Session) {
+func (e *engine) startEventDispatcher(sess *Session) {
 	e.evContext, e.evCancel = context.WithCancel(sess)
 
 	go func(sess *Session) {
@@ -109,7 +112,7 @@ func (e *Engine) startEventDispatcher(sess *Session) {
 	}(sess)
 }
 
-func (e *Engine) registerEvent(ev Event) error {
+func (e *engine) registerEvent(ev Event) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	skey := ev.Scope() + "." + ev.Key()
@@ -120,7 +123,7 @@ func (e *Engine) registerEvent(ev Event) error {
 	return nil
 }
 
-func (e *Engine) handleEvent(sess *Session, ev Event) {
+func (e *engine) handleEvent(sess *Session, ev Event) {
 	skey := ev.Scope() + "." + ev.Key()
 
 	e.mu.RLock()
@@ -155,7 +158,7 @@ func (e *Engine) handleEvent(sess *Session, ev Event) {
 	sess.Log().SystemDebug("event", slog.String("scope", ev.Scope()), slog.String("key", ev.Key()))
 }
 
-func (e *Engine) loopStart(sess *Session, init *sync.WaitGroup) {
+func (e *engine) loopStart(sess *Session, init *sync.WaitGroup) {
 	e.ctx, e.ctxCancel = context.WithCancel(sess)
 
 	if e.tickAction == nil && e.tockAction == nil {
@@ -216,7 +219,7 @@ func (e *Engine) loopStart(sess *Session, init *sync.WaitGroup) {
 	}()
 }
 
-func (e *Engine) stop(sess *Session) error {
+func (e *engine) stop(sess *Session) error {
 	if !e.running {
 		return nil
 	}
@@ -250,7 +253,7 @@ func (e *Engine) stop(sess *Session) error {
 	return nil
 }
 
-func (e *Engine) serviceRegister(sess *Session, svc *Service) error {
+func (e *engine) serviceRegister(sess *Session, svc *Service) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if svc == nil {
@@ -261,7 +264,7 @@ func (e *Engine) serviceRegister(sess *Session, svc *Service) error {
 		return fmt.Errorf("%w: can not register services engine is already running - %s", ErrEngine, svc.name)
 	}
 
-	hostaddr, err := address.Parse(sess.Get("app.host.addr").String())
+	hostaddr, err := address.Parse(e.address)
 	if err != nil {
 		return errors.Join(ErrEngine, err)
 	}
@@ -282,7 +285,7 @@ func (e *Engine) serviceRegister(sess *Session, svc *Service) error {
 	return nil
 }
 
-func (e *Engine) servicesInit(sess *Session, init *sync.WaitGroup) {
+func (e *engine) servicesInit(sess *Session, init *sync.WaitGroup) {
 	e.mu.Lock()
 	svccount := len(e.registry)
 	e.mu.Unlock()
@@ -311,7 +314,7 @@ func (e *Engine) servicesInit(sess *Session, init *sync.WaitGroup) {
 	sess.Log().SystemDebug("initialize services ...")
 }
 
-func (e *Engine) serviceStart(sess *Session, svcurl string) {
+func (e *engine) serviceStart(sess *Session, svcurl string) {
 	e.mu.RLock()
 	svcc, ok := e.registry[svcurl]
 	e.mu.RUnlock()
@@ -393,7 +396,7 @@ func (e *Engine) serviceStart(sess *Session, svcurl string) {
 	}(svcc, svcurl, sarg)
 }
 
-func (e *Engine) serviceStop(sess *Session, svcurl string, err error) {
+func (e *engine) serviceStop(sess *Session, svcurl string, err error) {
 	sarg := slog.String("service", svcurl)
 
 	e.mu.RLock()

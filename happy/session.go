@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -9,20 +9,23 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"time"
 
 	"log/slog"
 
 	"github.com/happy-sdk/happy/pkg/logging"
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/vars"
 )
 
 type Session struct {
 	mu sync.RWMutex
 
-	logger *logging.Logger
-	opts   *Options
+	logger  logging.Logger
+	profile *settings.Profile
+	opts    *Options
 
 	ready         context.Context
 	readyCancel   context.CancelFunc
@@ -127,7 +130,14 @@ func (s *Session) Deadline() (deadline time.Time, ok bool) {
 	return
 }
 
-func (s *Session) Log() *logging.Logger {
+func (s *Session) Log() logging.Logger {
+	s.mu.RLock()
+	if s.logger != nil {
+		s.mu.RUnlock()
+		return s.logger
+	}
+	s.mu.RUnlock()
+
 	return s.logger
 }
 
@@ -195,11 +205,38 @@ func (s *Session) String() string {
 }
 
 func (s *Session) Get(key string) vars.Variable {
+	if !s.Has(key) {
+		s.logger.LogDepth(s, 1, logging.LevelWarn, "accessing non existing session variable", nil, slog.String("key", key))
+
+	}
 	return s.opts.Get(key)
 }
 
 func (s *Session) Set(key string, val any) error {
-	return s.opts.Set(key, val)
+	if !s.opts.Accepts(key) {
+		s.Log().Warn("setting non existing runtime options", slog.String("key", key))
+		return fmt.Errorf("setting non existing runtime options: %s", key)
+	}
+	if strings.HasPrefix(key, "app.") {
+		s.Log().Warn(
+			"setting app.* variables can lead to unexpected behaviour",
+			slog.String("key", key),
+			slog.Any("value", val),
+		)
+	}
+	if strings.HasPrefix(key, "fs.") {
+		s.Log().Warn(
+			"setting fs.* variables is not allowed",
+			slog.String("key", key),
+			slog.Any("value", val),
+		)
+		return fmt.Errorf("setting fs.* variables is not allowed, attempt to set %s = %v", key, val)
+	}
+	if err := s.opts.Set(key, val); err != nil {
+		s.Log().Warn("setting runtime options failed", slog.String("key", key), slog.Any("value", val), slog.String("err", err.Error()))
+		return err
+	}
+	return nil
 }
 
 func (s *Session) Has(key string) bool {
@@ -214,14 +251,29 @@ func (s *Session) Dispatch(ev Event) {
 	s.mu.Lock()
 	if !s.disposed {
 		s.evch <- ev
+		s.mu.Unlock()
 	} else {
+		s.mu.Unlock()
 		s.Log().SystemDebug(
 			"session is disposed - skipping event dispatch",
 			slog.String("scope", ev.Scope()),
 			slog.String("key", ev.Key()),
 		)
 	}
-	s.mu.Unlock()
+}
+
+func (s *Session) GetSettingVar(key string) settings.Setting {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.profile == nil || !s.profile.Loaded() {
+		s.logger.LogDepth(s, 1, logging.LevelWarn, "session profile not loaded, while accessing settings", nil, slog.String("key", key))
+		return settings.Setting{}
+	}
+	if !s.profile.Has(key) {
+		s.logger.LogDepth(s, 1, logging.LevelWarn, "accessing non existing setting", nil, slog.String("key", key))
+	}
+
+	return s.profile.Get(key)
 }
 
 func (s *Session) API(addonName string) (API, error) {
@@ -236,24 +288,11 @@ func (s *Session) API(addonName string) (API, error) {
 
 // Settings returns a map of all settings which are defined by application
 // and are user configurable.
-func (s *Session) Settings() *vars.Map {
+func (s *Session) Profile() *settings.Profile {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	settings := &vars.Map{}
-	for _, cnf := range s.opts.config {
-		if cnf.kind&SettingsOption != 0 {
-			// make sure to return valid settings
-			val := s.opts.Get(cnf.key).Value()
-			if cnf.validator != nil {
-				if err := cnf.validator(cnf.key, val); err != nil {
-					continue
-				}
-			}
-			settings.Store(cnf.key, val)
-		}
-	}
-
-	return settings
+	profile := s.profile
+	return profile
 }
 
 // Config returns a map of all config options which are defined by application
@@ -320,6 +359,13 @@ func (s *Session) setReady() {
 	s.Log().SystemDebug("session ready")
 }
 
+func (s *Session) setProfile(profile *settings.Profile) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.logger.SystemDebug("profile loaded", slog.String("name", profile.Name()))
+	s.profile = profile
+}
+
 func (s *Session) canRecover(err error) bool {
 	if err == nil {
 		return true
@@ -355,4 +401,10 @@ func (s *Session) setServiceInfo(info *ServiceInfo) {
 	}
 
 	s.svss[info.addr.String()] = info
+}
+
+func newSession(logger logging.LoggerIface[logging.LevelIface]) *Session {
+	return &Session{
+		logger: logger,
+	}
 }

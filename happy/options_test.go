@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -11,32 +11,6 @@ import (
 	"github.com/happy-sdk/testutils"
 	"github.com/happy-sdk/vars"
 )
-
-func TestAppDefaultOptions(t *testing.T) {
-	app := New()
-
-	var tests = []struct {
-		Key      string
-		Expected string
-	}{
-		{"app.name", "Happy Application"},
-		{"app.settings.persistent", "false"},
-		{"log.level", "task"},
-		{"log.source", "false"},
-		{"log.secrets", ""},
-	}
-	for _, test := range tests {
-		opt := app.session.Get(test.Key)
-		testutils.Equal(t, test.Expected, opt.String())
-		testutils.True(t, opt.ReadOnly(), "expected %s to be readonly", test.Key)
-	}
-
-	testutils.Error(t, app.session.Set("app.name", "Test Application"), "app.name should be readonly")
-	testutils.NoError(t, app.session.Set("some.name", "Test Application"), "some.name should be allowed")
-	testutils.Error(t, app.session.Set("app.mycustom", ""), "app.mycustom should not be allowed")
-
-	testutils.Equal(t, "config", app.session.opts.Name())
-}
 
 func TestNewOptions(t *testing.T) {
 	// Test case for nil defaults

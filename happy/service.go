@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -118,11 +118,11 @@ func NewServiceLoader(sess *Session, svcs ...string) *ServiceLoader {
 		sess:     sess,
 		loaderCh: make(chan struct{}),
 	}
-	hostaddr, err := address.Parse(sess.Get("app.host.addr").String())
+	hostaddr, err := address.Parse(sess.GetSettingVar("app.address").String())
 	if err != nil {
 		loader.addErr(err)
 		loader.addErr(fmt.Errorf(
-			"%w: loader requires valid app.host.addr",
+			"%w: loader requires valid app.address",
 			ErrService,
 		))
 	}

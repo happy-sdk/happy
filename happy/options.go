@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -7,14 +7,8 @@ package happy
 import (
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 
-	"github.com/happy-sdk/happy/pkg/address"
-	"github.com/happy-sdk/happy/pkg/logging"
-	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/vars"
-	"golang.org/x/mod/semver"
 )
 
 type (
@@ -48,11 +42,10 @@ type (
 )
 
 const (
-	defaultOption OptionKind = 1 << iota
+	RuntimeOption OptionKind = 1 << iota
 	ReadOnlyOption
 	SettingsOption
 	ConfigOption
-	RuntimeOption
 )
 
 var (
@@ -67,7 +60,14 @@ func Option(key string, value any) OptionArg {
 	return OptionArg{
 		key:   key,
 		value: value,
-		kind:  defaultOption,
+		kind:  RuntimeOption,
+	}
+}
+func OptionReadonly(key string, value any) OptionArg {
+	return OptionArg{
+		key:   key,
+		value: value,
+		kind:  RuntimeOption | ReadOnlyOption,
 	}
 }
 
@@ -80,7 +80,7 @@ func NewOptions(name string, defaults []OptionArg) (*Options, error) {
 	opts := &Options{
 		name: name,
 	}
-	if defaults != nil && len(defaults) > 0 {
+	if len(defaults) > 0 {
 		opts.config = make(map[string]OptionArg)
 		for _, cnf := range defaults {
 			key, err := vars.ParseKey(cnf.key)
@@ -193,7 +193,7 @@ func (opts *Options) setDefaults() error {
 			continue
 		}
 		if !opts.db.Has(key) {
-			if err := opts.Set(key, cnf.value); err != nil {
+			if err := opts.set(key, cnf.value, true); err != nil {
 				return err
 			}
 		}
@@ -215,197 +215,84 @@ var OptionValidatorNotEmpty = func(key string, val vars.Value) error {
 	return nil
 }
 
-func getDefaultApplicationConfig() ([]OptionArg, error) {
-	addr, err := address.Current()
-	if err != nil {
-		return nil, err
-	}
-
-	configOpts := []OptionArg{
+func getRuntimeConfig() []OptionArg {
+	opts := []OptionArg{
+		// {
+		// 	key:   "*",
+		// 	value: "",
+		// 	kind:  ReadOnlyOption | RuntimeOption,
+		// 	validator: func(key string, val vars.Value) error {
+		// 		if strings.HasPrefix(key, "app.") || strings.HasPrefix(key, "log.") || strings.HasPrefix(key, "happy.") || strings.HasPrefix(key, "fs.") {
+		// 			return fmt.Errorf("%w: unknown application option %s", ErrOptionValidation, key)
+		// 		}
+		// 		return nil
+		// 	},
+		// },
 		{
-			key:   "*",
-			value: "",
-			kind:  ReadOnlyOption,
-			validator: func(key string, val vars.Value) error {
-				if strings.HasPrefix(key, "app.") || strings.HasPrefix(key, "log.") || strings.HasPrefix(key, "happy.") {
-					return fmt.Errorf("%w: unknown application option %s", ErrOptionValidation, key)
-				}
-				return nil
-			},
-		},
-		{
-			key:       "app.name",
-			value:     "Happy Application",
-			desc:      "Name of the application",
-			kind:      ReadOnlyOption | ConfigOption,
+			key:       "app.devel",
+			value:     false,
+			desc:      "Is application in development mode",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "app.slug",
-			value:     addr.Instance,
-			desc:      "Slug of the application",
-			kind:      ReadOnlyOption | ConfigOption,
-			validator: noopvalidator,
-		},
-		{
-			key:       "app.description",
+			key:       "app.fs.path.pwd",
 			value:     "",
-			desc:      "Short description for application",
-			kind:      ReadOnlyOption | ConfigOption,
+			desc:      "Current working directory",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "app.copyright.by",
-			value:     "The Happy Authors",
-			desc:      "Copyright owner",
-			kind:      ReadOnlyOption | ConfigOption,
+			key:       "app.fs.path.home",
+			value:     "",
+			desc:      "Current user home directory",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "app.copyright.since",
-			value:     0,
-			desc:      "Copyright since",
-			kind:      ReadOnlyOption | ConfigOption,
+			key:       "app.fs.path.tmp",
+			value:     "",
+			desc:      "Runtime tmp directory",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "app.cron.on.service.start",
-			value:     false,
-			desc:      "Execute Cronjobs first time when service starts",
-			kind:      ReadOnlyOption | ConfigOption,
+			key:       "app.fs.path.cache",
+			value:     "",
+			desc:      "Application cache directory",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "app.fs.enabled",
-			value:     false,
-			desc:      "enable and load filesystem paths for application",
-			kind:      ReadOnlyOption | ConfigOption,
-			validator: noopvalidator,
-		},
-		{
-			key:       "app.license",
-			value:     "Apache-2.0 license",
-			desc:      "License",
-			kind:      ReadOnlyOption | ConfigOption,
+			key:       "app.fs.path.config",
+			value:     "",
+			desc:      "Application configuration directory",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
 			key:       "app.cli.x",
-			value:     false,
-			desc:      "indicate that external commands should be printed.",
-			kind:      ConfigOption,
-			validator: noopvalidator,
-		},
-		{
-			key:   "app.throttle.ticks",
-			value: time.Duration(time.Second / 60),
-			desc:  "Interfal target for system and service ticks",
-			kind:  ReadOnlyOption | SettingsOption,
-			validator: func(key string, val vars.Value) error {
-				v, err := val.Int64()
-				if err != nil {
-					return err
-				}
-				if v < 1 {
-					return fmt.Errorf(
-						"%w: invalid throttle value %s(%d - %v), must be greater that 1",
-						ErrOptionValidation, val.Kind(), v, val.Any())
-				}
-				return nil
-			},
-		},
-		{
-			key:   "app.version",
-			value: version.Current(),
-			desc:  "Application version",
-			kind:  ReadOnlyOption | ConfigOption,
-			validator: func(key string, val vars.Value) error {
-				if !semver.IsValid(val.String()) {
-					return fmt.Errorf("%w %q, version must be valid semantic version", ErrInvalidVersion, val)
-				}
-				return nil
-			},
-		},
-		{
-			key:   "app.version.build",
-			value: "",
-			desc:  "Application build info from version",
-			kind:  ReadOnlyOption | ConfigOption,
-		},
-		{
-			key:   "app.settings.persistent",
-			value: false,
-			desc:  "persist settings across restarts",
-			kind:  ReadOnlyOption | ConfigOption,
-			validator: func(key string, val vars.Value) error {
-				if val.Kind() != vars.KindBool {
-					return fmt.Errorf("%w: %s must be boolean got %s(%s)", ErrOptionValidation, key, val.Kind(), val.String())
-				}
-				return nil
-			},
-		},
-		{
-			key:   "app.time.location",
-			value: "UTC",
-			desc:  "set global time location with the given name, If the name is \"\" or \"UTC\", LoadLocation returns UTC.",
-			kind:  ReadOnlyOption | ConfigOption,
-			validator: func(key string, val vars.Value) (err error) {
-				_, err = time.LoadLocation(val.String())
-				return err
-			},
-		},
-		{
-			key:       "log.level",
-			value:     logging.LevelTask,
-			desc:      "Log level for applicaton",
-			kind:      ReadOnlyOption | SettingsOption,
-			validator: noopvalidator,
-		},
-		{
-			key:       "log.source",
-			value:     false,
-			desc:      "adds source = file:line attribute to the output indicating the source code position of the log statement.",
-			kind:      ReadOnlyOption | ConfigOption,
-			validator: noopvalidator,
-		},
-		{
-			key:       "log.handler",
-			value:     logging.WithColoredHandler,
-			desc:      "log handler for logger",
-			kind:      ReadOnlyOption | ConfigOption,
-			validator: noopvalidator,
-		},
-		{
-			key:       "log.secrets",
 			value:     "",
-			desc:      "comma separated list of attr key to mask value with ****",
-			kind:      ReadOnlyOption | ConfigOption,
+			desc:      "-x flag set to print all commands as executed",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "log.timestamp",
-			value:     "15:04:05.999",
-			desc:      "timestamp format",
-			kind:      ReadOnlyOption | ConfigOption,
+			key:       "app.profile.name",
+			value:     "",
+			desc:      "name of current settings profile",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:   "app.host.addr",
-			value: addr.String(),
-			desc:  "Application happy host address",
-			kind:  ReadOnlyOption | ConfigOption,
-			validator: func(key string, val vars.Value) error {
-				_, err := address.Parse(val.String())
-				if err != nil {
-					return fmt.Errorf(
-						"%w: invalid host address (%q)",
-						ErrOptionValidation, val.String())
-				}
-				return nil
-			},
+			key:       "app.profile.file",
+			value:     "",
+			desc:      "file path of current settings profile file",
+			kind:      ConfigOption | ReadOnlyOption,
+			validator: noopvalidator,
 		},
 	}
-	return configOpts, nil
+	return opts
 }
 
 func getDefaultCommandOpts() []OptionArg {
@@ -414,42 +301,49 @@ func getDefaultCommandOpts() []OptionArg {
 			key:       "description",
 			value:     "",
 			desc:      "Long escription for command",
-			kind:      ReadOnlyOption | ConfigOption,
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
 			key:       "usage",
 			value:     "",
 			desc:      "Usage description for command",
-			kind:      ReadOnlyOption | ConfigOption,
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
 			key:       "category",
 			value:     "",
 			desc:      "Command category",
-			kind:      ReadOnlyOption | ConfigOption,
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "allow.on.fresh.install",
+			key:       "init.allowed",
 			value:     true,
 			desc:      "Is command allowed to be used when application is used first time",
-			kind:      ReadOnlyOption | ConfigOption,
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "skip.addons",
+			key:       "addons.disabled",
 			value:     false,
 			desc:      "Skip registering addons for this command, Addons and their provided services will not be loaded when this command is used.",
-			kind:      ReadOnlyOption | ConfigOption,
+			kind:      ConfigOption | ReadOnlyOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "argc.min",
+			value:     0,
+			desc:      "Minimum argument count for command",
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
 			key:       "argc.max",
 			value:     0,
 			desc:      "Maximum argument count for command",
-			kind:      ReadOnlyOption | ConfigOption,
+			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 	}

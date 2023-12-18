@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2022 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -7,15 +7,17 @@ package happy
 import (
 	"fmt"
 
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/vars"
 	"golang.org/x/mod/semver"
 )
 
 type Addon struct {
-	info AddonInfo
-	opts *Options
-	errs []error
+	info     AddonInfo
+	opts     *Options
+	settings settings.Settings
+	errs     []error
 
 	registerAction ActionWithOptions
 	events         []Event
@@ -33,8 +35,9 @@ type AddonInfo struct {
 	Version     version.Version
 }
 
-func NewAddon(name string, opts ...OptionArg) *Addon {
+func NewAddon(name string, s settings.Settings, opts ...OptionArg) *Addon {
 	addon := &Addon{
+		settings: s,
 		info: AddonInfo{
 			Name: name,
 		},
@@ -83,7 +86,7 @@ func (addon *Addon) EmitsEvent(event Event) {
 	addon.events = append(addon.events, event)
 }
 
-func (addon *Addon) Setting(key string, value any, description string, validator OptionValueValidator) {
+func (addon *Addon) Option(key string, value any, description string, validator OptionValueValidator) {
 	addon.acceptsOpts = append(addon.acceptsOpts, OptionArg{
 		key:       key,
 		value:     value,

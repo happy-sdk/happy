@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2022 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -48,7 +48,7 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	c.errs = append(c.errs, err)
 	c.name = n
 
-	opts, err := NewOptions("command", getDefaultCommandOpts())
+	opts, err := NewOptions(fmt.Sprintf("cmd.%s", name), getDefaultCommandOpts())
 	c.errs = append(c.errs, err)
 
 	for _, opt := range options {
@@ -68,7 +68,7 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	c.usage = opts.Get("usage").String()
 	c.desc = opts.Get("description").String()
 	c.category = opts.Get("category").String()
-	c.allowOnFreshInstall = opts.Get("allow.on.fresh.install").Bool()
+	c.allowOnFreshInstall = opts.Get("init.allowed").Bool()
 	c.skipAddons = opts.Get("skip.addons").Bool()
 
 	return c

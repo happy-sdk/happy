@@ -7,7 +7,34 @@ package settings
 import (
 	"fmt"
 	"strconv"
+	"time"
+
+	"github.com/happy-sdk/vars"
 )
+
+type Kind uint8
+
+const (
+	KindSettings = Kind(vars.KindInterface)
+	KindCustom   = Kind(vars.KindByteSlice)
+
+	KindInvalid  = Kind(vars.KindInvalid)
+	KindBool     = Kind(vars.KindBool)
+	KindInt      = Kind(vars.KindInt)
+	KindUint     = Kind(vars.KindUint)
+	KindString   = Kind(vars.KindString)
+	KindDuration = Kind(vars.KindDuration)
+)
+
+func (k Kind) String() string {
+	switch k {
+	case KindCustom:
+		return "custom"
+	case KindSettings:
+		return "settings"
+	}
+	return vars.Kind(k).String()
+}
 
 // String represents a setting type based on a string.
 type String string
@@ -118,4 +145,27 @@ func (u *Uint) UnmarshalSetting(data []byte) error {
 
 func (u Uint) String() string {
 	return fmt.Sprint(uint(u))
+}
+
+type Duration time.Duration
+
+func (d Duration) String() string {
+	return time.Duration(d).String()
+}
+
+func (d Duration) MarshalSetting() ([]byte, error) {
+	return []byte(d.String()), nil
+}
+
+func (d *Duration) UnmarshalSetting(data []byte) error {
+	val, err := time.ParseDuration(string(data))
+	if err != nil {
+		return err
+	}
+	*d = Duration(val)
+	return nil
+}
+
+func (d Duration) SettingKind() Kind {
+	return KindDuration
 }

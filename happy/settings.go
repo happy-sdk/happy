@@ -29,6 +29,10 @@ type Settings struct {
 	Logger logging.Settings `key:"logger"`
 	I18n   i18n.Settings    `key:"i18n"`
 
+	// MainArgcMax is number of arguments what root coomand accepts.
+	// when arg does not match a subcommand.
+	MainArgcMax   settings.Uint     `key:"app.main.argc.max" default:"0" mutation:"once"`
+	ThrottleTicks settings.Duration `key:"app.throttle.ticks" default:"1s" mutation:"once"`
 	embedSettings map[string]settings.Settings
 	errs          []error
 }

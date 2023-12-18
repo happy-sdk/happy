@@ -85,6 +85,7 @@ func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {
 	}
 	return spec, nil
 }
+
 func (b *Blueprint) Extend(group string, ext Settings) error {
 	exptbp, err := ext.Blueprint()
 	if err != nil {

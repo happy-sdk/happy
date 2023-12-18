@@ -1,4 +1,4 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2022 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -11,7 +11,7 @@ import (
 )
 
 func (a *Application) help() error {
-	fmt.Println(a.session.Get("app.name").String() + " " + a.session.Get("app.version").String() + "\n")
+	fmt.Println(a.session.GetSettingVar("app.name").String() + " " + a.session.Get("app.version").String() + "\n")
 	if crby := a.session.Get("app.copyright.by").String(); crby != "" {
 		since := a.session.Get("app.copyright.since").Int()
 		year := time.Now().In(a.timeLocation).Year()

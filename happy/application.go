@@ -1,11 +1,10 @@
-// Copyright 2022 Marko Kungla
+// Copyright 2022 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
 package happy
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -16,7 +15,9 @@ import (
 
 	"log/slog"
 
+	"github.com/happy-sdk/happy/pkg/address"
 	"github.com/happy-sdk/happy/pkg/logging"
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/varflag"
 	"github.com/happy-sdk/vars"
@@ -24,7 +25,7 @@ import (
 
 type Application struct {
 	session *Session
-	engine  *Engine
+	engine  *engine
 
 	rootCmd   *Command
 	activeCmd *Command
@@ -46,7 +47,7 @@ type Application struct {
 	initialized time.Time
 
 	// exit handler
-	exitOs     bool
+	exitTrap   bool
 	exitFunc   []func(code int) error
 	exitCh     chan struct{}
 	errs       []error
@@ -54,87 +55,87 @@ type Application struct {
 	profile    string
 	migrations map[string]migration
 
-	firstuse        bool
-	persistentState *persistentState
-	setupNextRun    bool
+	firstuse     bool
+	slug         string
+	setupNextRun bool
 
 	helpMsg      string
 	timeLocation *time.Location
+
+	settingsBP *settings.Blueprint
 }
 
-func NewWithLogger[L Logger[LVL], LVL LogLevelIface](logger L, level LVL, opts ...OptionArg) *Application {
-	logger.SetLevel(level)
-
+func NewWithLogger[L logging.LoggerIface[LVL], LVL logging.LevelIface](logger L, level LVL, s Settings) *Application {
 	a := &Application{
-		engine:      newEngine(),
 		initialized: time.Now(),
-		exitOs:      true,
 	}
-
-	if err := a.configureApplication(opts); err != nil {
-		a.session.Log().Error("config error", err)
+	if err := a.configure(s, logger); err != nil {
+		a.session.Log().Error("failed to configure application", err)
 		a.exit(1)
-	}
-
-	// Load gloabl time location
-	if location, err := time.LoadLocation(a.session.Get("time.location").String()); err == nil {
-		a.timeLocation = location
-	} else {
-		a.session.Log().Error("invalid time location", err, slog.String("location", a.session.Get("time.location").String()))
-		a.exit(1)
-	}
-
-	secretsCnf := a.session.Get("log.secrets").String()
-
-	var secrets []string
-	if len(secretsCnf) > 0 {
-		keys := strings.Split(secretsCnf, ",")
-		for _, secret := range keys {
-			secrets = append(secrets, strings.TrimSpace(secret))
-		}
-	}
-	loggerConf := logging.Config{
-		AddSource:      a.session.Get("log.source").Bool(),
-		Level:          logging.Level(a.session.Get("log.level").Int()),
-		Secrets:        secrets,
-		TimeLayout:     a.session.Get("log.timestamp").String(),
-		DefaultHandler: logging.HandlerKind(a.session.Get("log.handler").Uint8()),
-	}
-	loggerConf.Colors = a.session.Get("log.colors").Bool()
-
-	log, err := logging.New(loggerConf)
-	if err != nil {
-		a.session.Log().Error("config error", err)
-		a.exit(1)
-	}
-	a.session.logger = log
-
-	if a.session.Get("log.stdlog").Bool() {
-		a.session.logger.NotImplemented("setting happy.Logger as slog.Default is not implemented")
-	}
-
-	// if lerr := a.configureLogger(logger); lerr != nil {
-	// 	fmt.Fprintf(os.Stderr, "%s: \n", lerr.Error())
-	// 	a.exit(1)
-	// }
-
-	if err != nil {
-		a.session.Log().Error("config error", err)
-		a.exit(1)
-	}
-
-	if err := a.configureRootCommand(); err != nil {
-		a.session.Log().Error("failed to create root command", err)
+		return nil
 	}
 	return a
 }
 
 // New returns new happy application instance.
 // It panics if there is critical internal error or bug.
-func New(opts ...OptionArg) *Application {
-	logger := &logger[LogLevel]{}
+func New(s Settings) *Application {
+	a := &Application{
+		initialized: time.Now(),
+	}
+	if err := a.configure(s, nil); err != nil {
+		a.session.Log().Error("failed to configure application", err)
+		a.exit(1)
+		return nil
+	}
+	return a
+}
 
-	return NewWithLogger(logger, LevelTask, opts...)
+func (a *Application) Options(opts ...OptionArg) {
+	if a.running {
+		a.session.Log().Warn("call to app.Options() prohibited when application is running")
+		return
+	}
+
+	var errs []error
+	for key := range a.session.opts.config {
+		for _, opt := range opts {
+			if opt.key == key {
+				val, err := vars.NewValue(opt.value)
+				if err != nil {
+					errs = append(errs, errors.Join(fmt.Errorf("%w: config.%s validation failed", ErrOption, opt.key), err))
+					continue
+				}
+				if err := a.session.Set(key, val); err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				break
+			} else {
+				// extend
+				a.session.opts.config[opt.key] = opt
+
+			}
+
+		}
+		// if !provided {
+		// 	if err := a.session.opts.Set(key, cnf.value); err != nil {
+		// 		errs = append(errs, err)
+		// 		continue
+		// 	}
+		// }
+	}
+	if err := a.session.opts.setDefaults(); err != nil {
+		errs = append(errs, err)
+
+	}
+	// populate pending queue
+	for _, opt := range opts {
+		if !a.session.Has(opt.key) {
+			a.pendingOpts = append(a.pendingOpts, opt)
+		}
+	}
+	a.errs = append(a.errs, errs...)
 }
 
 func (a *Application) Main() {
@@ -146,7 +147,7 @@ func (a *Application) Main() {
 
 	// when we disable os.Exit e.g. for tests then create
 	// channel which would block main thread
-	if !a.exitOs {
+	if a.exitTrap {
 		a.exitCh = make(chan struct{}, 1)
 		defer close(a.exitCh)
 	}
@@ -295,42 +296,22 @@ func (a *Application) AddFlag(f varflag.Flag) {
 	}
 }
 
-func (a *Application) Setting(key string, value any, description string, validator OptionValueValidator) {
-	if strings.HasPrefix(key, "app.") {
-		a.errs = append(a.errs, fmt.Errorf("%w: custom option %q can not start with app.", ErrOption, key))
-		return
-	}
-	if strings.HasPrefix(key, "log.") {
-		a.errs = append(a.errs, fmt.Errorf("%w: custom option %q can not start with log.", ErrOption, key))
-		return
-	}
-	opt, ok := a.session.opts.config[key]
-	if ok {
-		a.errs = append(a.errs, fmt.Errorf("%w: option %q already in use (%s)", ErrOption, key, opt.desc))
-		return
-	}
-	a.session.opts.config[key] = OptionArg{
-		key:       key,
-		value:     value,
-		desc:      description,
-		kind:      SettingsOption,
-		validator: validator,
-	}
-}
-
 func (a *Application) shutdown() {
-	if err := a.engine.stop(a.session); err != nil {
-		a.session.Log().Error("failed to stop engine", err)
+	if a.engine != nil {
+		if err := a.engine.stop(a.session); err != nil {
+			a.session.Log().Error("failed to stop engine", err)
+		}
 	}
+
 	// Destroy session
 	a.session.Destroy(nil)
 	if err := a.session.Err(); err != nil && !errors.Is(err, ErrSessionDestroyed) {
 		a.session.Log().Warn("session", slog.String("err", err.Error()))
 	}
-
 }
 
 func (a *Application) exit(code int) {
+
 	a.session.Log().SystemDebug("shutting down", slog.Int("exit.code", code))
 
 	for _, fn := range a.exitFunc {
@@ -350,21 +331,20 @@ func (a *Application) exit(code int) {
 	if err := a.save(); err != nil {
 		a.session.Log().Error("failed to save state", err)
 	}
-	if a.exitOs {
+	if !a.exitTrap {
 		os.Exit(code)
 	}
 }
 
 func (a *Application) initializePaths() error {
-	if !a.session.Get("app.fs.enabled").Bool() {
-		return nil
-	}
+	a.session.Log().SystemDebug("initialize runtime fs paths")
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	// exceptions which by pass validation
-	if err := a.session.opts.db.Store("app.path.wd", wd); err != nil {
+
+	if err := a.session.opts.set("app.fs.path.pwd", wd, true); err != nil {
 		return err
 	}
 
@@ -372,24 +352,33 @@ func (a *Application) initializePaths() error {
 	if err != nil {
 		return err
 	}
-	if err := a.session.opts.db.Store("app.path.home", userHomeDir); err != nil {
+
+	if err := a.session.opts.set("app.fs.path.home", userHomeDir, true); err != nil {
 		return err
 	}
-	slug := a.session.Get("app.slug").String()
 
-	if slug == "" {
-		return fmt.Errorf("%w: invalid slug %s", ErrApplication, slug)
+	if len(a.slug) == 0 {
+		addr, err := address.Current()
+		if err != nil {
+			return err
+		}
+		a.slug = addr.Instance
 	}
-	dir := slug
+	a.session.Log().SystemDebug("application slug valid", slog.String("slug", a.slug))
+
+	dir := a.slug
+	if a.isDev {
+		a.profile += "-devel"
+	}
 	if a.profile != "default" {
-		dir = filepath.Join(dir, a.profile)
+		dir = filepath.Join(dir, "profiles", a.profile)
 	}
 
 	tempDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%d", dir, time.Now().UnixMilli()))
 	if err := os.MkdirAll(tempDir, 0700); err != nil {
 		return err
 	}
-	if err := a.session.opts.db.Store("app.path.tmp", tempDir); err != nil {
+	if err := a.session.opts.set("app.fs.path.tmp", tempDir, true); err != nil {
 		return err
 	}
 	a.exitFunc = append(a.exitFunc, func(code int) error {
@@ -413,7 +402,7 @@ func (a *Application) initializePaths() error {
 		}
 		a.firstuse = true
 	}
-	if err := a.session.opts.db.Store("app.path.cache", appCacheDir); err != nil {
+	if err := a.session.opts.set("app.fs.path.cache", appCacheDir, true); err != nil {
 		return err
 	}
 
@@ -431,7 +420,7 @@ func (a *Application) initializePaths() error {
 		a.firstuse = true
 	}
 
-	if err := a.session.opts.db.Store("app.path.config", appConfigDir); err != nil {
+	if err := a.session.opts.set("app.fs.path.config", appConfigDir, true); err != nil {
 		return err
 	}
 	return nil
@@ -442,12 +431,12 @@ func (a *Application) initialize() error {
 		dur := time.Since(a.initialized)
 		a.session.Log().SystemDebug(
 			"initialization",
-			slog.String("version", a.session.Get("app.version").String()),
+			slog.String("version", a.session.GetSettingVar("app.version").String()),
 			slog.Duration("took", dur),
 		)
 	}()
 
-	if err := a.registerAddonCommands(); err != nil {
+	if err := a.registerAddonSettingsAndCommands(); err != nil {
 		return err
 	}
 
@@ -483,13 +472,13 @@ func (a *Application) initialize() error {
 	}
 
 	a.profile = a.rootCmd.flag("profile").Var().String()
-	a.session.Log().SystemDebug("using profile", slog.String("profile", a.profile))
+	a.session.opts.set("app.profile.name", a.profile, true)
 	if err := a.initializePaths(); err != nil {
 		return err
-	} else {
-		if err := a.load(); err != nil {
-			return err
-		}
+	}
+
+	if err := a.load(); err != nil {
+		return err
 	}
 
 	if err := a.setActiveCommand(); err != nil {
@@ -508,7 +497,7 @@ func (a *Application) initialize() error {
 	// set x flag to session
 	// is flag x set to indicate that
 	// external commands should be printed.
-	if err := a.session.Set("app.cli.x", a.rootCmd.flag("x").Present()); err != nil {
+	if err := a.session.opts.set("app.cli.x", a.rootCmd.flag("x").Present(), true); err != nil {
 		return err
 	}
 
@@ -518,28 +507,24 @@ func (a *Application) initialize() error {
 		slog.String("cmd", a.activeCmd.name),
 	)
 
-	// loaded persistent state
-	if a.persistentState != nil {
-		a.session.Log().SystemDebug("loaded settings from",
-			slog.String("file", a.persistentState.cfile),
-		)
-	}
-
 	if err := a.registerInternalEvents(); err != nil {
 		return err
 	}
 
 	a.session.Log().SystemDebug("initialize", slog.Bool("first.use", a.firstuse))
-	if a.firstuse || (a.persistentState != nil && a.persistentState.SetupNextRun) {
-		if err := a.firstUse(); err != nil {
-			// Set it so that installer rruns again on next run
-			// If there were user errors on setup.
-			a.setupNextRun = true
-			return err
-		}
-		a.setupNextRun = false
-		a.session.Log().Ok("setup complete")
+
+	if err := a.firstUse(); err != nil {
+		// Set it so that installer rruns again on next run
+		// If there were user errors on setup.
+		a.setupNextRun = true
+		return err
 	}
+
+	// if a.firstuse || (a.persistentState != nil && a.persistentState.SetupNextRun) {
+
+	// 	a.setupNextRun = false
+	// 	a.session.Log().Ok("setup complete")
+	// }
 
 	// apply pending options for app settings if set
 	if err := a.applySettings(); err != nil {
@@ -547,7 +532,7 @@ func (a *Application) initialize() error {
 	}
 
 	// set defaults for config and settings
-	a.session.opts.setDefaults()
+	// a.session.opts.setDefaults()
 
 	if err := a.registerAddons(); err != nil {
 		return err
@@ -566,25 +551,11 @@ func (a *Application) initialize() error {
 	return errors.Join(a.errs...)
 }
 
-func (a *Application) applySettings() error {
-	// apply options
-	var pendingOpts []OptionArg
-	for _, opt := range a.pendingOpts {
-		// apply if it is custom glopal setting
-		a.session.Log().SystemDebug("opt", slog.Any(opt.key, opt.value))
-		if _, ok := a.session.opts.config[opt.key]; ok {
-			if err := opt.apply(a.session.opts); err != nil {
-				return err
-			}
-			continue
-		}
-		pendingOpts = append(pendingOpts, opt)
-	}
-	a.pendingOpts = pendingOpts
-	return nil
-}
-
 func (a *Application) firstUse() error {
+	a.session.Log().Debug("first execution")
+	if !a.firstuse {
+		return nil
+	}
 	if !a.activeCmd.allowOnFreshInstall {
 		return fmt.Errorf("%w: command %q is not allowed on first time application use", ErrCommand, a.activeCmd.name)
 	}
@@ -595,128 +566,6 @@ func (a *Application) firstUse() error {
 		}
 	}
 	return nil
-}
-
-type persistentState struct {
-	Date          time.Time         `json:"date"`
-	Version       version.Version   `json:"version"`
-	LastMigration version.Version   `json:"lastMigration"`
-	Settings      []persistentValue `json:"settings"`
-	SetupNextRun  bool              `json:"setupNextRun"`
-	cfile         string
-}
-
-type persistentValue struct {
-	Key   string `json:"key"`
-	Kind  uint8  `json:"kind"`
-	Value any    `json:"value"`
-}
-
-func (a *Application) load() error {
-	if !a.session.Get("app.fs.enabled").Bool() {
-		return nil
-	}
-	cpath := a.session.Get("app.path.config").String()
-	if cpath == "" {
-		return fmt.Errorf("%w: config path empty", ErrApplication)
-	}
-	cfile := filepath.Join(cpath, "state.happy")
-	_, err := os.Stat(cfile)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			a.firstuse = true
-			return nil
-		}
-		return err
-	}
-	data, err := os.ReadFile(cfile)
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(data, &a.persistentState); err != nil {
-		return err
-	}
-	a.persistentState.cfile = cfile
-
-	for _, setting := range a.persistentState.Settings {
-		// override predef options
-		varval, err := vars.NewValueAs(setting.Value, vars.Kind(setting.Kind))
-		if err != nil {
-			return err
-		}
-		if a.session.Has(setting.Key) {
-			if err := a.session.opts.set(setting.Key, varval.Any(), true); err != nil {
-				return err
-			}
-			continue
-		}
-		// override predef pending opts
-		found := false
-		for i, opt := range a.pendingOpts {
-			if opt.key == setting.Key {
-				a.pendingOpts[i].value = varval.Any()
-				found = true
-				break
-			}
-		}
-		if !found {
-			a.pendingOpts = append(a.pendingOpts, Option(setting.Key, varval.Any()))
-		}
-	}
-	return nil
-}
-
-func (a *Application) save() error {
-	if !a.session.Get("app.fs.enabled").Bool() {
-		return nil
-	}
-	if a.activeCmd == nil {
-		return nil
-	}
-	if !a.activeCmd.allowOnFreshInstall {
-		a.session.Log().SystemDebug("skip saving")
-		return nil
-	}
-	cpath := a.session.Get("app.path.config").String()
-	if cpath == "" {
-		return fmt.Errorf("%w: config path empty", ErrApplication)
-	}
-	cstat, err := os.Stat(cpath)
-	if err != nil {
-		return err
-	}
-	if !cstat.IsDir() {
-		return fmt.Errorf("%w: invalid config directory %s", ErrApplication, cpath)
-	}
-
-	cfile := filepath.Join(cpath, "state.happy")
-
-	verstr := a.session.Get("app.version").String()
-	ver, err := version.Parse(verstr)
-	if err != nil {
-		return err
-	}
-	ps := &persistentState{
-		Date:         time.Now().UTC(),
-		Version:      ver,
-		SetupNextRun: a.setupNextRun,
-	}
-	settings := a.session.Settings()
-	settings.Range(func(v vars.Variable) bool {
-		ps.Settings = append(ps.Settings, persistentValue{
-			Key:   v.Name(),
-			Kind:  uint8(v.Kind()),
-			Value: v.Any(),
-		})
-		return true
-	})
-	data, err := json.MarshalIndent(ps, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(cfile, data, 0600)
 }
 
 func (a *Application) setActiveCommand() error {
@@ -796,97 +645,123 @@ func (a *Application) printVersion() {
 	fmt.Println(a.session.Get("app.version").String())
 }
 
-func (a *Application) configureApplication(opts []OptionArg) (err error) {
-	a.session = &Session{}
-	defAppConf, conferr := getDefaultApplicationConfig()
-	a.session.opts, err = NewOptions("config", defAppConf)
-	if conferr != nil {
-		return conferr
+// Configure application
+func (a *Application) configure(s Settings, logger logging.Logger) (err error) {
+	if logger == nil {
+		logger, err = a.configureLogger(s)
 	}
+	logger.SystemDebug("configuring application")
+
+	a.engine = newEngine()
+
+	a.session = newSession(logger)
 	if err != nil {
 		return err
 	}
 
-	var errs []error
-
-	for key, cnf := range a.session.opts.config {
-		var provided bool
-		for _, opt := range opts {
-			if opt.key == key {
-				val, err := vars.NewValue(opt.value)
-				if err != nil {
-					errs = append(errs, errors.Join(fmt.Errorf("%w: config.%s validation failed", ErrOption, opt.key), err))
-					continue
-				}
-				if err := a.session.Set(key, val); err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				provided = true
-				break
-			}
-		}
-		if !provided {
-			if err := a.session.Set(key, cnf.value); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-		}
-	}
-
-	// populate pending queue
-	for _, opt := range opts {
-		if !a.session.Has(opt.key) {
-			a.pendingOpts = append(a.pendingOpts, opt)
-		}
-	}
-
-	a.isDev = version.IsDev(a.session.Get("app.version").String())
-
-	ver, err := version.Parse(a.session.Get("app.version").String())
+	// // Get app settings
+	settingsbp, err := s.Blueprint()
 	if err != nil {
-		errs = append(errs, err)
-	} else {
-		build := ver.Build()
-		a.session.Set("app.version.build", build)
+		return err
 	}
 
-	return errors.Join(errs...)
+	descSpec, descErr := settingsbp.GetSpec("app.description")
+	usageSpec, usageErr := settingsbp.GetSpec("app.usage")
+	versionSpec, versionErr := settingsbp.GetSpec("app.version")
+	slugSpec, slugErr := settingsbp.GetSpec("app.slug")
+	mainArgcMaxSpec, mainArgcMaxErr := settingsbp.GetSpec("app.main.argc.max")
+	addressSpec, addressErr := settingsbp.GetSpec("app.address")
+
+	if err := errors.Join(descErr, usageErr, versionErr, slugErr, mainArgcMaxErr, addressErr); err != nil {
+		return err
+	}
+	a.engine.address = addressSpec.Value
+
+	a.slug = slugSpec.Value
+
+	if err := a.createRootCommand(descSpec.Value, usageSpec.Value, mainArgcMaxSpec.Value); err != nil {
+		a.session.Log().Error("failed to create root command", err)
+	}
+
+	a.isDev = version.IsDev(versionSpec.Value)
+	a.session.opts, err = NewOptions("app", getRuntimeConfig())
+	if err != nil {
+		return err
+	}
+
+	if err := a.session.opts.setDefaults(); err != nil {
+		return err
+	}
+	a.session.opts.set("devel", a.isDev, true)
+	a.settingsBP = settingsbp
+	return
 }
 
-func (a *Application) configureLogger(logger Logger[LogLevelIface]) (err error) {
+func (a *Application) configureLogger(s Settings) (logging.Logger, error) {
+	tmplog := logging.Simple(logging.LevelSystemDebug)
+	// setup default logger
+	logbp, err := s.Logger.Blueprint()
+	if err != nil {
+		return tmplog, err
+	}
 
-	secretsCnf := a.session.Get("log.secrets").String()
+	levelSpec, levelErr := logbp.GetSpec("level")
+	secretsSpec, secretsErr := logbp.GetSpec("secrets")
+	sourceSpec, sourcesErr := logbp.GetSpec("source")
+	defHandlerSpec, defHandlerErr := logbp.GetSpec("default.handler")
+	tsFormatSpec, tsFormatErr := logbp.GetSpec("timestamp.format")
+	tsLocSpec, tsLocErr := logbp.GetSpec("timestamp.location")
+	slogGlobSpec, slogGlobErr := logbp.GetSpec("slog.global")
+
+	var level logging.Level
+	levelPErr := level.UnmarshalSetting([]byte(levelSpec.Value))
+
+	var handlerKind logging.HandlerKind
+	handlerPErr := handlerKind.UnmarshalSetting([]byte(defHandlerSpec.Value))
+
+	var source settings.Bool
+	sourcePerr := source.UnmarshalSetting([]byte(sourceSpec.Value))
+
+	if logErr := errors.Join(
+		levelErr, secretsErr, sourcesErr, defHandlerErr, tsFormatErr, tsLocErr,
+		levelPErr, handlerPErr, sourcePerr, slogGlobErr,
+	); logErr != nil {
+		return tmplog, logErr
+	}
 
 	var secrets []string
-	if len(secretsCnf) > 0 {
-		keys := strings.Split(secretsCnf, ",")
+	if len(secretsSpec.Value) > 0 {
+		keys := strings.Split(secretsSpec.Value, ",")
 		for _, secret := range keys {
 			secrets = append(secrets, strings.TrimSpace(secret))
 		}
 	}
 	loggerConf := logging.Config{
-		AddSource:      a.session.Get("log.source").Bool(),
-		Level:          logging.Level(a.session.Get("log.level").Int()),
+		AddSource:      bool(source),
+		Level:          level,
 		Secrets:        secrets,
-		TimeLayout:     a.session.Get("log.timestamp").String(),
-		DefaultHandler: logging.HandlerKind(a.session.Get("log.handler").Uint8()),
+		TimeLayout:     tsFormatSpec.Value,
+		TimeLoc:        tsLocSpec.Value,
+		DefaultHandler: handlerKind,
 	}
-	loggerConf.Colors = a.session.Get("log.colors").Bool()
+	logger, err := logging.New(loggerConf)
+	if err != nil {
+		return tmplog, err
+	}
 
-	a.session.logger, err = logging.New(loggerConf)
-	if a.session.Get("log.stdlog").Bool() {
-		a.session.logger.NotImplemented("setting happy.Logger as slog.Default is not implemented")
+	if slogGlobSpec.Value == "true" {
+		logger.NotImplemented("setting happy.Logger as slog.Default is not implemented")
 	}
-	return err
+	return logger, nil
 }
 
-func (a *Application) configureRootCommand() error {
+func (a *Application) createRootCommand(desc, usage, argcMax string) error {
 	rootCmd := NewCommand(
 		filepath.Base(os.Args[0]),
-		Option("description", a.session.Get("app.description")),
-		Option("usage", a.session.Get("app.usage")),
-		Option("category", ""),
+		Option("description", desc),
+		Option("usage", usage),
+		Option("argc.max", argcMax),
+		// Option("category", ""),
 	)
 	if err := rootCmd.Err(); err != nil {
 		return err
@@ -914,12 +789,7 @@ func (a *Application) configureRootCommand() error {
 		rootCmd.AddFlag(f)
 	}
 
-	profile := "default"
-	if a.isDev {
-		profile = "devel"
-	}
-
-	profileFlag, err := varflag.New("profile", profile, "session profile to be used")
+	profileFlag, err := varflag.New("profile", "default", "session profile to be used")
 	if err != nil {
 		return err
 	}
@@ -991,7 +861,7 @@ func (a *Application) executeAfterAlwaysActions(err error) {
 	}
 }
 
-func (a *Application) registerAddonCommands() error {
+func (a *Application) registerAddonSettingsAndCommands() error {
 	var provided bool
 	for _, addon := range a.addons {
 		for _, cmd := range addon.cmds {
@@ -1000,6 +870,12 @@ func (a *Application) registerAddonCommands() error {
 			}
 			a.AddCommand(cmd)
 			provided = true
+		}
+		// settings
+		if addon.settings != nil {
+			if err := a.settingsBP.Extend(addon.info.Name, addon.settings); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -1017,6 +893,7 @@ func (a *Application) registerAddons() error {
 		if len(addon.errs) > 0 {
 			return errors.Join(addon.errs...)
 		}
+
 		opts, err := NewOptions(addon.info.Name, addon.acceptsOpts)
 		if err != nil {
 			return err
@@ -1158,11 +1035,171 @@ func (a *Application) migrate() error {
 	}
 	// check has any migrations executed earlier
 	a.session.Log().Debug("preparing migrations...")
-	if a.persistentState.LastMigration == "" {
-		a.session.Log().SystemDebug("no previous migrations applied")
-	}
+	a.session.Log().NotImplemented("a.persistentState.LastMigration not implemented")
+
+	// if a.persistentState.LastMigration == "" {
+	// 	a.session.Log().SystemDebug("no previous migrations applied")
+	// }
 
 	// currver := a.session.Get("app.version").String()
 	// a.state.migration = semver.Compare(a.state.Version.String(), currver)
 	return nil
+}
+
+func (a *Application) applySettings() error {
+	// apply options
+	var pendingOpts []OptionArg
+	for _, opt := range a.pendingOpts {
+		// apply if it is custom glopal setting
+		a.session.Log().SystemDebug("opt", slog.Any(opt.key, opt.value))
+		if _, ok := a.session.opts.config[opt.key]; ok {
+			if err := opt.apply(a.session.opts); err != nil {
+				return err
+			}
+			continue
+		}
+		pendingOpts = append(pendingOpts, opt)
+	}
+	a.pendingOpts = pendingOpts
+	return nil
+}
+
+func (a *Application) load() error {
+	a.session.Log().SystemDebug("load app profile", slog.String("profile", a.profile))
+
+	cpath := a.session.Get("app.fs.path.config").String()
+	if cpath == "" {
+		return fmt.Errorf("%w: config path empty", ErrApplication)
+	}
+	cfile := filepath.Join(cpath, "profile.preferences")
+
+	a.session.opts.set("app.profile.file", cfile, true)
+
+	_, err := os.Stat(cfile)
+	if err != nil {
+		a.session.Log().SystemDebug("no profile found, creating new one", slog.String("path", cfile))
+		if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		a.firstuse = true
+	}
+	a.session.Log().SystemDebug("loading preferences from", slog.String("path", cfile))
+
+	var pref *settings.Preferences
+	versionSpec, versionErr := a.settingsBP.GetSpec("app.version")
+	moduleSpec, moduleErr := a.settingsBP.GetSpec("app.module")
+	if err := errors.Join(versionErr, moduleErr); err != nil {
+		return err
+	}
+	schema, err := a.settingsBP.Schema(moduleSpec.Value, versionSpec.Value)
+	if err != nil {
+		return err
+	}
+	profile, err := schema.Profile(a.profile, pref)
+	if err != nil {
+		return err
+	}
+	if err := profile.Set("app.slug", settings.String(a.slug)); err != nil {
+		return err
+	}
+
+	if !profile.Get("app.copyright.since").IsSet() {
+		if err := profile.Set("app.copyright.since", settings.Uint(time.Now().Year())); err != nil {
+			return err
+		}
+	}
+
+	a.session.setProfile(profile)
+	return nil
+
+	// data, err := os.ReadFile(cfile)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// if err := json.Unmarshal(data, &a.persistentState); err != nil {
+	// 	return err
+	// }
+	// a.persistentState.cfile = cfile
+
+	// for _, setting := range a.persistentState.Settings {
+	// 	// override predef options
+	// 	varval, err := vars.NewValueAs(setting.Value, vars.Kind(setting.Kind))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if a.session.Has(setting.Key) {
+	// 		if err := a.session.opts.set(setting.Key, varval.Any(), true); err != nil {
+	// 			return err
+	// 		}
+	// 		continue
+	// 	}
+	// 	// override predef pending opts
+	// 	found := false
+	// 	for i, opt := range a.pendingOpts {
+	// 		if opt.key == setting.Key {
+	// 			a.pendingOpts[i].value = varval.Any()
+	// 			found = true
+	// 			break
+	// 		}
+	// 	}
+	// 	if !found {
+	// 		a.pendingOpts = append(a.pendingOpts, Option(setting.Key, varval.Any()))
+	// 	}
+	// }
+	// return nil
+}
+
+func (a *Application) save() error {
+	a.session.Log().SystemDebug("app.save", "this feature is deprecated and will be removed in future releases")
+	return nil
+	// if !a.session.Get("app.fs.enabled").Bool() {
+	// 	return nil
+	// }
+	// if a.activeCmd == nil {
+	// 	return nil
+	// }
+	// if !a.activeCmd.allowOnFreshInstall {
+	// 	a.session.Log().SystemDebug("skip saving")
+	// 	return nil
+	// }
+	// cpath := a.session.Get("app.path.config").String()
+	// if cpath == "" {
+	// 	return fmt.Errorf("%w: config path empty", ErrApplication)
+	// }
+	// cstat, err := os.Stat(cpath)
+	// if err != nil {
+	// 	return err
+	// }
+	// if !cstat.IsDir() {
+	// 	return fmt.Errorf("%w: invalid config directory %s", ErrApplication, cpath)
+	// }
+
+	// cfile := filepath.Join(cpath, "state.happy")
+
+	// verstr := a.session.Get("app.version").String()
+	// ver, err := version.Parse(verstr)
+	// if err != nil {
+	// 	return err
+	// }
+	// ps := &persistentState{
+	// 	Date:         time.Now().UTC(),
+	// 	Version:      ver,
+	// 	SetupNextRun: a.setupNextRun,
+	// }
+	// settings := a.session.Settings()
+	// settings.Range(func(v vars.Variable) bool {
+	// 	ps.Settings = append(ps.Settings, persistentValue{
+	// 		Key:   v.Name(),
+	// 		Kind:  uint8(v.Kind()),
+	// 		Value: v.Any(),
+	// 	})
+	// 	return true
+	// })
+	// data, err := json.MarshalIndent(ps, "", "  ")
+	// if err != nil {
+	// 	return err
+	// }
+
+	// return os.WriteFile(cfile, data, 0600)
 }
