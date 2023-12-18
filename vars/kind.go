@@ -38,6 +38,7 @@ const (
 	KindUnsafePointer
 	KindDuration
 	KindTime
+	KindByteSlice
 )
 
 func (k Kind) String() (str string) {
