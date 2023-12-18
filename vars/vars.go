@@ -9,6 +9,7 @@ package vars
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 var (
@@ -160,6 +161,7 @@ func NewValueAs(val any, kind Kind) (Value, error) {
 			isCustom: p.isCustom,
 		}, nil
 	}
+
 	str := string(p.buf)
 	p.free()
 
@@ -350,6 +352,18 @@ func convert(raw any, from, to Kind) (Value, error) {
 				v.str = string(p.buf)
 				return v, nil
 			}
+		}
+	} else if to == KindDuration && from == KindString {
+		val, ok := raw.(string)
+		if ok {
+			v := Value{}
+			v.kind = KindDuration
+			d, err := time.ParseDuration(val)
+			if err != nil {
+				return EmptyValue, err
+			}
+			v.raw = d
+			return v, nil
 		}
 	}
 
