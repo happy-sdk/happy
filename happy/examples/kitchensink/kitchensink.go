@@ -9,24 +9,27 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/pkg/logging"
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/varflag"
 	"github.com/happy-sdk/vars"
 )
 
 func main() {
 	app := happy.New(
-		happy.Option("app.name", "Happy Kitchensink"),
-		happy.Option("app.description", "Application that demonstrates the happy SDK features."),
-		happy.Option("app.copyright.by", "Happy Authors"),
-		happy.Option("app.copyright.since", 2022),
-		happy.Option("app.license", "Apache-2.0 license"),
-		happy.Option("app.throttle.ticks", time.Second/240),
-		happy.Option("app.host.addr", "happy://localhost/kitchensink"),
-		happy.Option("app.version", "v0.1.0"),
-		happy.Option("app.settings.persistent", false),
-		happy.Option("log.level", logging.LevelWarn),
-		happy.Option("log.source", false),
-		happy.Option("log.secrets", "password,apiKey"),
+		happy.Settings{
+			Name:           "Happy Kitchensink",
+			Description:    "Application that demonstrates the happy SDK features.",
+			Slug:           "kitchensink",
+			License:        "Apache-2.0 license",
+			CopyrightBy:    "Happy Authors",
+			CopyrightSince: 2022,
+			Logger: logging.Settings{
+				Level:   logging.LevelWarn,
+				Source:  false,
+				Secrets: "password,apiKey",
+			},
+			ThrottleTicks: settings.Duration(time.Second / 60),
+		},
 	)
 
 	app.Help(`Example:
@@ -88,13 +91,13 @@ func main() {
 		// This sleep will ALWAYS block 10 seconds
 		// even when you Ctrl-C. That case graceful shutdown will start
 		// after reaching <-sess.Done() and falling trough since session is already destroyed.
-		task := sess.Log().Task("sleep", "sleep 10 seconds before stopping render service")
+		// task := sess.Log().Task("sleep", "sleep 10 seconds before stopping render service")
 		time.Sleep(time.Second * 10)
 		sess.Dispatch(happy.StopServicesEvent(
 			"happy://localhost/kitchensink/service/renderer",
 		))
 		fmt.Println("")
-		sess.Log().Ok("asked render service to stop", task)
+		// sess.Log().Ok("asked render service to stop", task)
 		<-sess.Done()
 
 		api, err := happy.GetAPI[*RendererAPI](sess, "renderer")
@@ -209,6 +212,7 @@ func simpleBackgroundService() *happy.Service {
 func rendererAddon() *happy.Addon {
 	addon := happy.NewAddon(
 		"renderer",
+		nil,
 		happy.Option("usage", "Sample renderer addon"),
 		happy.Option("description", `
       This addon is just show possibilities of Addon system.
