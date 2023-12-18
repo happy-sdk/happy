@@ -2,458 +2,359 @@
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
+// Package settings is like a Swiss Army knife for handling app configurations in Go.
+// It's designed to make your life easier when dealing with all sorts of settings -
+// think of it as your go-to toolkit for configuration management.
+//
+// Here's the lowdown on what this package brings to the table:
+//   - Marshaller and Unmarshaller: These interfaces are your friends for transforming
+//     settings to and from byte slices. They're super handy for storage or network transmission.
+//   - String, Bool, Int, Uint etc.: Meet the fundamental building blocks for your settings.
+//   - Blueprint: This is the brains of the operation. It lets you define and manage
+//     settings schemas, validate inputs, and even extend configurations with more settings.
+//   - Schema: This is the blueprint's state. It's a collection of settings that can be compiled
+//     into a schema to store schema version. It also provides a way to create profiles.
+//   - Profile: Think of it as your settings' memory. It keeps track of user preferences
+//     and application settings, making sure everything's in place and up-to-date.
+//   - Preferences: This is the profile's state. It's a collection of settings that can be
+//     compiled into a profile to store user preferences.
+//   - Reflective Magic: We use reflection (responsibly!) to dynamically handle fields in
+//     your structs. This means less boilerplate and more action.
 package settings
 
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
-	"sync"
+	"unicode"
 
-	"log/slog"
-
-	"github.com/happy-sdk/vars"
+	"golang.org/x/text/language"
 )
 
 var (
-	ErrEmptyKey         = errors.New("empty key")
-	ErrKeyExists        = errors.New("key already exists")
-	ErrSchemaComposed   = errors.New("blueprint.Schema can only called once")
-	ErrGroupFreezed     = errors.New("settings group already freezed")
-	ErrProfile          = errors.New("profile error")
-	ErrInvalidGroup     = errors.New("invalid group")
-	ErrDuplicateSetting = errors.New("duplicated setting")
-	ErrFailedToApply    = errors.New("failed to attach definition")
-	ErrNotFound         = errors.New("not found")
-	ErrSetting          = errors.New("setting error")
+	ErrSettings = errors.New("settings")
+	ErrSetting  = errors.New("setting")
+	ErrProfile  = fmt.Errorf("%w: profile", ErrSettings)
+	ErrSpec     = errors.New("spec error")
 )
 
-// Mutability used to define settings mutability
-type Mutability uint8
-
-const (
-	// Mutability
-	SettingImmutable Mutability = 255
-	SettingOnce      Mutability = 254
-	SettingMutable   Mutability = 253
-)
-
-// Setting represents individual settings used in runtime. Each setting has mutability,
-// a kind (data type), a variable, and a default value.
-type Setting struct {
-	m     Mutability
-	k     Kind
-	v     vars.Variable
-	d     any
-	isset bool
+type Marshaller interface {
+	MarshalSetting() ([]byte, error)
 }
 
-func (s Setting) String() string {
-	return s.v.String()
+type Unmarshaller interface {
+	UnmarshalSetting([]byte) error
 }
 
-func (s Setting) Attr() slog.Attr {
-	return slog.Any(s.v.Name(), s.v.Any())
+type SettingField interface {
+	fmt.Stringer
+	Marshaller
+	SettingKind() Kind
 }
 
-func (s Setting) reset() (Setting, error) {
-	v, err := vars.NewAs(s.v.Name(), s.d, s.m != SettingImmutable, s.k.varskind())
-	if err != nil {
-		return Setting{}, fmt.Errorf("%w: %s with value %v %w", ErrFailedToApply, s.v.Name(), s.d, err)
+type Settings interface {
+	Blueprint() (*Blueprint, error)
+}
+
+func toDotSeparated(s string) string {
+	var result []rune
+	for i, r := range s {
+		if unicode.IsUpper(r) && i > 0 {
+			result = append(result, '.')
+		}
+		result = append(result, unicode.ToLower(r))
 	}
-	return Setting{
-		m:     s.m,
-		k:     s.k,
-		v:     v,
-		d:     s.d,
-		isset: true,
-	}, nil
+	return string(result)
 }
 
-func (s Setting) set(val any) (Setting, error) {
-	if s.v.Any() == val {
-		return s, nil
-	}
+func ParseToSpec(s Settings) ([]SettingSpec, error) {
+	return nil, nil
+}
 
-	if s.m == SettingImmutable {
-		return s, fmt.Errorf("%w: setting %s can not be mutated", ErrSetting, s.v.Name())
-	}
+func NewBlueprint(s Settings) (*Blueprint, error) {
 
-	if s.m == SettingOnce && s.isset {
-		return s, fmt.Errorf("%w: setting %s can be mutated only once", ErrSetting, s.v.Name())
+	// Use reflection to inspect the interface
+	val := reflect.ValueOf(s)
+	typ := val.Type()
+
+	// Check if the interface is a pointer and dereference it if so
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return nil, errors.New("provided interface is nil")
+		}
+		val = val.Elem()
+	} else {
+		copy := reflect.New(typ)
+		copy.Elem().Set(val)
+		val = copy.Elem()
 	}
 
-	s2, err := newSetting(
-		Definition{
-			m:     s.m,
-			key:   s.v.Name(),
-			value: val,
-			kind:  s.k,
-		},
-	)
-	s2.isset = true
-	return s2, err
-}
-
-func newSetting(d Definition) (Setting, error) {
-	v, err := vars.NewAs(d.key, d.value, d.m != SettingImmutable, d.kind.varskind())
-	if err != nil {
-		return Setting{}, fmt.Errorf("%w: %s with value %v %w", ErrFailedToApply, d.key, d.value, err)
+	// After dereferencing, check if it's a struct
+	if val.Kind() != reflect.Struct {
+		return nil, errors.New("provided interface is not a struct or a pointer to a struct")
 	}
 
-	return Setting{
-		m: d.m,
-		k: d.kind,
-		v: v,
-		d: d.value,
-	}, nil
-}
-
-// Blueprint Struct: Allows developers to define settings profiles for an application.
-// It consists of global settings and groups of settings, which can be defined using the Define method.
-// The Schema method is used to create a settings schema.
-type Blueprint struct {
-	mu      sync.RWMutex
-	groups  map[string]*definitionGroup
-	global  *definitionGroup
-	freezed bool
-}
-
-func New() *Blueprint {
-	return &Blueprint{}
-}
-
-func (b *Blueprint) Schema(version string) (s Schema, err error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if b.freezed {
-		return s, ErrSchemaComposed
-	}
-	b.freezed = true
-	schema := Schema{
-		version: version,
+	b := &Blueprint{
+		i18n: make(map[language.Tag]map[string]string),
+		mode: getExecutionMode(),
 	}
 
-	if b.global != nil {
-		schema.global, err = b.global.freeze()
+	b.pkg = b.setPKG()
+
+	// Iterate over the struct fields
+	for i := 0; i < val.NumField(); i++ {
+		field := typ.Field(i)
+		// Skip the embedded field
+		if field.Anonymous || !field.IsExported() {
+			continue
+		}
+		value := val.Field(i)
+		spec, err := b.settingSpecFromField(field, value)
 		if err != nil {
-			return s, err
+			return nil, err
+		}
+		if err := b.AddSpec(spec); err != nil {
+			return nil, err
 		}
 	}
-	if b.groups != nil {
-		schema.groups = make(map[string]SchemaGroup)
-		for groupName, group := range b.groups {
-			schema.groups[groupName], err = group.freeze()
-			if err != nil {
-				return s, err
+
+	return b, nil
+}
+
+func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflect.Value) (SettingSpec, error) {
+
+	spec := SettingSpec{}
+
+	spec.IsSet = isFieldSet(value)
+	spec.Key = field.Tag.Get("key")
+	// Use struct field name converted to dot.separated.format if 'key' tag is not present
+	if spec.Key == "" {
+		spec.Key = toDotSeparated(field.Name)
+	}
+
+	if fieldImplementsSettings(field) {
+		spec.Mutability = SettingImmutable
+		spec.IsSet = true
+		spec.Kind = KindSettings
+		var err error
+		spec.Settings, err = callBlueprintIfImplementsSettings(value)
+		if err != nil {
+			return spec, err
+		}
+	} else if fieldImplementsSetting(field) {
+		spec.Required = field.Tag.Get("required") == "" || field.Tag.Get("required") == "true"
+
+		mutation := field.Tag.Get("mutation")
+		switch mutation {
+		case "once":
+			spec.Mutability = SettingOnce
+		case "mutable":
+			spec.Mutability = SettingMutable
+		default:
+			spec.Mutability = SettingImmutable
+		}
+
+		kindGetterMethod := value.MethodByName("SettingKind")
+		if kindGetterMethod.IsValid() {
+			results := kindGetterMethod.Call(nil)
+			if len(results) != 1 {
+				return spec, fmt.Errorf("%w: %q field %q must implement either Setting or Settings interface", ErrBlueprint, b.pkg, spec.Key)
+			}
+			spec.Kind = results[0].Interface().(Kind)
+		} else {
+			spec.Kind = KindCustom
+		}
+
+		spec.Default = field.Tag.Get("default")
+
+		if spec.IsSet {
+			spec.Value = getStringValue(value)
+		} else {
+			spec.Value = spec.Default
+		}
+
+		if value.CanInterface() {
+			if unmarshaller, ok := value.Addr().Interface().(Unmarshaller); ok {
+				spec.Unmarchaler = unmarshaller
 			}
 		}
-	}
-
-	return schema, nil
-}
-
-func (b *Blueprint) Define(d Definition) error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	if b.global == nil {
-		b.global = &definitionGroup{}
-	}
-	groupName, key, isGroup := strings.Cut(d.key, "/")
-	if isGroup {
-		if b.groups == nil {
-			b.groups = make(map[string]*definitionGroup)
+		if marshaller, ok := value.Interface().(Marshaller); ok {
+			spec.Marchaler = marshaller
 		}
-		d.key = key
-		group, ok := b.groups[groupName]
-		if !ok {
-			group = &definitionGroup{}
-			b.groups[groupName] = group
+
+		if spec.Unmarchaler == nil {
+			return spec, fmt.Errorf("%w: %q field %q must implement either SettingField interface missing UnmarshalSetting", ErrBlueprint, b.pkg, spec.Key)
 		}
-		return group.define(d)
-	}
-	return b.global.define(d)
-}
-
-// Definition defines settings in a Blueprint. It includes information such as mutability,
-// the setting key, the default value, and the kind of the setting.
-type Definition struct {
-	m     Mutability
-	key   string
-	value any
-	kind  Kind
-}
-
-func Immutable(key string, value interface{}, kind Kind) Definition {
-	return NewDefinition(SettingImmutable, key, value, kind)
-}
-
-func Mutable(key string, value interface{}, kind Kind) Definition {
-	return NewDefinition(SettingMutable, key, value, kind)
-}
-
-func Once(key string, value interface{}, kind Kind) Definition {
-	return NewDefinition(SettingOnce, key, value, kind)
-}
-
-func NewDefinition(m Mutability, key string, value any, kind Kind) Definition {
-	return Definition{
-		m:     m,
-		key:   key,
-		value: value,
-		kind:  kind,
-	}
-}
-
-// definitionGroup A group of settings within a Blueprint, which can be frozen once defined.
-type definitionGroup struct {
-	name          string
-	definositions map[string]Definition
-	freezed       bool
-}
-
-func (g *definitionGroup) define(d Definition) error {
-	if d.key == "" {
-		return ErrEmptyKey
-	}
-
-	if _, ok := g.definositions[d.key]; ok {
-		return fmt.Errorf("%w: %s", ErrKeyExists, d.key)
-	}
-	if g.definositions == nil {
-		g.definositions = make(map[string]Definition)
-	}
-	g.definositions[d.key] = d
-	return nil
-}
-
-func (g *definitionGroup) freeze() (SchemaGroup, error) {
-
-	if g.freezed {
-		return SchemaGroup{}, fmt.Errorf("%w: %s", ErrGroupFreezed, g.name)
-	}
-	g.freezed = true
-
-	group := SchemaGroup{
-		valid: true,
-		name:  g.name,
-	}
-	if group.settings == nil {
-		group.settings = make(map[string]Definition)
-	}
-	for name, defintion := range g.definositions {
-		group.settings[name] = defintion
-	}
-	return group, nil
-}
-
-// SchemaGroup represents a group of settings within a settings schema.
-// It contains a collection of settings and a name.
-type SchemaGroup struct {
-	valid    bool
-	name     string
-	settings map[string]Definition
-}
-
-type group struct {
-	name     string
-	settings map[string]Setting
-}
-
-func newGroup(g SchemaGroup) (*group, error) {
-	group := &group{
-		name: g.name,
-	}
-
-	for _, s := range g.settings {
-		if err := group.attach(s); err != nil {
-			return nil, err
-		}
-	}
-	return group, nil
-}
-
-func (g *group) attach(d Definition) (err error) {
-	if g.settings == nil {
-		g.settings = make(map[string]Setting)
-	}
-	if _, ok := g.settings[d.key]; ok {
-		return fmt.Errorf("%w: %s in group %s", ErrDuplicateSetting, d.key, g.name)
-	}
-
-	g.settings[d.key], err = newSetting(d)
-	return nil
-}
-
-func (g *group) has(key string) (found bool) {
-	_, found = g.settings[key]
-	return
-}
-
-func (g *group) get(key string) (Setting, error) {
-	setting, ok := g.settings[key]
-	if !ok {
-		return Setting{}, fmt.Errorf("%w: setting %s in group %s", ErrNotFound, key, g.name)
-	}
-	return setting, nil
-}
-
-func (g *group) set(key string, val any) error {
-
-	s, err := g.get(key)
-	if err != nil {
-		return err
-	}
-
-	g.settings[key], err = s.set(val)
-	if err != nil {
-		return fmt.Errorf("%s: %w", g.name, err)
-	}
-	return nil
-}
-
-func (g *group) reset(key string) error {
-	s, err := g.get(key)
-	if err != nil {
-		return err
-	}
-
-	g.settings[key], err = s.reset()
-	return err
-}
-
-// Kind enumerates different kinds of setting values (e.g., bool, int, string).
-type Kind uint8
-
-const (
-	// Settings Value types
-	KindBool    Kind = Kind(vars.KindBool)
-	KindInt     Kind = Kind(vars.KindInt)
-	KindUint    Kind = Kind(vars.KindUint)
-	KindFloat32 Kind = Kind(vars.KindFloat32)
-	KindFloat64 Kind = Kind(vars.KindFloat64)
-
-	KindString   Kind = Kind(vars.KindString)
-	KindDuration Kind = Kind(vars.KindDuration)
-	KindTime     Kind = Kind(vars.KindTime)
-)
-
-func (k Kind) varskind() vars.Kind {
-	return vars.Kind(k)
-}
-
-// Preferences allows you to create a runtime profile with user settings,
-// e.g., loading settings from a file.
-type Preferences struct{}
-
-var Default = Preferences{}
-
-// Profile represents the active state of settings for the application.
-// You can get, set and reset settings using this structure.
-type Profile struct {
-	mu       sync.RWMutex
-	version  string
-	global   *group
-	settings map[string]*group
-}
-
-func (p *Profile) Version() string {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	return p.version
-}
-
-func (p *Profile) Get(key string) (Setting, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	group, k, err := p.getGroup(key)
-	if err != nil {
-		return Setting{}, err
-	}
-	return group.get(k)
-}
-
-func (p *Profile) Set(key string, value any) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	group, k, err := p.getGroup(key)
-	if err != nil {
-		return err
-	}
-
-	return group.set(k, value)
-}
-
-func (p *Profile) Reset(key string) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	group, k, err := p.getGroup(key)
-	if err != nil {
-		return err
-	}
-
-	return group.reset(k)
-}
-
-func (p *Profile) getGroup(key string) (g *group, k string, err error) {
-	groupName, k, found := strings.Cut(key, "/")
-
-	if !found {
-		return p.global, key, err
-	}
-
-	group, hasGroup := p.settings[groupName]
-	if !hasGroup {
-		return nil, key, fmt.Errorf("%w: group named %s", ErrNotFound, groupName)
-	}
-	return group, k, nil
-}
-
-func (p *Profile) apply(g SchemaGroup) (err error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if !g.valid {
-		return fmt.Errorf("%w: %s applied to settings profile", ErrInvalidGroup, g.name)
-	}
-
-	if g.name == "" {
-		p.global, err = newGroup(g)
-		if err != nil {
-			return err
+		if spec.Marchaler == nil {
+			return spec, fmt.Errorf("%w: %q field %q must implement either SettingField interface missing MarshalSetting", ErrBlueprint, b.pkg, spec.Key)
 		}
 	} else {
-		group, err := newGroup(g)
-		if err != nil {
-			return err
-		}
-		p.settings[group.name] = group
+		return spec, fmt.Errorf("%w: %q field %q must implement either Settings or SettingField interface", ErrBlueprint, b.pkg, spec.Key)
 	}
+
+	return spec, nil
+}
+
+// Function to check if a field has been set (is not the zero value for its type)
+func isFieldSet(field reflect.Value) bool {
+	zero := reflect.Zero(field.Type()).Interface()
+	return !reflect.DeepEqual(field.Interface(), zero)
+}
+
+// callBlueprintIfImplementsSettings calls the Blueprint method if the field implements Settings.
+func callBlueprintIfImplementsSettings(fieldValue reflect.Value) (*Blueprint, error) {
+	// Ensure the value is valid and not a nil pointer
+	if !fieldValue.IsValid() || (fieldValue.Kind() == reflect.Ptr && fieldValue.IsNil()) {
+		return nil, errors.New("invalid or nil value provided")
+	}
+
+	// Check if the field implements the Settings interface
+	settingsType := reflect.TypeOf((*Settings)(nil)).Elem()
+	if fieldValue.Type().Implements(settingsType) {
+		method := fieldValue.MethodByName("Blueprint")
+		if method.IsValid() {
+			results := method.Call(nil)
+
+			if len(results) != 2 {
+				return nil, errors.New("unexpected number of return values from Blueprint method")
+			}
+
+			// Extract and return the results
+			blueprint, _ := results[0].Interface().(*Blueprint)
+			errVal := results[1].Interface()
+			var err error
+			if errVal != nil {
+				err, _ = errVal.(error)
+			}
+
+			return blueprint, err
+		}
+	}
+
+	return nil, errors.New("type does not implement Settings or Blueprint method not found")
+}
+
+func fieldImplementsSettings(field reflect.StructField) bool {
+	fieldType := field.Type
+
+	// Check if the field is a pointer and get the element type if so
+	if fieldType.Kind() == reflect.Ptr {
+		fieldType = fieldType.Elem()
+	}
+
+	// Get the reflect.Type representation of the Settings interface
+	settingsType := reflect.TypeOf((*Settings)(nil)).Elem()
+
+	// Check if the field's type implements the Settings interface
+	return fieldType.Implements(settingsType)
+}
+
+func fieldImplementsSetting(field reflect.StructField) bool {
+	fieldType := field.Type
+
+	// Check if the field is a pointer and get the element type if so
+	if fieldType.Kind() == reflect.Ptr {
+		fieldType = fieldType.Elem()
+	}
+
+	// Get the reflect.Type representation of the Setting interface
+	settingType := reflect.TypeOf((*SettingField)(nil)).Elem()
+
+	// Check if the field's type implements the Setting interface
+	return fieldType.Implements(settingType)
+}
+
+func getStringValue(v reflect.Value) string {
+	if !v.IsValid() {
+		return "<invalid>"
+	}
+
+	// Check if the value implements fmt.Stringer
+	if v.Type().Implements(reflect.TypeOf((*fmt.Stringer)(nil)).Elem()) {
+		return v.Interface().(fmt.Stringer).String()
+	}
+
+	// Fallback for non-Stringer string types
+	if v.Kind() == reflect.String {
+		return v.String()
+	}
+
+	// Handle other types as needed
+	return fmt.Sprintf("<%s value>", v.Type())
+}
+
+// executionMode determines the context in which the application is running.
+type ExecutionMode int
+
+const (
+	ModeUnknown    ExecutionMode = 1 << iota // Unknown mode
+	ModeProduction                           // Running as a compiled binary
+	ModeDevel                                // Running with `go run`
+	ModeTesting                              // Running in a test context
+)
+
+func (e ExecutionMode) String() string {
+	switch e {
+	case ModeProduction:
+		return "production"
+	case ModeDevel:
+		return "devel"
+	case ModeTesting:
+		return "testing"
+	default:
+		return "unkonown"
+	}
+}
+
+func (e ExecutionMode) MarshalText() ([]byte, error) {
+	return []byte(e.String()), nil
+}
+
+func (e *ExecutionMode) UnmarshalText(data []byte) error {
+	var m ExecutionMode
+	mode := string(data)
+
+	switch mode {
+	case "production":
+		m = ModeProduction
+	case "devel":
+		m = ModeDevel
+	case "testing":
+		m = ModeTesting
+	default:
+		m = ModeUnknown
+	}
+	// Implement custom logic for unmarshaling a setting.
+	// Example: convert byte slice to string
+	*e = m
 	return nil
 }
 
-// Schema defines the state of a Blueprint and helps with migrations between
-// different blueprint/app versions. It contains global settings and groups of settings.
-type Schema struct {
-	version string
-	groups  map[string]SchemaGroup
-	global  SchemaGroup
-}
+func getExecutionMode() ExecutionMode {
+	exePath := os.Args[0]
+	exeName := filepath.Base(exePath)
 
-func (s Schema) Profile(p Preferences) (*Profile, error) {
-	profile := &Profile{
-		version: s.version,
-	}
-	if s.global.valid {
-		if err := profile.apply(s.global); err != nil {
-			return nil, err
+	// Check for the presence of a test flag, which is added by `go test`.
+	for _, arg := range os.Args[1:] { // os.Args[0] is the executable name, so we start from os.Args[1]
+		if strings.HasPrefix(arg, "-test.") {
+			return ModeTesting
 		}
 	}
 
-	for name, group := range s.groups {
-		if err := profile.apply(group); err != nil {
-			return nil, fmt.Errorf("%w: failed to apply schema group %s: %w", ErrProfile, name, err)
-		}
+	// Heuristics for `go run`: check if the executable is in a temporary directory and has a non-standard name.
+	isTempBinary := (strings.HasPrefix(exePath, os.TempDir()) && len(exeName) > 10 && strings.Count(exeName, "-") >= 2) || strings.Contains(exePath, "/go-build")
+
+	// Additional heuristics for Windows, where temporary binaries have a ".exe" suffix.
+	if strings.HasSuffix(exeName, ".exe") && strings.Contains(exePath, `\AppData\Local\Temp\`) {
+		isTempBinary = true
 	}
-	return profile, nil
+
+	if isTempBinary {
+		return ModeDevel
+	}
+
+	return ModeProduction
 }
