@@ -54,6 +54,8 @@ type Address struct {
 
 	// Instance is the instance component of the happy address, which defines the service mesh the address belongs to.
 	Instance string
+
+	Module string
 }
 
 // String reassembles the Address into a valid URL string.
@@ -132,7 +134,12 @@ func FromModule(host, modulepath string) (*Address, error) {
 		}
 		rev = append(rev, ensure(sl[i]))
 	}
-	return Parse("happy://" + host + "/" + strings.Join(rev, "."))
+	addr, err := Parse("happy://" + host + "/" + strings.Join(rev, "."))
+	if err != nil {
+		return nil, err
+	}
+	addr.Module = modulepath
+	return addr, nil
 }
 
 // Current returns MustCompile format of current application
@@ -186,6 +193,9 @@ func Parse(rawAddr string) (*Address, error) {
 			return nil, err
 		}
 		full, err := url.JoinPath(host.String(), rawAddr)
+		if err != nil {
+			return nil, err
+		}
 		return Parse(full)
 	}
 	url, err := url.Parse(rawAddr)
