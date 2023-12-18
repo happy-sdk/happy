@@ -5,6 +5,8 @@
 package happy
 
 import (
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -1077,7 +1079,7 @@ func (a *Application) load() error {
 
 	_, err := os.Stat(cfile)
 	if err != nil {
-		a.session.Log().SystemDebug("no profile found, creating new one", slog.String("path", cfile))
+		a.session.Log().SystemDebug("no profile found", slog.String("path", cfile))
 		if !errors.Is(err, fs.ErrNotExist) {
 			return err
 		}
@@ -1151,55 +1153,50 @@ func (a *Application) load() error {
 }
 
 func (a *Application) save() error {
-	a.session.Log().SystemDebug("app.save", "this feature is deprecated and will be removed in future releases")
+	profileFilePath := a.session.Get("app.profile.file").String()
+	a.session.Log().SystemDebug("app.save",
+		slog.String("profile", a.profile),
+		slog.String("file", profileFilePath),
+	)
+	if !a.activeCmd.allowOnFreshInstall {
+		a.session.Log().SystemDebug("skip saving")
+		return nil
+	}
+	if a.activeCmd == nil {
+		return nil
+	}
+
+	profile := a.session.Profile().All()
+
+	pd := vars.Map{}
+	for _, setting := range profile {
+		pd.Store(setting.Key(), setting.Value().String())
+	}
+	pddata := pd.ToKeyValSlice()
+
+	cnfDir := a.session.Get("app.fs.path.config").String()
+	cstat, err := os.Stat(cnfDir)
+	if err != nil {
+		return err
+	}
+	if !cstat.IsDir() {
+		return fmt.Errorf("%w: invalid config directory %s", ErrApplication, profileFilePath)
+	}
+
+	var dest bytes.Buffer
+	enc := gob.NewEncoder(&dest)
+	if err := enc.Encode(pddata); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(profileFilePath, dest.Bytes(), 0600); err != nil {
+		return err
+	}
+
+	a.session.Log().SystemDebug(
+		"saved profile",
+		slog.String("profile", a.profile),
+		slog.String("file", profileFilePath),
+	)
 	return nil
-	// if !a.session.Get("app.fs.enabled").Bool() {
-	// 	return nil
-	// }
-	// if a.activeCmd == nil {
-	// 	return nil
-	// }
-	// if !a.activeCmd.allowOnFreshInstall {
-	// 	a.session.Log().SystemDebug("skip saving")
-	// 	return nil
-	// }
-	// cpath := a.session.Get("app.path.config").String()
-	// if cpath == "" {
-	// 	return fmt.Errorf("%w: config path empty", ErrApplication)
-	// }
-	// cstat, err := os.Stat(cpath)
-	// if err != nil {
-	// 	return err
-	// }
-	// if !cstat.IsDir() {
-	// 	return fmt.Errorf("%w: invalid config directory %s", ErrApplication, cpath)
-	// }
-
-	// cfile := filepath.Join(cpath, "state.happy")
-
-	// verstr := a.session.Get("app.version").String()
-	// ver, err := version.Parse(verstr)
-	// if err != nil {
-	// 	return err
-	// }
-	// ps := &persistentState{
-	// 	Date:         time.Now().UTC(),
-	// 	Version:      ver,
-	// 	SetupNextRun: a.setupNextRun,
-	// }
-	// settings := a.session.Settings()
-	// settings.Range(func(v vars.Variable) bool {
-	// 	ps.Settings = append(ps.Settings, persistentValue{
-	// 		Key:   v.Name(),
-	// 		Kind:  uint8(v.Kind()),
-	// 		Value: v.Any(),
-	// 	})
-	// 	return true
-	// })
-	// data, err := json.MarshalIndent(ps, "", "  ")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// return os.WriteFile(cfile, data, 0600)
 }
