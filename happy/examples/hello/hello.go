@@ -1,3 +1,7 @@
+// Copyright 2022 The Happy Authors
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
+
 package main
 
 import (
@@ -8,7 +12,10 @@ import (
 
 func main() {
 	app := happy.New(
-		happy.Option("app.description", "A simple hello application"),
+		happy.Settings{
+			Description: "A simple hello application",
+			MainArgcMax: 1,
+		},
 	)
 
 	app.Help(`Example:
