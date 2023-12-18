@@ -1,4 +1,4 @@
-// Copyright 2023 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -6,7 +6,6 @@ package logging
 
 import (
 	"fmt"
-	"reflect"
 
 	"log/slog"
 
@@ -30,7 +29,7 @@ const (
 	// ErrorKey is the key used for errors by Logger.Error.
 	// The associated value is an [error].
 	ErrorKey = "error"
-	// DataKey is the key used for data constructed from loggger arguments.
+	// DataKey is the key used for data constructed from logger arguments.
 	DataKey = "data"
 )
 
@@ -66,9 +65,8 @@ func attrsFromArgs(args []any) []Attr {
 		case vars.Variable:
 			attrs = append(attrs, NewAttr(a.Name(), a.Any()))
 		default:
-			fmt.Println("> ", reflect.TypeOf(a))
+			attrs = append(attrs, NewAttr("", a))
 		}
-
 	}
 	return attrs
 }

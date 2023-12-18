@@ -1,4 +1,4 @@
-// Copyright 2023 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func newColoredHandler(l Level, flags RecordFlag, w io.Writer) *ColoredHandler {
+func newColoredHandler(l LevelIface, flags RecordFlag, w io.Writer) *ColoredHandler {
 	return &ColoredHandler{
 		level: l,
 		w:     w,
@@ -21,7 +21,7 @@ func newColoredHandler(l Level, flags RecordFlag, w io.Writer) *ColoredHandler {
 
 type ColoredHandler struct {
 	flags RecordFlag
-	level Level
+	level LevelIface
 	w     io.Writer
 
 	groups []string // all groups started from WithGroup

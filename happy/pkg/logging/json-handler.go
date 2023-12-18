@@ -1,4 +1,4 @@
-// Copyright 2023 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 )
 
-func newJSONHandler(l Level, flags RecordFlag, w io.Writer) *JSONHandler {
+func newJSONHandler(l LevelIface, flags RecordFlag, w io.Writer) *JSONHandler {
 	return &JSONHandler{
 		level: l,
 		w:     w,
@@ -21,7 +21,7 @@ func newJSONHandler(l Level, flags RecordFlag, w io.Writer) *JSONHandler {
 
 type JSONHandler struct {
 	flags RecordFlag
-	level Level
+	level LevelIface
 	w     io.Writer
 
 	groups []string // all groups started from WithGroup

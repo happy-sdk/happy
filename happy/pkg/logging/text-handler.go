@@ -1,4 +1,4 @@
-// Copyright 2023 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func newTextHandler(l Level, flags RecordFlag, w io.Writer) *TextHandler {
+func newTextHandler(l LevelIface, flags RecordFlag, w io.Writer) *TextHandler {
 	return &TextHandler{
 		level: l,
 		w:     w,
@@ -20,7 +20,7 @@ func newTextHandler(l Level, flags RecordFlag, w io.Writer) *TextHandler {
 
 type TextHandler struct {
 	flags RecordFlag
-	level Level
+	level LevelIface
 	w     io.Writer
 
 	groups []string // all groups started from WithGroup
@@ -55,7 +55,7 @@ func (h *TextHandler) Handle(ctx context.Context, r Record) error {
 	}
 
 	if r.Error.Kind() != AttrOmittedKind {
-		if err := line.writeAttr("", r.Error); err != nil {
+		if err := line.writeAttr(":", r.Error); err != nil {
 			return err
 		}
 	}

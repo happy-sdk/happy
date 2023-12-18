@@ -1,4 +1,4 @@
-// Copyright 2023 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -37,8 +37,8 @@ func TestLevelString(t *testing.T) {
 		{LevelWarn - 1, "notice"},
 		{LevelInfo + 1, "task"},
 		{LevelInfo - 3, "debug+1"},
-		{LevelDebug - 1, "system"},
-		{LevelDebug - 2, "system-1"},
+		{LevelDebug - 1, "system+5"},
+		{LevelSystemDebug - 2, "system-2"},
 	} {
 		got := test.in.String()
 		if got != test.want {

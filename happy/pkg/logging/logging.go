@@ -1,4 +1,4 @@
-// Copyright 2023 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -7,12 +7,39 @@ package logging
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/happy-sdk/happy/pkg/settings"
+	"golang.org/x/text/language"
 )
 
 var (
 	ErrAttrReplace      = errors.New("replace attr error")
 	ErrUnknownLevelName = errors.New("unknown level name")
 )
+
+type Settings struct {
+	Level             Level           `key:"level" default:"ok" mutation:"mutable"`
+	Secrets           settings.String `key:"secrets" mutation:"once"`
+	Source            settings.Bool   `key:"source" default:"false" mutation:"once"`
+	Handler           HandlerKind     `key:"default.handler" default:"colored" mutation:"once"`
+	TimestampEnabled  settings.Bool   `key:"timestamp.enabled" default:"true" mutation:"once"`
+	TimestampFormat   settings.String `key:"timestamp.format" default:"15:04:05.999" mutation:"once"`
+	TimestampLocation settings.String `key:"timestamp.location" default:"Local" mutation:"once"`
+	SlogGlobal        settings.Bool   `key:"slog.global" default:"false" mutation:"once"`
+}
+
+func (s Settings) Blueprint() (*settings.Blueprint, error) {
+	blueprint, err := settings.NewBlueprint(s)
+	if err != nil {
+		return nil, err
+	}
+	blueprint.Describe("logging.level", language.English, "Set application output verbosity")
+
+	return blueprint, nil
+}
 
 // Handler handles log records produced by a Logger.
 //
@@ -120,6 +147,58 @@ const (
 	WithJSONHandler
 )
 
+func (hk HandlerKind) SettingKind() settings.Kind {
+	return settings.KindString
+}
+
+func (hk HandlerKind) String() string {
+	switch hk {
+	case WithDefaultHandler:
+		return "default"
+	case WithTextHandler:
+		return "text"
+	case WithColoredHandler:
+		return "colored"
+	case WithJSONHandler:
+		return "json"
+	default:
+		return fmt.Sprintf("unknown handler kind: %d", hk)
+	}
+}
+
+func (hk HandlerKind) MarshalSetting() ([]byte, error) {
+	return []byte(hk.String()), nil
+}
+
+func (hk *HandlerKind) UnmarshalSetting(data []byte) error {
+	return hk.UnmarshalText(data)
+}
+
+func (hk *HandlerKind) UnmarshalText(data []byte) error {
+	return hk.parse(string(data))
+}
+
+func (hk *HandlerKind) parse(s string) (err error) {
+	if val, err := strconv.ParseUint(s, 10, 8); err == nil {
+		*hk = HandlerKind(val)
+		return nil
+	}
+
+	switch strings.ToLower(s) {
+	case "default":
+		*hk = WithDefaultHandler
+	case "text":
+		*hk = WithTextHandler
+	case "colored":
+		*hk = WithColoredHandler
+	case "json":
+		*hk = WithJSONHandler
+	default:
+		err = ErrUnknownLevelName
+	}
+	return err
+}
+
 func (c Config) attrReplacers() []AttrReplaceFunc {
 	secrets := make(map[string]struct{})
 	for _, secret := range c.Secrets {
@@ -134,4 +213,48 @@ func (c Config) attrReplacers() []AttrReplaceFunc {
 			return a, nil
 		},
 	}
+}
+
+func Simple(level Level) *DefaultLogger[Level] {
+	cnf := Config{
+		Level:          level,
+		AddSource:      true,
+		DefaultHandler: WithTextHandler,
+	}
+	logger, err := New(cnf)
+	if err != nil {
+		// there is no case where this should happen
+		// but if it does then we panic
+		panic(err)
+	}
+	return logger
+}
+
+type LevelIface interface {
+	String() string
+	Int() int
+	MarshalText() ([]byte, error)
+}
+
+type LoggerIface[LVL LevelIface] interface {
+	Level() LevelIface
+	SetLevel(LevelIface)
+	SystemDebug(msg string, args ...any)
+	Debug(msg string, args ...any)
+	Info(msg string, args ...any)
+	Ok(msg string, args ...any)
+	Notice(msg string, args ...any)
+	Warn(msg string, args ...any)
+	NotImplemented(msg string, args ...any)
+	Deprecated(msg string, args ...any)
+	Issue(msg string, args ...any)
+	Error(msg string, err error, args ...any)
+	BUG(msg string, args ...any)
+	Msg(msg string, args ...any)
+	Msgf(format string, args ...any)
+	Log(level LevelIface, msg string, args ...any)
+	HTTP(status int, path string, args ...any)
+	LogDepth(ctx context.Context, calldepth int, level LevelIface, msg string, err error, args ...any)
+	With(args ...any) Logger
+	WithGroup(group string) Logger
 }

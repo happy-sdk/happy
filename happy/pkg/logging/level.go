@@ -1,4 +1,4 @@
-// Copyright 2023 Marko Kungla
+// Copyright 2023 The Happy Authors
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file.
 
@@ -13,6 +13,7 @@ import (
 
 	"log/slog"
 
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/vars"
 )
 
@@ -42,6 +43,18 @@ func (l Level) String() string {
 
 func (l Level) Int() int {
 	return int(l)
+}
+
+func (l Level) MarshalSetting() ([]byte, error) {
+	return l.MarshalText()
+}
+
+func (l *Level) UnmarshalSetting(data []byte) error {
+	return l.UnmarshalText(data)
+}
+
+func (l Level) SettingKind() settings.Kind {
+	return settings.KindString
 }
 
 // MarshalText implements encoding.TextMarshaler by calling Level.String.
@@ -201,6 +214,9 @@ func (l Level) value() vars.Value {
 	if l > LevelDebug && l < LevelInfo {
 		return vars.StringValue(fmt.Sprintf("debug+%d", l-LevelDebug))
 	}
+	if l > LevelSystemDebug && l < LevelDebug {
+		return vars.StringValue(fmt.Sprintf("system+%d", l-LevelSystemDebug))
+	}
 	return vars.StringValue(fmt.Sprintf("system%d", l-LevelSystemDebug))
 }
 
@@ -214,13 +230,13 @@ type levelVar struct {
 }
 
 // Level returns v's level.
-func (v *levelVar) Level() Level {
+func (v *levelVar) Level() LevelIface {
 	return Level(int(v.val.Load()))
 }
 
 // Set sets log level.
-func (v *levelVar) Set(l Level) {
-	v.val.Store(int32(l))
+func (v *levelVar) Set(l LevelIface) {
+	v.val.Store(int32(l.Int()))
 }
 
 // MarshalText implements [encoding.TextMarshaler]
