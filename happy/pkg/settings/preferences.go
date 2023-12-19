@@ -15,3 +15,11 @@ func NewPreferences() *Preferences {
 	}
 	return p
 }
+
+func (p *Preferences) Consume() {
+	p.consumed = true
+}
+
+func (p *Preferences) Set(key, val string) {
+	p.data[key] = val
+}

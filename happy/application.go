@@ -1078,16 +1078,40 @@ func (a *Application) load() error {
 	a.session.opts.set("app.profile.file", cfile, true)
 
 	_, err := os.Stat(cfile)
+	var pref *settings.Preferences
+
 	if err != nil {
 		a.session.Log().SystemDebug("no profile found", slog.String("path", cfile))
 		if !errors.Is(err, fs.ErrNotExist) {
 			return err
 		}
 		a.firstuse = true
+	} else {
+		a.session.Log().Warn("laod settings")
+		prefFile, err := os.Open(cfile)
+		if err != nil {
+			return err
+		}
+		defer prefFile.Close()
+		var (
+			data []string
+		)
+		dataDecoder := gob.NewDecoder(prefFile)
+		if err = dataDecoder.Decode(&data); err != nil {
+			return err
+		}
+		prefsMap, err := vars.ParseMapFromSlice(data)
+		if err != nil {
+			return err
+		}
+		pref = settings.NewPreferences()
+
+		for _, d := range prefsMap.All() {
+			pref.Set(d.Name(), d.Value().String())
+		}
 	}
 	a.session.Log().SystemDebug("loading preferences from", slog.String("path", cfile))
 
-	var pref *settings.Preferences
 	versionSpec, versionErr := a.settingsBP.GetSpec("app.version")
 	moduleSpec, moduleErr := a.settingsBP.GetSpec("app.module")
 	if err := errors.Join(versionErr, moduleErr); err != nil {
@@ -1097,6 +1121,7 @@ func (a *Application) load() error {
 	if err != nil {
 		return err
 	}
+
 	profile, err := schema.Profile(a.profile, pref)
 	if err != nil {
 		return err
@@ -1158,11 +1183,12 @@ func (a *Application) save() error {
 		slog.String("profile", a.profile),
 		slog.String("file", profileFilePath),
 	)
-	if !a.activeCmd.allowOnFreshInstall {
-		a.session.Log().SystemDebug("skip saving")
+
+	if a.activeCmd == nil {
 		return nil
 	}
-	if a.activeCmd == nil {
+	if !a.activeCmd.allowOnFreshInstall {
+		a.session.Log().SystemDebug("skip saving")
 		return nil
 	}
 

@@ -39,7 +39,7 @@ func (s *Schema) Profile(name string, p *Preferences) (*Profile, error) {
 		name:   name,
 		schema: *s,
 	}
-	if err := profile.load(); err != nil {
+	if err := profile.load(p); err != nil {
 		return nil, err
 	}
 

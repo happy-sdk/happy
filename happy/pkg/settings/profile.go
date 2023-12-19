@@ -120,7 +120,7 @@ func (p *Profile) Set(key string, val SettingField) (err error) {
 	return nil
 }
 
-func (p *Profile) load() (err error) {
+func (p *Profile) load(prefs *Preferences) (err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.loaded {
@@ -140,6 +140,21 @@ func (p *Profile) load() (err error) {
 			return fmt.Errorf("%w: key(%s)  %s", ErrProfile, spec.Key, err.Error())
 		}
 		p.settings[spec.Key] = setting
+	}
+
+	if prefs != nil {
+		for key, val := range prefs.data {
+			if s, ok := p.settings[key]; ok {
+				s.vv, err = vars.NewAs(key, val, true, vars.Kind(s.kind))
+				if err != nil {
+					return fmt.Errorf("%w: preferences key(%s) %s", ErrProfile, key, err.Error())
+				}
+				s.isSet = true
+				p.settings[key] = s
+			} else {
+				return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, key)
+			}
+		}
 	}
 	p.loaded = true
 	return nil
