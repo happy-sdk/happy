@@ -6,7 +6,7 @@ require (
 	github.com/happy-sdk/cron v0.2.0
 	github.com/happy-sdk/testutils v0.2.0
 	github.com/happy-sdk/varflag v0.1.1
-	github.com/happy-sdk/vars v0.2.1
+	github.com/happy-sdk/vars v0.2.2
 	golang.org/x/mod v0.12.0
 	golang.org/x/term v0.11.0
 	golang.org/x/text v0.12.0
