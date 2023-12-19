@@ -362,6 +362,7 @@ func convert(raw any, from, to Kind) (Value, error) {
 			if err != nil {
 				return EmptyValue, err
 			}
+			v.str = val
 			v.raw = d
 			return v, nil
 		}
