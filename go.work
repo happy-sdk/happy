@@ -1,3 +1,6 @@
-go 1.21.4
+go 1.21.5
 
-use ./strings/bexp
+use (
+	.
+	./strings/bexp
+)
