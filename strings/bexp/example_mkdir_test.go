@@ -13,7 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/happy-sdk/bexp"
+	"ithub.com/happy-sdk/happy-go/strings/bexp"
 )
 
 func ExampleMkdirAll() {

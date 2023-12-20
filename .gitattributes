@@ -23,8 +23,6 @@
 .gitignore text
 .md text
 LICENSE text
-*.yml text
-*.yaml text
 
 ################################################################################
 # BINARY
