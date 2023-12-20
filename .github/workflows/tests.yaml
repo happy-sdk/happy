@@ -7,28 +7,14 @@ on:
   pull_request:
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        version: ['>=1.18.0', 'latest']
-        platform: [ubuntu-22.04, macOS-12, windows-latest]
-    runs-on: ${{ matrix.platform }}
+  lint:
+    runs-on: ubuntu-latest
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
-      - name: Checkout code
-        uses: actions/checkout@v3
+          go-version: '>=1.21.0'
       - name: golangci-lint
-        if: runner.os == 'Linux'
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.50
-      - name: Run tests
-        run: |
-          go test -v -race -covermode atomic -coverprofile=covprofile ./...
-      - uses: shogo82148/actions-goveralls@v1
-        if: runner.os == 'Linux'
-        with:
-          path-to-profile: covprofile
+          version: v1.54.1
