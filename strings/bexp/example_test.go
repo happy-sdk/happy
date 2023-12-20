@@ -10,7 +10,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/happy-sdk/bexp"
+	"github.com/happy-sdk/happy-go/strings/bexp"
 )
 
 func ExampleParse() {
