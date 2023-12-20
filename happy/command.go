@@ -39,6 +39,9 @@ type Command struct {
 	errs []error
 
 	parents []string
+
+	argcmax int
+	argcmin int
 }
 
 func NewCommand(name string, options ...OptionArg) *Command {
@@ -60,8 +63,14 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	if err := opts.setDefaults(); err != nil {
 		c.errs = append(c.errs, err)
 	}
+	c.argcmin = opts.Get("argc.min").Int()
+	c.argcmax = opts.Get("argc.max").Int()
 
-	flags, err := varflag.NewFlagSet(name, opts.Get("argc.max").Int())
+	if c.argcmin > c.argcmax {
+		c.argcmax = c.argcmin
+	}
+
+	flags, err := varflag.NewFlagSet(name, c.argcmax)
 	c.errs = append(c.errs, err)
 	c.flags = flags
 
@@ -133,6 +142,7 @@ func (c *Command) Before(action ActionWithArgs) {
 		return
 	}
 	defer c.mu.Unlock()
+
 	if c.beforeAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override Before action for %s", ErrCommand, c.name))
 		return
@@ -315,6 +325,17 @@ func (c *Command) callBeforeAction(sess *Session) error {
 		flags: c.flags,
 		argv:  c.flags.Args(),
 		argn:  uint(len(c.flags.Args())),
+	}
+
+	if c.argcmin == 0 && c.argcmax == 0 && args.argn > 0 {
+		return fmt.Errorf("%w: %s: %s", ErrCommandAction, c.name, "command does not accept arguments")
+	}
+
+	if int(args.argn) < c.argcmin {
+		return fmt.Errorf("%w: %s: command requires min %d arguments, %d provided", ErrCommandAction, c.name, c.argcmin, args.argn)
+	}
+	if int(args.argn) > c.argcmax {
+		return fmt.Errorf("%w: %s: command accepts max %d arguments, %d provided", ErrCommandAction, c.name, c.argcmax, args.argn)
 	}
 
 	if err := c.beforeAction(sess, args); err != nil {
