@@ -37,7 +37,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
-    - name: Coveralls Finished
+    - name: Coveralls Finish
       uses: coverallsapp/github-action@v2
       with:
         parallel-finished: true
