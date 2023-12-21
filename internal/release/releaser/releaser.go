@@ -128,6 +128,12 @@ func (r *Releaser) loadModules(sess *happy.Session) error {
 }
 
 func (r *Releaser) release(sess *happy.Session) error {
+	pushCmd := exec.Command("git", "push")
+	pushCmd.Dir = r.wd
+	if err := cli.RunCommand(sess, pushCmd); err != nil {
+		return err
+	}
+
 	workSyncCmd := exec.Command("go", "work", "sync")
 	workSyncCmd.Dir = r.wd
 	if err := cli.RunCommand(sess, workSyncCmd); err != nil {

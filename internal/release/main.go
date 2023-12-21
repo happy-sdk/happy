@@ -63,8 +63,7 @@ func main() {
 
 		gitstatus := exec.Command("git", "diff-index", "--quiet", "HEAD")
 		if err := cli.RunCommand(sess, gitstatus); err != nil {
-			sess.Log().NotImplemented("git is in a dirty state", slog.String("err", err.Error()))
-			// return errors.New("git is in a dirty state")
+			return errors.New("git is in a dirty state")
 		}
 		release = releaser.New(sess.Get("app.fs.path.pwd").String(), []string{
 			"internal/release",
