@@ -128,11 +128,6 @@ func (r *Releaser) loadModules(sess *happy.Session) error {
 }
 
 func (r *Releaser) release(sess *happy.Session) error {
-	pushCmd := exec.Command("git", "push")
-	pushCmd.Dir = r.wd
-	if err := cli.RunCommand(sess, pushCmd); err != nil {
-		return err
-	}
 
 	workSyncCmd := exec.Command("go", "work", "sync")
 	workSyncCmd.Dir = r.wd
@@ -143,10 +138,22 @@ func (r *Releaser) release(sess *happy.Session) error {
 	gitstatus := exec.Command("git", "diff-index", "--quiet", "HEAD")
 	gitstatus.Dir = r.wd
 	if err := cli.RunCommand(sess, gitstatus); err != nil {
-		if err := git.AddAndCommit(sess, r.wd, "chore", "", "update go work files"); err != nil {
+		gitdiff := exec.Command("git", "diff")
+		gitdiff.Dir = r.wd
+		if err := cli.RunCommand(sess, gitdiff); err != nil {
+			return err
+		}
+		if err2 := git.AddAndCommit(sess, r.wd, "chore", "", "update go work files"); err2 != nil {
 			return err
 		}
 	}
+
+	pushCmd := exec.Command("git", "push")
+	pushCmd.Dir = r.wd
+	if err := cli.RunCommand(sess, pushCmd); err != nil {
+		return err
+	}
+
 	for _, pkg := range r.packages {
 		if err := pkg.Release(sess, r.wd); err != nil {
 			return err
