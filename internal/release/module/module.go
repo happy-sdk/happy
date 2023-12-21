@@ -105,6 +105,20 @@ func (p *Package) Prepare(sess *happy.Session, wd string) error {
 	return p.getChangelog(sess, wd)
 }
 
+func (p *Package) Release(sess *happy.Session, wd string) error {
+	gitag := exec.Command("git", "tag", p.NextRelease)
+	gitag.Dir = wd
+	if err := cli.RunCommand(sess, gitag); err != nil {
+		return err
+	}
+	gitpush := exec.Command("git", "push", "origin", p.NextRelease)
+	gitpush.Dir = wd
+	if err := cli.RunCommand(sess, gitpush); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (p *Package) getLatestRelease(sess *happy.Session, wd string) error {
 	sess.Log().Debug("getting latest release", slog.String("package", p.Import))
 	tagscmd := exec.Command("git", "tag", "--list", p.TagPrefix+"*")
