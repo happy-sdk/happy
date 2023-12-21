@@ -1,0 +1,21 @@
+project_name: happy-sdk/happy-go
+
+release:
+  draft: false
+  github:
+    owner: happy-sdk
+    name: happy-go
+
+builds:
+- skip: true
+
+checksum:
+  name_template: '{{ .ProjectName }}-{{ .Version }}-checksums.txt'
+
+changelog:
+  sort: desc
+  filters:
+    exclude:
+    - '^.github:'
+    - '^test:'
+    - '^merge:'
