@@ -1,4 +1,4 @@
-project_name: happy-sdk/happy-go
+project_name: happy-sdk/happy-go/strings/bexp
 
 release:
   draft: false
@@ -21,3 +21,7 @@ changelog:
     - '^merge:'
     - '^devops:'
     - '^chore:'
+
+monorepo:
+  tag_prefix: strings/bexp/
+  dir: strings/bexp

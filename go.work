@@ -2,5 +2,6 @@ go 1.21.5
 
 use (
 	.
+	./internal/release
 	./strings/bexp
 )
