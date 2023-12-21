@@ -30,6 +30,7 @@ jobs:
           flag-name: ${{ matrix.package }}
           parallel: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./${{ matrix.package }}/coverage.out
 
   finish:
     needs: coverage
