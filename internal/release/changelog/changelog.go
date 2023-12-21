@@ -203,14 +203,17 @@ func ParseEntryType(typ, scope string) (EntryType, error) {
 	case "test":
 		etyp.Typ = "test"
 		etyp.Kind = EntryKindPatch
-	case "devops":
-		etyp.Typ = "devops"
-		etyp.Kind = EntryKindPatch
 	case "chore":
 		etyp.Typ = "chore"
 		etyp.Kind = EntryKindPatch
 	case "revert":
 		etyp.Typ = "revert"
+		etyp.Kind = EntryKindPatch
+	case "ci":
+		etyp.Typ = "revert"
+		etyp.Kind = EntryKindPatch
+	case "devops":
+		etyp.Typ = "devops"
 		etyp.Kind = EntryKindPatch
 	default:
 		return etyp, fmt.Errorf("invalid commit message type: %s", typ)
