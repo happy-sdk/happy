@@ -19,8 +19,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/happy-sdk/happy-go/vars"
 	"github.com/happy-sdk/testutils"
-	"github.com/happy-sdk/vars"
 )
 
 func TestMapParseFields(t *testing.T) {

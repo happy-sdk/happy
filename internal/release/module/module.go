@@ -106,7 +106,7 @@ func (p *Package) Prepare(sess *happy.Session, wd string) error {
 }
 
 func (p *Package) Release(sess *happy.Session, wd string) error {
-	gitag := exec.Command("git", "tag", p.NextRelease)
+	gitag := exec.Command("git", "tag", "-sm", fmt.Sprintf("%q", p.NextRelease), p.NextRelease)
 	gitag.Dir = wd
 	if err := cli.RunCommand(sess, gitag); err != nil {
 		return err

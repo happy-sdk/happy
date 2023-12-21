@@ -1,4 +1,4 @@
-module github.com/happy-sdk/vars
+module github.com/happy-sdk/happy-go/vars
 
 go 1.21
 

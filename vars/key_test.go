@@ -11,7 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/vars"
 )
 
 var (

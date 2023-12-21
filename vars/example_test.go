@@ -9,7 +9,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/vars"
 )
 
 func ExampleValue() {
