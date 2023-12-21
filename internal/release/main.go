@@ -199,7 +199,7 @@ func (r *Releaser) loadModule(sess *happy.Session, goModPath, minGoVer string) e
 	)
 
 	// check if package needs release
-	if err := pkg.CheckNeedsRelease(); err != nil {
+	if err := pkg.CheckNeedsRelease(sess, r.WD); err != nil {
 		return err
 	}
 
@@ -229,7 +229,25 @@ type Package struct {
 	NeedsRelease bool
 }
 
-func (p *Package) CheckNeedsRelease() error {
+func (p *Package) CheckNeedsRelease(sess *happy.Session, wd string) error {
+	// check if package needs release
+	// logcmd := git tag --list 'strings/bexp/*'
+	tagscmd := exec.Command("git", "tag", "--list", p.TagPrefix+"*")
+	// logcmd := exec.Command("git", "tag", "--list", p.TagPrefix+"*")
+	tagscmd.Dir = wd
+	tagsout, err := cli.ExecCommand(sess, tagscmd)
+	if err != nil {
+		return err
+	}
+	if tagsout == "" {
+		// First release
+		p.NeedsRelease = true
+		return nil
+	}
+	tags := strings.Split(tagsout, "\n")
+	for _, tag := range tags {
+		fmt.Println(tag)
+	}
 	return nil
 }
 
