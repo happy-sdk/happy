@@ -239,7 +239,8 @@ func gitAddAndCommit(sess *happy.Session, wd, typ, scope, msg string) error {
 	if err := cli.RunCommand(sess, gitadd); err != nil {
 		return err
 	}
-	gitcommit := exec.Command("git", "commit", "-sm", msg)
+	commitMsg := fmt.Sprintf("%s(%s): %s", typ, scope, msg)
+	gitcommit := exec.Command("git", "commit", "-sm", commitMsg)
 	gitcommit.Dir = wd
 	if err := cli.RunCommand(sess, gitcommit); err != nil {
 		return err
