@@ -20,3 +20,4 @@ changelog:
     - '^test:'
     - '^merge:'
     - '^devops:'
+    - '^chore:'
