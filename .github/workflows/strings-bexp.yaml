@@ -1,0 +1,52 @@
+name: strings/bexp
+
+concurrency:
+  group: strings/bexp-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "strings/bexp/**"
+      - ".github/workflows/strings-bexp.yaml"
+
+defaults:
+  run:
+    working-directory: ./strings/bexp
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.21.5'
+      - name: Install goveralls
+        run: go install github.com/mattn/goveralls@latest
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -parallel -race -flagname="strings/bexp" --coverprofile=coverage.out -service=github
+
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.21.5'
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go install github.com/mattn/goveralls@latest
+      - name: Finalize send coverage
+        env:
+          COVERALLS_TOKEN: ${{ github.token }}
+          GIT_BRANCH: ${{ github.head_ref }}
+        run: goveralls -parallel-finish -service=github
