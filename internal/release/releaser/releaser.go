@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy-go/internal/release/git"
 	"github.com/happy-sdk/happy-go/internal/release/module"
 	"github.com/happy-sdk/happy/sdk/cli"
 )
@@ -128,26 +127,6 @@ func (r *Releaser) loadModules(sess *happy.Session) error {
 }
 
 func (r *Releaser) release(sess *happy.Session) error {
-
-	workSyncCmd := exec.Command("go", "work", "sync")
-	workSyncCmd.Dir = r.wd
-	if err := cli.RunCommand(sess, workSyncCmd); err != nil {
-		return err
-	}
-
-	gitstatus := exec.Command("git", "diff-index", "--quiet", "HEAD")
-	gitstatus.Dir = r.wd
-	if err := cli.RunCommand(sess, gitstatus); err != nil {
-		gitdiff := exec.Command("git", "diff")
-		gitdiff.Dir = r.wd
-		if err := cli.RunCommand(sess, gitdiff); err != nil {
-			return err
-		}
-		if err2 := git.AddAndCommit(sess, r.wd, "chore", "", "update go work files"); err2 != nil {
-			return err
-		}
-	}
-
 	pushCmd := exec.Command("git", "push")
 	pushCmd.Dir = r.wd
 	if err := cli.RunCommand(sess, pushCmd); err != nil {
