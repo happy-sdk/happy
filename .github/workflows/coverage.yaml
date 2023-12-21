@@ -1,0 +1,43 @@
+name: coverage
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - strings/bexp
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.21.5'
+      - uses: actions/checkout@v4
+      - name: generate coverage
+        working-directory: ./${{ matrix.package }}
+        run: go test -coverpkg=./... -coverprofile=coverage.out ./...
+      - name: upload coverage
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: ${{ matrix.package }}
+          parallel: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  finish:
+    needs: coverage
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@v2
+      with:
+        parallel-finished: true
+        carryforward: "strings/bexp"

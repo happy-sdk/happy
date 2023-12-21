@@ -30,28 +30,3 @@ jobs:
       - name: Run tests and generate coverage report
         run: |
           go test -race  -coverpkg=./... -coverprofile=coverage.out ./...
-      - name: Install goveralls
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        run: go install github.com/mattn/goveralls@latest
-      - name: Send coverage
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
-        env:
-          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goveralls -parallel -flagname="strings/bexp" -coverprofile=coverage.out -service=github
-
-  finish:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.21.5'
-      - name: Install goveralls
-        working-directory: ${{ github.workspace }}
-        run: go install github.com/mattn/goveralls@latest
-      - name: Finalize send coverage
-        working-directory: ${{ github.workspace }}
-        env:
-          COVERALLS_TOKEN: ${{ github.token }}
-          GIT_BRANCH: ${{ github.head_ref }}
-        run: goveralls -parallel-finish -service=github
