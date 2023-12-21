@@ -6,28 +6,17 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
-	"os"
 	"os/exec"
-	"path/filepath"
-	"strings"
 
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy-go/internal/release/releaser"
 	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/commands"
-	"golang.org/x/mod/modfile"
-	"golang.org/x/mod/semver"
 	"golang.org/x/text/language"
 )
-
-type Releaser struct {
-	WD           string
-	SkipPackages []string
-	Package      map[string]*Package
-}
 
 type Settings struct {
 	happy.Settings
@@ -65,11 +54,7 @@ func main() {
 	app.AddCommand(commands.Info())
 	app.AddCommand(commands.Reset())
 
-	releaser := &Releaser{
-		SkipPackages: []string{
-			"internal/release",
-		},
-	}
+	var release *releaser.Releaser
 
 	app.Before(func(sess *happy.Session, args happy.Args) error {
 		if !sess.Profile().Get("happy-go.github.token").IsSet() {
@@ -81,7 +66,10 @@ func main() {
 			sess.Log().NotImplemented("git is in a dirty state", slog.String("err", err.Error()))
 			// return errors.New("git is in a dirty state")
 		}
-		return releaser.Before(sess)
+		release = releaser.New(sess.Get("app.fs.path.pwd").String(), []string{
+			"internal/release",
+		})
+		return release.Before(sess, args)
 	})
 
 	app.Do(func(sess *happy.Session, args happy.Args) error {
@@ -90,187 +78,7 @@ func main() {
 		}
 		sess.Log().Info("using GITHUB_TOKEN", slog.String("token", sess.Profile().Get("happy-go.github.token").String()))
 		sess.Log().Info("do")
-		return nil
+		return release.Do(sess, args)
 	})
 	app.Main()
-}
-
-func (r *Releaser) Before(sess *happy.Session) error {
-	r.WD = sess.Get("app.fs.path.pwd").String()
-	if strings.HasSuffix(r.WD, "internal/release") {
-		r.WD = filepath.Join(r.WD, "../../")
-	}
-	if !strings.HasSuffix(r.WD, "happy-go") {
-		return fmt.Errorf("can noit call release from location %s", r.WD)
-	}
-
-	sess.Log().Msg("working directory", slog.String("dir", r.WD))
-
-	if err := r.loadModules(sess); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *Releaser) loadModules(sess *happy.Session) error {
-	// var modules []Package
-	minGoVer := sess.Profile().Get("happy-go.go.version.min").String()
-	sess.Log().Msg("Min Go Version", slog.String("version", minGoVer))
-	if err := filepath.Walk(r.WD, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			return nil
-		}
-		goModPath := filepath.Join(path, "go.mod")
-		if _, err := os.Stat(goModPath); err != nil {
-			return nil
-		}
-		return r.loadModule(sess, goModPath, minGoVer)
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *Releaser) loadModule(sess *happy.Session, goModPath, minGoVer string) error {
-	data, err := os.ReadFile(goModPath)
-	if err != nil {
-		return err
-	}
-	pkg := &Package{
-		ModFilePath: goModPath,
-	}
-	modFile, err := modfile.Parse("go.mod", data, nil)
-	if err != nil {
-		return err
-	}
-	pkg.Import = modFile.Module.Mod.Path
-
-	pkgpath := strings.TrimPrefix(modFile.Module.Mod.Path, "github.com/happy-sdk/happy-go/")
-	if pkgpath == "github.com/happy-sdk/happy-go" {
-		sess.Log().Info("skipping package", slog.String("package", "github.com/happy-sdk/happy-go"))
-		return nil
-	}
-	pkg.LocalPath = pkgpath
-	pkg.TagPrefix = pkgpath + "/"
-
-	for _, skip := range r.SkipPackages {
-		if skip == pkgpath {
-			sess.Log().Info("skipping package", slog.String("package", pkgpath))
-			return nil
-		}
-	}
-
-	// update go version if needed
-	if semver.Compare("v"+modFile.Go.Version, "v"+minGoVer) == -1 {
-		oldver := modFile.Go.Version
-		sess.Log().Ok("updated go version",
-			slog.String("module", modFile.Module.Mod.Path),
-			slog.String("from", oldver),
-			slog.String("to", minGoVer),
-		)
-
-		if err := modFile.AddGoStmt(minGoVer); err != nil {
-			return err
-		}
-		modFile.Cleanup()
-		// Write the updated file back
-		updatedModFile, err := modFile.Format()
-		if err != nil {
-			return err
-		}
-		if err := os.WriteFile(goModPath, updatedModFile, 0644); err != nil {
-			return err
-		}
-		if err := goModTidy(sess, filepath.Dir(goModPath)); err != nil {
-			return err
-		}
-		if err := gitAddAndCommit(sess, r.WD, "dep", pkg.LocalPath, fmt.Sprintf("update go version from %s to %s", oldver, minGoVer)); err != nil {
-			return err
-		}
-	}
-
-	sess.Log().Info(
-		"loading package",
-		slog.String("module", pkg.Import),
-		slog.String("path", pkg.LocalPath),
-	)
-
-	// check if package needs release
-	if err := pkg.CheckNeedsRelease(sess, r.WD); err != nil {
-		return err
-	}
-
-	if pkg.NeedsRelease {
-		sess.Log().Ok(
-			"loaded package",
-			slog.String("module", pkg.Import),
-			slog.String("path", pkg.LocalPath),
-		)
-
-	} else {
-		sess.Log().Msg(
-			"skiped package - no changes",
-			slog.String("module", pkg.Import),
-			slog.String("path", pkg.LocalPath),
-		)
-	}
-
-	return nil
-}
-
-type Package struct {
-	ModFilePath  string // full path to go mod file
-	LocalPath    string // relative path to the monorepo root directory
-	TagPrefix    string // tag prefix for the package
-	Import       string // import path
-	NeedsRelease bool
-}
-
-func (p *Package) CheckNeedsRelease(sess *happy.Session, wd string) error {
-	// check if package needs release
-	// logcmd := git tag --list 'strings/bexp/*'
-	tagscmd := exec.Command("git", "tag", "--list", p.TagPrefix+"*")
-	// logcmd := exec.Command("git", "tag", "--list", p.TagPrefix+"*")
-	tagscmd.Dir = wd
-	tagsout, err := cli.ExecCommand(sess, tagscmd)
-	if err != nil {
-		return err
-	}
-	if tagsout == "" {
-		// First release
-		p.NeedsRelease = true
-		return nil
-	}
-	tags := strings.Split(tagsout, "\n")
-	for _, tag := range tags {
-		fmt.Println(tag)
-	}
-	return nil
-}
-
-func gitAddAndCommit(sess *happy.Session, wd, typ, scope, msg string) error {
-	gitadd := exec.Command("git", "add", ".")
-	gitadd.Dir = wd
-	if err := cli.RunCommand(sess, gitadd); err != nil {
-		return err
-	}
-	commitMsg := fmt.Sprintf("%s(%s): %s", typ, scope, msg)
-	gitcommit := exec.Command("git", "commit", "-sm", commitMsg)
-	gitcommit.Dir = wd
-	if err := cli.RunCommand(sess, gitcommit); err != nil {
-		return err
-	}
-	return nil
-}
-
-func goModTidy(sess *happy.Session, wd string) error {
-	gomodtidy := exec.Command("go", "mod", "tidy")
-	gomodtidy.Dir = wd
-	if err := cli.RunCommand(sess, gomodtidy); err != nil {
-		return err
-	}
-	return nil
 }
