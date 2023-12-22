@@ -8,8 +8,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - "vars/**"
-      - ".github/workflows/vars.yaml"
+      - vars/**
+      - .github/workflows/vars.yaml
 
 defaults:
   run:

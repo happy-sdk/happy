@@ -8,8 +8,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - "strings/bexp/**"
-      - ".github/workflows/strings-bexp.yaml"
+      - strings/bexp/**
+      - .github/workflows/strings-bexp.yaml
 
 defaults:
   run:
