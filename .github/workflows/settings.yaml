@@ -1,19 +1,19 @@
-name: vars/varflag
+name: settings
 
 concurrency:
-  group: vars/varflag-${{ github.ref }}
+  group: settings-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   push:
     branches: [ main ]
     paths:
-      - vars/varsflag/**
-      - .github/workflows/vars-varflag.yaml
+      - settings/**
+      - .github/workflows/settings.yaml
 
 defaults:
   run:
-    working-directory: ./vars/varflag
+    working-directory: ./settings
 
 jobs:
   lint:
@@ -27,7 +27,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          working-directory: ./vars/varflag
+          working-directory: ./settings
 
   test:
     needs: lint
