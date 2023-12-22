@@ -134,6 +134,9 @@ func (r *Releaser) release(sess *happy.Session) error {
 	}
 
 	for _, pkg := range r.packages {
+		if !pkg.NeedsRelease {
+			continue
+		}
 		if err := pkg.Release(sess, r.wd); err != nil {
 			return err
 		}
