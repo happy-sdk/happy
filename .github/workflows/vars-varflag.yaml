@@ -1,4 +1,4 @@
-name: vars
+name: vars/varflag
 
 concurrency:
   group: vars-${{ github.ref }}
@@ -13,7 +13,7 @@ on:
 
 defaults:
   run:
-    working-directory: ./vars/varsflag
+    working-directory: ./vars/varflag
 
 jobs:
   lint:
@@ -27,7 +27,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          working-directory: ./vars/varsflag
+          working-directory: ./vars/varflag
 
   test:
     needs: lint
