@@ -1,4 +1,14 @@
-# Happy Go
+![Happy Logo](https://raw.githubusercontent.com/happy-sdk/happy/main/assets/images/happy.svg)
+
+# Happy Go - Go modules monorepo
+
+**Happy-Go** is the monorepo for select Go packages that are used in conjunction with the Happy SDK. This collection focuses on packages that are beneficial to, but not essential for the Happy SDK. Each package here is crafted to be effective as a standalone module, ensuring wide applicability in various Go projects.
+
+## What is happy-go?
+
+happy-go features a collection of Go packages characterized by:
+1. **Standalone Functionality**: Every package in this repository is designed to operate independently of the Happy SDK. This allows these packages to be integrated into your Go projects seamlessly, without requiring the full Happy SDK.
+2. **Independence from Third-Party Dependencies**: True to the Go philosophy of simplicity and reliability, each package in this repository avoids external dependencies. Packages within this monorepo may depend on each other, forming a well-integrated yet flexible collection.
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/happy-sdk/happy-go)
 
