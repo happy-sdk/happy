@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/vars"
 )
 
 // IntFlag defines an int flag with specified name,.

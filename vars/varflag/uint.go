@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/vars"
 )
 
 // UintFlag defines a uint flag with specified name.

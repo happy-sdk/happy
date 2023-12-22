@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/happy-sdk/bexp"
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/strings/bexp"
+	"github.com/happy-sdk/happy-go/vars"
 )
 
 // BexpFlag expands flag args with bash brace expansion.

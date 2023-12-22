@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/vars"
 )
 
 // Common is default string flag. Common flag ccan be used to

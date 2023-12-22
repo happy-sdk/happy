@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/vars"
 )
 
 // Float64Flag defines a float64 flag with specified name.

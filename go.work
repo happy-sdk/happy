@@ -5,4 +5,5 @@ use (
 	./internal/release
 	./strings/bexp
 	./vars
+	./vars/varflag
 )
