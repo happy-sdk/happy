@@ -16,7 +16,20 @@ defaults:
     working-directory: ./strings/bexp
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.21.0'
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
   test:
+    needs: lint
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
