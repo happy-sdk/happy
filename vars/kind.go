@@ -1,6 +1,6 @@
-// Copyright 2022 Marko Kungla
-// Licensed under the Apache License, Version 2.0.
-// See the LICENSE file.
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright © 2022 The Happy Authors
 
 package vars
 

@@ -1,6 +1,6 @@
-// Copyright 2020 The Happy Authors
-// Licensed under the Apache License, Version 2.0.
-// See the LICENSE file.
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright © 2020 The Happy Authors
 
 // Package bexp implements Brace Expansion mechanism to generate arbitrary strings.
 // Patterns to be brace expanded take the form of an optional preamble,
