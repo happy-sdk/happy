@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/happy-sdk/testutils"
+	"github.com/happy-sdk/happy-go/devel/testutils"
 )
 
 // nolint: funlen, cyclop

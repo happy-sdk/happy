@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/happy-sdk/happy-go/devel/testutils"
 	"github.com/happy-sdk/happy-go/vars"
-	"github.com/happy-sdk/testutils"
 )
 
 type newTest struct {

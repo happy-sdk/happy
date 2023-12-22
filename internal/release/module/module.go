@@ -170,6 +170,7 @@ func (p *Package) getChangelog(sess *happy.Session, wd string) error {
 	p.Changelog = changelog
 
 	if p.Changelog.Empty() {
+		sess.Log().Debug("no changelog", slog.String("package", p.Import))
 		return nil
 	}
 	if p.Changelog.IsBreaking() {

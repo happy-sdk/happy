@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/happy-sdk/happy-go/devel/testutils"
 	"github.com/happy-sdk/happy-go/vars"
-	"github.com/happy-sdk/testutils"
 )
 
 func TestKindOf(t *testing.T) {

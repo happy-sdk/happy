@@ -5,7 +5,6 @@ github.com/happy-sdk/cron v0.2.0/go.mod h1:r+X4TWEvjmUyg1MQtEMhl/by1vm6zQLSveMmC
 github.com/happy-sdk/happy v0.11.0 h1:p//FcGDf+w9NSTwS3obB9o3xGqT3qC3hOPhGuaaiqPo=
 github.com/happy-sdk/happy v0.11.0/go.mod h1:UKFy6g9VsblSJY4FgEgvyIXTbo9sVN25NMDmgbGs6yQ=
 github.com/happy-sdk/testutils v0.2.0 h1:xJcM0+Z/lXME8pNv17vGUufTCYvMRwNeaDX5ydPI+JU=
-github.com/happy-sdk/testutils v0.2.0/go.mod h1:ftT4kUSmA9wZOpNwJ7+fWYRwszqbBNcdgwVVttuw8W8=
 github.com/happy-sdk/varflag v0.1.1 h1:CpIG5sBBQVspJNBrNIiJkV0rrwGeiBd62FFoPAxzlhw=
 github.com/happy-sdk/varflag v0.1.1/go.mod h1:mEamfaEkpT8TTRvlZj6CqTrq23jjYOwVGHYRp+XNths=
 github.com/happy-sdk/vars v0.2.2 h1:iwPitoMncaT1YhZxpeQ/mVOh9hBRhtMMS48xunphqHk=

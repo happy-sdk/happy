@@ -191,6 +191,9 @@ func ParseEntryType(typ, scope string) (EntryType, error) {
 	case "docs":
 		etyp.Typ = "docs"
 		etyp.Kind = EntryKindPatch
+	case "deps":
+		etyp.Typ = "deps"
+		etyp.Kind = EntryKindPatch
 	case "style":
 		etyp.Typ = "style"
 		etyp.Kind = EntryKindPatch
@@ -232,6 +235,7 @@ type Commit struct {
 var entryTypes = []EntryType{
 	{Typ: "feat", Scope: "", Kind: EntryKindMinor},
 	{Typ: "fix", Scope: "", Kind: EntryKindPatch},
+	{Typ: "deps", Scope: "", Kind: EntryKindPatch},
 	{Typ: "docs", Scope: "", Kind: EntryKindPatch},
 	{Typ: "style", Scope: "", Kind: EntryKindPatch},
 	{Typ: "refactor", Scope: "", Kind: EntryKindPatch},
