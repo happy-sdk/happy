@@ -1,0 +1,32 @@
+name: vars
+
+concurrency:
+  group: vars-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "vars/varsflag/**"
+      - ".github/workflows/vars-varsflag.yaml"
+
+defaults:
+  run:
+    working-directory: ./vars/varsflag
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.21.5'
+      - name: Run tests and generate coverage report
+        run: |
+          go test -race  -coverpkg=./... ./...

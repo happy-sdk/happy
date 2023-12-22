@@ -16,6 +16,7 @@ jobs:
         package:
           - strings/bexp
           - vars
+          - vars/varflag
     steps:
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -42,4 +43,4 @@ jobs:
       uses: coverallsapp/github-action@v2
       with:
         parallel-finished: true
-        carryforward: "strings/bexp,vars"
+        carryforward: "strings/bexp,vars,vars/varsflag"
