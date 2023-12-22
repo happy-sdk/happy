@@ -2,11 +2,11 @@
 
 Package flag implements command-line flag parsing into vars.Variables for easy type handling with additional flag types.
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/varflag)](https://pkg.go.dev/github.com/happy-sdk/varflag)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy-go/varflag)](https://pkg.go.dev/github.com/happy-sdk/happy-go/varflag)
 ![license](https://img.shields.io/github/license/happy-sdk/varflag)
 ![GitHub last commit](https://img.shields.io/github/last-commit/happy-sdk/varflag)
-![tests](https://github.com/happy-sdk/varflag/workflows/test/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/happy-sdk/varflag)](https://goreportcard.com/report/github.com/happy-sdk/varflag)
+![tests](https://github.com/happy-sdk/happy-go/varflag/workflows/test/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/happy-sdk/happy-go/varflag)](https://goreportcard.com/report/github.com/happy-sdk/happy-go/varflag)
 [![Coverage Status](https://coveralls.io/repos/github/happy-sdk/varflag/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/varflag?branch=main)
 <!-- [![benchmarks](https://img.shields.io/badge/benchmark-result-green)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fhappy-sdk%varflag.git) -->
 
@@ -30,7 +30,7 @@ Package flag implements command-line flag parsing into vars.Variables for easy t
 > note that major version ensures compatibility with
 > https://github.com/happy-sdk/vars package
 
-`go get github.com/happy-sdk/varflag`
+`go get github.com/happy-sdk/happy-go/varflag`
 
 ## String flag
 
@@ -41,7 +41,7 @@ import (
   "fmt"
   "log"
   "os"
-  "github.com/happy-sdk/varflag"
+  "github.com/happy-sdk/happy-go/varflag"
 )
 
 func main() {

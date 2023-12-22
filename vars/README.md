@@ -1,9 +1,9 @@
 # VARS
 
 ![license](https://img.shields.io/github/license/happy-sdk/vars)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/vars)](https://pkg.go.dev/github.com/happy-sdk/vars)
-![tests](https://github.com/happy-sdk/vars/workflows/tests/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/happy-sdk/vars)](https://goreportcard.com/report/github.com/happy-sdk/vars)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy-go/vars)](https://pkg.go.dev/github.com/happy-sdk/happy-go/vars)
+![tests](https://github.com/happy-sdk/happy-go/vars/workflows/tests/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/happy-sdk/happy-go/vars)](https://goreportcard.com/report/github.com/happy-sdk/happy-go/vars)
 [![Coverage Status](https://coveralls.io/repos/github/happy-sdk/vars/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/vars?branch=main)
 <!-- [![benchmarks](https://github.com/mkungla/vars/workflows/benchmarks/badge.svg)](https://dashboard.github.orijtech.com/graphs?repo=https%3A%2F%2Fgithub.com%2Fmkungla%2Fvars.git) -->
 ![GitHub last commit](https://img.shields.io/github/last-commit/happy-sdk/vars)
@@ -15,19 +15,19 @@ Package vars provides the API to parse variables from various input formats/type
 ## Install
 
 ```
-go get github.com/happy-sdk/vars
+go get github.com/happy-sdk/happy-go/vars
 ```
 
 ## Usage
 
-**working with [vars.Value](https://pkg.go.dev/github.com/happy-sdk/vars#Value)**
+**working with [vars.Value](https://pkg.go.dev/github.com/happy-sdk/happy-go/vars#Value)**
 
 ```go
 package main
 
 import (
   "fmt"
-  "github.com/happy-sdk/vars"
+  "github.com/happy-sdk/happy-go/vars"
 )
 
 func main() {
@@ -89,7 +89,7 @@ func main() {
 }
 ```
 
-**working with [vars.Collection](https://pkg.go.dev/github.com/happy-sdk/vars#Collection)**
+**working with [vars.Collection](https://pkg.go.dev/github.com/happy-sdk/happy-go/vars#Collection)**
 
 > Because of underlying `sync.Map` it is meant to be populated once and read many times
 > read thoroughly sync.Map docs to understand where .Collection may not me right for you!
@@ -99,7 +99,7 @@ package main
 
 import (
   "fmt"
-  "github.com/happy-sdk/vars"
+  "github.com/happy-sdk/happy-go/vars"
 )
 
 func main() {
@@ -149,7 +149,7 @@ package main
 import (
   "fmt"
   "io/ioutil"
-  "github.com/happy-sdk/vars"
+  "github.com/happy-sdk/happy-go/vars"
 )
 
 func main() {
