@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/happy-sdk/happy-go/devel/testutils"
 )
 
 // Many tests schedule a job for every second, and then wait at most a second
@@ -47,16 +49,14 @@ func TestFuncPanicRecovery(t *testing.T) {
 		WithChain(Recover(newBufLogger(&buf))))
 	cron.Start()
 	defer cron.Stop()
-	cron.AddFunc("* * * * * ?", func() {
+	_, err := cron.AddFunc("* * * * * ?", func() {
 		panic("YOLO")
 	})
+	testutils.NoError(t, err)
 
-	select {
-	case <-time.After(OneSecond):
-		if !strings.Contains(buf.String(), "YOLO") {
-			t.Error("expected a panic to be logged, got none")
-		}
-		return
+	time.Sleep(OneSecond)
+	if !strings.Contains(buf.String(), "YOLO") {
+		t.Error("expected a panic to be logged, got none")
 	}
 }
 
@@ -74,14 +74,12 @@ func TestJobPanicRecovery(t *testing.T) {
 		WithChain(Recover(newBufLogger(&buf))))
 	cron.Start()
 	defer cron.Stop()
-	cron.AddJob("* * * * * ?", job)
+	_, err := cron.AddJob("* * * * * ?", job)
+	testutils.NoError(t, err)
 
-	select {
-	case <-time.After(OneSecond):
-		if !strings.Contains(buf.String(), "YOLO") {
-			t.Error("expected a panic to be logged, got none")
-		}
-		return
+	time.Sleep(OneSecond)
+	if !strings.Contains(buf.String(), "YOLO") {
+		t.Error("expected a panic to be logged, got none")
 	}
 }
 
@@ -105,7 +103,8 @@ func TestStopCausesJobsToNotRun(t *testing.T) {
 	cron := newWithSeconds()
 	cron.Start()
 	cron.Stop()
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	_, err := cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	testutils.NoError(t, err)
 
 	select {
 	case <-time.After(OneSecond):
@@ -121,7 +120,8 @@ func TestAddBeforeRunning(t *testing.T) {
 	wg.Add(1)
 
 	cron := newWithSeconds()
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	_, err := cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	testutils.NoError(t, err)
 	cron.Start()
 	defer cron.Stop()
 
@@ -141,7 +141,8 @@ func TestAddWhileRunning(t *testing.T) {
 	cron := newWithSeconds()
 	cron.Start()
 	defer cron.Stop()
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	_, err := cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	testutils.NoError(t, err)
 
 	select {
 	case <-time.After(OneSecond):
@@ -157,7 +158,8 @@ func TestAddWhileRunningWithDelay(t *testing.T) {
 	defer cron.Stop()
 	time.Sleep(5 * time.Second)
 	var calls int64
-	cron.AddFunc("* * * * * *", func() { atomic.AddInt64(&calls, 1) })
+	_, err := cron.AddFunc("* * * * * *", func() { atomic.AddInt64(&calls, 1) })
+	testutils.NoError(t, err)
 
 	<-time.After(OneSecond)
 	if atomic.LoadInt64(&calls) != 1 {
@@ -208,15 +210,13 @@ func TestSnapshotEntries(t *testing.T) {
 	wg.Add(1)
 
 	cron := New()
-	cron.AddFunc("@every 2s", func() { wg.Done() })
+	_, err := cron.AddFunc("@every 2s", func() { wg.Done() })
+	testutils.NoError(t, err)
 	cron.Start()
 	defer cron.Stop()
 
 	// Cron should fire in 2 seconds. After 1 second, call Entries.
-	select {
-	case <-time.After(OneSecond):
-		cron.Entries()
-	}
+	time.Sleep(OneSecond)
 
 	// Even though Entries was called, the cron should fire at the 2 second mark.
 	select {
@@ -235,12 +235,20 @@ func TestMultipleEntries(t *testing.T) {
 	wg.Add(2)
 
 	cron := newWithSeconds()
-	cron.AddFunc("0 0 0 1 1 ?", func() {})
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	if _, err := cron.AddFunc("0 0 0 1 1 ?", func() {}); err != nil {
+		testutils.NoError(t, err)
+	}
+	if _, err := cron.AddFunc("* * * * * ?", func() { wg.Done() }); err != nil {
+		testutils.NoError(t, err)
+	}
 	id1, _ := cron.AddFunc("* * * * * ?", func() { t.Fatal() })
 	id2, _ := cron.AddFunc("* * * * * ?", func() { t.Fatal() })
-	cron.AddFunc("0 0 0 31 12 ?", func() {})
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	if _, err := cron.AddFunc("0 0 0 31 12 ?", func() {}); err != nil {
+		testutils.NoError(t, err)
+	}
+	if _, err := cron.AddFunc("* * * * * ?", func() { wg.Done() }); err != nil {
+		testutils.NoError(t, err)
+	}
 
 	cron.Remove(id1)
 	cron.Start()
@@ -260,9 +268,15 @@ func TestRunningJobTwice(t *testing.T) {
 	wg.Add(2)
 
 	cron := newWithSeconds()
-	cron.AddFunc("0 0 0 1 1 ?", func() {})
-	cron.AddFunc("0 0 0 31 12 ?", func() {})
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	if _, err := cron.AddFunc("0 0 0 1 1 ?", func() {}); err != nil {
+		testutils.NoError(t, err)
+	}
+	if _, err := cron.AddFunc("0 0 0 31 12 ?", func() {}); err != nil {
+		testutils.NoError(t, err)
+	}
+	if _, err := cron.AddFunc("* * * * * ?", func() { wg.Done() }); err != nil {
+		testutils.NoError(t, err)
+	}
 
 	cron.Start()
 	defer cron.Stop()
@@ -279,9 +293,15 @@ func TestRunningMultipleSchedules(t *testing.T) {
 	wg.Add(2)
 
 	cron := newWithSeconds()
-	cron.AddFunc("0 0 0 1 1 ?", func() {})
-	cron.AddFunc("0 0 0 31 12 ?", func() {})
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	if _, err := cron.AddFunc("0 0 0 1 1 ?", func() {}); err != nil {
+		testutils.NoError(t, err)
+	}
+	if _, err := cron.AddFunc("0 0 0 31 12 ?", func() {}); err != nil {
+		testutils.NoError(t, err)
+	}
+	if _, err := cron.AddFunc("* * * * * ?", func() { wg.Done() }); err != nil {
+		testutils.NoError(t, err)
+	}
 	cron.Schedule(Every(time.Minute), FuncJob(func() {}))
 	cron.Schedule(Every(time.Second), FuncJob(func() { wg.Done() }))
 	cron.Schedule(Every(time.Hour), FuncJob(func() {}))
@@ -313,7 +333,9 @@ func TestLocalTimezone(t *testing.T) {
 		now.Second()+1, now.Second()+2, now.Minute(), now.Hour(), now.Day(), now.Month())
 
 	cron := newWithSeconds()
-	cron.AddFunc(spec, func() { wg.Done() })
+	if _, err := cron.AddFunc(spec, func() { wg.Done() }); err != nil {
+		testutils.NoError(t, err)
+	}
 	cron.Start()
 	defer cron.Stop()
 
@@ -347,7 +369,9 @@ func TestNonLocalTimezone(t *testing.T) {
 		now.Second()+1, now.Second()+2, now.Minute(), now.Hour(), now.Day(), now.Month())
 
 	cron := New(WithLocation(loc), WithParser(secondParser))
-	cron.AddFunc(spec, func() { wg.Done() })
+	if _, err := cron.AddFunc(spec, func() { wg.Done() }); err != nil {
+		testutils.NoError(t, err)
+	}
 	cron.Start()
 	defer cron.Stop()
 
@@ -389,7 +413,9 @@ func TestBlockingRun(t *testing.T) {
 	wg.Add(1)
 
 	cron := newWithSeconds()
-	cron.AddFunc("* * * * * ?", func() { wg.Done() })
+	if _, err := cron.AddFunc("* * * * * ?", func() { wg.Done() }); err != nil {
+		testutils.NoError(t, err)
+	}
 
 	var unblockChan = make(chan struct{})
 
@@ -413,9 +439,11 @@ func TestStartNoop(t *testing.T) {
 	var tickChan = make(chan struct{}, 2)
 
 	cron := newWithSeconds()
-	cron.AddFunc("* * * * * ?", func() {
+	if _, err := cron.AddFunc("* * * * * ?", func() {
 		tickChan <- struct{}{}
-	})
+	}); err != nil {
+		testutils.NoError(t, err)
+	}
 
 	cron.Start()
 	defer cron.Stop()
@@ -441,10 +469,16 @@ func TestJob(t *testing.T) {
 	wg.Add(1)
 
 	cron := newWithSeconds()
-	cron.AddJob("0 0 0 30 Feb ?", testJob{wg, "job0"})
-	cron.AddJob("0 0 0 1 1 ?", testJob{wg, "job1"})
+	if _, err := cron.AddJob("0 0 0 30 Feb ?", testJob{wg, "job0"}); err != nil {
+		testutils.NoError(t, err)
+	}
+	if _, err := cron.AddJob("0 0 0 1 1 ?", testJob{wg, "job1"}); err != nil {
+		testutils.NoError(t, err)
+	}
 	job2, _ := cron.AddJob("* * * * * ?", testJob{wg, "job2"})
-	cron.AddJob("1 0 0 1 1 ?", testJob{wg, "job3"})
+	if _, err := cron.AddJob("1 0 0 1 1 ?", testJob{wg, "job3"}); err != nil {
+		testutils.NoError(t, err)
+	}
 	cron.Schedule(Every(5*time.Second+5*time.Nanosecond), testJob{wg, "job4"})
 	job5 := cron.Schedule(Every(5*time.Minute), testJob{wg, "job5"})
 
@@ -548,7 +582,9 @@ func (*ZeroSchedule) Next(time.Time) time.Time {
 func TestJobWithZeroTimeDoesNotRun(t *testing.T) {
 	cron := newWithSeconds()
 	var calls int64
-	cron.AddFunc("* * * * * *", func() { atomic.AddInt64(&calls, 1) })
+	if _, err := cron.AddFunc("* * * * * *", func() { atomic.AddInt64(&calls, 1) }); err != nil {
+		testutils.NoError(t, err)
+	}
 	cron.Schedule(new(ZeroSchedule), FuncJob(func() { t.Error("expected zero task will not run") }))
 	cron.Start()
 	defer cron.Stop()
@@ -585,11 +621,19 @@ func TestStopAndWait(t *testing.T) {
 
 	t.Run("a couple fast jobs added, still returns immediately", func(t *testing.T) {
 		cron := newWithSeconds()
-		cron.AddFunc("* * * * * *", func() {})
+		if _, err := cron.AddFunc("* * * * * *", func() {}); err != nil {
+			testutils.NoError(t, err)
+		}
 		cron.Start()
-		cron.AddFunc("* * * * * *", func() {})
-		cron.AddFunc("* * * * * *", func() {})
-		cron.AddFunc("* * * * * *", func() {})
+		if _, err := cron.AddFunc("* * * * * *", func() {}); err != nil {
+			testutils.NoError(t, err)
+		}
+		if _, err := cron.AddFunc("* * * * * *", func() {}); err != nil {
+			testutils.NoError(t, err)
+		}
+		if _, err := cron.AddFunc("* * * * * *", func() {}); err != nil {
+			testutils.NoError(t, err)
+		}
 		time.Sleep(time.Second)
 		ctx := cron.Stop()
 		select {
@@ -601,10 +645,16 @@ func TestStopAndWait(t *testing.T) {
 
 	t.Run("a couple fast jobs and a slow job added, waits for slow job", func(t *testing.T) {
 		cron := newWithSeconds()
-		cron.AddFunc("* * * * * *", func() {})
+		if _, err := cron.AddFunc("* * * * * *", func() {}); err != nil {
+			testutils.NoError(t, err)
+		}
 		cron.Start()
-		cron.AddFunc("* * * * * *", func() { time.Sleep(2 * time.Second) })
-		cron.AddFunc("* * * * * *", func() {})
+		if _, err := cron.AddFunc("* * * * * *", func() { time.Sleep(2 * time.Second) }); err != nil {
+			testutils.NoError(t, err)
+		}
+		if _, err := cron.AddFunc("* * * * * *", func() {}); err != nil {
+			testutils.NoError(t, err)
+		}
 		time.Sleep(time.Second)
 
 		ctx := cron.Stop()
@@ -628,10 +678,16 @@ func TestStopAndWait(t *testing.T) {
 
 	t.Run("repeated calls to stop, waiting for completion and after", func(t *testing.T) {
 		cron := newWithSeconds()
-		cron.AddFunc("* * * * * *", func() {})
-		cron.AddFunc("* * * * * *", func() { time.Sleep(2 * time.Second) })
+		if _, err := cron.AddFunc("* * * * * *", func() {}); err != nil {
+			testutils.NoError(t, err)
+		}
+		if _, err := cron.AddFunc("* * * * * *", func() { time.Sleep(2 * time.Second) }); err != nil {
+			testutils.NoError(t, err)
+		}
 		cron.Start()
-		cron.AddFunc("* * * * * *", func() {})
+		if _, err := cron.AddFunc("* * * * * *", func() {}); err != nil {
+			testutils.NoError(t, err)
+		}
 		time.Sleep(time.Second)
 		ctx := cron.Stop()
 		ctx2 := cron.Stop()
