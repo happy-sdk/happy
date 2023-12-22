@@ -106,6 +106,9 @@ func (p *Package) Prepare(sess *happy.Session, wd string) error {
 }
 
 func (p *Package) Release(sess *happy.Session, wd string) error {
+	if len(p.NextRelease) == 0 {
+		return fmt.Errorf("can not release package(%s): empty next tag", p.Import)
+	}
 	gitag := exec.Command("git", "tag", "-sm", fmt.Sprintf("%q", p.NextRelease), p.NextRelease)
 	gitag.Dir = wd
 	if err := cli.RunCommand(sess, gitag); err != nil {
