@@ -14,6 +14,7 @@ jobs:
     strategy:
       matrix:
         package:
+          - devel/testutils
           - strings/bexp
           - vars
           - vars/varflag
@@ -43,4 +44,4 @@ jobs:
       uses: coverallsapp/github-action@v2
       with:
         parallel-finished: true
-        # carryforward: "strings/bexp,vars,vars/varsflag"
+        # carryforward: "strings/bexp,vars,vars/varsflag..."
