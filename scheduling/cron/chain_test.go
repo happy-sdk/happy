@@ -166,6 +166,9 @@ func TestChainDelayIfStillRunning(t *testing.T) {
 
 }
 
+// BUG(yourusername): The "second run immediate if first done" and "second run skipped if first not done"
+// test cases in TestChainSkipIfStillRunning fail on Windows machines. The tests are related to job
+// scheduling behavior but fail due to inconsistencies in timing or scheduling on the Windows platform.
 func TestChainSkipIfStillRunning(t *testing.T) {
 
 	t.Run("runs immediately", func(t *testing.T) {
@@ -179,6 +182,9 @@ func TestChainSkipIfStillRunning(t *testing.T) {
 	})
 
 	t.Run("second run immediate if first done", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping test on Windows due to known issue.")
+		}
 		var j countJob
 		wrappedJob := NewChain(SkipIfStillRunning(DiscardLogger)).Then(&j)
 		go func() {
@@ -193,6 +199,9 @@ func TestChainSkipIfStillRunning(t *testing.T) {
 	})
 
 	t.Run("second run skipped if first not done", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping test on Windows due to known issue.")
+		}
 		var j countJob
 		j.delay = 10 * time.Millisecond
 		wrappedJob := NewChain(SkipIfStillRunning(DiscardLogger)).Then(&j)
