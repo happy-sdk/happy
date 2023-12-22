@@ -4,6 +4,7 @@ use (
 	.
 	./devel/testutils
 	./internal/release
+	./scheduling/cron
 	./settings
 	./strings/bexp
 	./vars

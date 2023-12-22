@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright © 2023 The Happy Authors
 package cron
 
 import (
@@ -24,9 +27,12 @@ func NewChain(c ...JobWrapper) Chain {
 // Then decorates the given job with all JobWrappers in the chain.
 //
 // This:
-//     NewChain(m1, m2, m3).Then(job)
+//
+//	NewChain(m1, m2, m3).Then(job)
+//
 // is equivalent to:
-//     m1(m2(m3(job)))
+//
+//	m1(m2(m3(job)))
 func (c Chain) Then(j Job) Job {
 	for i := range c.wrappers {
 		j = c.wrappers[len(c.wrappers)-i-1](j)

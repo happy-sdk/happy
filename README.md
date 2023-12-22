@@ -18,6 +18,8 @@ happy-go features a collection of Go packages characterized by:
 | | import: | `go get github.com/happy-sdk/happy-go/devel/testutils@latest` |
 | [settings](./settings) | [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy-go)](https://pkg.go.dev/github.com/happy-sdk/happy-go/settings) | Settings is like a Swiss Army knife for handling app configurations in Go. |
 | | import: | `go get github.com/happy-sdk/happy-go/settings@latest` |
+| [scheduling/cron](./scheduling/cron) | [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy-go)](https://pkg.go.dev/github.com/happy-sdk/happy-go/scheduling/cron) | Cron implements a cron spec parser and job runner. |
+| | import: | `go get github.com/happy-sdk/happy-go/strings/bexp@latest` |
 | [strings/bexp](./strings/bexp) | [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy-go)](https://pkg.go.dev/github.com/happy-sdk/happy-go/strings/bexp) | Go implementation of Brace Expansion mechanism to generate arbitrary strings. |
 | | import: | `go get github.com/happy-sdk/happy-go/strings/bexp@latest` |
 | [vars](./vars) | [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy-go)](https://pkg.go.dev/github.com/happy-sdk/happy-go/vars) | Package vars provides the API to parse variables from various input formats/types to common key value pair vars.Value or variable sets to vars.Map |

@@ -15,6 +15,7 @@ jobs:
       matrix:
         package:
           - devel/testutils
+          - scheduling/cron
           - settings
           - strings/bexp
           - vars
