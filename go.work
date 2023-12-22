@@ -1,8 +1,10 @@
 go 1.21.5
 
 use (
+	.
 	./devel/testutils
 	./internal/release
+	./settings
 	./strings/bexp
 	./vars
 	./vars/varflag
