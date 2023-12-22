@@ -44,7 +44,7 @@ func main() {
 		},
 	}
 	settings.Extend("happy-go", Settings{
-		GithubToken:  "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",
+		GithubToken:  "",
 		MinGoVersion: "1.21.5",
 	})
 
