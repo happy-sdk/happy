@@ -54,43 +54,46 @@ func ParseGitLog(sess *happy.Session, log string) (*Changelog, error) {
 
 func FromCommits(sess *happy.Session, commits []Commit) (*Changelog, error) {
 	changelog := &Changelog{}
+	commitRegex := regexp.MustCompile(`^(?P<Type>[^\(]+)(?:\((?P<Scope>[^\)]*)\))?: (?P<Subject>.+)$`)
+	breakingChangePrefix := "BREAKING CHANGE:"
+
 	for _, commit := range commits {
-		introduces := strings.Split(commit.message, "\n")
-		for _, introduce := range introduces {
-			if introduce == "" {
+		lines := strings.Split(commit.message, "\n")
+		var currentSubject, currentType, currentScope string
+
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+
+			if strings.HasPrefix(line, breakingChangePrefix) {
+				changelog.AddBreakingChange(commit.shortHash, commit.longHash, commit.author, strings.TrimSpace(strings.TrimPrefix(line, breakingChangePrefix)))
 				continue
 			}
-			if strings.HasPrefix(introduce, "BREAKING CHANGE:") {
-				introduce = strings.TrimPrefix(introduce, "BREAKING CHANGE:")
-				introduce = strings.TrimSpace(introduce)
-				changelog.AddBreakingChange(commit.shortHash, commit.longHash, commit.author, introduce)
-				continue
-			} else {
-				r := regexp.MustCompile(`^(?P<Type>[^\(]+)\((?P<Scope>[^\)]+)\): (?P<Subject>.+)$`)
-				matches := r.FindStringSubmatch(introduce)
-				if matches == nil {
-					continue
-				}
-				result := make(map[string]string)
-				for i, name := range r.SubexpNames() {
-					if i != 0 && name != "" {
-						result[name] = matches[i]
+
+			if matches := commitRegex.FindStringSubmatch(line); matches != nil {
+				if currentSubject != "" {
+					// Add the previous entry
+					eTyp, err := ParseEntryType(currentType, currentScope)
+					if err == nil {
+						changelog.Add(commit.shortHash, commit.longHash, commit.author, currentSubject, eTyp)
 					}
 				}
-				cTyp := result["Type"]
-				cScope := result["Scope"]
-				cSubject := result["Subject"]
-				if cTyp == "" {
-					continue
-				}
-				eTyp, err := ParseEntryType(cTyp, cScope)
-				if err != nil {
-					return nil, err
-				}
-				changelog.Add(commit.shortHash, commit.longHash, commit.author, cSubject, eTyp)
+				// Start a new entry
+				currentType, currentScope, currentSubject = matches[1], matches[2], matches[3]
+			} else if currentSubject != "" {
+				// Append to the current subject if it's a multiline commit message
+				currentSubject += " " + line
+			}
+		}
+
+		// Add the last entry if there's one pending
+		if currentSubject != "" {
+			eTyp, err := ParseEntryType(currentType, currentScope)
+			if err == nil {
+				changelog.Add(commit.shortHash, commit.longHash, commit.author, currentSubject, eTyp)
 			}
 		}
 	}
+
 	return changelog, nil
 }
 
