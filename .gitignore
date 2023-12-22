@@ -18,6 +18,7 @@ dist/
 **/.DS_Store
 **/*.sw[mnop]
 .env
+import.sh
 
 ################################################################################
 # exception rules and final override
