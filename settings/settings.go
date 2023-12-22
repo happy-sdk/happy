@@ -74,7 +74,7 @@ func ParseToSpec(s Settings) ([]SettingSpec, error) {
 	return nil, nil
 }
 
-func NewBlueprint(s Settings) (*Blueprint, error) {
+func New(s Settings) (*Blueprint, error) {
 
 	// Use reflection to inspect the interface
 	val := reflect.ValueOf(s)

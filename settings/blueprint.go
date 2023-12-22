@@ -18,10 +18,10 @@ var (
 )
 
 type Blueprint struct {
-	mode   ExecutionMode
-	pkg    string
-	module string
-	lang   language.Tag // default language
+	mode ExecutionMode
+	pkg  string
+	// module string
+	// lang   language.Tag // default language
 	specs  map[string]SettingSpec
 	i18n   map[language.Tag]map[string]string
 	errs   []error
@@ -86,19 +86,20 @@ func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {
 	return spec, nil
 }
 
-func (b *Blueprint) Extend(group string, ext Settings) error {
+func (b *Blueprint) Extend(group string, ext Settings) {
 	exptbp, err := ext.Blueprint()
 	if err != nil {
-		return err
+		b.errs = append(b.errs, fmt.Errorf("%w: extending %s %s", ErrBlueprint, b.pkg, err.Error()))
+		return
 	}
 	if b.groups == nil {
 		b.groups = make(map[string]*Blueprint)
 	}
 	if _, ok := b.groups[group]; ok {
-		return fmt.Errorf("%w: group %s already exists, can not extend with %s", ErrBlueprint, group, exptbp.pkg)
+		b.errs = append(b.errs, fmt.Errorf("%w: group %s already exists, can not extend with %s", ErrBlueprint, group, exptbp.pkg))
+		return
 	}
 	b.groups[group] = exptbp
-	return nil
 }
 
 func (b *Blueprint) Schema(module, version string) (Schema, error) {
