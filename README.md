@@ -1,5 +1,7 @@
 # Bash Brace Expansion in Go
 
+last version
+
 Go implementation of Brace Expansion mechanism to generate arbitrary strings.
 
 Implementing: [3.5.1 Brace Expansion][bash-be]
