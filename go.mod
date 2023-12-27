@@ -1,4 +1,4 @@
-// Deprecated: Use github.com/happy-sdk/happy-go/scheduling/cron instead.
+// Deprecated: Use github.com/happy-sdk/happy-go/strings/bexp instead.
 module github.com/mkungla/bexp/v3
 
 go 1.21.5
