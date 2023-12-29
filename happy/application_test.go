@@ -7,7 +7,7 @@ package happy
 import (
 	"testing"
 
-	"github.com/happy-sdk/testutils"
+	"github.com/happy-sdk/happy-go/testutils"
 )
 
 func TestAppDefaultInstance(t *testing.T) {

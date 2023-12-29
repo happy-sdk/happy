@@ -7,9 +7,9 @@ package happy
 import (
 	"fmt"
 
-	"github.com/happy-sdk/happy/pkg/settings"
-	"github.com/happy-sdk/happy/pkg/version"
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/devel/version"
+	"github.com/happy-sdk/happy-go/settings"
+	"github.com/happy-sdk/happy-go/vars"
 	"golang.org/x/mod/semver"
 )
 
@@ -26,7 +26,7 @@ type Addon struct {
 	cmds []*Command
 	svcs []*Service
 
-	API API
+	api API
 }
 
 type AddonInfo struct {
@@ -110,4 +110,12 @@ func (addon *Addon) ProvidesService(svc *Service) {
 		return
 	}
 	addon.svcs = append(addon.svcs, svc)
+}
+
+func (addon *Addon) ProvidesAPI(api API) {
+	if svc == nil {
+		addon.errs = append(addon.errs, fmt.Errorf("%w: %s provided <nil> API", ErrAddon, addon.info.Name))
+		return
+	}
+	addon.api = api
 }

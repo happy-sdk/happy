@@ -17,12 +17,12 @@ import (
 
 	"log/slog"
 
-	"github.com/happy-sdk/happy/pkg/address"
-	"github.com/happy-sdk/happy/pkg/logging"
-	"github.com/happy-sdk/happy/pkg/settings"
-	"github.com/happy-sdk/happy/pkg/version"
-	"github.com/happy-sdk/varflag"
-	"github.com/happy-sdk/vars"
+	"github.com/happy-sdk/happy-go/devel/version"
+	"github.com/happy-sdk/happy-go/logging"
+	"github.com/happy-sdk/happy-go/networking/address"
+	"github.com/happy-sdk/happy-go/settings"
+	"github.com/happy-sdk/happy-go/vars"
+	"github.com/happy-sdk/happy-go/vars/varflag"
 )
 
 type Application struct {
@@ -1087,7 +1087,6 @@ func (a *Application) load() error {
 		}
 		a.firstuse = true
 	} else {
-		a.session.Log().Warn("laod settings")
 		prefFile, err := os.Open(cfile)
 		if err != nil {
 			return err
