@@ -1,0 +1,32 @@
+project_name: happy
+
+release:
+  draft: false
+  github:
+    owner: happy-sdk
+    name: happy
+
+builds:
+- skip: true
+
+checksum:
+  name_template: '{{ .ProjectName }}-{{ .Version }}-checksums.txt'
+
+changelog:
+  sort: desc
+  filters:
+    exclude:
+    - '^.github:'
+    - '^test:'
+    - 'README'
+    - 'build\(deps\): bump .* in /docs \(#\d+\)'
+    - Merge pull request
+    - Merge branch
+    - Merge remote-tracking branch
+    - Merge tag
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+    # - go mod verify

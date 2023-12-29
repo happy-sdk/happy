@@ -1,0 +1,45 @@
+# https://taskfile.dev
+
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  NEXT:
+    sh: svu n
+
+tasks:
+  # https://github.com/caarlos0/svu
+  next:
+    desc: |
+      Prints next version based on Conventional Commits spec.
+    cmds:
+      - svu n
+  release:
+    desc: |
+      To release new version in github, you must be maintainer
+      and have GITHUB_TOKEN env set in (.env) file
+    preconditions:
+      - sh: git diff-index --quiet HEAD
+        msg: "Commit or stash changes first"
+    cmds:
+      - task: release:tag
+      - task: release:goreleaser
+
+  release:tag:
+    internal: true
+    desc: create new tag
+    cmds:
+      - echo "🎉 Release version {{.NEXT}} 🚀"
+      - git tag -sm "{{.NEXT}}" {{.NEXT}}
+      - git push
+      - git push --tags
+
+  release:goreleaser:
+    internal: true
+    desc: Run GoReleaser either in snapshot or release mode
+    vars:
+      SNAPSHOT:
+        sh: 'if [[ $(git describe --exact-match HEAD) != v* ]]; then echo "--snapshot"; fi'
+    cmds:
+      - goreleaser release --clean {{.SNAPSHOT}}
