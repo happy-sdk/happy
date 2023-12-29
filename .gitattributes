@@ -1,4 +1,3 @@
-
 # https://git-scm.com/docs/gitattributes
 #
 # A gitattributes file is a simple text file that gives attributes to path names
@@ -25,7 +24,9 @@
 LICENSE text
 
 ################################################################################
-# BINARY
+# OTHER RULES
 # Avoid creation of unnecessary big commit objects. For these files we do not
 # want to see text diff for
 ################################################################################
+**/testdata/** binary
+*.png binary

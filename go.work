@@ -1,12 +1,3 @@
 go 1.21.5
 
-use (
-	./devel/testutils
-	./internal/release
-	./logging
-	./scheduling/cron
-	./settings
-	./strings/bexp
-	./vars
-	./vars/varflag
-)
+use ./cmd/hap
