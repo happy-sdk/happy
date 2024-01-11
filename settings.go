@@ -1,22 +1,22 @@
-// Copyright 2023 The Happy Authors
-// Licensed under the Apache License, Version 2.0.
-// See the LICENSE file.
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright © 2022 The Happy Authors
 
 package happy
 
 import (
 	"fmt"
 
-	"github.com/happy-sdk/happy/pkg/address"
-	"github.com/happy-sdk/happy/pkg/i18n"
-	"github.com/happy-sdk/happy/pkg/logging"
+	"github.com/happy-sdk/happy-go/logging"
 	"github.com/happy-sdk/happy/pkg/settings"
-	"github.com/happy-sdk/happy/pkg/version"
+	"github.com/hapyy-sdk/happy/src/devel/version"
+	"github.com/hapyy-sdk/happy/src/i18n"
+	"github.com/hapyy-sdk/happy/src/networking/address"
 	"golang.org/x/mod/semver"
 	"golang.org/x/text/language"
 )
 
-type Settings struct {
+type HappySettings struct {
 	Name           settings.String `key:"app.name" default:"Happy Prototype" mutation:"once"`
 	Slug           settings.String `key:"app.slug" default:"" mutation:"once"`
 	Description    settings.String `key:"app.description" default:"Happy application prototype" mutation:"once"`
@@ -37,7 +37,11 @@ type Settings struct {
 	errs          []error
 }
 
-func (s Settings) Blueprint() (*settings.Blueprint, error) {
+func Settings() *HappySettings {
+	return &HappySettings{}
+}
+
+func (s HappySettings) Blueprint() (*settings.Blueprint, error) {
 	blueprint, err := settings.NewBlueprint(s)
 	if err != nil {
 		return nil, err
@@ -211,7 +215,7 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 	return blueprint, nil
 }
 
-func (s *Settings) Extend(group string, ss settings.Settings) {
+func (s *HappySettings) Extend(group string, ss settings.Settings) {
 	if s.embedSettings == nil {
 		s.embedSettings = make(map[string]settings.Settings)
 	}

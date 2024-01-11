@@ -4,5 +4,13 @@
 
 package main
 
+import (
+	"fmt"
+
+	"github.com/hapyy-sdk/happy"
+)
+
 func main() {
+	settings := happy.Settings()
+	fmt.Println(settings)
 }

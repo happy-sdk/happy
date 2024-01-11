@@ -1,3 +1,13 @@
 go 1.21.5
 
-use ./cmd/hap
+use (
+	.
+	./cmd/hap
+	./pkg/logging
+	./pkg/scheduling/cron
+	./pkg/strings/bexp
+	./pkg/varflag
+	./pkg/vars
+	./sdk
+	./x
+)

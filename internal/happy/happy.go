@@ -24,11 +24,11 @@ import (
 )
 
 var (
-	ErrApplication      = errors.New("application error")
-	ErrCommand          = errors.New("command error")
-	ErrCommandFlags     = errors.New("command flags error")
-	ErrCommandAction    = errors.New("command action error")
-	ErrInvalidVersion   = errors.New("invalid version")
+	ErrApplication   = errors.New("application error")
+	ErrCommand       = errors.New("command error")
+	ErrCommandFlags  = errors.New("command flags error")
+	ErrCommandAction = errors.New("command action error")
+
 	ErrEngine           = errors.New("engine error")
 	ErrSessionDestroyed = errors.New("session destroyed")
 	ErrService          = errors.New("service error")

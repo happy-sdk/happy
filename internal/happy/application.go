@@ -67,7 +67,7 @@ type Application struct {
 	settingsBP *settings.Blueprint
 }
 
-func NewWithLogger[L logging.LoggerIface[LVL], LVL logging.LevelIface](logger L, level LVL, s Settings) *Application {
+func NewWithLogger[L logging.LoggerIface[LVL], LVL logging.LevelIface](s Settings, logger L, level LVL) *Application {
 	a := &Application{
 		initialized: time.Now(),
 	}
