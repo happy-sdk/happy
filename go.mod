@@ -1,4 +1,4 @@
-module github.com/hapyy-sdk/happy
+module github.com/happy-sdk/happy
 
 go 1.21.5
 
