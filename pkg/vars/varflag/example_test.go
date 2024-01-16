@@ -11,7 +11,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/happy-sdk/happy-go/vars/varflag"
+	"github.com/happy-sdk/happy/pkg/vars/varflag"
 )
 
 func ExampleParse() {

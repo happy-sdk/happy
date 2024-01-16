@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/happy-sdk/happy-go/vars"
+	"github.com/happy-sdk/happy/pkg/vars"
 )
 
 // OptionFlag is string flag type which can have value of one of the options.

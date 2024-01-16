@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/happy-sdk/happy-go/vars"
+	"github.com/happy-sdk/happy/pkg/vars"
 )
 
 // BoolFlag is boolean flag type with default value "false".

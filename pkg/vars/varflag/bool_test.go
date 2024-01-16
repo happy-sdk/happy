@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/happy-sdk/happy-go/vars"
+	"github.com/happy-sdk/happy/pkg/vars"
 )
 
 func TestBoolFlagPresent(t *testing.T) {

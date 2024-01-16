@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/happy-sdk/happy-go/devel/testutils"
+	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
 
 type testflag struct {

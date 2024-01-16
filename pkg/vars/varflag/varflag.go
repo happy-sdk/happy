@@ -18,7 +18,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/happy-sdk/happy-go/vars"
+	"github.com/happy-sdk/happy/pkg/vars"
 )
 
 const (
