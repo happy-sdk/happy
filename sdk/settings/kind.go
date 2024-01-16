@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/happy-sdk/happy-go/vars"
+	"github.com/happy-sdk/happy/pkg/vars"
 )
 
 type Kind uint8

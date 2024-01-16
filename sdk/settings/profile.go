@@ -9,7 +9,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/happy-sdk/happy-go/vars"
+	"github.com/happy-sdk/happy/pkg/vars"
 	"golang.org/x/text/language"
 )
 

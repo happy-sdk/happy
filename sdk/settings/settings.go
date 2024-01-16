@@ -59,17 +59,6 @@ type Settings interface {
 	Blueprint() (*Blueprint, error)
 }
 
-func toDotSeparated(s string) string {
-	var result []rune
-	for i, r := range s {
-		if unicode.IsUpper(r) && i > 0 {
-			result = append(result, '.')
-		}
-		result = append(result, unicode.ToLower(r))
-	}
-	return string(result)
-}
-
 func ParseToSpec(s Settings) ([]SettingSpec, error) {
 	return nil, nil
 }
@@ -196,6 +185,17 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 	}
 
 	return spec, nil
+}
+
+func toDotSeparated(s string) string {
+	var result []rune
+	for i, r := range s {
+		if unicode.IsUpper(r) && i > 0 {
+			result = append(result, '.')
+		}
+		result = append(result, unicode.ToLower(r))
+	}
+	return string(result)
 }
 
 // Function to check if a field has been set (is not the zero value for its type)

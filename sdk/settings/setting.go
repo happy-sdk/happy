@@ -7,7 +7,7 @@ package settings
 import (
 	"fmt"
 
-	"github.com/happy-sdk/happy-go/vars"
+	"github.com/happy-sdk/happy/pkg/vars"
 )
 
 type Mutability uint8
