@@ -2,12 +2,11 @@ go 1.21.5
 
 use (
 	.
+	./addons/third-party/github
 	./cmd/hap
-	./pkg/logging
+	./pkg/devel/testutils
 	./pkg/scheduling/cron
 	./pkg/strings/bexp
-	./pkg/varflag
 	./pkg/vars
-	./sdk
-	./x
+	./pkg/version
 )
