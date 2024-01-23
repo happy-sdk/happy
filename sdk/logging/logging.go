@@ -221,6 +221,9 @@ func (l *DefaultLogger) LogDepth(depth int, lvl Level, msg string, attrs ...slog
 }
 
 func (l *DefaultLogger) Handle(r slog.Record) error {
+	if !l.log.Enabled(l.ctx, r.Level) {
+		return nil
+	}
 	return l.log.Handler().Handle(l.ctx, r)
 }
 

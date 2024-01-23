@@ -4,6 +4,8 @@
 
 package vars
 
+import "time"
+
 // Variable is read only representation of key val pair.
 type Variable struct {
 	ro   bool
@@ -83,6 +85,12 @@ func (v Variable) Int32() int32 {
 // Int64 returns int64 representation of the Value.
 func (v Variable) Int64() int64 {
 	vv, _ := v.val.Int64()
+	return vv
+}
+
+// Duration returns time.Duration representation of the Value.
+func (v Variable) Duration() time.Duration {
+	vv, _ := v.val.Duration()
 	return vv
 }
 

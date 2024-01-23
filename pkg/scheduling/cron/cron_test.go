@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/happy-sdk/happy-go/devel/testutils"
+	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
 
 // Many tests schedule a job for every second, and then wait at most a second

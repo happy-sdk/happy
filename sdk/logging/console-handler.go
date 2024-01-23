@@ -77,12 +77,14 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	timeStr := "\033[2m" + r.Time.Format("15:05:05.000") + "\033[0m"
-	msg := r.Message
 
+	var msg string
 	if lvl <= LevelDebug {
-		msg = "\033[2m" + msg
+		msg = colorize(r.Message, fgWhite, 0, 0, false)
+		payload = colorize(payload, fgCyan, 0, 2, false)
 	} else {
 		payload = colorize(payload, fgCyan, 0, 0, false)
+		msg = colorize(r.Message, fgWhite, 0, 1, false)
 	}
 
 	if h.src && r.PC != 0 {

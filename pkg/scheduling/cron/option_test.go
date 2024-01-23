@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/happy-sdk/happy-go/devel/testutils"
+	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
 
 func TestWithLocation(t *testing.T) {

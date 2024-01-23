@@ -4,6 +4,8 @@
 
 package vars
 
+import "time"
+
 type (
 	// Value describes an arbitrary value. When the Kind of the value is detected
 	// or forced during parsing, the Value can be typed. All composite types and
@@ -154,6 +156,23 @@ func (v Value) Int16() (int16, error) {
 	i = int16(vi)
 	return i, err
 }
+func (v Value) Duration() (time.Duration, error) {
+	if v.kind == KindDuration {
+		if vv, ok := v.raw.(time.Duration); ok {
+			return vv, nil
+		}
+	}
+	if v.isCustom {
+		vv, err := v.CloneAs(KindDuration)
+		if err != nil {
+			return 0, err
+		}
+		return vv.Duration()
+	}
+
+	val, err := time.ParseDuration(v.str)
+	return val, err
+}
 
 // Int32 returns int32 representation of the Value.
 func (v Value) Int32() (int32, error) {
@@ -198,9 +217,14 @@ func (v Value) Int32() (int32, error) {
 
 // Int64 returns int64 representation of the Value.
 func (v Value) Int64() (int64, error) {
-	if v.kind == KindInt64 {
+	if v.kind == KindInt64 || v.kind == KindDuration {
 		if vv, ok := v.raw.(int64); ok {
 			return vv, nil
+		}
+	}
+	if v.kind == KindDuration {
+		if vv, ok := v.raw.(time.Duration); ok {
+			return int64(vv), nil
 		}
 	}
 
