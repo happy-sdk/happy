@@ -27,6 +27,7 @@ type SettingSpec struct {
 	Mutability  Mutability
 	Value       string
 	Required    bool
+	Persistent  bool
 	Unmarchaler Unmarshaller
 	Marchaler   Marshaller
 	Settings    *Blueprint
@@ -40,12 +41,43 @@ func (s SettingSpec) Validate() error {
 	return nil
 }
 
+func (s SettingSpec) ValidateValue(value string) error {
+	s.Value = value
+	setting, err := s.Setting()
+	if err != nil {
+		return err
+	}
+	for _, v := range s.validators {
+		if err := v.fn(setting); err != nil {
+			return fmt.Errorf("%s: %s", v.desc, err.Error())
+		}
+	}
+	return nil
+}
+
+func (s SettingSpec) Setting() (Setting, error) {
+	setting := Setting{
+		key:        s.Key,
+		kind:       s.Kind,
+		isSet:      s.IsSet,
+		mutability: s.Mutability,
+		persistent: s.Persistent,
+	}
+	var err error
+	setting.vv, err = vars.NewAs(s.Key, s.Value, true, vars.Kind(s.Kind))
+	if err != nil {
+		return Setting{}, fmt.Errorf("%w: key(%s)  %s", ErrProfile, s.Key, err.Error())
+	}
+	return setting, nil
+}
+
 type Setting struct {
 	key        string
 	vv         vars.Variable
 	kind       Kind
 	isSet      bool
 	mutability Mutability
+	persistent bool
 }
 
 func (s Setting) String() string {
@@ -66,4 +98,8 @@ func (s Setting) Value() vars.Variable {
 
 func (s Setting) Kind() Kind {
 	return s.kind
+}
+
+func (s Setting) Persistent() bool {
+	return s.persistent
 }

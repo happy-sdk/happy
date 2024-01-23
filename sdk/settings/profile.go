@@ -128,16 +128,9 @@ func (p *Profile) load(prefs *Preferences) (err error) {
 	}
 	p.settings = make(map[string]Setting)
 	for _, spec := range p.schema.settings {
-		setting := Setting{
-			key:        spec.Key,
-			kind:       spec.Kind,
-			isSet:      spec.IsSet,
-			mutability: spec.Mutability,
-		}
-
-		setting.vv, err = vars.NewAs(spec.Key, spec.Value, true, vars.Kind(spec.Kind))
+		setting, err := spec.Setting()
 		if err != nil {
-			return fmt.Errorf("%w: key(%s)  %s", ErrProfile, spec.Key, err.Error())
+			return fmt.Errorf("%w: %s", ErrProfile, err.Error())
 		}
 		p.settings[spec.Key] = setting
 	}
@@ -145,11 +138,18 @@ func (p *Profile) load(prefs *Preferences) (err error) {
 	if prefs != nil {
 		for key, val := range prefs.data {
 			if s, ok := p.settings[key]; ok {
+
 				s.vv, err = vars.NewAs(key, val, true, vars.Kind(s.kind))
 				if err != nil {
 					return fmt.Errorf("%w: preferences key(%s) %s", ErrProfile, key, err.Error())
 				}
 				s.isSet = true
+
+				for _, v := range p.schema.settings[key].validators {
+					if err := v.fn(s); err != nil {
+						return err
+					}
+				}
 				p.settings[key] = s
 			} else {
 				return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, key)

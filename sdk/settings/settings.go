@@ -118,7 +118,15 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 	spec := SettingSpec{}
 
 	spec.IsSet = isFieldSet(value)
-	spec.Key = field.Tag.Get("key")
+
+	var persistent string
+	spec.Key, persistent, _ = strings.Cut(field.Tag.Get("key"), ",")
+
+	if persistent == "save" {
+		spec.Persistent = true
+	}
+
+	// spec.Persistent
 	// Use struct field name converted to dot.separated.format if 'key' tag is not present
 	if spec.Key == "" {
 		spec.Key = toDotSeparated(field.Name)
@@ -338,7 +346,8 @@ func getExecutionMode() ExecutionMode {
 	exeName := filepath.Base(exePath)
 
 	// Check for the presence of a test flag, which is added by `go test`.
-	for _, arg := range os.Args[1:] { // os.Args[0] is the executable name, so we start from os.Args[1]
+	for _, arg := range os.Args[1:] {
+		// os.Args[0] is the executable name, so we start from os.Args[1]
 		if strings.HasPrefix(arg, "-test.") {
 			return ModeTesting
 		}

@@ -34,12 +34,12 @@ func (s *Schema) set(key string, spec SettingSpec) error {
 	return nil
 }
 
-func (s *Schema) Profile(name string, p *Preferences) (*Profile, error) {
+func (s *Schema) Profile(name string, pref *Preferences) (*Profile, error) {
 	profile := &Profile{
 		name:   name,
 		schema: *s,
 	}
-	if err := profile.load(p); err != nil {
+	if err := profile.load(pref); err != nil {
 		return nil, err
 	}
 

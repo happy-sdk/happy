@@ -57,6 +57,7 @@ func (b *Blueprint) AddValidator(key, desc string, fn func(s Setting) error) {
 		desc: desc,
 		fn:   fn,
 	})
+	b.specs[key] = spec
 }
 
 func (b *Blueprint) Describe(key string, lang language.Tag, description string) {
@@ -86,20 +87,19 @@ func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {
 	return spec, nil
 }
 
-func (b *Blueprint) Extend(group string, ext Settings) {
+func (b *Blueprint) Extend(group string, ext Settings) error {
 	exptbp, err := ext.Blueprint()
 	if err != nil {
-		b.errs = append(b.errs, fmt.Errorf("%w: extending %s %s", ErrBlueprint, b.pkg, err.Error()))
-		return
+		return fmt.Errorf("%w: extending %s %s", ErrBlueprint, b.pkg, err.Error())
 	}
 	if b.groups == nil {
 		b.groups = make(map[string]*Blueprint)
 	}
 	if _, ok := b.groups[group]; ok {
-		b.errs = append(b.errs, fmt.Errorf("%w: group %s already exists, can not extend with %s", ErrBlueprint, group, exptbp.pkg))
-		return
+		return fmt.Errorf("%w: group %s already exists, can not extend with %s", ErrBlueprint, group, exptbp.pkg)
 	}
 	b.groups[group] = exptbp
+	return nil
 }
 
 func (b *Blueprint) Schema(module, version string) (Schema, error) {
