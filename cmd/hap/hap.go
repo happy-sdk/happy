@@ -9,8 +9,8 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/addons/third-party/github"
+	"github.com/happy-sdk/happy/cmd/hap/addons/releaser"
 	"github.com/happy-sdk/happy/cmd/hap/migrations"
-	"github.com/happy-sdk/happy/sdk/addons/releaser"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/settings"
