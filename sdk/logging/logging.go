@@ -53,7 +53,7 @@ const (
 	levelDeprecatedStr     = "depr"
 	levelErrorStr          = "error"
 	levelBUGStr            = "bug"
-	levelAlwaysStr         = ""
+	levelAlwaysStr         = "out"
 )
 
 var lvlval = map[Level]string{
@@ -88,7 +88,7 @@ type Logger interface {
 	Deprecated(msg string, attrs ...slog.Attr)
 	Error(msg string, attrs ...slog.Attr)
 	BUG(msg string, attrs ...slog.Attr)
-	Ln(msg string, attrs ...slog.Attr)
+	Println(msg string, attrs ...slog.Attr)
 	HTTP(method, path string, status int, attrs ...slog.Attr)
 	Handle(r slog.Record) error
 
@@ -168,7 +168,7 @@ func (l *DefaultLogger) BUG(msg string, attrs ...slog.Attr) {
 	l.logDepth(levelBUG, msg, attrs...)
 }
 
-func (l *DefaultLogger) Ln(msg string, attrs ...slog.Attr) {
+func (l *DefaultLogger) Println(msg string, attrs ...slog.Attr) {
 	l.logDepth(levelAlways, msg, attrs...)
 }
 

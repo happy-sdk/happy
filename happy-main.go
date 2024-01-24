@@ -81,10 +81,9 @@ func (m *Main) WithService(svc *Service) *Main {
 	return m
 }
 
-const withCommandMsg = "with command"
-
 // WithCommand adds command to the application.
 func (m *Main) WithCommand(cmd *Command) *Main {
+	const withCommandMsg = "with command"
 	if init, ok := m.canConfigure(withCommandMsg); ok {
 		if cmd == nil {
 			init.Log(logging.NewQueueRecord(logging.LevelBUG, withCommandMsg, 3, slog.Any("command", nil)))
@@ -98,11 +97,10 @@ func (m *Main) WithCommand(cmd *Command) *Main {
 	return m
 }
 
-const withFlagMsg = "with flag"
-
 // WithFlag adds flag to the application.
 func (m *Main) WithFlag(flag varflag.Flag) *Main {
-	if init, ok := m.canConfigure(withCommandMsg); ok {
+	const withFlagMsg = "with flag"
+	if init, ok := m.canConfigure(withFlagMsg); ok {
 		if flag == nil {
 			init.Log(logging.NewQueueRecord(logging.LevelBUG, withFlagMsg, 3, slog.Any("flag", nil)))
 			return m
@@ -110,7 +108,7 @@ func (m *Main) WithFlag(flag varflag.Flag) *Main {
 		m.mu.RLock()
 		m.root.AddFlag(flag)
 		m.mu.RUnlock()
-		init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, withCommandMsg, 3, slog.String("name", flag.Name())))
+		init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, withFlagMsg, 3, slog.String("name", flag.Name())))
 	}
 	return m
 }
@@ -204,31 +202,17 @@ func (m *Main) Run() {
 	m.mu.RUnlock()
 	if sealed {
 		m.log(logging.LevelError, "can not call .Run application is already sealed")
-		m.sess.Log().Error("")
 		return
 	}
 
 	// initialize (mutex is locked inside)
 	if err := m.init.Initialize(m); err != nil {
 		m.sess.Log().LogDepth(2, logging.LevelError, "initialization error", slog.String("err", err.Error()))
-		m.exit(1)
-		return
-	}
-
-	if m.root.flag("version").Present() {
-		m.sess.Log().SetLevel(logging.LevelQuiet)
-		m.printVersion()
-		m.exit(0)
-		return
-	}
-
-	if m.cmd.flag("help").Present() {
-		if err := m.help(); err != nil {
-			m.sess.Log().Error("failed to create help view", slog.String("err", err.Error()))
-			m.exit(1)
+		if errors.Is(err, errExitSuccess) {
+			m.exit(0)
 			return
 		}
-		m.exit(0)
+		m.exit(1)
 		return
 	}
 
@@ -336,6 +320,7 @@ func (m *Main) executeBeforeActions() error {
 }
 
 func (m *Main) help() error {
+	m.sess.Log().Println("--")
 	return nil
 }
 

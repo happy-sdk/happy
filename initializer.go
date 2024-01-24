@@ -161,6 +161,8 @@ func (i *initializer) log(r logging.QueueRecord) {
 	i.logQueue <- r
 }
 
+var errExitSuccess = errors.New("exit status 0")
+
 func (i *initializer) Initialize(m *Main) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -208,6 +210,22 @@ func (i *initializer) Initialize(m *Main) error {
 		m.sess.Log().SetLevel(logging.LevelInfo)
 	}
 
+	m.sess.opts.setDefaults()
+
+	if m.root.flag("version").Present() {
+		m.sess.Log().SetLevel(logging.LevelQuiet)
+		m.printVersion()
+		return errExitSuccess
+	}
+
+	if m.cmd.flag("help").Present() {
+		m.sess.Log().SetLevel(logging.LevelAlways)
+		if err := m.help(); err != nil {
+			return err
+		}
+		return errExitSuccess
+	}
+
 	close(i.logQueue)
 	for r := range i.logQueue {
 		_ = i.logger.Handle(r.Record())
@@ -215,9 +233,6 @@ func (i *initializer) Initialize(m *Main) error {
 	i.logQueue = nil
 	if err := i.unsafeConfigure(m, settingsb); err != nil {
 		return err
-	}
-	if i.migrations != nil {
-		m.sess.Log().NotImplemented("migrations not supported at the moment")
 	}
 
 	for _, opt := range i.pendingOpts {
@@ -233,6 +248,11 @@ func (i *initializer) Initialize(m *Main) error {
 			slog.Bool("readOnly", opt.kind&ReadOnlyOption == ReadOnlyOption),
 		))
 	}
+
+	if i.migrations != nil {
+		m.sess.Log().NotImplemented("migrations not supported at the moment")
+	}
+
 	return nil
 }
 
@@ -360,7 +380,6 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 		// only set app tick tock if current command is root command
 		m.engine.onTick(m.init.tick)
 		m.engine.onTock(m.init.tock)
-		return nil
 	}
 
 	// Handle subcommand is set
@@ -374,6 +393,7 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 			return err
 		}
 	}
+
 	return m.cmd.Err()
 }
 
@@ -382,8 +402,6 @@ func (i *initializer) unsafeConfigure(m *Main, settingsb *settings.Blueprint) er
 	if err := m.sess.opts.set("app.cli.x", m.root.flag("x").Present(), true); err != nil {
 		return err
 	}
-
-	m.sess.opts.setDefaults()
 
 	var profileName string
 	profileName = "default"

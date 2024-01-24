@@ -13,6 +13,8 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+
+	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
 )
 
 type ConsoleHandler struct {
@@ -22,39 +24,73 @@ type ConsoleHandler struct {
 }
 
 func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
+	// l := Level(lvl)
+	// if l == LevelQuiet {
+	// 	return ""
+	// }
+	// var (
+	// 	fg, bg Color
+	// )
+
+	// switch l {
+	// case LevelSystemDebug:
+	// 	fg, bg = fgBlue, 0
+	// case LevelDebug:
+	// 	fg, bg = fgWhite, 0
+	// case LevelInfo:
+	// 	fg, bg = fgCyan, 0
+	// case LevelOk:
+	// 	fg, bg = fgGreen, 0
+	// case LevelNotice:
+	// 	fg, bg = fgBlack, bgCyan
+	// case LevelWarn:
+	// 	fg, bg = fgYellow, 0
+	// case LevelNotImplemented:
+	// 	fg, bg = fgYellow, 0
+	// case LevelDeprecated:
+	// 	fg, bg = fgYellow, 0
+	// case LevelError:
+	// 	fg, bg = fgRed, 0
+	// case LevelBUG:
+	// 	fg, bg = fgWhite, bgRed
+	// case LevelAlways:
+	// 	return ""
+	// default:
+	// 	fg, bg = fgRed, 0
+	// }
+	// return colorize(fmt.Sprintf("%-8s", l.String()), fg, bg, 1, true)
 	l := Level(lvl)
 	if l == LevelQuiet {
 		return ""
 	}
 	var (
-		fg, bg Color
+		fg, bg ansicolor.Color
 	)
 
 	switch l {
 	case LevelSystemDebug:
-		fg, bg = fgBlue, 0
+		fg, bg = ansicolor.FgBlue, 0
 	case LevelDebug:
-		fg, bg = fgWhite, 0
+		fg, bg = ansicolor.FgWhite, 0
 	case LevelInfo:
-		fg, bg = fgCyan, 0
+		fg, bg = ansicolor.FgCyan, 0
 	case LevelOk:
-		fg, bg = fgGreen, 0
+		fg, bg = ansicolor.FgGreen, 0
 	case LevelNotice:
-		fg, bg = fgBlack, bgCyan
+		fg, bg = ansicolor.FgBlack, ansicolor.BgCyan
 	case LevelWarn:
-		fg, bg = fgYellow, 0
-	case LevelNotImplemented:
-		fg, bg = fgYellow, 0
-	case LevelDeprecated:
-		fg, bg = fgYellow, 0
+	case LevelNotImplemented, LevelDeprecated:
+		fg, bg = ansicolor.FgBlack, ansicolor.BgYellow
 	case LevelError:
-		fg, bg = fgRed, 0
+		fg, bg = ansicolor.FgRed, 0
 	case LevelBUG:
-		fg, bg = fgWhite, bgRed
+		fg, bg = ansicolor.FgWhite, ansicolor.BgRed
+	case LevelAlways:
+		return ""
 	default:
-		fg, bg = fgRed, 0
+		fg, bg = ansicolor.FgRed, 0
 	}
-	return colorize(fmt.Sprintf("%-8s", l.String()), fg, bg, 1, true)
+	return ansicolor.TextPadded(fmt.Sprintf("%-8s", l.String()), fg, bg, 1)
 }
 
 func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
@@ -94,7 +130,11 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 			payload += colorize(f.File+":"+strconv.Itoa(f.Line), fgWhite, 0, 2, true)
 		}
 	}
-	h.l.Println(lvlstr, timeStr, msg, payload, clear)
+	if lvl == LevelAlways {
+		h.l.Println(msg, payload, clear)
+	} else {
+		h.l.Println(lvlstr, timeStr, msg, payload, clear)
+	}
 
 	return nil
 }

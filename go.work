@@ -4,6 +4,7 @@ use (
 	.
 	./addons/third-party/github
 	./cmd/hap
+	./pkg/cli/ansicolor
 	./pkg/devel/testutils
 	./pkg/scheduling/cron
 	./pkg/strings/bexp

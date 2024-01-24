@@ -68,7 +68,7 @@ func hap() *happy.Main {
 		WithService(service()).
 		// WithCommand(nil).
 		// WithFlag(nil).
-		WithLogger(logging.Console(logging.LevelOk)).
+		WithLogger(logging.Console(logging.LevelSystemDebug)).
 		WithOptions(happy.Option("somekey", "somevalue"))
 
 	return main

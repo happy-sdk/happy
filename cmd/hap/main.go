@@ -17,7 +17,7 @@ func main() {
 		sess.Log().Info("prepare Happy-SDK")
 
 		for _, s := range sess.Profile().All() {
-			sess.Log().Ln(s.Key(), slog.String("value", s.Value().String()))
+			sess.Log().Println(s.Key(), slog.String("value", s.Value().String()))
 		}
 
 		loader := sess.ServiceLoader(
@@ -35,8 +35,19 @@ func main() {
 
 	main.Do(func(sess *happy.Session, args happy.Args) error {
 		sess.Log().Info("main.Do")
+
+		sess.Log().SystemDebug("main.Do SystemDebug")
+		sess.Log().Debug("main.Do Debug")
+		sess.Log().Info("main.Do Info")
+		sess.Log().Ok("main.Do Ok")
+		sess.Log().Notice("main.Do Notice")
+		sess.Log().NotImplemented("main.Do NotImplemented")
+		sess.Log().Warn("main.Do Warn")
+		sess.Log().Deprecated("main.Do Deprecated")
+		sess.Log().Error("main.Do Error")
+		sess.Log().BUG("main.Do BUG")
+		sess.Log().Println("main.Do Println")
 		<-sess.UserClosed()
-		sess.Log().Info("main.Do DONE")
 		return nil
 	})
 
