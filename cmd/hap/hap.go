@@ -5,8 +5,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/addons/third-party/github"
 	"github.com/happy-sdk/happy/cmd/hap/addons/releaser"
@@ -67,7 +65,7 @@ func hap() *happy.Main {
 			},
 		)).
 		WithMigrations(migrations.New()).
-		WithService(backgroundService()).
+		WithService(service()).
 		// WithCommand(nil).
 		// WithFlag(nil).
 		WithLogger(logging.Console(logging.LevelOk)).
@@ -83,13 +81,4 @@ func githubAddon() *happy.Addon {
 			Repo:  "happy",
 		},
 	)
-}
-
-func backgroundService() *happy.Service {
-	svc := happy.NewService("background")
-	svc.OnTick(func(sess *happy.Session, ts time.Time, delta time.Duration) error {
-		sess.Log().Info("backgroundService.OnTick")
-		return nil
-	})
-	return svc
 }

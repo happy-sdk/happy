@@ -6,7 +6,6 @@ package main
 
 import (
 	"log/slog"
-	"time"
 
 	"github.com/happy-sdk/happy"
 )
@@ -53,16 +52,6 @@ func main() {
 
 	main.AfterAlways(func(sess *happy.Session, err error) error {
 		sess.Log().Info("main.AfterAlways")
-		return nil
-	})
-
-	main.Tick(func(sess *happy.Session, ts time.Time, delta time.Duration) error {
-		sess.Log().Info("main.Tick")
-		return nil
-	})
-
-	main.Tock(func(sess *happy.Session, delta time.Duration, tps int) error {
-		sess.Log().Info("main.Tock")
 		return nil
 	})
 
