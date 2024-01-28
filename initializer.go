@@ -399,7 +399,7 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 
 // configure is called after logger is set to correct level.
 func (i *initializer) unsafeConfigure(m *Main, settingsb *settings.Blueprint) error {
-	if err := m.sess.opts.set("app.cli.x", m.root.flag("x").Present(), true); err != nil {
+	if err := m.sess.opts.set("app.main.exec.x", m.root.flag("x").Present(), true); err != nil {
 		return err
 	}
 

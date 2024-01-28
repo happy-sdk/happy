@@ -82,7 +82,7 @@ func AskForInput(q string) string {
 func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
-	if sess.X() {
+	if sess.Get("app.main.exec.x").Bool() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
 	}
 
@@ -128,7 +128,7 @@ func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
 			fmt.Println(string(ee.Stderr))
-			sess.Log().Error("cmd error", ee)
+			sess.Log().Error(ee.Error())
 		}
 
 		return err
@@ -140,7 +140,7 @@ func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
 func execCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
-	if sess.X() {
+	if sess.Get("app.main.exec.x").Bool() {
 		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
 	}
 
@@ -161,7 +161,7 @@ func execCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 	var ee *exec.ExitError
 	if errors.As(err, &ee) {
 		fmt.Println(string(ee.Stderr))
-		sess.Log().Error("cmd error", ee)
+		sess.Log().Error(ee.Error())
 		return out, err
 	}
 	return out, err

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/pkg/vars"
 )
 
 func main() {
@@ -16,9 +17,20 @@ func main() {
 	main.BeforeAlways(func(sess *happy.Session, flags happy.Flags) error {
 		sess.Log().Info("prepare Happy-SDK")
 
+		sess.Log().Println("SETTINGS")
 		for _, s := range sess.Profile().All() {
 			sess.Log().Println(s.Key(), slog.String("value", s.Value().String()))
 		}
+		sess.Log().Println("OPTIONS")
+		sess.Opts().Range(func(v vars.Variable) bool {
+			sess.Log().Println(v.Name(), slog.String("value", v.String()))
+			return true
+		})
+		sess.Log().Println("CONFIG")
+		sess.Config().Range(func(v vars.Variable) bool {
+			sess.Log().Println(v.Name(), slog.String("value", v.String()))
+			return true
+		})
 
 		loader := sess.ServiceLoader(
 			"background",
