@@ -6,6 +6,7 @@ package vars
 
 import (
 	"encoding/json"
+	"sort"
 	"sync"
 	"sync/atomic"
 )
@@ -172,7 +173,19 @@ func (m *Map) LoadOrStore(key string, value any) (actual Variable, loaded bool) 
 // false after a constant number of calls.
 func (m *Map) Range(f func(v Variable) bool) {
 	m.mu.RLock()
-	for _, v := range m.db {
+	keys := make([]string, len(m.db))
+	i := 0
+	for key := range m.db {
+		keys[i] = key
+		i++
+	}
+	m.mu.RUnlock()
+
+	sort.Strings(keys)
+
+	m.mu.RLock()
+	for _, key := range keys {
+		v := m.db[key]
 		m.mu.RUnlock()
 		if !f(v) {
 			break
