@@ -50,6 +50,7 @@ type Session struct {
 	allowUserCancel bool
 	terminated      bool
 	disposed        bool
+	valid           bool
 }
 
 // Ready returns channel which blocks until session considers application to be ready.
@@ -94,6 +95,7 @@ func (s *Session) Destroy(err error) {
 
 	s.mu.Lock()
 	s.disposed = true
+
 	// s.err is nil otherwise we would not be here
 	s.err = err
 
@@ -226,8 +228,11 @@ func (s *Session) String() string {
 
 func (s *Session) Get(key string) vars.Variable {
 	if !s.Has(key) {
-		s.logger.Warn("accessing non existing session option", slog.String("key", key))
-
+		s.logger.LogDepth(3, logging.LevelWarn, "accessing non existing session option", slog.String("key", key))
+		return vars.EmptyVariable
+	}
+	if s.profile != nil && s.profile.Has(key) {
+		return s.profile.Get(key).Value()
 	}
 	return s.opts.Get(key)
 }
@@ -260,6 +265,9 @@ func (s *Session) Set(key string, val any) error {
 }
 
 func (s *Session) Has(key string) bool {
+	if s.profile != nil && s.profile.Has(key) {
+		return true
+	}
 	return s.opts.Has(key)
 }
 
@@ -367,8 +375,15 @@ func (s *Session) start() (err error) {
 func (s *Session) setReady() {
 	s.mu.Lock()
 	s.readyCancel()
+	s.valid = false
 	s.mu.Unlock()
 	s.Log().SystemDebug("session ready")
+}
+
+func (s *Session) isValid() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.valid
 }
 
 func (s *Session) setProfile(profile *settings.Profile) {
