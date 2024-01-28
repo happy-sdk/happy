@@ -99,7 +99,7 @@ func (m *Main) WithCommand(cmd *Command) *Main {
 }
 
 // WithFlag adds flag to the application.
-func (m *Main) WithFlag(flag varflag.Flag) *Main {
+func (m *Main) WithFlag(flag varflag.FlagCreateFunc) *Main {
 	const withFlagMsg = "with flag"
 	if init, ok := m.canConfigure(withFlagMsg); ok {
 		if flag == nil {
@@ -109,7 +109,6 @@ func (m *Main) WithFlag(flag varflag.Flag) *Main {
 		m.mu.RLock()
 		m.root.AddFlag(flag)
 		m.mu.RUnlock()
-		init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, withFlagMsg, 3, slog.String("name", flag.Name())))
 	}
 	return m
 }
@@ -217,7 +216,7 @@ func (m *Main) Run() {
 		return
 	}
 
-	if m.cmd.flag("help").Present() || m.cmd == nil {
+	if m.root.flag("help").Present() || m.cmd == nil {
 		m.sess.Log().SetLevel(logging.LevelAlways)
 		if err := m.help(); err != nil {
 			m.sess.Log().Error("failed to print help", slog.String("err", err.Error()))
@@ -322,22 +321,6 @@ func (m *Main) executeBeforeActions() error {
 }
 
 func (m *Main) help() error {
-	m.sess.Log().Println("SETTINGS")
-	for _, s := range m.sess.Profile().All() {
-		m.sess.Log().Println(s.Key(), slog.String("value", s.Value().String()))
-	}
-	m.sess.Log().Println("OPTIONS")
-	m.sess.Opts().Range(func(v vars.Variable) bool {
-		m.sess.Log().Println(v.Name(), slog.String("value", v.String()))
-		return true
-	})
-	m.sess.Log().Println("CONFIG")
-	m.sess.Config().Range(func(v vars.Variable) bool {
-		m.sess.Log().Println(v.Name(), slog.String("value", v.String()))
-		return true
-	})
-	fmt.Println("---------------------")
-
 	h := help.New(
 		help.Info{
 			Name:           m.sess.Get("app.name").String(),
@@ -348,8 +331,19 @@ func (m *Main) help() error {
 			License:        m.sess.Get("app.license").String(),
 			Address:        m.sess.Get("app.address").String(),
 			Usage:          m.cmd.Usage(),
+			Info:           m.cmd.Info(),
 		},
 	)
+
+	for _, cmd := range m.cmd.getSubCommands() {
+		h.AddCommand(cmd.category, cmd.name, cmd.desc)
+	}
+
+	if m.cmd != m.root {
+		h.AddCommandFlags(m.cmd.getFlags())
+	}
+
+	h.AddGlobalFlags(m.root.getFlags())
 
 	return h.Print()
 }
@@ -427,7 +421,13 @@ func (m *Main) exit(code int) {
 }
 
 func (m *Main) save() error {
+	if !m.sess.isValid() {
+		return fmt.Errorf("session is not valid, skip saving profile")
+	}
 	profileFilePath := m.sess.Get("app.profile.file").String()
+	if len(profileFilePath) == 0 {
+		return fmt.Errorf("profile file path is empty")
+	}
 	m.sess.Log().SystemDebug("app.save",
 		slog.String("profile", m.sess.Get("app.profile.name").String()),
 		slog.String("file", profileFilePath),
