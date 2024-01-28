@@ -285,7 +285,7 @@ func getRuntimeConfig() []OptionArg {
 		{
 			key:       "app.main.exec.x",
 			value:     "",
-			desc:      "-x flag set to print all commands as executed",
+			desc:      "-x flag is set to print all commands as executed",
 			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},

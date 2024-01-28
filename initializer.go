@@ -243,7 +243,7 @@ func (i *initializer) Initialize(m *Main) error {
 	}
 
 	m.root.desc = m.sess.Get("app.description").String()
-	if !m.cmd.flag("help").Present() && i.migrations != nil {
+	if !m.root.flag("help").Present() && i.migrations != nil {
 		m.sess.Log().NotImplemented("migrations not supported at the moment")
 	}
 
@@ -325,7 +325,7 @@ func (i *initializer) unsafeInitAddonSettingsAndCommands(m *Main, settingsb *set
 			if err := cmd.Err(); err != nil {
 				return err
 			}
-			m.WithCommand(cmd)
+			m.root.AddSubCommand(cmd)
 			provided = true
 		}
 		// settings
@@ -352,24 +352,17 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 		Aliases []string
 	}{
 		{"version", false, "print application version", nil},
-		{"x", false, "the -x flag prints all the external commands as they are executed.", nil},
+		{"x", false, "the -x flag prints all the cli commands as they are executed.", nil},
 		{"system-debug", false, "enable system debug log level (very verbose)", nil},
 		{"debug", false, "enable debug log level. when debug flag is after the command then debug level will be enabled only for that command", nil},
 		{"verbose", false, "enable verbose log level", []string{"v"}},
 		{"help", false, "display help or help for the command. [...command --help]", []string{"h"}},
 	}
 	for _, flag := range boolflags {
-		f, err := varflag.Bool(flag.Name, flag.Value, flag.Usage, flag.Aliases...)
-		if err != nil {
-			return err
-		}
-		m.root.AddFlag(f)
+		m.root.AddFlag(varflag.BoolFunc(flag.Name, flag.Value, flag.Usage, flag.Aliases...))
 	}
-	profileFlag, err := varflag.New("profile", "default", "session profile to be used")
-	if err != nil {
-		return err
-	}
-	m.root.AddFlag(profileFlag)
+
+	m.root.AddFlag(varflag.NewFunc("profile", "default", "session profile to be used"))
 
 	if err := m.root.verify(); err != nil {
 		return err
