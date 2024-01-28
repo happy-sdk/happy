@@ -330,8 +330,8 @@ func (m *Main) help() error {
 			CopyrightSince: m.sess.Get("app.copyright.since").Int(),
 			License:        m.sess.Get("app.license").String(),
 			Address:        m.sess.Get("app.address").String(),
-			Usage:          m.cmd.Usage(),
-			Info:           m.cmd.Info(),
+			Usage:          m.cmd.getUsage(),
+			Info:           m.cmd.getInfo(),
 		},
 	)
 

@@ -322,7 +322,7 @@ func (i *initializer) unsafeInitAddonSettingsAndCommands(m *Main, settingsb *set
 	var provided bool
 	for _, addon := range i.addons {
 		for _, cmd := range addon.cmds {
-			if err := cmd.Err(); err != nil {
+			if err := cmd.err(); err != nil {
 				return err
 			}
 			m.root.AddSubCommand(cmd)
@@ -387,13 +387,8 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 		return err
 	}
 	m.cmd = cmd
-	if m.cmd != m.root {
-		if err := m.cmd.Err(); err != nil {
-			return err
-		}
-	}
 
-	return m.cmd.Err()
+	return m.cmd.err()
 }
 
 // configure is called after logger is set to correct level.

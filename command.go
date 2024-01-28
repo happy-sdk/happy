@@ -7,10 +7,9 @@ package happy
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
-
-	"log/slog"
 
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
@@ -95,35 +94,6 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	return c
 }
 
-func (c *Command) Name() string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.name
-}
-
-func (c *Command) Err() error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return errors.Join(c.errs...)
-}
-
-func (c *Command) Usage() []string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.usage
-}
-
-func (c *Command) Description() string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.desc
-}
-
-func (c *Command) Parents() []string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.parents
-}
 func (c *Command) AddInfo(paragraph string) {
 	if !c.tryLock("AddInfo") {
 		return
@@ -131,24 +101,6 @@ func (c *Command) AddInfo(paragraph string) {
 	defer c.mu.Unlock()
 
 	c.info = append(c.info, paragraph)
-}
-
-func (c *Command) Info() []string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.info
-}
-
-func (c *Command) tryLock(method string) bool {
-	if !c.mu.TryLock() {
-		slog.Warn(
-			"wrong command usage, should not be called when application is running",
-			slog.String("command", c.name),
-			slog.String("method", method),
-		)
-		return false
-	}
-	return true
 }
 
 func (c *Command) AddFlag(fn varflag.FlagCreateFunc) {
@@ -314,7 +266,7 @@ SubCommands:
 	return nil
 }
 
-// Flag looks up flag with given name and returns flags.Interface.
+// flag looks up flag with given name and returns flags.Interface.
 // If no flag was found empty bool flag will be returned.
 // Instead of returning error you can check returned flags .IsPresent.
 func (c *Command) flag(name string) varflag.Flag {
@@ -327,6 +279,54 @@ func (c *Command) flag(name string) varflag.Flag {
 	}
 
 	return f
+}
+
+func (c *Command) tryLock(method string) bool {
+	if !c.mu.TryLock() {
+		slog.Warn(
+			"wrong command usage, should not be called when application is running",
+			slog.String("command", c.name),
+			slog.String("method", method),
+		)
+		return false
+	}
+	return true
+}
+
+func (c *Command) getDescription() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.desc
+}
+
+func (c *Command) getParents() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.parents
+}
+
+func (c *Command) getInfo() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.info
+}
+
+func (c *Command) getUsage() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.usage
+}
+
+func (c *Command) getName() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.name
+}
+
+func (c *Command) err() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return errors.Join(c.errs...)
 }
 
 func (c *Command) getFlags() varflag.Flags {

@@ -375,7 +375,7 @@ func (s *Session) start() (err error) {
 func (s *Session) setReady() {
 	s.mu.Lock()
 	s.readyCancel()
-	s.valid = false
+	s.valid = true
 	s.mu.Unlock()
 	s.Log().SystemDebug("session ready")
 }
