@@ -19,12 +19,13 @@ import (
 type FlagSet struct {
 	mu      sync.RWMutex
 	name    string
-	argsn   int
+	argc    int
 	present bool
 	flags   []Flag
 	sets    []Flags
 	args    []vars.Value
 	pos     int
+	parsed  bool
 }
 
 // NewFlagSet is wrapper to parse flags together.
@@ -33,13 +34,27 @@ type FlagSet struct {
 // argsn is number of command line arguments allowed within this set.
 // If argsn is -gt 0 then parser will stop after finding argsn+1 argument
 // which is not a flag.
-func NewFlagSet(name string, argsn int) (*FlagSet, error) {
+func NewFlagSet(name string, argc int) (*FlagSet, error) {
 	if name == "/" || (len(os.Args) > 0 && name == filepath.Base(os.Args[0]) || name == os.Args[0]) {
 		name = "/"
 	} else if !ValidFlagName(name) {
 		return nil, fmt.Errorf("%w: name %q is not valid for flag set", ErrFlag, name)
 	}
-	return &FlagSet{name: name, argsn: argsn}, nil
+	return &FlagSet{name: name, argc: argc}, nil
+}
+
+func SetArgcMax(flags Flags, max int) error {
+	s, ok := flags.(*FlagSet)
+	if !ok {
+		return fmt.Errorf("%w: can not call SetArgcMax for %T", ErrFlag, flags)
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.parsed {
+		return fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, s.name)
+	}
+	s.argc = max
+	return nil
 }
 
 // Name returns name of the flag set.
@@ -136,7 +151,7 @@ func (s *FlagSet) Args() []vars.Value {
 func (s *FlagSet) AcceptsArgs() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.argsn > 0
+	return s.argc > 0
 }
 
 // Flags returns slice of flags in this set.
@@ -158,6 +173,10 @@ func (s *FlagSet) Parse(args []string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if s.parsed {
+		return fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, s.name)
+	}
+	s.parsed = true
 	var currargs []string
 	if s.name != "/" && s.name != "*" && s.name != filepath.Base(os.Args[0]) {
 		for i, arg := range args {
@@ -214,7 +233,7 @@ func (s *FlagSet) Parse(args []string) error {
 }
 
 func (s *FlagSet) extractArgs(args []string) error {
-	if len(args) == 0 || s.argsn == 0 {
+	if len(args) == 0 || s.argc == 0 {
 		return nil
 	}
 	// rm subcmds
@@ -247,7 +266,7 @@ includessubset:
 		if err != nil {
 			return err
 		}
-		if s.argsn == -1 || len(s.args) <= s.argsn {
+		if s.argc == -1 || len(s.args) <= s.argc {
 			s.args = append(s.args, a)
 		} else {
 			break

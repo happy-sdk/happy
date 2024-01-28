@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -218,14 +219,6 @@ func (i *initializer) Initialize(m *Main) error {
 		return errExitSuccess
 	}
 
-	if m.cmd.flag("help").Present() {
-		m.sess.Log().SetLevel(logging.LevelAlways)
-		if err := m.help(); err != nil {
-			return err
-		}
-		return errExitSuccess
-	}
-
 	close(i.logQueue)
 	for r := range i.logQueue {
 		_ = i.logger.Handle(r.Record())
@@ -249,7 +242,8 @@ func (i *initializer) Initialize(m *Main) error {
 		))
 	}
 
-	if i.migrations != nil {
+	m.root.desc = m.sess.Get("app.description").String()
+	if !m.cmd.flag("help").Present() && i.migrations != nil {
 		m.sess.Log().NotImplemented("migrations not supported at the moment")
 	}
 
@@ -291,8 +285,8 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 	}
 
 	slugSpec, slugErr := settingsb.GetSpec("app.slug")
-	if err := errors.Join(slugErr); err != nil {
-		return err
+	if slugErr != nil {
+		return slugErr
 	}
 	m.slug = slugSpec.Value
 
@@ -303,6 +297,17 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 		return err
 	}
 	i.log(logging.NewQueueRecord(logging.LevelSystemDebug, "app slug set to", 2, slog.String("slug", m.slug)))
+
+	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argc.max")
+	if mainArgcMaxErr != nil {
+		return mainArgcMaxErr
+	}
+	argcmax, err := strconv.ParseUint(mainArgcMaxSpec.Value, 10, 64)
+	if err != nil {
+		return err
+	}
+	m.root.setArgcMax(uint(argcmax))
+
 	return nil
 }
 
@@ -369,6 +374,7 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 	if err := m.root.verify(); err != nil {
 		return err
 	}
+
 	if err := m.root.flags.Parse(os.Args); err != nil {
 		return err
 	}

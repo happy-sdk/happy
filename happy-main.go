@@ -18,6 +18,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
+	"github.com/happy-sdk/happy/sdk/cli/help"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/migration"
@@ -216,19 +217,20 @@ func (m *Main) Run() {
 		return
 	}
 
+	if m.cmd.flag("help").Present() || m.cmd == nil {
+		m.sess.Log().SetLevel(logging.LevelAlways)
+		if err := m.help(); err != nil {
+			m.sess.Log().Error("failed to print help", slog.String("err", err.Error()))
+			return
+		}
+		return
+	}
+
 	// when we disable os.Exit e.g. for tests
 	// and use channel which would block main thread.
 	if m.exitTrap {
 		m.exitCh = make(chan struct{}, 1)
 		defer close(m.exitCh)
-	}
-
-	if m.cmd == nil {
-		if err := m.help(); err != nil {
-			m.sess.Log().Error("help error", slog.String("err", err.Error()))
-			m.exit(1)
-			return
-		}
 	}
 
 	// Start application main process
@@ -320,8 +322,36 @@ func (m *Main) executeBeforeActions() error {
 }
 
 func (m *Main) help() error {
-	m.sess.Log().Println("--")
-	return nil
+	m.sess.Log().Println("SETTINGS")
+	for _, s := range m.sess.Profile().All() {
+		m.sess.Log().Println(s.Key(), slog.String("value", s.Value().String()))
+	}
+	m.sess.Log().Println("OPTIONS")
+	m.sess.Opts().Range(func(v vars.Variable) bool {
+		m.sess.Log().Println(v.Name(), slog.String("value", v.String()))
+		return true
+	})
+	m.sess.Log().Println("CONFIG")
+	m.sess.Config().Range(func(v vars.Variable) bool {
+		m.sess.Log().Println(v.Name(), slog.String("value", v.String()))
+		return true
+	})
+	fmt.Println("---------------------")
+
+	h := help.New(
+		help.Info{
+			Name:           m.sess.Get("app.name").String(),
+			Description:    m.cmd.desc,
+			Version:        m.sess.Get("app.version").String(),
+			CopyrightBy:    m.sess.Get("app.copyright.by").String(),
+			CopyrightSince: m.sess.Get("app.copyright.since").Int(),
+			License:        m.sess.Get("app.license").String(),
+			Address:        m.sess.Get("app.address").String(),
+			Usage:          m.cmd.Usage(),
+		},
+	)
+
+	return h.Print()
 }
 
 func (m *Main) log(lvl logging.Level, msg string, attrs ...slog.Attr) {
