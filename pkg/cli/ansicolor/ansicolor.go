@@ -5,26 +5,19 @@
 // Package ansicolor provides utilities for colorizing text in console applications.
 package ansicolor
 
-import (
-	"strconv"
-)
-
-type Color uint
+type Color uint32
 
 const (
-	fgColor Color = 1 << 14 // 14th bit
-	bgColor Color = 1 << 15 // 15th bit
+	fgBit Color = 1 << 24
+	bgBit Color = 1 << 25
 
-	fgShift = 16 // from 16th bit
-	bgShift = 24 // from 24th bit
-
-	fgRGB Color = 1 << 16 // New flag for RGB foreground
-	bgRGB Color = 1 << 17 // New flag for RGB background
+	fgShift = 16
+	bgShift = 8
 )
 
 // Foreground color constants
 const (
-	FgBlack Color = (iota << fgShift) | fgColor
+	FgBlack Color = iota | fgBit
 	FgRed
 	FgGreen
 	FgYellow
@@ -32,12 +25,11 @@ const (
 	FgMagenta
 	FgCyan
 	FgWhite
-	fgMask = (0xff << fgShift) | fgColor
 )
 
 // Background color constants
 const (
-	BgBlack Color = (iota << bgShift) | bgColor
+	BgBlack Color = iota | bgBit
 	BgRed
 	BgGreen
 	BgYellow
@@ -45,7 +37,19 @@ const (
 	BgMagenta
 	BgCyan
 	BgWhite
-	bgMask = (0xff << bgShift) | bgColor
+)
+
+type Flag uint8
+
+const (
+	Reset     Flag = 0
+	Bold      Flag = 1 << iota // 1
+	Dim                        // 2
+	Italic                     // 4
+	Underline                  // 8
+	Blink                      // 16
+	Reverse                    // 32
+	Hidden                     // 64
 )
 
 const (
@@ -54,165 +58,73 @@ const (
 )
 
 // Text styles a given string with foreground and background colors.
-// It applies ANSI color codes based on the provided foreground (fg) and background (bg) colors.
-// The 'format' parameter can be used to specify additional formatting options, such as bold or underline, using ANSI codes.
-// If fg and bg are both zero, the original text is returned without any styling.
-//
-// Example:
-//
-//	styledText := ansicolor.Text("Hello, world!", ansicolor.FgRed, ansicolor.BgBlack, 1)
-//	fmt.Println(styledText) // Prints "Hello, world!" in red with a black background
-//
-// Parameters:
-//
-//	text   - The string to be styled.
-//	fg     - The foreground color. Use the Fg* constants defined in the package.
-//	bg     - The background color. Use the Bg* constants defined in the package.
-//	format - Additional formatting options (e.g., 1 for bold, 4 for underline).
-//
-// Returns:
-//
-//	A string with ANSI color styling applied.
-//
-// Text styles a given string with foreground and background colors.
-// It applies ANSI color codes based on the provided foreground (fg) and background (bg) colors.
-// The 'format' parameter can be used to specify additional formatting options, such as bold or underline, using ANSI codes.
-// If fg and bg are both zero, the original text is returned without any styling.
-func Text(text string, fg, bg Color, format uint) string {
-	fgCode := ""
-	bgCode := ""
-	formatCode := ""
-
-	if format != 0 {
-		formatCode = strconv.Itoa(int(format))
-	}
-
-	if fg+bg != 0 { // Check if either fg or bg color is set
-		fgCode = buildColorCode(fg, fgMask, fgShift, '3', '9')
-		bgCode = buildColorCode(bg, bgMask, bgShift, '4', '1')
-	}
-
-	if formatCode == "" && fgCode == "" && bgCode == "" {
+func Text(text string, fg, bg Color, format Flag) string {
+	style := buildStyleCode(fg, bg, format)
+	if style == "" {
 		return text
 	}
-
-	combinedCode := ""
-	if formatCode != "" {
-		combinedCode = formatCode
-		if fgCode != "" || bgCode != "" {
-			combinedCode += ";" // Add semicolon only if there are color codes
-		}
-	}
-	combinedCode += fgCode
-	if fgCode != "" && bgCode != "" {
-		combinedCode += ";" // Add semicolon between fg and bg codes
-	}
-	combinedCode += bgCode
-
-	return esc + combinedCode + "m" + text + clear
+	return style + text + clear
 }
 
-// TextPadded styles a given string with foreground and background colors and pads it with a space on both sides.
-// This function is similar to Text but adds a single space before and after the text for better readability in certain contexts.
-// The 'format' parameter allows specifying additional formatting options like bold or underline using ANSI codes.
-//
-// Example:
-//
-//	paddedText := ansicolor.TextPadded("Hello, world!", ansicolor.FgGreen, ansicolor.BgWhite, 1)
-//	fmt.Println(paddedText) // Prints " Hello, world! " with green text on a white background, in bold.
-//
-// Parameters:
-//
-//	text   - The string to be styled and padded.
-//	fg     - The foreground color. Use the Fg* constants defined in the package.
-//	bg     - The background color. Use the Bg* constants defined in the package.
-//	format - Additional formatting options (e.g., 1 for bold, 4 for underline).
-//
-// Returns:
-//
-//	A string with ANSI color styling and padding applied.
-func TextPadded(text string, fg, bg Color, format uint) string {
-	const sp = " "
-	return Text(sp+text+sp, fg, bg, format)
+// TextPadded styles and pads the text with a space on both sides.
+func TextPadded(text string, fg, bg Color, format Flag) string {
+	return Text(" "+text+" ", fg, bg, format)
 }
 
 // FgRGB creates a foreground color from RGB values.
-// This function enables users to specify custom colors using RGB (red, green, blue) values.
-// Each color component (r, g, b) should be a byte value ranging from 0 to 255.
-//
-// The function combines these values into a single Color type, marked with an internal flag (fgRGB)
-// indicating that the color is specified in RGB format.
-//
-// Example:
-//
-//	redColor := ansicolor.FgRGB(255, 0, 0) // Creates a bright red foreground color
-//
-// Parameters:
-//
-//	r - Red component of the color, a byte value from 0 to 255.
-//	g - Green component of the color, a byte value from 0 to 255.
-//	b - Blue component of the color, a byte value from 0 to 255.
-//
-// Returns:
-//
-//	A Color value representing the specified RGB color for the foreground.
 func FgRGB(r, g, b byte) Color {
-	return Color(r)<<8 | Color(g)<<16 | Color(b)<<24 | fgRGB
+	return Color(r)<<fgShift | Color(g)<<bgShift | Color(b) | fgBit
 }
 
 // BgRGB creates a background color from RGB values.
-// Similar to FgRGB, this function allows specifying background colors using RGB values.
-// It takes three byte values (r, g, b), each representing the intensity of the red, green, and blue components.
-//
-// The function encodes these values into a Color type, with an internal flag (bgRGB)
-// to indicate RGB format for background color.
-//
-// Example:
-//
-//	blueBackground := ansicolor.BgRGB(0, 0, 255) // Creates a bright blue background color
-//
-// Parameters:
-//
-//	r - Red component of the color, a byte value from 0 to 255.
-//	g - Green component of the color, a byte value from 0 to 255.
-//	b - Blue component of the color, a byte value from 0 to 255.
-//
-// Returns:
-//
-//	A Color value representing the specified RGB color for the background.
 func BgRGB(r, g, b byte) Color {
-	return Color(r)<<8 | Color(g)<<16 | Color(b)<<24 | bgRGB
+	return Color(r)<<fgShift | Color(g)<<bgShift | Color(b) | bgBit
 }
 
-// buildColorCode constructs the ANSI color code for a given color.
-// buildColorCode constructs the ANSI color code for a given color.
-func buildColorCode(color, mask Color, shift uint, base, brightBase byte) string {
-	if color == 0 {
+func buildStyleCode(fg, bg Color, format Flag) string {
+	var parts []string
+
+	if format != 0 {
+		parts = append(parts, coloritoa(byte(format)))
+	}
+
+	if fg&fgBit != 0 {
+		parts = append(parts, buildColorCode(fg, '3'))
+	}
+
+	if bg&bgBit != 0 {
+		parts = append(parts, buildColorCode(bg, '4'))
+	}
+
+	if len(parts) == 0 {
 		return ""
 	}
 
-	// Check if the color is a standard ANSI color
-	if color&fgColor != 0 || color&bgColor != 0 {
-		colorValue := (color & mask) >> shift
-		switch {
-		case colorValue >= 8 && colorValue <= 15: // Bright colors
-			return string([]byte{brightBase, '0' + byte(colorValue-8)})
-		case colorValue >= 0 && colorValue <= 7: // Normal colors
-			return string([]byte{base, '0' + byte(colorValue)})
-		}
+	return esc + stringJoin(parts, ";") + "m"
+}
+
+func buildColorCode(color Color, baseChar byte) string {
+	if color&0xFF0000 != 0 { // RGB color
+		r := (color >> fgShift) & 0xFF
+		g := (color >> bgShift) & 0xFF
+		b := color & 0xFF
+		return string(baseChar) + "8;2;" + coloritoa(byte(r)) + ";" + coloritoa(byte(g)) + ";" + coloritoa(byte(b))
 	}
 
-	// Check for RGB color flag
-	if color&fgRGB != 0 || color&bgRGB != 0 {
-		r, g, b := byte(color>>16), byte(color>>8), byte(color)
-		colorType := "38" // Default to foreground
-		if color&bgRGB != 0 {
-			colorType = "48" // Use background
-		}
-		return "\033[" + colorType + ";2;" + strconv.Itoa(int(r)) + ";" + strconv.Itoa(int(g)) + ";" + strconv.Itoa(int(b)) + "m"
-	}
+	// Standard color
+	colorValue := color & 0xFF
+	return string(baseChar) + coloritoa(byte(colorValue))
+}
 
-	return ""
+func stringJoin(elements []string, delimiter string) string {
+	switch len(elements) {
+	case 0:
+		return ""
+	case 1:
+		return elements[0]
+	default:
+		return elements[0] + delimiter + stringJoin(elements[1:], delimiter)
+	}
 }
 
 // coloritoa converts a byte to a string. Used in constructing ANSI color codes.
