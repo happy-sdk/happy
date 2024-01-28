@@ -15,6 +15,7 @@ import (
 type Settings struct {
 	Name                 settings.String   `key:"app.name" default:"Happy Prototype"`
 	Slug                 settings.String   `key:"app.slug" default:""`
+	Description          settings.String   `key:"app.description" default:""`
 	CopyrightBy          settings.String   `key:"app.copyright.by"`
 	CopyrightSince       settings.Uint     `key:"app.copyright.since" default:"0"`
 	License              settings.String   `key:"app.license"`
