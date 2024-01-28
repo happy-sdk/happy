@@ -7,6 +7,7 @@ package happy
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"log/slog"
@@ -25,9 +26,10 @@ var (
 type Command struct {
 	mu       sync.Mutex
 	name     string
-	usage    string
+	usage    []string
 	desc     string
 	category string
+	info     []string
 
 	flags       varflag.Flags
 	parent      *Command
@@ -81,7 +83,10 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	c.errs = append(c.errs, err)
 	c.flags = flags
 
-	c.usage = opts.Get("usage").String()
+	usage := opts.Get("usage").String()
+	if usage != "" {
+		c.usage = append(c.usage, opts.Get("usage").String())
+	}
 	c.desc = opts.Get("description").String()
 	c.category = opts.Get("category").String()
 	c.allowOnFreshInstall = opts.Get("init.allowed").Bool()
@@ -102,7 +107,7 @@ func (c *Command) Err() error {
 	return errors.Join(c.errs...)
 }
 
-func (c *Command) Usage() string {
+func (c *Command) Usage() []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.usage
@@ -119,6 +124,20 @@ func (c *Command) Parents() []string {
 	defer c.mu.Unlock()
 	return c.parents
 }
+func (c *Command) AddInfo(paragraph string) {
+	if !c.tryLock("AddInfo") {
+		return
+	}
+	defer c.mu.Unlock()
+
+	c.info = append(c.info, paragraph)
+}
+
+func (c *Command) Info() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.info
+}
 
 func (c *Command) tryLock(method string) bool {
 	if !c.mu.TryLock() {
@@ -132,12 +151,16 @@ func (c *Command) tryLock(method string) bool {
 	return true
 }
 
-func (c *Command) AddFlag(f varflag.Flag) {
+func (c *Command) AddFlag(fn varflag.FlagCreateFunc) {
 	if !c.tryLock("AddFlag") {
 		return
 	}
 	defer c.mu.Unlock()
 
+	f, cerr := fn()
+	if cerr != nil {
+		c.errs = append(c.errs, fmt.Errorf("%w: %s", ErrCommandFlags, cerr.Error()))
+	}
 	err := c.flags.Add(f)
 	if err != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: %s", ErrCommandFlags, err.Error()))
@@ -226,10 +249,38 @@ func (c *Command) AddSubCommand(cmd *Command) {
 	c.subCommands[cmd.name] = cmd
 }
 
+func (c *Command) setArgcMax(max uint) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.argcmax = max
+	return varflag.SetArgcMax(c.flags, int(max))
+}
+
 // Verify veifies command,  flags and the sub commands
 //   - verify that commands are valid and have atleast Do function
 //   - verify that subcommand do not shadow flags of any parent command
 func (c *Command) verify() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	var usage []string
+	usage = append(usage, c.parents...)
+	usage = append(usage, c.name)
+	if c.flags.Len() > 0 {
+		usage = append(usage, "[flags]")
+	}
+	if c.subCommands != nil {
+		usage = append(usage, "[subcommand]")
+	}
+	c.usage = append(c.usage, strings.Join(usage, " "))
+
+	if c.flags.AcceptsArgs() {
+		var withargs []string
+		withargs = append(withargs, c.parents...)
+		withargs = append(withargs, c.name)
+		withargs = append(withargs, fmt.Sprintf("[args...] // max %d", c.argcmax))
+		c.usage = append(c.usage, strings.Join(withargs, " "))
+	}
 
 	if len(c.errs) > 0 {
 		err := errors.Join(c.errs...)
