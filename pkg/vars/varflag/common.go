@@ -66,6 +66,12 @@ func New(name string, value string, usage string, aliases ...string) (*Common, e
 	return f, nil
 }
 
+func NewFunc(name string, value string, usage string, aliases ...string) FlagCreateFunc {
+	return func() (Flag, error) {
+		return New(name, value, usage, aliases...)
+	}
+}
+
 // Name returns primary name for the flag usually that is long option.
 func (f *Common) Name() string {
 	f.mu.RLock()
@@ -112,9 +118,7 @@ func (f *Common) Aliases() []string {
 func (f *Common) UsageAliases() string {
 	f.mu.RLock()
 	defer f.mu.RUnlock()
-	if len(f.aliases) <= 1 {
-		return ""
-	}
+
 	aliases := []string{}
 
 	for _, a := range f.aliases {

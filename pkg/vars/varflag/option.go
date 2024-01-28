@@ -117,3 +117,22 @@ func (f *OptionFlag) Value() []string {
 	defer f.mu.RUnlock()
 	return f.val
 }
+
+// Usage returns a usage description for that flag.
+func (f *OptionFlag) Usage() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	usage := f.usage
+
+	var opts []string
+	for opt := range f.opts {
+		opts = append(opts, opt)
+	}
+	usage += fmt.Sprintf(" - options: [%s]", strings.Join(opts, "|"))
+
+	if !f.defval.Empty() {
+		usage += fmt.Sprintf(" - default: %q", f.defval.String())
+	}
+
+	return usage
+}
