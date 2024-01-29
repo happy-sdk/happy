@@ -1,4 +1,4 @@
-module github.com/happy-sdk/happy/cmd/hap
+module github.com/happy-sdk/happy/internal/cmd/hap
 
 go 1.21.5
 

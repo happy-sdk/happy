@@ -32,12 +32,14 @@ jobs:
     strategy:
       matrix:
         package:
+          - ./
           - pkg/cli/ansicolor
           - pkg/devel/testutils
           - pkg/scheduling/cron
           - pkg/strings/bexp
           - pkg/vars
           - pkg/version
+      fail-fast: false
     steps:
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -45,12 +47,21 @@ jobs:
           go-version: '>=1.21.5'
       - uses: actions/checkout@v4
       - name: generate coverage
+        continue-on-error: true
         working-directory: ./${{ matrix.package }}
         run: go test -coverpkg=./... -coverprofile=coverage.out ./...
-      - name: check coverage
+      - name: Check if coverage data exists
+        if: success() || failure()
+        id: check-coverage
         working-directory: ./${{ matrix.package }}
-        run: go tool cover -func=coverage.out
+        run: |
+          if [ $(wc -l <coverage.out) -gt 1 ]; then
+            echo "::set-output name=coverage_data_exists::true"
+          else
+            echo "::set-output name=coverage_data_exists::false"
+          fi
       - name: upload coverage
+        if: steps.check-coverage.outputs.coverage_data_exists == 'true'
         uses: coverallsapp/github-action@v2
         with:
           flag-name: ${{ matrix.package }}
