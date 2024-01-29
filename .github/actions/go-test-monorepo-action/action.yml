@@ -23,16 +23,14 @@ runs:
       id: determine-os
       shell: bash
       run: |
-        detected_os=$(echo $env:$RUNNER_OS | tr '[:upper:]' '[:lower:]')
-        echo "os=$detected_os" >> $GITHUB_ENV
+        detected_os=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')
+        echo "detected_os=$detected_os" >> $GITHUB_ENV
         echo "Detected OS: $detected_os"
 
     - name: Run tests and generate coverage for all modules
       id: coveredmodules
       shell: bash
       run: |
-        detected_os="${{ steps.determine-os.outputs.os }}"
-        echo "Running on OS: $detected_os"
         if [[ "$detected_os" == "linux" ]]; then
           ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
         elif [[ "$detected_os" == "windows" ]]; then
