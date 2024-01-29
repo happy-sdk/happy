@@ -46,7 +46,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: generate coverage
         working-directory: ./${{ matrix.package }}
-        run: go test -race -coverpkg=./... -coverprofile=coverage.out ./...
+        run: go test -coverpkg=./... -coverprofile=coverage.out ./...
+      - name: check coverage
+        working-directory: ./${{ matrix.package }}
+        run: go tool cover -func=coverage.out
       - name: upload coverage
         uses: coverallsapp/github-action@v2
         with:
