@@ -21,7 +21,10 @@ runs:
 
     - name: Determine OS
       id: determine-os
-      run: echo "::set-output name=os::$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')"
+      run: |
+        echo "os=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      shell: bash
+
 
     - name: Run tests and generate coverage for all modules
       id: coveredmodules
@@ -36,4 +39,3 @@ runs:
           echo "Unsupported OS"
           exit 1
         fi
-      shell: bash
