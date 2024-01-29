@@ -67,7 +67,7 @@ jobs:
         if: steps.check-coverage.outputs.coverage_data_exists == 'true'
         uses: coverallsapp/github-action@v2
         with:
-          flag-name: ${{ matrix.package }}
+          flag-name: ${{ matrix.package == './' && 'happy' || matrix.package }}
           parallel: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: ./${{ matrix.package }}/coverage.out
