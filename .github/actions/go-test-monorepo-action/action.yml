@@ -23,7 +23,7 @@ runs:
       id: determine-os
       shell: bash
       run: |
-        detected_os=$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')
+        detected_os=$(echo $env:$RUNNER_OS | tr '[:upper:]' '[:lower:]')
         echo "os=$detected_os" >> $GITHUB_ENV
         echo "Detected OS: $detected_os"
 
@@ -40,6 +40,6 @@ runs:
         elif [[ "$detected_os" == "darwin" ]]; then
           ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
         else
-          echo "::error::Unsupported OS: $detected_os"
+          echo "::error::Unsupported OS: [$detected_os]"
           exit 1
         fi
