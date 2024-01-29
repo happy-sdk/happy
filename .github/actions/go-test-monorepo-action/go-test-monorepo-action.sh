@@ -11,7 +11,7 @@ while IFS= read -r module; do
 done < <(find . -type f -name 'go.mod' -exec dirname {} \;)
 
 # Convert modules array to JSON array format
-modules_json=$(printf '%s\n' "${modules[@]}" | jq -R . | jq -s .)
+modules_json=$(printf '%s\n' "${modules[@]}" | jq -R . | jq -cs .)
 
 if [ -z "$GITHUB_OUTPUT" ]; then
   GITHUB_OUTPUT="/dev/null"
