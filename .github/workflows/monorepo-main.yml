@@ -61,6 +61,8 @@ jobs:
         with:
           go-version: '>=1.21.0'
           race: ${{ github.event.inputs.loose != 'true' }}
+          fail-fast: ${{ github.event.inputs.loose != 'true' }}
+          continue-on-error: ${{ github.event.inputs.loose == 'true' }}
 
       - name: Check if coverage data exists
         if: github.event.inputs.loose == 'true' || success()

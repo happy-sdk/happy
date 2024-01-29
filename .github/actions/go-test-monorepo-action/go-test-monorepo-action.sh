@@ -1,42 +1,51 @@
 #!/bin/bash
 
-# Check if only module list should be outputted
 ONLY_MODULE_LIST="$1"
 GO_TEST_RACE="$2"
+FAIL_FAST="$3"
+CONTINUE_ON_ERROR="$4"
 
-# Array to hold module paths
 modules=()
+test_failed=0
 
-# Find all directories containing a go.mod file
 while IFS= read -r module; do
   modules+=("$module")
 
-  # Run tests only if ONLY_MODULE_LIST is not "true"
   if [ "$ONLY_MODULE_LIST" != "true" ]; then
     echo "Testing and generating coverage for module: $module"
     if [ "$GO_TEST_RACE" == "true" ]; then
       (cd "$module" && go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
     else
-       (cd "$module" && go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
+      (cd "$module" && go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
+    fi
+    test_exit_status=$?
+    if [ $test_exit_status -ne 0 ]; then
+      test_failed=1
+      if [ "$FAIL_FAST" == "true" ]; then
+        break
+      fi
     fi
   fi
 
 done < <(find . -type f -name 'go.mod' -exec dirname {} \;)
 
-# Convert modules array to JSON array format
 modules_json=$(printf '%s\n' "${modules[@]}" | jq -R . | jq -cs .)
 
-# Check if GITHUB_OUTPUT is set, else use /dev/null
-if [ -z "$GITHUB_OUTPUT" ]; then
-  GITHUB_OUTPUT="/dev/null"
-fi
-
-# Output the modules for the matrix
-echo "modules=$modules_json" >> $GITHUB_OUTPUT
-
-# If running in GitHub Actions, set info message
+# Output and GitHub Action handling
 if [ "$GITHUB_ACTIONS" == "true" ]; then
+  echo "modules=$modules_json" >> $GITHUB_OUTPUT
   echo "::info::Monorepo modules: $modules_json"
 else
   echo "${modules_json}"
+fi
+
+# Exit handling
+if [ $test_failed -ne 0 ]; then
+  if [ "$CONTINUE_ON_ERROR" == "true" ]; then
+    exit 0
+  else
+    exit 1
+  fi
+else
+  exit 0
 fi
