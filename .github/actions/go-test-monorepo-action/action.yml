@@ -1,0 +1,21 @@
+name: 'Go Test Monorepo'
+description: 'Automatically find and test all Go packages in a monorepo'
+inputs:
+  go-version:
+    description: 'Go version'
+    default: '1.21.5'
+outputs:
+  modules:
+    description: "List of Go modules"
+    value: ${{ steps.coverage-generator.outputs.modules }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+    - name: Run tests and generate coverage for all modules
+      id: coverage-generator
+      run: ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh
+      shell: bash

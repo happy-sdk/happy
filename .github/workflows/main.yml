@@ -29,55 +29,65 @@ jobs:
   test:
     needs: lint
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package:
-          - ./
-          - pkg/cli/ansicolor
-          - pkg/devel/testutils
-          - pkg/scheduling/cron
-          - pkg/strings/bexp
-          - pkg/vars
-          - pkg/version
-      fail-fast: false
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.21.5'
       - uses: actions/checkout@v4
-      - name: test package
-        working-directory: ./${{ matrix.package }}
-        run: go test -race ./...
-      - name: generate coverage
-        continue-on-error: true
-        working-directory: ./${{ matrix.package }}
-        run: go test -race -coverpkg=./... -coverprofile=coverage.out ./...
-      - name: Check if coverage data exists
-        if: success() || failure()
-        id: check-coverage
-        working-directory: ./${{ matrix.package }}
-        run: |
-          if [ $(wc -l <coverage.out) -gt 1 ]; then
-            echo "::set-output name=coverage_data_exists::true"
-          else
-            echo "::set-output name=coverage_data_exists::false"
-          fi
-      - name: upload coverage
-        if: steps.check-coverage.outputs.coverage_data_exists == 'true'
-        uses: coverallsapp/github-action@v2
+      - name: Test all packages
+        id: test-coverage
+        uses: ./.github/actions/golang-test-monorepo-action
         with:
-          flag-name: ${{ matrix.package == './' && 'happy' || matrix.package }}
-          parallel: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./${{ matrix.package }}/coverage.out
+          go-version: '>=1.21.0'
+      - run: echo random-number ${{ steps.test-coverage.outputs.module }}
+        shell: bash
 
-  finish:
-    needs: test
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finish
-      uses: coverallsapp/github-action@v2
-      with:
-        parallel-finished: true
+# test:
+  #   needs: lint
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       package:
+  #         - ./
+  #         - pkg/cli/ansicolor
+  #         - pkg/devel/testutils
+  #         - pkg/scheduling/cron
+  #         - pkg/strings/bexp
+  #         - pkg/vars
+  #         - pkg/version
+  #     fail-fast: false
+  #   steps:
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v5
+  #       with:
+  #         go-version: '>=1.21.5'
+  #     - uses: actions/checkout@v4
+  #     - name: generate coverage
+  #       continue-on-error: true
+  #       working-directory: ./${{ matrix.package }}
+  #       run: go test -race -coverpkg=./... -coverprofile=coverage.out ./...
+  #     - name: Check if coverage data exists
+  #       if: success() || failure()
+  #       id: check-coverage
+  #       working-directory: ./${{ matrix.package }}
+  #       run: |
+  #         if [ $(wc -l <coverage.out) -gt 1 ]; then
+  #           echo "::set-output name=coverage_data_exists::true"
+  #         else
+  #           echo "::set-output name=coverage_data_exists::false"
+  #         fi
+  #     - name: upload coverage
+  #       if: steps.check-coverage.outputs.coverage_data_exists == 'true'
+  #       uses: coverallsapp/github-action@v2
+  #       with:
+  #         flag-name: ${{ matrix.package == './' && 'happy' || matrix.package }}
+  #         parallel: true
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         file: ./${{ matrix.package }}/coverage.out
+
+  # finish:
+  #   needs: test
+  #   if: ${{ always() }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Coveralls Finish
+  #     uses: coverallsapp/github-action@v2
+  #     with:
+  #       parallel-finished: true
