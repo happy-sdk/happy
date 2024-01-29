@@ -63,7 +63,7 @@ jobs:
         id: check-coverage
         working-directory: ${{ matrix.module }}
         run: |
-          if [ $(wc -l <coverage.out) -gt 1 ]; then
+          if [[ -f coverage.out && $(wc -l <coverage.out) -gt 1 ]]; then
             echo "coverage_data_exists=true" >> $GITHUB_OUTPUT
           else
             echo "coverage_data_exists=false" >> $GITHUB_OUTPUT
@@ -75,7 +75,7 @@ jobs:
         run: |
           module_name="${{ matrix.module }}"
           clean_module_name="${module_name#./}"  # Remove leading ./
-          if [ "$clean_module_name" == "." ]; then
+          if [[ "$clean_module_name" == "." ]]; then
             clean_module_name="happy"
           fi
           echo "clean_module_name=$clean_module_name" >> $GITHUB_OUTPUT
@@ -88,8 +88,6 @@ jobs:
           parallel: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.module }}/coverage.out
-
-
 
   finish-coverage-report:
     needs: coverage
