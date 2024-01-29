@@ -14,10 +14,19 @@ on:
     branches:
       - 'main'
   workflow_dispatch:
+    inputs:
+      strict:
+        description: 'Set to false to allow workflow to continue on errors'
+        required: false
+        default: 'true'
+
+env:
+  STRICT: ${{ github.event.inputs.strict || 'true' }}
 
 jobs:
   lint:
     runs-on: ubuntu-latest
+    if: env.STRICT == 'true' || success() || failure()
     steps:
       - uses: actions/checkout@v4
       - name: Lint all packages
@@ -33,7 +42,6 @@ jobs:
       modules: ${{ steps.modulelist.outputs.modules }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Get monorepo modules
         id: modulelist
         uses: ./.github/actions/go-test-monorepo-action
@@ -47,11 +55,10 @@ jobs:
       matrix:
         module: ${{ fromJson(needs.list-modules.outputs.modules) }}
         platform: [ubuntu-latest, macos-latest, windows-latest]
-      fail-fast: false
+      fail-fast: ${{ env.STRICT == 'true' }}
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Run tests and generate coverage reports
         id: modulelist
         uses: ./.github/actions/go-test-monorepo-action
@@ -75,16 +82,12 @@ jobs:
         run: |
           module_path="${{ matrix.module }}"
           if [ "$module_path" == "." ]; then
-            # If the module path is the root, rename it to 'happy'
             clean_module_name="happy"
           else
-            # Otherwise, use the module path as is, removing the leading './'
             clean_module_name="${module_path#./}"
           fi
           echo "clean_module_name=$clean_module_name" >> $GITHUB_OUTPUT
         shell: bash
-
-
 
       - name: Upload coverage
         if: steps.check-coverage.outputs.coverage_data_exists == 'true'
@@ -97,8 +100,8 @@ jobs:
 
   finish-coverage-report:
     needs: coverage
+    if: always() && (env.STRICT == 'false' || success())
     runs-on: ubuntu-latest
-    if: ${{ always() }}
     steps:
       - name: Coveralls Finish
         uses: coverallsapp/github-action@v2
