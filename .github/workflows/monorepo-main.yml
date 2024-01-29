@@ -70,25 +70,20 @@ jobs:
           fi
         shell: bash
 
-      - name: Prepare flag name (Windows)
-        if: runner.os == 'Windows'
+      - name: Prepare flag name
+        id: prepare-flag
         run: |
-          $module_name = "./internal/cmd/hap"
-          $clean_module_name = $module_name.TrimStart('./')  # Remove leading ./
-          if ($clean_module_name -eq ".") { $clean_module_name = "happy" }
-          echo "clean_module_name=$clean_module_name" | Out-File -Append -FilePath $Env:GITHUB_OUTPUT
-        shell: pwsh
-
-      - name: Prepare flag name (Linux and macOS)
-        if: runner.os != 'Windows'
-        run: |
-          module_name="./internal/cmd/hap"
-          clean_module_name="${module_name#./}"  # Remove leading ./
-          if [[ "$clean_module_name" == "." ]]; then
+          module_path="${{ matrix.module }}"
+          if [ "$module_path" == "." ]; then
+            # If the module path is the root, rename it to 'happy'
             clean_module_name="happy"
+          else
+            # Otherwise, use the module path as is, removing the leading './'
+            clean_module_name="${module_path#./}"
           fi
           echo "clean_module_name=$clean_module_name" >> $GITHUB_OUTPUT
         shell: bash
+
 
 
       - name: Upload coverage
