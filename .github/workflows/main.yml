@@ -64,9 +64,9 @@ jobs:
         working-directory: ${{ matrix.module }}
         run: |
           if [ $(wc -l <coverage.out) -gt 1 ]; then
-            echo "coverage_data_exists=true"
+            echo "coverage_data_exists=true" >> $GITHUB_OUTPUT
           else
-            echo "coverage_data_exists=false"
+            echo "coverage_data_exists=false" >> $GITHUB_OUTPUT
           fi
         shell: bash
 
@@ -78,7 +78,7 @@ jobs:
           if [ "$clean_module_name" == "." ]; then
             clean_module_name="happy"
           fi
-          echo "clean_module_name=$clean_module_name" >> $GITHUB_ENV
+          echo "clean_module_name=$clean_module_name" >> $GITHUB_OUTPUT
 
       - name: Upload coverage
         if: steps.check-coverage.outputs.coverage_data_exists == 'true'
