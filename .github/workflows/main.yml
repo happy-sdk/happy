@@ -29,6 +29,8 @@ jobs:
   test:
     needs: lint
     runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.coveredmodules.outputs.modules }}
     steps:
       - uses: actions/checkout@v4
       - name: Test all packages
@@ -46,7 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Upload coverage
-        run: echo ${{ fromJson(needs.test.outputs.modules) }}
+        run: echo "${{ fromJson(needs.test.outputs.modules) }}"
 # test:
   #   needs: lint
   #   runs-on: ubuntu-latest
