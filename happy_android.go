@@ -4,4 +4,4 @@
 
 package happy
 
-func osmain() {}
+func osmain(ch chan struct{}) {}

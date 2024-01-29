@@ -4,6 +4,10 @@
 
 package happy
 
-func osmain() {
-	select {}
+func osmain(ch chan struct{}) {
+	if ch != nil {
+		<-ch
+	} else {
+		select {}
+	}
 }

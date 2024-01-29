@@ -1,4 +1,4 @@
-name: main
+name: monorepo-main
 
 concurrency:
   group: main-${{ github.ref }}
