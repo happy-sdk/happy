@@ -51,8 +51,7 @@ type Flags interface {
 }
 
 type API interface {
-	Get(key string) vars.Variable
-	Set(key string, val any) error
+	happy() bool
 }
 
 func GetAPI[A API](sess *Session, addonName string) (api A, err error) {
