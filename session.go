@@ -341,7 +341,9 @@ func (s *Session) Config() *vars.Map {
 	config := &vars.Map{}
 	for _, cnf := range s.opts.config {
 		if cnf.kind&ConfigOption != 0 {
-			config.Store(cnf.key, s.opts.Get(cnf.key).Value())
+			if err := config.Store(cnf.key, s.opts.Get(cnf.key).Value()); err != nil {
+				s.Log().Warn("storing config failed", slog.String("key", cnf.key), slog.String("err", err.Error()))
+			}
 		}
 	}
 	return config
@@ -357,10 +359,14 @@ func (s *Session) Opts() *vars.Map {
 		cnf, ok := s.opts.config[opt.Name()]
 		if ok {
 			if cnf.kind&RuntimeOption != 0 {
-				opts.Store(cnf.key, s.opts.Get(cnf.key).Value())
+				if err := opts.Store(cnf.key, s.opts.Get(cnf.key).Value()); err != nil {
+					s.Log().Warn("storing option failed", slog.String("key", opt.Name()), slog.String("err", err.Error()))
+				}
 			}
 		} else {
-			opts.Store(opt.Name(), opt.Value())
+			if err := opts.Store(opt.Name(), opt.Value()); err != nil {
+				s.Log().Warn("storing option failed", slog.String("key", opt.Name()), slog.String("err", err.Error()))
+			}
 		}
 	}
 	return opts

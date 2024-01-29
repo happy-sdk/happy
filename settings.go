@@ -24,8 +24,7 @@ type Settings struct {
 	ThrottleTicks        settings.Duration `key:"app.throttle.ticks,save" default:"1s" mutation:"once"`
 	ServiceLoaderTimeout settings.Duration `key:"app.service.loader.timeout" default:"30s" mutation:"once"`
 	Instance             instance.Settings `group:"instance"`
-	extended             map[string]settings.Settings
-	errs                 []error
+	extended             []settings.Settings
 }
 
 // Blueprint returns a blueprint for the settings.
@@ -52,5 +51,5 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 
 // Extend adds a new settings group to the settings.
 func (s *Settings) Extend(ss settings.Settings) {
-
+	s.extended = append(s.extended, ss)
 }

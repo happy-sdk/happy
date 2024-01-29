@@ -100,10 +100,9 @@ type Logger interface {
 }
 
 type DefaultLogger struct {
-	lvl     *slog.LevelVar
-	log     *slog.Logger
-	ctx     context.Context
-	colored bool
+	lvl *slog.LevelVar
+	log *slog.Logger
+	ctx context.Context
 }
 
 func Default(lvl Level) *DefaultLogger {

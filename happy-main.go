@@ -93,7 +93,7 @@ func (m *Main) WithCommand(cmd *Command) *Main {
 		m.mu.RLock()
 		m.root.AddSubCommand(cmd)
 		m.mu.RUnlock()
-		init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, withCommandMsg, 3, slog.String("name", cmd.name)))
+		init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, withCommandMsg, 3, slog.String("name", cmd.getName())))
 	}
 	return m
 }
@@ -276,7 +276,7 @@ func (m *Main) run() {
 		return
 	}
 
-	cmdtree := strings.Join(m.cmd.parents, ".") + "." + m.cmd.name
+	cmdtree := strings.Join(m.cmd.getParents(), ".") + "." + m.cmd.getName()
 	m.sess.Log().SystemDebug("execute", slog.String("action", "Do"), slog.String("command", cmdtree))
 
 	err := m.cmd.callDoAction(m.sess)
@@ -336,7 +336,7 @@ func (m *Main) help() error {
 	)
 
 	for _, cmd := range m.cmd.getSubCommands() {
-		h.AddCommand(cmd.category, cmd.name, cmd.desc)
+		h.AddCommand(cmd.getCategory(), cmd.getName(), cmd.getDescription())
 	}
 
 	if m.cmd != m.root {
@@ -442,7 +442,9 @@ func (m *Main) save() error {
 	pd := vars.Map{}
 	for _, setting := range profile {
 		if setting.Persistent() {
-			pd.Store(setting.Key(), setting.Value().String())
+			if err := pd.Store(setting.Key(), setting.Value().String()); err != nil {
+				return err
+			}
 		}
 	}
 	pddata := pd.ToKeyValSlice()

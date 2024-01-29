@@ -75,7 +75,7 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	c.argnmax = opts.Get("argn.max").Uint()
 
 	if c.argnmin > c.argnmax {
-		c.argnmax = c.argnmax
+		c.argnmax = c.argnmin
 	}
 
 	flags, err := varflag.NewFlagSet(name, int(c.argnmax))
@@ -324,6 +324,12 @@ func (c *Command) getName() string {
 	return c.name
 }
 
+func (c *Command) getCategory() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.category
+}
+
 func (c *Command) err() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -376,6 +382,12 @@ func (c *Command) getActiveCommand() (*Command, error) {
 }
 
 func (c *Command) callBeforeAction(sess *Session) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.parent != nil {
+		sess.Log().BUG("Command.parent used", slog.String("command", c.name), slog.String("parent", c.parent.getName()))
+	}
 	if c.beforeAction == nil {
 		return nil
 	}
@@ -400,6 +412,9 @@ func (c *Command) callBeforeAction(sess *Session) error {
 }
 
 func (c *Command) callDoAction(session *Session) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.doAction == nil {
 		return nil
 	}
@@ -413,6 +428,9 @@ func (c *Command) callDoAction(session *Session) error {
 }
 
 func (c *Command) callAfterFailureAction(session *Session, err error) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.afterFailureAction == nil {
 		return nil
 	}
@@ -424,6 +442,9 @@ func (c *Command) callAfterFailureAction(session *Session, err error) error {
 }
 
 func (c *Command) callAfterSuccessAction(session *Session) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.afterSuccessAction == nil {
 		return nil
 	}
@@ -435,6 +456,9 @@ func (c *Command) callAfterSuccessAction(session *Session) error {
 }
 
 func (c *Command) callAfterAlwaysAction(session *Session, err error) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.afterAlwaysAction == nil {
 		return nil
 	}

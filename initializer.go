@@ -142,7 +142,7 @@ func (i *initializer) Log(r logging.QueueRecord) {
 	i.log(r)
 }
 
-func (i *initializer) dispose() error {
+func (i *initializer) dispose() {
 	i.took = time.Since(i.loaded)
 
 	i.logger.SystemDebug("initialization done", slog.Duration("took", i.took))
@@ -154,8 +154,6 @@ func (i *initializer) dispose() error {
 	i.addons = nil
 	i.migrations = nil
 	i.pendingOpts = nil
-
-	return nil
 }
 
 func (i *initializer) log(r logging.QueueRecord) {
@@ -193,7 +191,9 @@ func (i *initializer) Initialize(m *Main) error {
 		return err
 	}
 	m.instance = inst
-	m.sess.opts.set("app.address", inst.Address().String(), true)
+	if err := m.sess.opts.set("app.address", inst.Address().String(), true); err != nil {
+		return err
+	}
 
 	if err := i.unsafeInitAddonSettingsAndCommands(m, settingsb); err != nil {
 		return err
@@ -211,7 +211,9 @@ func (i *initializer) Initialize(m *Main) error {
 		m.sess.Log().SetLevel(logging.LevelInfo)
 	}
 
-	m.sess.opts.setDefaults()
+	if err := m.sess.opts.setDefaults(); err != nil {
+		return err
+	}
 
 	if m.root.flag("version").Present() {
 		m.sess.Log().SetLevel(logging.LevelQuiet)
@@ -306,9 +308,8 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 	if err != nil {
 		return err
 	}
-	m.root.setArgcMax(uint(argnmax))
 
-	return nil
+	return m.root.setArgcMax(uint(argnmax))
 }
 
 func (i *initializer) unsafeInitLogger() logging.Logger {
@@ -397,14 +398,13 @@ func (i *initializer) unsafeConfigure(m *Main, settingsb *settings.Blueprint) er
 		return err
 	}
 
-	var profileName string
-	profileName = "default"
-
-	profileName = m.root.flag("profile").String()
+	profileName := m.root.flag("profile").String()
 	if m.sess.Get("app.devel").Bool() {
 		profileName += "-devel"
 	}
-	m.sess.opts.set("app.profile.name", profileName, true)
+	if err := m.sess.opts.set("app.profile.name", profileName, true); err != nil {
+		return err
+	}
 
 	if err := i.unsafeConfigurePaths(m, settingsb); err != nil {
 		return err
@@ -532,14 +532,18 @@ func (i *initializer) unsafeConfigureProfile(m *Main, settingsb *settings.Bluepr
 		return fmt.Errorf("%w: profile name is empty", Error)
 	}
 	m.sess.Log().SystemDebug("load app profile", slog.String("profile", profileName))
-	m.sess.opts.set("app.profile.name", profileName, true)
+	if err := m.sess.opts.set("app.profile.name", profileName, true); err != nil {
+		return err
+	}
 
 	cpath := m.sess.Get("app.fs.path.config").String()
 	if cpath == "" {
 		return fmt.Errorf("%w: config path empty", Error)
 	}
 	cfile := filepath.Join(cpath, "profile.preferences")
-	m.sess.opts.set("app.profile.file", cfile, true)
+	if err := m.sess.opts.set("app.profile.file", cfile, true); err != nil {
+		return err
+	}
 
 	var pref *settings.Preferences
 	if _, err := os.Stat(cfile); err != nil {

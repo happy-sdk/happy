@@ -94,12 +94,15 @@ func (e *engine) uptime() time.Duration {
 }
 
 func (e *engine) onTick(action ActionTick) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	e.tick = action
-	return
 }
+
 func (e *engine) onTock(action ActionTock) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
 	e.tock = action
-	return
 }
 
 func (e *engine) startEventDispatcher(sess *Session) {
@@ -324,7 +327,7 @@ func (e *engine) servicesInit(sess *Session, init *sync.WaitGroup) {
 				return
 			}
 			// register events what service listens for
-			for ev, _ := range c.svc.listeners {
+			for ev := range c.svc.listeners {
 				scope, key, _ := strings.Cut(ev, ".")
 				// we can ignore error because this error is handled
 				// when emitter registers this event. Listening for unregistered event is not an error.

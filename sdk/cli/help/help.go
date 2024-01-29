@@ -137,7 +137,7 @@ func (h *Help) printCommands() error {
 		// Print other categories
 		for _, category := range categories {
 			fmt.Println("")
-			fmt.Println(" ", ansicolor.Text(strings.ToUpper(category), h.fg, 0, 0))
+			fmt.Println(" ", ansicolor.Text(strings.ToUpper(category), h.fg, h.bg, 0))
 			fmt.Println("")
 			commands := h.cmds[category]
 

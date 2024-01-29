@@ -263,14 +263,13 @@ func (sl *ServiceLoader) cancel(reason error) {
 	sl.sess.Log().Warn("sevice loader canceled", slog.Any("reason", reason))
 	sl.addErr(reason)
 	sl.loading = false
-	defer close(sl.loaderCh)
-	return
+	close(sl.loaderCh)
 }
 
 func (sl *ServiceLoader) done() {
 	sl.loading = false
 	sl.sess.Log().Debug("service loader completed")
-	defer close(sl.loaderCh)
+	close(sl.loaderCh)
 }
 
 func (sl *ServiceLoader) addErr(err error) {
@@ -282,17 +281,22 @@ func (sl *ServiceLoader) addErr(err error) {
 
 func StartServicesEvent(svcs ...string) Event {
 	var payload vars.Map
+	var errs []error
 	for i, url := range svcs {
-		payload.Store(fmt.Sprintf("service.%d", i), url)
+		if err := payload.Store(fmt.Sprintf("service.%d", i), url); err != nil {
+			errs = append(errs, err)
+		}
 	}
-
+	if len(errs) > 0 {
+		_ = payload.Store("err", errors.Join(errs...).Error())
+	}
 	return NewEvent("services", "start.services", &payload, nil)
 }
 
 func StopServicesEvent(svcs ...string) Event {
 	var payload vars.Map
 	for i, url := range svcs {
-		payload.Store(fmt.Sprintf("service.%d", i), url)
+		_ = payload.Store(fmt.Sprintf("service.%d", i), url)
 	}
 
 	return NewEvent("services", "stop.services", &payload, nil)
@@ -409,27 +413,38 @@ func (s *serviceContainer) start(ectx context.Context, sess *Session) (err error
 	}
 	if s.cron != nil {
 		sess.Log().SystemDebug("starting cron jobs", slog.String("service", s.info.Addr().String()))
-		s.cron.Start()
+		if err := s.cron.Start(); err != nil {
+			return err
+		}
 	}
 
 	s.mu.Lock()
 	s.ctx, s.cancel = context.WithCancelCause(ectx) // with engine context
 	s.mu.Unlock()
 
+	payload := new(vars.Map)
+
 	if err == nil {
 		s.info.started()
 	} else {
 		s.info.addErr(err)
+		if errset := payload.Store("err", err); errset != nil {
+			return errors.Join(errset, err)
+		}
 	}
 
-	payload := new(vars.Map)
-	payload.Store("name", s.info.Name())
-	payload.Store("addr", s.info.Addr())
-	if err != nil {
-		payload.Store("err", err)
+	kv := map[string]any{
+		"name":       s.info.Name(),
+		"addr":       s.info.Addr(),
+		"running":    s.info.Running(),
+		"started.at": s.info.StartedAt(),
 	}
-	payload.Store("running", s.info.Running())
-	payload.Store("started.at", s.info.StartedAt())
+	for k, v := range kv {
+		if err := payload.Store(k, v); err != nil {
+			return err
+		}
+	}
+
 	sess.Dispatch(NewEvent("services", "service.started", payload, nil))
 
 	sess.Log().Debug("service started", slog.String("service", s.info.Addr().String()))
@@ -438,11 +453,13 @@ func (s *serviceContainer) start(ectx context.Context, sess *Session) (err error
 
 func (s *serviceContainer) stop(sess *Session, e error) (err error) {
 	if e != nil {
-		sess.Log().Error(fmt.Errorf("%w:%s", e.Error()).Error(), slog.String("service", s.info.Addr().String()))
+		sess.Log().Error(e.Error(), slog.String("service", s.info.Addr().String()))
 	}
 	if s.cron != nil {
 		sess.Log().SystemDebug("stopping cron scheduler, waiting jobs to finish", slog.String("service", s.info.Addr().String()))
-		s.cron.Stop()
+		if err := s.cron.Stop(); err != nil {
+			sess.Log().Error("error while stoping cron", slog.String("service", s.info.Addr().String()), slog.String("err", err.Error()))
+		}
 	}
 
 	s.cancel(e)
@@ -457,16 +474,31 @@ func (s *serviceContainer) stop(sess *Session, e error) (err error) {
 	s.info.stopped()
 
 	payload := new(vars.Map)
-	payload.Store("name", s.info.Name())
-	payload.Store("addr", s.info.Addr())
 	if err != nil {
-		payload.Store("err", err)
+		if errset := payload.Store("err", err); errset != nil {
+			err = errors.Join(errset, err)
+		}
 	}
-	payload.Store("running", s.info.Running())
-	payload.Store("stopped.at", s.info.StoppedAt())
+
+	kv := map[string]any{
+		"name":       s.info.Name(),
+		"addr":       s.info.Addr(),
+		"running":    s.info.Running(),
+		"stopped.at": s.info.StoppedAt(),
+	}
+
+	for k, v := range kv {
+		if errset := payload.Store(k, v); errset != nil {
+			err = errors.Join(errset, e)
+		}
+	}
 	sess.Dispatch(NewEvent("services", "service.stopped", payload, nil))
 
-	sess.Log().Debug("service stopped", slog.String("service", s.info.Addr().String()))
+	if err != nil {
+		sess.Log().Debug("service stopped", slog.String("service", s.info.Addr().String()), slog.String("err", err.Error()))
+	} else {
+		sess.Log().Debug("service stopped", slog.String("service", s.info.Addr().String()))
+	}
 	return err
 }
 
@@ -501,7 +533,7 @@ func (s *serviceContainer) handleEvent(sess *Session, ev Event) {
 			if sk == "any" || sk == lid {
 				if err := listener(sess, ev); err != nil {
 					s.info.addErr(err)
-					sess.Log().Error(fmt.Sprintf("%w:", ErrService, err), slog.String("service", s.info.Addr().String()))
+					sess.Log().Error(ErrService.Error(), slog.String("service", s.info.Addr().String()), slog.String("err", err.Error()))
 				}
 			}
 		}

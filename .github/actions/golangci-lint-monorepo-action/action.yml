@@ -1,0 +1,27 @@
+name: 'Go Lint Monorepo'
+description: 'Run golangci-lint on a monorepo with multiple Go modules'
+inputs:
+  golangci-lint-version:
+    description: 'GolangCI-Lint version'
+    required: true
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install golangci-lint
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $GITHUB_WORKSPACE/bin ${{ inputs.golangci-lint-version }}
+      shell: bash
+
+    - name: Lint all modules
+      run: |
+        modules=$(find . -type f -name 'go.mod' -exec dirname {} \;)
+        for module in $modules; do
+          echo "Linting module: $module"
+          (cd "$module" && $GITHUB_WORKSPACE/bin/golangci-lint run ./...)
+        done
+      shell: bash

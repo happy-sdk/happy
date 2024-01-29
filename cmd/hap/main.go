@@ -15,28 +15,27 @@ func main() {
 	main := hap()
 
 	main.BeforeAlways(func(sess *happy.Session, flags happy.Flags) error {
-		sess.Log().Info("prepare Happy-SDK")
-
-		sess.Log().Println("SETTINGS")
-		for _, s := range sess.Profile().All() {
-			sess.Log().Println(s.Key(), slog.String("value", s.Value().String()))
-		}
-		sess.Log().Println("OPTIONS")
-		sess.Opts().Range(func(v vars.Variable) bool {
-			sess.Log().Println(v.Name(), slog.String("value", v.String()))
-			return true
-		})
-		sess.Log().Println("CONFIG")
-		sess.Config().Range(func(v vars.Variable) bool {
-			sess.Log().Println(v.Name(), slog.String("value", v.String()))
-			return true
-		})
 
 		loader := sess.ServiceLoader(
 			"background",
 		)
 
 		<-loader.Load()
+
+		sess.Log().Debug("SETTINGS")
+		for _, s := range sess.Profile().All() {
+			sess.Log().Debug(s.Key(), slog.String("value", s.Value().String()))
+		}
+		sess.Log().Debug("OPTIONS")
+		sess.Opts().Range(func(v vars.Variable) bool {
+			sess.Log().Debug(v.Name(), slog.String("value", v.String()))
+			return true
+		})
+		sess.Log().Debug("CONFIG")
+		sess.Config().Range(func(v vars.Variable) bool {
+			sess.Log().Debug(v.Name(), slog.String("value", v.String()))
+			return true
+		})
 		return loader.Err()
 	})
 
@@ -64,17 +63,17 @@ func main() {
 	})
 
 	main.AfterSuccess(func(sess *happy.Session) error {
-		sess.Log().Info("main.AfterSuccess")
+		sess.Log().NotImplemented("main.AfterSuccess")
 		return nil
 	})
 
 	main.AfterFailure(func(sess *happy.Session, err error) error {
-		sess.Log().Info("main.AfterFailure")
+		sess.Log().NotImplemented("main.AfterFailure")
 		return nil
 	})
 
 	main.AfterAlways(func(sess *happy.Session, err error) error {
-		sess.Log().Info("main.AfterAlways")
+		sess.Log().NotImplemented("main.AfterAlways")
 		return nil
 	})
 

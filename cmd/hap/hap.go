@@ -9,6 +9,7 @@ import (
 	"github.com/happy-sdk/happy/addons/third-party/github"
 	"github.com/happy-sdk/happy/cmd/hap/addons/releaser"
 	"github.com/happy-sdk/happy/cmd/hap/migrations"
+	"github.com/happy-sdk/happy/sdk/cli/commands"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/settings"
@@ -17,7 +18,7 @@ import (
 type Settings struct {
 	// happy develpment
 	Happy struct {
-		Placeholder settings.Bool `key:"placeholder"`
+		Placeholder settings.String `key:"placeholder"`
 	} `group:"happy"`
 	Placeholder settings.String `key:"placeholder"`
 }
@@ -39,7 +40,8 @@ func hap() *happy.Main {
 		CopyrightSince: 2019,
 		License:        "Apache-2.0",
 		TimeLocation:   "Local",
-		MainArgcMax:    0,
+		MainArgcMax:    5,
+		Description:    "Happy Prototyper provides commands to work with Happy-SDK prototypes.",
 		// ThrottleTicks:  settings.Duration(time.Millisecond * 100),
 		Instance: instance.Settings{
 			Max: 100,
@@ -47,7 +49,7 @@ func hap() *happy.Main {
 	}
 
 	config := Settings{}
-	config.Placeholder = "happy-placeholder"
+	config.Happy.Placeholder = "happy-placeholder"
 	config.Placeholder = "app-placeholder"
 
 	settings.Extend(config)
@@ -66,19 +68,10 @@ func hap() *happy.Main {
 		)).
 		WithMigrations(migrations.New()).
 		WithService(service()).
-		// WithCommand(nil).
+		WithCommand(commands.Config()).
 		// WithFlag(nil).
-		WithLogger(logging.Console(logging.LevelSystemDebug)).
-		WithOptions(happy.Option("somekey", "somevalue"))
+		WithLogger(logging.Console(logging.LevelOk)).
+		WithOptions(happy.Option("happy", "true"))
 
 	return main
-}
-
-func githubAddon() *happy.Addon {
-	return github.Addon(
-		github.Settings{
-			Owner: "happy-sdk",
-			Repo:  "happy",
-		},
-	)
 }
