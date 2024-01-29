@@ -115,6 +115,14 @@ func (opts *Options) Name() string {
 	return opts.name
 }
 
+func (opts *Options) Describe(key string) string {
+	c, ok := opts.config[key]
+	if !ok {
+		return ""
+	}
+	return c.desc
+}
+
 var emptyStringVariable, _ = vars.New("empty", "", true)
 
 func (opts *Options) Get(key string) vars.Variable {
@@ -366,14 +374,14 @@ func getDefaultCommandOpts() []OptionArg {
 			validator: noopvalidator,
 		},
 		{
-			key:       "argc.min",
+			key:       "argn.min",
 			value:     0,
 			desc:      "Minimum argument count for command",
 			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,
 		},
 		{
-			key:       "argc.max",
+			key:       "argn.max",
 			value:     0,
 			desc:      "Maximum argument count for command",
 			kind:      ConfigOption | ReadOnlyOption,

@@ -19,7 +19,7 @@ type Settings struct {
 	CopyrightBy          settings.String   `key:"app.copyright.by"`
 	CopyrightSince       settings.Uint     `key:"app.copyright.since" default:"0"`
 	License              settings.String   `key:"app.license"`
-	MainArgcMax          settings.Uint     `key:"app.main.argc.max" default:"0"`
+	MainArgcMax          settings.Uint     `key:"app.main.argn.max" default:"0"`
 	TimeLocation         settings.String   `key:"app.datetime.location,save" default:"Local" mutation:"once"`
 	ThrottleTicks        settings.Duration `key:"app.throttle.ticks,save" default:"1s" mutation:"once"`
 	ServiceLoaderTimeout settings.Duration `key:"app.service.loader.timeout" default:"30s" mutation:"once"`

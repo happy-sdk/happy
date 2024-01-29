@@ -271,6 +271,14 @@ func (s *Session) Has(key string) bool {
 	return s.opts.Has(key)
 }
 
+func (s *Session) Describe(key string) string {
+	if s.profile != nil && s.profile.Has(key) {
+		// return s.profile.Get(key).Description()
+		return "<setting>"
+	}
+	return s.opts.Describe(key)
+}
+
 func (s *Session) Dispatch(ev Event) {
 	if ev == nil {
 		s.Log().Warn("received <nil> event")
