@@ -33,6 +33,7 @@ jobs:
       modules: ${{ steps.modulelist.outputs.modules }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Get monorepo modules
         id: modulelist
         uses: ./.github/actions/go-test-monorepo-action
@@ -50,37 +51,50 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
+
       - name: Run tests and generate coverage reports
         id: modulelist
         uses: ./.github/actions/go-test-monorepo-action
         with:
           go-version: '>=1.21.0'
 
-  #     - name: Check if coverage data exists
-  #       if: success() || failure()
-  #       id: check-coverage
-  #       working-directory: ./${{ matrix.package }}
-  #       run: |
-  #         if [ $(wc -l <coverage.out) -gt 1 ]; then
-  #           echo "::set-output name=coverage_data_exists::true"
-  #         else
-  #           echo "::set-output name=coverage_data_exists::false"
-  #         fi
-  #     - name: upload coverage
-  #       if: steps.check-coverage.outputs.coverage_data_exists == 'true'
-  #       uses: coverallsapp/github-action@v2
-  #       with:
-  #         flag-name: ${{ matrix.package == './' && 'happy' || matrix.package }}
-  #         parallel: true
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         file: ./${{ matrix.package }}/coverage.out
+      - name: Check if coverage data exists
+        if: success() || failure()
+        id: check-coverage
+        working-directory: ${{ matrix.module }}
+        run: |
+          if [ $(wc -l <coverage.out) -gt 1 ]; then
+            echo "coverage_data_exists=true"
+          else
+            echo "coverage_data_exists=false"
+          fi
+        shell: bash
 
-  # finish:
-  #   needs: test
-  #   if: ${{ always() }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Coveralls Finish
-  #     uses: coverallsapp/github-action@v2
-  #     with:
-  #       parallel-finished: true
+      - name: Prepare flag name
+        id: prepare-flag
+        run: |
+          module_name="${{ matrix.module }}"
+          clean_module_name="${module_name#./}"  # Remove leading ./
+          if [ "$clean_module_name" == "." ]; then
+            clean_module_name="happy"
+          fi
+          echo "clean_module_name=$clean_module_name" >> $GITHUB_ENV
+
+      - name: Upload coverage
+        if: steps.check-coverage.outputs.coverage_data_exists == 'true'
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: ${{ steps.prepare-flag.outputs.clean_module_name }}
+          parallel: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ matrix.module }}/coverage.out
+
+  finish-coverage-report:
+    needs: test-modules
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finish
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
