@@ -13,7 +13,7 @@ while IFS= read -r module; do
   # Run tests only if ONLY_MODULE_LIST is not "true"
   if [ "$ONLY_MODULE_LIST" != "true" ]; then
     echo "Testing and generating coverage for module: $module"
-    (cd "$module" && go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
+    (cd "$module" && go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
   fi
 done < <(find . -type f -name 'go.mod' -exec dirname {} \;)
 

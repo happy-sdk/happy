@@ -36,7 +36,7 @@ jobs:
 
       - name: Get monorepo modules
         id: modulelist
-        uses: ./.github/actions/go-test-action
+        uses: ./.github/actions/go-test-monorepo-action
         with:
           go-version: '>=1.21.0'
           only-module-list: true
@@ -93,7 +93,6 @@ jobs:
 
   finish-coverage-report:
     needs: coverage
-    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finish
