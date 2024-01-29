@@ -26,53 +26,36 @@ jobs:
           go-version: '>=1.21.0'
           golangci-lint-version: latest
 
-  test:
+  list-modules:
     needs: lint
     runs-on: ubuntu-latest
     outputs:
-      modules: ${{ steps.coveredmodules.outputs.modules }}
+      modules: ${{ steps.modulelist.outputs.modules }}
     steps:
       - uses: actions/checkout@v4
-      - name: Test all packages
-        id: coveredmodules
+      - name: Get monorepo modules
+        id: modulelist
         uses: ./.github/actions/go-test-monorepo-action
         with:
           go-version: '>=1.21.0'
-      - run: echo modules "${{ steps.coveredmodules.outputs.modules }}"
-        shell: bash
+          only-module-list: true
 
-  upload-coverage:
-    needs: test
+  test-modules:
+    needs: list-modules
     if: ${{ always() }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.list-modules.outputs.modules) }}
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - name: Upload coverage
-        run: echo "${{ fromJson(needs.test.outputs.modules) }}"
-# test:
-  #   needs: lint
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       package:
-  #         - ./
-  #         - pkg/cli/ansicolor
-  #         - pkg/devel/testutils
-  #         - pkg/scheduling/cron
-  #         - pkg/strings/bexp
-  #         - pkg/vars
-  #         - pkg/version
-  #     fail-fast: false
-  #   steps:
-  #     - name: Set up Go
-  #       uses: actions/setup-go@v5
-  #       with:
-  #         go-version: '>=1.21.5'
-  #     - uses: actions/checkout@v4
-  #     - name: generate coverage
-  #       continue-on-error: true
-  #       working-directory: ./${{ matrix.package }}
-  #       run: go test -race -coverpkg=./... -coverprofile=coverage.out ./...
+      - name: Run tests and generate coverage reports
+        id: modulelist
+        uses: ./.github/actions/go-test-monorepo-action
+        with:
+          go-version: '>=1.21.0'
+
   #     - name: Check if coverage data exists
   #       if: success() || failure()
   #       id: check-coverage

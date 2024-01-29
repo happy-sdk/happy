@@ -4,6 +4,9 @@ inputs:
   go-version:
     description: 'Go version'
     default: '1.21.5'
+  only-module-list:
+    description: 'Only outputs module list without running tests'
+    default: 'false'
 outputs:
   modules:
     description: "List of Go modules"
@@ -17,5 +20,5 @@ runs:
         go-version: ${{ inputs.go-version }}
     - name: Run tests and generate coverage for all modules
       id: coveredmodules
-      run: ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh
+      run: ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
       shell: bash
