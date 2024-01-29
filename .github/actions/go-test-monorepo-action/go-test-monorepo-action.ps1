@@ -10,14 +10,14 @@ Get-ChildItem -File -Recurse -Filter "go.mod" | ForEach-Object {
   $module = $_.DirectoryName
   $modules += $module
 
-  # Run tests only if ONLY_MODULE_LIST is not "true"
-  if ($ONLY_MODULE_LIST != "true") {
+  # Run tests only if ONLY_MODULE_LIST is not "true" and not null or empty
+  if (-not [string]::IsNullOrEmpty($ONLY_MODULE_LIST) -and $ONLY_MODULE_LIST -ne "true") {
     Write-Host "Testing and generating coverage for module: $module"
     Set-Location $module
-    if ($GO_TEST_RACE == "true") {
-      go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...
+    if ($GO_TEST_RACE -eq "true") {
+        go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...
     } else {
-      go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...
+        go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...
     }
 
     Set-Location ..
@@ -32,5 +32,5 @@ Write-Host "modules=$modules_json"
 
 # If running in GitHub Actions, set info message
 if ($env:GITHUB_ACTIONS -eq "true") {
-    Write-Host "::info::Monorepo modules: $modules_json"
+  Write-Host "::info::Monorepo modules: $modules_json"
 }
