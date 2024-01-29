@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Upload coverage
-        run: echo modules
+        run: echo ${{ fromJson(needs.test.outputs.modules) }}
 # test:
   #   needs: lint
   #   runs-on: ubuntu-latest
