@@ -13,7 +13,7 @@ Get-ChildItem -File -Recurse -Filter "go.mod" | ForEach-Object {
     if ($ONLY_MODULE_LIST -ne "true") {
         Write-Host "Testing and generating coverage for module: $module"
         Set-Location $module
-        go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...
+        go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...
         Set-Location ..
     }
 }

@@ -94,12 +94,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.module }}/coverage.out
 
-    finish-coverage-report:
-      needs: coverage
-      if: github.event.inputs.strict == 'false' || success()
-      runs-on: ubuntu-latest
-      steps:
-        - name: Coveralls Finish
-          uses: coverallsapp/github-action@v2
-          with:
-            parallel-finished: true
+  finish-coverage-report:
+    needs: coverage
+    if: github.event.inputs.strict == 'false' || success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finish
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
