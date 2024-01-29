@@ -19,7 +19,7 @@ import (
 type FlagSet struct {
 	mu      sync.RWMutex
 	name    string
-	argc    int
+	argn    int
 	present bool
 	flags   []Flag
 	sets    []Flags
@@ -34,13 +34,13 @@ type FlagSet struct {
 // argsn is number of command line arguments allowed within this set.
 // If argsn is -gt 0 then parser will stop after finding argsn+1 argument
 // which is not a flag.
-func NewFlagSet(name string, argc int) (*FlagSet, error) {
+func NewFlagSet(name string, argn int) (*FlagSet, error) {
 	if name == "/" || (len(os.Args) > 0 && name == filepath.Base(os.Args[0]) || name == os.Args[0]) {
 		name = "/"
 	} else if !ValidFlagName(name) {
 		return nil, fmt.Errorf("%w: name %q is not valid for flag set", ErrFlag, name)
 	}
-	return &FlagSet{name: name, argc: argc}, nil
+	return &FlagSet{name: name, argn: argn}, nil
 }
 
 func SetArgcMax(flags Flags, max int) error {
@@ -53,7 +53,7 @@ func SetArgcMax(flags Flags, max int) error {
 	if s.parsed {
 		return fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, s.name)
 	}
-	s.argc = max
+	s.argn = max
 	return nil
 }
 
@@ -73,7 +73,6 @@ func (s *FlagSet) Len() int {
 
 // Add flag to flag set.
 func (s *FlagSet) Add(flag ...Flag) error {
-
 	for _, f := range flag {
 		_, err := s.Get(f.Name())
 		if !errors.Is(err, ErrNoNamedFlag) {
@@ -151,7 +150,7 @@ func (s *FlagSet) Args() []vars.Value {
 func (s *FlagSet) AcceptsArgs() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.argc > 0
+	return s.argn > 0
 }
 
 // Flags returns slice of flags in this set.
@@ -178,7 +177,11 @@ func (s *FlagSet) Parse(args []string) error {
 	}
 	s.parsed = true
 	var currargs []string
-	if s.name != "/" && s.name != "*" && s.name != filepath.Base(os.Args[0]) {
+	if s.name == "/" || s.name == "*" || s.name == filepath.Base(os.Args[0]) {
+		currargs = args[1:]
+		// root cmd is always considered as present
+		s.present = true
+	} else {
 		for i, arg := range args {
 			if arg == s.name {
 				s.pos = i
@@ -186,10 +189,6 @@ func (s *FlagSet) Parse(args []string) error {
 				s.present = true
 			}
 		}
-	} else {
-		currargs = args
-		// root cmd is always considered as present
-		s.present = true
 	}
 
 	// if set is not present it is not an error
@@ -209,8 +208,16 @@ func (s *FlagSet) Parse(args []string) error {
 		}
 	}
 
-	// parse flags for sets
+	// nothing to parse
+	if len(currargs) == 0 {
+		return nil
+	}
+	// parse sets
 	for _, set := range s.sets {
+		if set.Name() != currargs[0] {
+			continue
+		}
+
 		err := set.Parse(currargs)
 		if err != nil {
 			return err
@@ -233,7 +240,7 @@ func (s *FlagSet) Parse(args []string) error {
 }
 
 func (s *FlagSet) extractArgs(args []string) error {
-	if len(args) == 0 || s.argc == 0 {
+	if len(args) == 0 || s.argn == 0 {
 		return nil
 	}
 	// rm subcmds
@@ -246,7 +253,7 @@ includessubset:
 					if i == 0 {
 						return nil
 					}
-					// there is no args for cuurent set since
+					// there is no args for current set since
 					// there is sub set which was first arg
 					break includessubset
 				}
@@ -266,7 +273,7 @@ includessubset:
 		if err != nil {
 			return err
 		}
-		if s.argc == -1 || len(s.args) <= s.argc {
+		if s.argn == -1 || len(s.args) <= s.argn {
 			s.args = append(s.args, a)
 		} else {
 			break

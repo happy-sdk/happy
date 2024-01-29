@@ -48,8 +48,8 @@ type Command struct {
 
 	parents []string
 
-	argcmax uint
-	argcmin uint
+	argnmax uint
+	argnmin uint
 }
 
 func NewCommand(name string, options ...OptionArg) *Command {
@@ -71,14 +71,14 @@ func NewCommand(name string, options ...OptionArg) *Command {
 	if err := opts.setDefaults(); err != nil {
 		c.errs = append(c.errs, err)
 	}
-	c.argcmin = opts.Get("argc.min").Uint()
-	c.argcmax = opts.Get("argc.max").Uint()
+	c.argnmin = opts.Get("argn.min").Uint()
+	c.argnmax = opts.Get("argn.max").Uint()
 
-	if c.argcmin > c.argcmax {
-		c.argcmax = c.argcmin
+	if c.argnmin > c.argnmax {
+		c.argnmax = c.argnmax
 	}
 
-	flags, err := varflag.NewFlagSet(name, int(c.argcmax))
+	flags, err := varflag.NewFlagSet(name, int(c.argnmax))
 	c.errs = append(c.errs, err)
 	c.flags = flags
 
@@ -112,9 +112,10 @@ func (c *Command) AddFlag(fn varflag.FlagCreateFunc) {
 	f, cerr := fn()
 	if cerr != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: %s", ErrCommandFlags, cerr.Error()))
+		return
 	}
-	err := c.flags.Add(f)
-	if err != nil {
+
+	if err := c.flags.Add(f); err != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: %s", ErrCommandFlags, err.Error()))
 	}
 }
@@ -204,7 +205,7 @@ func (c *Command) AddSubCommand(cmd *Command) {
 func (c *Command) setArgcMax(max uint) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.argcmax = max
+	c.argnmax = max
 	return varflag.SetArgcMax(c.flags, int(max))
 }
 
@@ -230,7 +231,7 @@ func (c *Command) verify() error {
 		var withargs []string
 		withargs = append(withargs, c.parents...)
 		withargs = append(withargs, c.name)
-		withargs = append(withargs, fmt.Sprintf("[args...] // max %d", c.argcmax))
+		withargs = append(withargs, fmt.Sprintf("[args...] // max %d", c.argnmax))
 		c.usage = append(c.usage, strings.Join(withargs, " "))
 	}
 
@@ -381,15 +382,15 @@ func (c *Command) callBeforeAction(sess *Session) error {
 
 	args := sdk.NewArgs(c.flags.Args(), c.flags)
 
-	if c.argcmin == 0 && c.argcmax == 0 && args.Argn() > 0 {
+	if c.argnmin == 0 && c.argnmax == 0 && args.Argn() > 0 {
 		return fmt.Errorf("%w: %s: %s", ErrCommandAction, c.name, "command does not accept arguments")
 	}
 
-	if args.Argn() < c.argcmin {
-		return fmt.Errorf("%w: %s: command requires min %d arguments, %d provided", ErrCommandAction, c.name, c.argcmin, args.Argn())
+	if args.Argn() < c.argnmin {
+		return fmt.Errorf("%w: %s: command requires min %d arguments, %d provided", ErrCommandAction, c.name, c.argnmin, args.Argn())
 	}
-	if args.Argn() > c.argcmax {
-		return fmt.Errorf("%w: %s: command accepts max %d arguments, %d provided", ErrCommandAction, c.name, c.argcmax, args.Argn())
+	if args.Argn() > c.argnmax {
+		return fmt.Errorf("%w: %s: command accepts max %d arguments, %d provided, extra %v", ErrCommandAction, c.name, c.argnmax, args.Argn(), args.Args()[c.argnmax:args.Argn()])
 	}
 
 	if err := c.beforeAction(sess, args); err != nil {

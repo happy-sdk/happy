@@ -148,7 +148,7 @@ func (addon *Addon) Option(key string, value any, description string, validator 
 		key:       key,
 		value:     value,
 		desc:      description,
-		kind:      SettingsOption,
+		kind:      RuntimeOption,
 		validator: validator,
 	})
 }

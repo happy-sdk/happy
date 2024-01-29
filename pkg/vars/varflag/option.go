@@ -87,7 +87,7 @@ func (f *OptionFlag) Parse(args []string) (ok bool, err error) {
 	if len(opts) > 0 {
 		var str []string
 		for _, o := range opts {
-			if _, isSet := f.opts[o.String()]; !isSet {
+			if _, allowed := f.opts[o.String()]; !allowed {
 				return f.isPresent, fmt.Errorf("%w: (%s=%q)", ErrInvalidValue, f.name, o)
 			}
 			f.opts[o.String()] = true

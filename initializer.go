@@ -298,15 +298,15 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 	}
 	i.log(logging.NewQueueRecord(logging.LevelSystemDebug, "app slug set to", 2, slog.String("slug", m.slug)))
 
-	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argc.max")
+	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argn.max")
 	if mainArgcMaxErr != nil {
 		return mainArgcMaxErr
 	}
-	argcmax, err := strconv.ParseUint(mainArgcMaxSpec.Value, 10, 64)
+	argnmax, err := strconv.ParseUint(mainArgcMaxSpec.Value, 10, 64)
 	if err != nil {
 		return err
 	}
-	m.root.setArgcMax(uint(argcmax))
+	m.root.setArgcMax(uint(argnmax))
 
 	return nil
 }
