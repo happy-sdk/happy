@@ -94,6 +94,7 @@ jobs:
   finish-coverage-report:
     needs: coverage
     runs-on: ubuntu-latest
+    if: ${{ always() }}
     steps:
       - name: Coveralls Finish
         uses: coverallsapp/github-action@v2

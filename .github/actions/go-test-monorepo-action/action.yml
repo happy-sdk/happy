@@ -35,7 +35,7 @@ runs:
           ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
         elif [[ "$detected_os" == "windows" ]]; then
           pwsh -File ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.ps1 ${{ inputs.only-module-list }}
-        elif [[ "$detected_os" == "darwin" ]]; then
+        elif [[ "$detected_os" == "macos" ]]; then
           ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
         else
           echo "::error::Unsupported OS: [$detected_os]"
