@@ -32,11 +32,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Test all packages
-        id: test-coverage
+        id: coveredmodules
         uses: ./.github/actions/go-test-monorepo-action
         with:
           go-version: '>=1.21.0'
-      - run: echo modules ${{ steps.test-coverage.outputs.module }}
+      - run: echo modules "${{ steps.coveredmodules.outputs.modules }}"
         shell: bash
 
   upload-coverage:

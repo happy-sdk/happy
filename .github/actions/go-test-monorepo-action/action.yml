@@ -7,7 +7,7 @@ inputs:
 outputs:
   modules:
     description: "List of Go modules"
-    value: ${{ steps.coverage-generator.outputs.modules }}
+    value: ${{ steps.coveredmodules.outputs.modules }}
 runs:
   using: 'composite'
   steps:
@@ -16,6 +16,6 @@ runs:
       with:
         go-version: ${{ inputs.go-version }}
     - name: Run tests and generate coverage for all modules
-      id: coverage-generator
+      id: coveredmodules
       run: ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh
       shell: bash
