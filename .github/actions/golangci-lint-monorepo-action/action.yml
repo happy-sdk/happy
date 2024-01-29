@@ -5,12 +5,17 @@ inputs:
     description: 'GolangCI-Lint version'
     required: true
     default: 'latest'
-
+  go-version:
+    description: 'The Go version to download (if necessary) and use. Supports semver spec and ranges. Be sure to enclose this option in single quotation marks.'
+    required: true
+    default: '>=1.21.0'
 runs:
   using: 'composite'
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
 
     - name: Install golangci-lint
       run: |
@@ -18,10 +23,5 @@ runs:
       shell: bash
 
     - name: Lint all modules
-      run: |
-        modules=$(find . -type f -name 'go.mod' -exec dirname {} \;)
-        for module in $modules; do
-          echo "Linting module: $module"
-          (cd "$module" && $GITHUB_WORKSPACE/bin/golangci-lint run ./...)
-        done
+      run: ./.github/actions/golangci-lint-monorepo-action/golangci-lint-monorepo-action.sh
       shell: bash
