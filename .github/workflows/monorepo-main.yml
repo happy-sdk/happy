@@ -63,6 +63,17 @@ jobs:
         id: check-coverage
         working-directory: ${{ matrix.module }}
         run: |
+          if [[ -f coverage.out && $(wc -l <coverage.out) -gt 1 ]]; then
+            echo "coverage_data_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "coverage_data_exists=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Prepare flag name
+        id: prepare-flag
+        shell: bash
+        run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             # PowerShell commands for Windows runner
             $module_name = "${{ matrix.module }}"
@@ -78,17 +89,6 @@ jobs:
             fi
             echo "clean_module_name=$clean_module_name" >> $GITHUB_OUTPUT
           fi
-        shell: bash
-
-      - name: Prepare flag name
-        id: prepare-flag
-        run: |
-          module_name="${{ matrix.module }}"
-          clean_module_name="${module_name#./}"  # Remove leading ./
-          if [[ "$clean_module_name" == "." ]]; then
-            clean_module_name="happy"
-          fi
-          echo "clean_module_name=$clean_module_name" >> $GITHUB_OUTPUT
 
       - name: Upload coverage
         if: steps.check-coverage.outputs.coverage_data_exists == 'true'
