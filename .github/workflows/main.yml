@@ -19,6 +19,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - name: Lint all packages
         uses: ./.github/actions/golangci-lint-monorepo-action
         with:
