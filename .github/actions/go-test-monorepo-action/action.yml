@@ -18,7 +18,20 @@ runs:
       uses: actions/setup-go@v5
       with:
         go-version: ${{ inputs.go-version }}
+
+    - name: Determine OS
+      id: determine-os
+      run: echo "::set-output name=os::$(echo $RUNNER_OS | tr '[:upper:]' '[:lower:]')"
+
     - name: Run tests and generate coverage for all modules
       id: coveredmodules
-      run: ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
+      run: |
+        if [[ "${{ steps.determine-os.outputs.os }}" == "linux" ]]; then
+          ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
+        elif [[ "${{ steps.determine-os.outputs.os }}" == "windows" ]]; then
+          pwsh -File ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.ps1 ${{ inputs.only-module-list }}
+        else
+          echo "Unsupported OS"
+          exit 1
+        fi
       shell: bash

@@ -21,12 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Lint all packages
-        uses: ./.github/actions/golangci-lint-monorepo-action
+        uses: ./.github/actions/golangci-lint-action
         with:
           go-version: '>=1.21.0'
           golangci-lint-version: latest
 
-  list-monorepo-modules:
+  list-modules:
     needs: lint
     runs-on: ubuntu-latest
     outputs:
@@ -36,24 +36,24 @@ jobs:
 
       - name: Get monorepo modules
         id: modulelist
-        uses: ./.github/actions/go-test-monorepo-action
+        uses: ./.github/actions/go-test-action
         with:
           go-version: '>=1.21.0'
           only-module-list: true
 
-  monorepo-coverage-linux:
-    needs: list-monorepo-modules
+  coverage-linux:
+    needs: list-modules
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: ${{ fromJson(needs.list-monorepo-modules.outputs.modules) }}
+        module: ${{ fromJson(needs.list-modules.outputs.modules) }}
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
 
       - name: Run tests and generate coverage reports
         id: modulelist
-        uses: ./.github/actions/go-test-monorepo-action
+        uses: ./.github/actions/go-test-action
         with:
           go-version: '>=1.21.0'
 
@@ -88,19 +88,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.module }}/coverage.out
 
-  monorepo-coverage-windows:
-    needs: list-monorepo-modules
+  coverage-windows:
+    needs: list-modules
     runs-on: windows-latest
     strategy:
       matrix:
-        module: ${{ fromJson(needs.list-monorepo-modules.outputs.modules) }}
+        module: ${{ fromJson(needs.list-modules.outputs.modules) }}
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
 
       - name: Run tests and generate coverage reports on Windows
         id: modulelist-windows
-        uses: ./.github/actions/go-test-monorepo-action
+        uses: ./.github/actions/go-test-action
         with:
           go-version: '>=1.21.0'
           platform: windows
@@ -138,8 +138,8 @@ jobs:
 
   finish-coverage-report:
     needs:
-      - monorepo-coverage-linux
-      - monorepo-coverage-windows
+      - coverage-linux
+      - coverage-windows
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
