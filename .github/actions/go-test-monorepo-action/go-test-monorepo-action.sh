@@ -12,9 +12,9 @@ while IFS= read -r module; do
   modules+=("$module")
 
   # Run tests only if ONLY_MODULE_LIST is not "true"
-  if [ "$ONLY_MODULE_LIST" -ne "true" ]; then
+  if [ "$ONLY_MODULE_LIST" != "true" ]; then
     echo "Testing and generating coverage for module: $module"
-    if [ "$GO_TEST_RACE" -eq "true" ]; then
+    if [ "$GO_TEST_RACE" == "true" ]; then
       (cd "$module" && go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
     else
        (cd "$module" && go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)

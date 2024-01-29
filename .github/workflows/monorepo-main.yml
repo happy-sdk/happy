@@ -45,7 +45,7 @@ jobs:
           go-version: '>=1.21.0'
           only-module-list: true
 
-  coverage:
+  test-n-coverage:
     needs: list-modules
     strategy:
       matrix:
@@ -63,7 +63,7 @@ jobs:
           race: ${{ github.event.inputs.loose != 'true' }}
 
       - name: Check if coverage data exists
-        if: success() || failure()
+        if: github.event.inputs.loose == 'true' || success()
         id: check-coverage
         working-directory: ${{ matrix.module }}
         run: |
@@ -96,7 +96,7 @@ jobs:
           file: ${{ matrix.module }}/coverage.out
 
   finish-coverage-report:
-    needs: coverage
+    needs: test-n-coverage
     if: github.event.inputs.loose == 'true' || success()
     runs-on: ubuntu-latest
     steps:
