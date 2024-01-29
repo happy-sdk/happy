@@ -2,6 +2,7 @@
 
 # Check if only module list should be outputted
 ONLY_MODULE_LIST="$1"
+GO_TEST_RACE="$2"
 
 # Array to hold module paths
 modules=()
@@ -11,10 +12,15 @@ while IFS= read -r module; do
   modules+=("$module")
 
   # Run tests only if ONLY_MODULE_LIST is not "true"
-  if [ "$ONLY_MODULE_LIST" != "true" ]; then
+  if [ "$ONLY_MODULE_LIST" -ne "true" ]; then
     echo "Testing and generating coverage for module: $module"
-    (cd "$module" && go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
+    if [ "$GO_TEST_RACE" -eq "true" ]; then
+      (cd "$module" && go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
+    else
+       (cd "$module" && go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
+    fi
   fi
+
 done < <(find . -type f -name 'go.mod' -exec dirname {} \;)
 
 # Convert modules array to JSON array format

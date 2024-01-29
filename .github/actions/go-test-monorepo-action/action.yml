@@ -7,6 +7,9 @@ inputs:
   only-module-list:
     description: 'Only outputs module list without running tests'
     default: 'false'
+  race:
+    description: 'Add -race flag to go tests'
+    default: 'false'
 outputs:
   modules:
     description: "List of Go modules"
@@ -32,11 +35,11 @@ runs:
       shell: bash
       run: |
         if [[ "$detected_os" == "linux" ]]; then
-          ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
+          ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }} ${{ inputs.race }}
         elif [[ "$detected_os" == "windows" ]]; then
-          pwsh -File ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.ps1 ${{ inputs.only-module-list }}
+          pwsh -File ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.ps1 ${{ inputs.only-module-list }} ${{ inputs.race }}
         elif [[ "$detected_os" == "macos" ]]; then
-          ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }}
+          ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh ${{ inputs.only-module-list }} ${{ inputs.race }}
         else
           echo "::error::Unsupported OS: [$detected_os]"
           exit 1
