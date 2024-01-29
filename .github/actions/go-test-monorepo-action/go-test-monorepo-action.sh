@@ -7,7 +7,7 @@ modules=()
 while IFS= read -r module; do
     modules+=("$module")
     echo "Testing and generating coverage for module: $module"
-    (cd "$module" && go test -race -coverpkg=./... -coverprofile=coverage.out ./...)
+    (cd "$module" && go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=30s ./...)
 done < <(find . -type f -name 'go.mod' -exec dirname {} \;)
 
 # Output the modules for the matrix

@@ -36,7 +36,7 @@ jobs:
         uses: ./.github/actions/go-test-monorepo-action
         with:
           go-version: '>=1.21.0'
-      - run: echo random-number ${{ steps.test-coverage.outputs.module }}
+      - run: echo modules ${{ steps.test-coverage.outputs.module }}
         shell: bash
 
   upload-coverage:
@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Upload coverage
-        run: echo random-number ${{ github.ref }}
+        run: echo modules
 # test:
   #   needs: lint
   #   runs-on: ubuntu-latest
