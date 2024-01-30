@@ -219,7 +219,7 @@ func (m *Main) Run() {
 		return
 	}
 
-	if m.root.flag("help").Present() || m.cmd == nil {
+	if m.root.flag("help").Present() || m.cmd == nil || (m.cmd == m.root && m.root.doAction == nil) {
 		m.sess.Log().SetLevel(logging.LevelAlways)
 		if err := m.help(); err != nil {
 			m.sess.Log().Error("failed to print help", slog.String("err", err.Error()))
