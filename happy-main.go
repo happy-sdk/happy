@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -45,9 +46,11 @@ type Main struct {
 // New is alias to prototype.New
 func New(s Settings) *Main {
 	m := &Main{
-		init: newInitializer(&s),
-		root: NewCommand(filepath.Base(os.Args[0])),
+		init:     newInitializer(&s),
+		root:     NewCommand(filepath.Base(os.Args[0])),
+		exitTrap: testing.Testing(),
 	}
+
 	m.init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, "creating new application", 3))
 	return m
 }
@@ -410,8 +413,10 @@ func (m *Main) exit(code int) {
 	if m.exitCh != nil {
 		m.exitCh <- struct{}{}
 	}
-	if err := m.save(); err != nil {
-		m.sess.Log().Error("failed to save state", slog.String("err", err.Error()))
+	if !testing.Testing() {
+		if err := m.save(); err != nil {
+			m.sess.Log().Error("failed to save state", slog.String("err", err.Error()))
+		}
 	}
 
 	m.sess.Log().SystemDebug("shutdown complete", slog.String("uptime", uptime.String()))
