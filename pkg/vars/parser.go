@@ -761,29 +761,6 @@ func normalizeValue(str string) string {
 	return str
 }
 
-// In reports whether the rune is a member of one of the ranges.
-func unicodeIn(r rune, ranges ...*unicodeRangeTable) bool {
-	for _, inside := range ranges {
-		if unicodeIs(inside, r) {
-			return true
-		}
-	}
-	return false
-}
-
-func unicodeIs(rangeTab *unicodeRangeTable, r rune) bool {
-	r16 := rangeTab.R16
-	// Compare as uint32 to correctly handle negative runes.
-	if len(r16) > 0 && uint32(r) <= uint32(r16[len(r16)-1].Hi) {
-		return unicodeIs16(r16, uint16(r))
-	}
-	r32 := rangeTab.R32
-	if len(r32) > 0 && r >= rune(r32[0].Lo) {
-		return unicodeIs32(r32, uint32(r))
-	}
-	return false
-}
-
 // Is reports whether the rune is in the specified table of ranges.
 
 // IsSpace reports whether the rune is a space character as defined

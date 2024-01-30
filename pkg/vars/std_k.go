@@ -1195,16 +1195,6 @@ func unicodeIs32(ranges []unicodeRange32, r uint32) bool {
 	return false
 }
 
-// PrintRanges defines the set of printable characters according to Go.
-// ASCII space, U+0020, is handled separately.
-var unicodePrintRanges = []*unicodeRangeTable{
-	L,
-	M,
-	N,
-	P,
-	S,
-}
-
 // Bit masks for each code point under U+0100, for fast lookup.
 const (
 	pC     = 1 << iota // a control character.

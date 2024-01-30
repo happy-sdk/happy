@@ -11,20 +11,6 @@ import (
 	"github.com/happy-sdk/happy/pkg/vars"
 )
 
-var (
-	// for faster lookup our custom Unicode Character Table rules
-	// we have following two tables.
-	keyIllegalChars = [256]uint8{
-		'\t': 1, '\n': 1, '\v': 1, '\f': 1, '\r': 1,
-		'\\': 1, '"': 1, '\'': 1, '`': 1, '=': 1, '$': 1,
-	}
-
-	keyAutoTrimableChars = [256]uint8{
-		'\t': 1, '\n': 1, '\v': 1, '\f': 1, '\r': 1,
-		'\\': 1, '"': 1, '\'': 1, '`': 1, ' ': 1,
-	}
-)
-
 type keyTest struct {
 	Key  string
 	Want string

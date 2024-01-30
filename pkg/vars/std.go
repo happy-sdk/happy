@@ -931,18 +931,6 @@ func bitsTrailingZeros64(x uint64) int {
 	return int(deBruijn64tab[(x&-x)*deBruijn64>>(64-6)])
 }
 
-// IsPrint reports whether the rune is defined as printable by Go. Such
-// characters include letters, marks, numbers, punctuation, symbols, and the
-// ASCII space character, from categories L, M, N, P, S and the ASCII space
-// character. This categorization is the same as IsGraphic except that the
-// only spacing character is ASCII space, U+0020.
-func unicodeIsPrint(r rune) bool {
-	if uint32(r) <= unicodeMaxLatin1 {
-		return properties[uint8(r)]&pp != 0
-	}
-	return unicodeIn(r, unicodePrintRanges...)
-}
-
 func ryuDigits(d *decimalSlice, lower, central, upper uint64,
 	c0, cup bool) {
 	lhi, llo := divmod1e9(lower)
