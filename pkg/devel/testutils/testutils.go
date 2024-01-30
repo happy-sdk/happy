@@ -82,6 +82,27 @@ func Equal[V comparable](tt TestingIface, expected, actual V, msgAndArgs ...any)
 	}
 	return true
 }
+
+func HasPrefix(tt TestingIface, s, prefix string, msgAndArgs ...any) bool {
+	tt.Helper()
+	if !strings.HasPrefix(s, prefix) {
+		return fail(tt, fmt.Sprintf("Does not have prefix: \n"+
+			"expected: %v\n"+
+			"actual  : %v", prefix, s), msgAndArgs...)
+	}
+	return true
+}
+
+func HasSuffix(tt TestingIface, s, suffix string, msgAndArgs ...any) bool {
+	tt.Helper()
+	if !strings.HasSuffix(s, suffix) {
+		return fail(tt, fmt.Sprintf("Does not have suffix: \n"+
+			"expected: %v\n"+
+			"actual  : %v", suffix, s), msgAndArgs...)
+	}
+	return true
+}
+
 func NotEqual[V comparable](tt TestingIface, expected, actual V, msgAndArgs ...any) bool {
 	tt.Helper()
 	if expected == actual {
