@@ -186,11 +186,25 @@ func (i *initializer) Initialize(m *Main) error {
 		return err
 	}
 
+	slugSpec, slugErr := settingsb.GetSpec("app.slug")
+	if slugErr != nil {
+		return slugErr
+	}
+	m.slug = slugSpec.Value
+
 	inst, err := instance.New(m.slug)
 	if err != nil {
 		return err
 	}
 	m.instance = inst
+
+	if len(m.slug) == 0 {
+		m.slug = m.instance.Address().Instance()
+	}
+	if err := slugSpec.ValidateValue(m.slug); err != nil {
+		return err
+	}
+
 	if err := m.sess.opts.set("app.address", inst.Address().String(), true); err != nil {
 		return err
 	}
@@ -286,18 +300,6 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 		}
 	}
 
-	slugSpec, slugErr := settingsb.GetSpec("app.slug")
-	if slugErr != nil {
-		return slugErr
-	}
-	m.slug = slugSpec.Value
-
-	if len(m.slug) == 0 {
-		m.slug = m.instance.Address().Instance()
-	}
-	if err := slugSpec.ValidateValue(m.slug); err != nil {
-		return err
-	}
 	i.log(logging.NewQueueRecord(logging.LevelSystemDebug, "app slug set to", 2, slog.String("slug", m.slug)))
 
 	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argn.max")
