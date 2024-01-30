@@ -7,6 +7,7 @@ package logging
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"math"
 	"os"
@@ -103,6 +104,28 @@ type DefaultLogger struct {
 	lvl *slog.LevelVar
 	log *slog.Logger
 	ctx context.Context
+}
+
+func New(w io.Writer, lvl Level) *DefaultLogger {
+	l := &DefaultLogger{
+		lvl: new(slog.LevelVar),
+		ctx: context.Background(),
+	}
+	l.lvl.Set(slog.Level(lvl))
+
+	h := slog.NewTextHandler(w, &slog.HandlerOptions{
+		Level: l.lvl,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.LevelKey {
+				level := a.Value.Any().(slog.Level)
+				a.Value = slog.StringValue(Level(level).String())
+			}
+			return a
+		},
+		AddSource: true,
+	})
+	l.log = slog.New(h)
+	return l
 }
 
 func Default(lvl Level) *DefaultLogger {
