@@ -6,7 +6,7 @@ Package happy is a powerful tool for developers looking to bring their ideas to 
 
 :warning: *Happy is very early in development phase and is not intended for production use.*  
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy)](https://pkg.go.dev/github.com/happy-sdk/happy)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy)](https://pkg.go.dev/github.com/happy-sdk/happy) [![Coverage Status](https://coveralls.io/repos/github/happy-sdk/happy/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/happy?branch=main)
 
 ## Creating application
 
