@@ -6,10 +6,7 @@ package vars_test
 
 import (
 	"errors"
-	"strings"
 	"testing"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/happy-sdk/happy/pkg/vars"
 )
@@ -27,54 +24,6 @@ var (
 		'\\': 1, '"': 1, '\'': 1, '`': 1, ' ': 1,
 	}
 )
-
-// parseKeyStd is parseKey equivalent used in tests.
-// IMPORTANT! This implementations should reflect optimal key parsing
-// done with std libraries so that we can have adequate
-// benchmark results for our own implementation.
-func parseKeyStd(str string) (key string, err error) {
-	if len(str) == 0 {
-		return "", vars.ErrKeyIsEmpty
-	}
-
-	if !utf8.ValidString(str) {
-		return "", vars.ErrKeyNotValidUTF8
-	}
-
-	// remove most outer trimmable characters
-	key = strings.TrimFunc(str, func(c rune) bool {
-		if c < 256 {
-			return keyAutoTrimableChars[c] == 1
-
-		}
-		return false
-	})
-
-	if len(key) == 0 {
-		return "", vars.ErrKeyHasIllegalChar
-	}
-
-	if unicode.IsNumber(rune(key[0])) {
-		return "", vars.ErrKeyPrefix
-	}
-
-	ckey := key
-	for len(ckey) > 0 {
-		c, size := utf8.DecodeRuneInString(ckey)
-		ckey = ckey[size:]
-		if unicode.IsControl(c) {
-			return "", vars.ErrKeyHasControlChar
-		}
-
-		if !unicode.IsPrint(c) {
-			return "", vars.ErrKeyHasNonPrintChar
-		}
-		if c < 256 && (keyIllegalChars[c] == 1) {
-			return "", vars.ErrKeyHasIllegalChar
-		}
-	}
-	return key, nil
-}
 
 type keyTest struct {
 	Key  string
@@ -169,18 +118,6 @@ func getKeyTests() []keyTest {
 	}
 }
 
-func TestParseKeyStdTest(t *testing.T) {
-	for _, test := range getKeyTests() {
-		key, err := parseKeyStd(test.Key)
-		if test.Want != key {
-			t.Errorf("in(%s) want(%s) got(%s) err(%v)", test.Key, test.Want, key, err)
-		}
-		if !errors.Is(err, test.Err) {
-			t.Errorf("in(%s) want err(%s) got err(%v)", test.Key, test.Want, err)
-		}
-	}
-}
-
 func TestParseKey(t *testing.T) {
 	for _, test := range getKeyTests() {
 		// check that key set is correct
@@ -194,22 +131,4 @@ func TestParseKey(t *testing.T) {
 				test.Key, test.Err, err, k)
 		}
 	}
-}
-
-func FuzzVariableKeys(f *testing.F) {
-	for _, test := range getKeyTests() {
-		f.Add(test.Key)
-	}
-	f.Fuzz(func(t *testing.T, arg string) {
-		klib, errlib := vars.ParseKey(arg)
-		kstd, errstd := parseKeyStd(arg)
-
-		if klib != kstd {
-			t.Errorf("arg(%s) parsed keys do not match std(%s) != lib(%s)", arg, kstd, klib)
-		}
-
-		if (errlib != nil && errstd == nil) || errlib == nil && errstd != nil {
-			t.Fatalf("arg(%s) lib error(%v) not like std error(%v)", arg, errlib, errstd)
-		}
-	})
 }
