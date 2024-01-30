@@ -4,12 +4,12 @@ inputs:
   go-version:
     description: 'Go version'
     default: '1.21.5'
-  only-module-list:
-    description: 'Only outputs module list without running tests'
-    default: 'false'
   race:
     description: 'Add -race flag to go tests'
     default: 'true'
+  only-module-list:
+    description: 'Only outputs module list without running tests'
+    default: 'false'
   fail-fast:
     description: 'Fail on first eror'
     default: 'true'
