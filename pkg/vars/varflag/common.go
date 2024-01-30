@@ -281,11 +281,12 @@ func (f *Common) parse(args []string, read func([]vars.Variable) error) (bool, e
 	defer f.mu.Unlock()
 	name := f.name
 	if f.parsed || f.isPresent {
-		return f.isPresent, fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, f.name)
+		return f.isPresent, fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, name)
 	}
 
 	if len(args) == 0 {
-		return false, fmt.Errorf("%s, %w: no arguments", name, ErrParse)
+		// return false, fmt.Errorf("%s, %w: no arguments", name, ErrParse)
+		return false, nil
 	}
 
 	err := f.parseArgs(args, read)
