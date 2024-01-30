@@ -5,6 +5,7 @@
 package instance
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/happy-sdk/happy/sdk/networking/address"
@@ -33,6 +34,9 @@ func New(slug string) (*Instance, error) {
 	curr, err := address.Current()
 	if err != nil {
 		return nil, err
+	}
+	if len(slug) == 0 {
+		return nil, errors.New("instance can not be created without slug")
 	}
 	a, err := curr.Parse(slug)
 	if err != nil {
