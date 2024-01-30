@@ -98,11 +98,11 @@ func TestNoArgs(t *testing.T) {
 			}
 			flag, _ := New(tt.name, "", "")
 
-			if ok, err := flag.Parse([]string{}); ok || !errors.Is(err, ErrParse) {
+			if ok, err := flag.Parse([]string{}); ok || err != nil {
 				t.Errorf("flag should fail to parse got %t %q", ok, err)
 			}
 			flag2, _ := New(tt.name, "", "")
-			if ok, err := flag2.Parse(nil); ok || !errors.Is(err, ErrParse) {
+			if ok, err := flag2.Parse(nil); ok || err != nil {
 				t.Errorf("flag should fail to parse got %t %q", ok, err)
 			}
 		})
