@@ -81,7 +81,7 @@ jobs:
         run: |
           module_path="${{ matrix.module }}"
           if [ "$module_path" == "." ]; then
-            clean_module_name=""
+            clean_module_name="happy"
           else
             clean_module_name="${module_path#./}"
           fi
