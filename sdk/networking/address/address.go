@@ -186,6 +186,38 @@ func Current() (*Address, error) {
 	return FromModule(host, name)
 }
 
+// Current returns format of current application happy proto address.
+func CurrentForDepth(d int) (*Address, error) {
+	var name string
+	if info, available := debug.ReadBuildInfo(); available {
+
+		if info.Path == "command-line-arguments" {
+			return nil, errors.Join(
+				fmt.Errorf("%w: unable to read module info", ErrAddr),
+				fmt.Errorf("%w: possible reason go run main.go vs go run ./", ErrAddr),
+			)
+		} else if info.Path != "" {
+			name = info.Path
+		}
+	}
+	if name == "" {
+		pc, _, _, _ := runtime.Caller(d)
+		ps := strings.Split(runtime.FuncForPC(pc).Name(), ".")
+		pl := len(ps)
+		if ps[pl-2][0] == '(' {
+			name = strings.Join(ps[0:pl-2], ".")
+		} else {
+			name = strings.Join(ps[0:pl-1], ".")
+		}
+	}
+	host, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	return FromModule(host, name)
+}
+
 // Valid returns true if s is string which is valid app name.
 func Valid(s string) bool {
 	re := regexp.MustCompile(Regexp)
