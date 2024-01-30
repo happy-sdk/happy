@@ -2,7 +2,6 @@ go 1.21.5
 
 use (
 	.
-	./addons/third-party/github
 	./internal/cmd/hap
 	./pkg/cli/ansicolor
 	./pkg/devel/testutils

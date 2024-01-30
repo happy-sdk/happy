@@ -6,7 +6,6 @@ package main
 
 import (
 	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/addons/third-party/github"
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser"
 	"github.com/happy-sdk/happy/internal/cmd/hap/migrations"
 	"github.com/happy-sdk/happy/sdk/cli/commands"
@@ -60,12 +59,12 @@ func hap() *happy.Main {
 				CommandEnabled: true,
 			},
 		)).
-		WithAddon(github.Addon(
-			github.Settings{
-				Owner: "happy-sdk",
-				Repo:  "happy",
-			},
-		)).
+		// WithAddon(github.Addon(
+		// 	github.Settings{
+		// 		Owner: "happy-sdk",
+		// 		Repo:  "happy",
+		// 	},
+		// )).
 		WithMigrations(migrations.New()).
 		WithService(service()).
 		WithCommand(commands.Config()).

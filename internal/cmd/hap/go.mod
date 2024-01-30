@@ -6,11 +6,17 @@ require (
 	github.com/charmbracelet/bubbles v0.17.1
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.9.1
+	github.com/happy-sdk/happy v0.11.1-0.20240130203847-2b441337d12b
+	github.com/happy-sdk/happy/pkg/vars v0.5.2-0.20240130002506-403322e17fb5
 )
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
+	github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2-0.20240130002506-403322e17fb5 // indirect
+	github.com/happy-sdk/happy/pkg/scheduling/cron v0.3.2-0.20240130002506-403322e17fb5 // indirect
+	github.com/happy-sdk/happy/pkg/strings/bexp v1.2.0 // indirect
+	github.com/happy-sdk/happy/pkg/version v0.1.1-0.20240130002506-403322e17fb5 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
@@ -20,6 +26,7 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/term v0.12.0 // indirect

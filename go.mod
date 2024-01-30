@@ -4,6 +4,7 @@ go 1.21.5
 
 require (
 	github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2-0.20240130002506-403322e17fb5
+	github.com/happy-sdk/happy/pkg/devel/testutils v0.4.0
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.3.2-0.20240130002506-403322e17fb5
 	github.com/happy-sdk/happy/pkg/vars v0.5.2-0.20240130002506-403322e17fb5
 	github.com/happy-sdk/happy/pkg/version v0.1.1-0.20240130002506-403322e17fb5
