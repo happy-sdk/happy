@@ -68,12 +68,12 @@ func (s *Service) OnStop(action Action) {
 }
 
 // OnTick when set will be called every application tick when service is in running state.
-func (s *Service) OnTick(action ActionTick) {
+func (s *Service) Tick(action ActionTick) {
 	s.tickAction = action
 }
 
 // OnTock is called after every tick.
-func (s *Service) OnTock(action ActionTock) {
+func (s *Service) Tock(action ActionTock) {
 	s.tockAction = action
 }
 

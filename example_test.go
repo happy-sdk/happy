@@ -5,17 +5,23 @@
 package happy_test
 
 import (
+	"fmt"
+
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/sdk/logging"
 )
 
 func ExampleNew() {
-	app := happy.New(happy.Settings{})
+	log := logging.NewTestLogger(logging.LevelError)
 
+	app := happy.New(happy.Settings{})
+	app.WithLogger(log)
 	app.Do(func(sess *happy.Session, args happy.Args) error {
 		sess.Log().Println("Hello, world!")
 		return nil
 	})
-	// app.Run()
-
+	app.Run()
+	fmt.Println(log.Output())
 	// Output:
+	// {"level":"out","msg":"Hello, world!"}
 }
