@@ -87,6 +87,17 @@ func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {
 	return spec, nil
 }
 
+func (b *Blueprint) SetDefault(key string, value string) error {
+	spec, ok := b.specs[key]
+	if !ok {
+		return fmt.Errorf("%s: not found", key)
+	}
+	spec.Value = value
+	b.specs[key] = spec
+
+	return nil
+}
+
 func (b *Blueprint) Extend(group string, ext Settings) error {
 	exptbp, err := ext.Blueprint()
 	if err != nil {
