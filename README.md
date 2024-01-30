@@ -6,7 +6,7 @@ Package happy is a powerful tool for developers looking to bring their ideas to 
 
 :warning: *Happy is very early in development phase and is not intended for production use.*  
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy)](https://pkg.go.dev/github.com/happy-sdk/happy) [![Coverage Status](https://coveralls.io/repos/github/happy-sdk/happy/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/happy?branch=main)
+![GitHub Release](https://img.shields.io/github/v/release/happy-sdk/happy) [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy)](https://pkg.go.dev/github.com/happy-sdk/happy) [![Coverage Status](https://coveralls.io/repos/github/happy-sdk/happy/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/happy?branch=main) ![GitHub License](https://img.shields.io/github/license/happy-sdk/happy)
 
 ## Creating application
 
@@ -19,19 +19,19 @@ Happy SDK is designed to simplify your development process without introducing a
 package main
 
 import (
-	"fmt"
+  "fmt"
 
-	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/sdk/logging"
+  "github.com/happy-sdk/happy"
+  "github.com/happy-sdk/happy/sdk/logging"
 )
 
 func ExampleNew() {
-	app := happy.New(happy.Settings{})
-	app.Do(func(sess *happy.Session, args happy.Args) error {
-		sess.Log().Println("Hello, world!")
-		return nil
-	})
-	app.Run()
+  app := happy.New(happy.Settings{})
+  app.Do(func(sess *happy.Session, args happy.Args) error {
+    sess.Log().Println("Hello, world!")
+    return nil
+  })
+  app.Run()
 }
 
 ```
@@ -159,10 +159,10 @@ func Addon() *happy.Addon {
   addon.Setting("greet.msg", "any value", "setting description", /* validation func */)
 
   // Optional: Register commands provided by the addon
-  addon.ProvidesCommand(...)
+  addon.ProvidesCommand(/* provide command */)
 
   // Optional: Register services provided by the addon
-  addon.ProvidesService(...)
+  addon.ProvidesService(/* provide service */)
 
   // Optional: Make a custom API accessible across the application 
   addon.ProvidesAPI(&HelloWorldAPI{}) 
