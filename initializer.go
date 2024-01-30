@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -22,6 +23,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/migration"
+	"github.com/happy-sdk/happy/sdk/networking/address"
 	"github.com/happy-sdk/happy/sdk/settings"
 )
 
@@ -191,16 +193,30 @@ func (i *initializer) Initialize(m *Main) error {
 		return slugErr
 	}
 	m.slug = slugSpec.Value
-
+	if len(m.slug) == 0 {
+		if testing.Testing() {
+			tmpaddr, err := address.CurrentForDepth(2)
+			if err != nil {
+				return err
+			}
+			m.slug = tmpaddr.Instance() + "-test"
+		} else {
+			curr, err := address.Current()
+			if err != nil {
+				return err
+			}
+			m.slug = curr.Instance()
+		}
+		if err := settingsb.SetDefault("app.slug", m.slug); err != nil {
+			return err
+		}
+	}
 	inst, err := instance.New(m.slug)
 	if err != nil {
 		return err
 	}
 	m.instance = inst
 
-	if len(m.slug) == 0 {
-		m.slug = m.instance.Address().Instance()
-	}
 	if err := slugSpec.ValidateValue(m.slug); err != nil {
 		return err
 	}
@@ -446,29 +462,12 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 	}
 
 	m.sess.Log().LogDepth(3, logging.LevelSystemDebug, "initializing paths")
-	wd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	if err := m.sess.opts.set("app.fs.path.pwd", wd, true); err != nil {
-		return err
-	}
-
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	if err := m.sess.opts.set("app.fs.path.home", userHomeDir, true); err != nil {
-		return err
-	}
 
 	if len(m.slug) == 0 {
-		return fmt.Errorf("%w: slug is empty", Error)
+		return fmt.Errorf("%w: can not configure paths slug is empty", Error)
 	}
 
 	dir := m.slug
-
 	if profileName != "default" {
 		dir = filepath.Join(dir, "profiles", profileName)
 	}
@@ -481,6 +480,7 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 	if err := m.sess.opts.set("app.fs.path.tmp", tempDir, true); err != nil {
 		return err
 	}
+
 	m.exitFunc = append(m.exitFunc, func(sess *Session, code int) error {
 		tmp := os.TempDir()
 		if !strings.HasPrefix(tempDir, tmp) {
@@ -490,11 +490,43 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 		return os.RemoveAll(tempDir)
 	})
 
-	// cache dir
-	userCacheDir, err := os.UserCacheDir()
+	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
+	if err := m.sess.opts.set("app.fs.path.home", userHomeDir, true); err != nil {
+		return err
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if err := m.sess.opts.set("app.fs.path.pwd", wd, true); err != nil {
+		return err
+	}
+
+	var (
+		userCacheDir  string
+		userConfigDir string
+	)
+
+	if testing.Testing() {
+		userCacheDir = filepath.Join(tempDir, "cache")
+		userConfigDir = filepath.Join(tempDir, "config")
+	} else {
+		userCacheDir, err = os.UserCacheDir()
+		if err != nil {
+			return err
+		}
+		// config dir
+		userConfigDir, err = os.UserConfigDir()
+		if err != nil {
+			return err
+		}
+	}
+
+	//  cache dir
 	appCacheDir := filepath.Join(userCacheDir, dir)
 	_, err = os.Stat(appCacheDir)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -506,11 +538,6 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 		return err
 	}
 
-	// config dir
-	userConfigDir, err := os.UserConfigDir()
-	if err != nil {
-		return err
-	}
 	appConfigDir := filepath.Join(userConfigDir, dir)
 	_, err = os.Stat(appConfigDir)
 	if errors.Is(err, fs.ErrNotExist) {
