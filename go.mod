@@ -12,4 +12,4 @@ require (
 	golang.org/x/text v0.14.0
 )
 
-require github.com/happy-sdk/happy/pkg/strings/bexp v1.3.0 // indirect
+require github.com/happy-sdk/happy/pkg/strings/bexp v1.3.1 // indirect
