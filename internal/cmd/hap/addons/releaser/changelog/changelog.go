@@ -221,6 +221,9 @@ func ParseEntryType(typ, scope string) (EntryType, error) {
 	case "devops":
 		etyp.Typ = "devops"
 		etyp.Kind = EntryKindPatch
+	case "dev":
+		etyp.Typ = "dev"
+		etyp.Kind = EntryKindPatch
 	default:
 		return etyp, fmt.Errorf("invalid commit message type: %s", typ)
 	}
@@ -245,6 +248,7 @@ type Commit struct {
 // 	{Typ: "perf", Scope: "", Kind: EntryKindPatch},
 // 	{Typ: "test", Scope: "", Kind: EntryKindPatch},
 // 	{Typ: "devops", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "dev", Scope: "", Kind: EntryKindPatch},
 // 	{Typ: "chore", Scope: "", Kind: EntryKindPatch},
 // 	{Typ: "revert", Scope: "", Kind: EntryKindPatch},
 // }

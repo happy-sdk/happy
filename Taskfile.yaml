@@ -1,0 +1,25 @@
+# https://taskfile.dev
+
+version: '3'
+
+dotenv: ['.env']
+
+tasks:
+  lint:
+    desc: Lint the project
+    dir: .
+    silent: true
+    cmds:
+      - ./.github/actions/golangci-lint-monorepo-action/golangci-lint-monorepo-action.sh
+  test:
+    desc: Test all project modules
+    dir: .
+    silent: true
+    cmds:
+      - ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh
+  release:
+    desc: Run monorepo releaser
+    dir: internal/cmd/hap
+    silent: true
+    cmds:
+      - go run . release
