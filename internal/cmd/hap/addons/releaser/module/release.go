@@ -43,6 +43,15 @@ func (p *Package) Release(sess *happy.Session) error {
 		return err
 	}
 
+	origin := sess.Get("releaser.git.remote.name").String()
+	branch := sess.Get("releaser.git.branch").String()
+
+	gitpush := exec.Command("git", "push", origin, branch)
+	gitpush.Dir = sess.Get("releaser.working.directory").String()
+	if err := cli.RunCommand(sess, gitpush); err != nil {
+		return err
+	}
+
 	if strings.Contains(p.Import, "internal") {
 		sess.Log().Warn("skipping internal package release", slog.String("package", p.Import))
 		return nil
@@ -54,14 +63,6 @@ func (p *Package) Release(sess *happy.Session) error {
 		return err
 	}
 
-	origin := sess.Get("releaser.git.remote.name").String()
-	branch := sess.Get("releaser.git.branch").String()
-
-	gitpush := exec.Command("git", "push", origin, branch)
-	gitpush.Dir = sess.Get("releaser.working.directory").String()
-	if err := cli.RunCommand(sess, gitpush); err != nil {
-		return err
-	}
 	gitpushtag := exec.Command("git", "push", origin, p.NextRelease)
 	gitpushtag.Dir = sess.Get("releaser.working.directory").String()
 	if err := cli.RunCommand(sess, gitpushtag); err != nil {
