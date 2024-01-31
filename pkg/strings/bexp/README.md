@@ -4,7 +4,7 @@ Go implementation of Brace Expansion mechanism to generate arbitrary strings.
 
 Implementing: [3.5.1 Brace Expansion][bash-be]
 
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy-go/strings/bexp)](https://pkg.go.dev/github.com/happy-sdk/happy-go/strings/bexp)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/pkg/strings/bexp)](https://pkg.go.dev/github.com/happy-sdk/happy/pkg/strings/bexp)
 ![license](https://img.shields.io/github/license/happy-sdk/happy-go)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
@@ -26,7 +26,7 @@ Implementing: [3.5.1 Brace Expansion][bash-be]
 
 ## Usage
 
-`go get github.com/happy-sdk/happy-go/strings/bexp`
+`go get github.com/happy-sdk/happy/pkg/strings/bexp`
 
 ## Get string slice
 
@@ -36,7 +36,7 @@ package main
 import (
   "fmt"
 
-  "github.com/happy-sdk/happy-go/strings/bexp"
+  "github.com/happy-sdk/happy/pkg/strings/bexp"
 )
 
 func main() {
@@ -91,7 +91,7 @@ package main
 import (
   "log"
 
-  "github.com/happy-sdk/happy-go/strings/bexp"
+  "github.com/happy-sdk/happy/pkg/strings/bexp"
 )
 
 func main() {
@@ -126,7 +126,7 @@ import (
   "log"
   "math"
 
-  "github.com/happy-sdk/happy-go/strings/bexp"
+  "github.com/happy-sdk/happy/pkg/strings/bexp"
 )
 
 func getCenterTile(lat, long float64, zoom int) (z, x, y int) {
@@ -192,7 +192,7 @@ import (
   "errors"
   "fmt"
 
-  "github.com/happy-sdk/happy-go/strings/bexp"
+  "github.com/happy-sdk/happy/pkg/strings/bexp"
 )
 
 func main() {
@@ -219,7 +219,7 @@ import (
   "fmt"
   "os"
 
-  "github.com/happy-sdk/happy-go/strings/bexp"
+  "github.com/happy-sdk/happy/pkg/strings/bexp"
 )
 
 func main() {
@@ -265,7 +265,7 @@ import (
   "fmt"
   "os"
 
-  "github.com/happy-sdk/happy-go/strings/bexp"
+  "github.com/happy-sdk/happy/pkg/strings/bexp"
 )
 
 func main() {
