@@ -52,9 +52,11 @@ func ParseGitLog(sess *happy.Session, log string) (*Changelog, error) {
 	return FromCommits(sess, commits)
 }
 
+var commitRegex = regexp.MustCompile(`^(?P<Type>[^\(]+)(?:\((?P<Scope>[^\)]*)\))?: (?P<Subject>.+)$`)
+
 func FromCommits(sess *happy.Session, commits []Commit) (*Changelog, error) {
 	changelog := &Changelog{}
-	commitRegex := regexp.MustCompile(`^(?P<Type>[^\(]+)(?:\((?P<Scope>[^\)]*)\))?: (?P<Subject>.+)$`)
+
 	breakingChangePrefix := "BREAKING CHANGE:"
 
 	for _, commit := range commits {
@@ -106,14 +108,21 @@ func (c *Changelog) Empty() bool {
 	return c.entries == nil && c.breaking == nil
 }
 
-func (c *Changelog) IsBreaking() bool {
+func (c *Changelog) HasMajorUpdate() bool {
 	if c.breaking != nil {
 		return len(c.breaking) > 0
+	}
+	if c.entries != nil {
+		for _, entry := range c.entries {
+			if entry.Typ.Kind == EntryKindMajor {
+				return true
+			}
+		}
 	}
 	return false
 }
 
-func (c *Changelog) IsFeature() bool {
+func (c *Changelog) HasMinorUpdate() bool {
 	if c.entries != nil {
 		for _, entry := range c.entries {
 			if entry.Typ.Kind == EntryKindMinor {
@@ -124,7 +133,7 @@ func (c *Changelog) IsFeature() bool {
 	return false
 }
 
-func (c *Changelog) IsPatch() bool {
+func (c *Changelog) HasPatchUpdate() bool {
 	if c.entries != nil {
 		for _, entry := range c.entries {
 			if entry.Typ.Kind == EntryKindPatch {

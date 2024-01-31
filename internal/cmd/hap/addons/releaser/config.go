@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -61,6 +62,23 @@ func newConfiguration(sess *happy.Session, path string) (*configuration, error) 
 		return nil, err
 	}
 
+	dotenvp := filepath.Join(c.WD, ".env")
+	dotenvb, err := os.ReadFile(dotenvp)
+	if err == nil {
+		sess.Log().Debug("loading .env file", slog.String("path", dotenvp))
+		env, err := vars.ParseMapFromBytes(dotenvb)
+		if err != nil {
+			return nil, err
+		}
+		env.Range(func(v vars.Variable) bool {
+			sess.Log().Debug("setting env var", slog.String("env", v.Name()))
+			if err = os.Setenv(v.Name(), v.String()); err != nil {
+				sess.Log().Error("error setting env var", slog.String("env", v.Name()), slog.String("value", v.String()), slog.String("err", err.Error()))
+			}
+			return true
+		})
+	}
+
 	var opts map[string]string = map[string]string{
 		"releaser.working.directory": c.WD,
 		"releaser.git.branch":        gitinfo.branch,
@@ -71,6 +89,7 @@ func newConfiguration(sess *happy.Session, path string) (*configuration, error) 
 		"releaser.git.email":         gitinfo.email,
 		"releaser.go.modules.count":  fmt.Sprint(totalmodules),
 		"releaser.go.monorepo":       fmt.Sprintf("%t", totalmodules > 1),
+		"releaser.github.token":      os.Getenv("GITHUB_TOKEN"),
 	}
 
 	for key, value := range opts {
@@ -234,7 +253,13 @@ func (c *configuration) getConfirmConfigModel(sess *happy.Session) (configTable,
 	var rows []table.Row
 
 	for _, option := range options {
-		rows = append(rows, table.Row{option.Name, option.Value, option.Description})
+		var value string
+		if option.Name == "releaser.github.token" {
+			value = "********"
+		} else {
+			value = option.Value
+		}
+		rows = append(rows, table.Row{option.Name, value, option.Description})
 	}
 
 	t := table.New(

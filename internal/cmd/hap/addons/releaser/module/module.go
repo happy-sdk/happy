@@ -147,21 +147,21 @@ func (p *Package) getChangelog(sess *happy.Session) error {
 		sess.Log().Debug("no changelog", slog.String("package", p.Import))
 		return nil
 	}
-	if p.Changelog.IsBreaking() {
+	if p.Changelog.HasMajorUpdate() {
 		nextver, err := bumpMajor(p.TagPrefix, p.LastRelease)
 		if err != nil {
 			return fmt.Errorf("failed to bump major version for(%s): %w", p.Import, err)
 		}
 		p.NextRelease = nextver
 		p.NeedsRelease = true
-	} else if p.Changelog.IsFeature() {
+	} else if p.Changelog.HasMinorUpdate() {
 		nextver, err := bumpMinor(p.TagPrefix, p.LastRelease)
 		if err != nil {
 			return fmt.Errorf("failed to bump minor version for(%s): %w", p.Import, err)
 		}
 		p.NextRelease = nextver
 		p.NeedsRelease = true
-	} else if p.Changelog.IsPatch() {
+	} else if p.Changelog.HasPatchUpdate() {
 		nextver, err := bumpPatch(p.TagPrefix, p.LastRelease)
 		if err != nil {
 			return fmt.Errorf("failed to bump patch version for(%s): %w", p.Import, err)
