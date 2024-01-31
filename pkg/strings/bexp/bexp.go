@@ -143,6 +143,12 @@ func parseCommaParts(str string) []string {
 	return parts
 }
 
+var (
+	numericSequenceRegex = regexp.MustCompile(`^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$`)
+	alphaSequenceRegex   = regexp.MustCompile(`^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$`)
+	commaInBracesRegex   = regexp.MustCompile(`,.*\}`)
+)
+
 func expand(str string, isTop bool) []string {
 	m := Balanced("{", "}", str)
 
@@ -151,7 +157,6 @@ func expand(str string, isTop bool) []string {
 	}
 
 	var post []string
-
 	if len(m.Post) > 0 {
 		post = expand(m.Post, false)
 	} else {
@@ -159,49 +164,34 @@ func expand(str string, isTop bool) []string {
 	}
 
 	if strings.HasSuffix(m.Pre, "$") {
-		expansions := []string{}
-		for i := 0; i < len(post); i++ {
-			expansions = append(expansions, m.Pre+"{"+m.Body+"}"+post[i])
+		var expansions []string
+		for _, p := range post {
+			expansions = append(expansions, m.Pre+"{"+m.Body+"}"+p)
 		}
 		return expansions
 	}
 
-	var (
-		isNumericSequence,
-		isAlphaSequence bool
-	)
-	isSequence := strings.Contains(m.Body, "..")
-	if isSequence {
-		isNumericSequence = regexp.MustCompile(`^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$`).MatchString(m.Body)
-		isAlphaSequence = regexp.MustCompile(`^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$`).MatchString(m.Body)
-		isSequence = isNumericSequence || isAlphaSequence
-	}
-
-	// slow regex `^(.*,)+(.+)?$`
+	isNumericSequence := numericSequenceRegex.MatchString(m.Body)
+	isAlphaSequence := alphaSequenceRegex.MatchString(m.Body)
+	isSequence := isNumericSequence || isAlphaSequence
 	isOptions := strings.Contains(m.Body, ",")
 
 	if !isSequence && !isOptions {
-		// UseCase???
-		if regexp.MustCompile(`,.*\}`).MatchString(m.Post) {
+		if commaInBracesRegex.MatchString(m.Post) {
 			return expand(m.Pre+"{"+m.Body+escClose+m.Post, false)
 		}
 		return []string{str}
 	}
 
-	var n []string
-	var n2 []string
-
+	var n, n2 []string
 	if isSequence {
-		n = strings.Split(m.Body, `..`)
+		n = strings.Split(m.Body, "..")
 		if len(n) == 3 {
-			// {1..10..04} leading 0 should be removed
 			n[2] = strings.TrimLeft(n[2], "0")
 		}
-
 		n2 = expandSequence(n, isAlphaSequence)
 	} else {
 		n = parseCommaParts(m.Body)
-
 		if len(n) == 1 {
 			n = mapArray(expand(n[0], false), embrace)
 		}
