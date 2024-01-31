@@ -39,6 +39,27 @@ func newConfiguration(sess *happy.Session, path string) (*configuration, error) 
 	if err != nil {
 		return nil, err
 	}
+	if gitinfo.dirty == "true" {
+		return nil, fmt.Errorf("git repository is dirty - commit or stash changes before releasing")
+	}
+
+	totalmodules := 0
+	if err := filepath.Walk(c.WD, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			return nil
+		}
+		goModPath := filepath.Join(path, "go.mod")
+		if _, err := os.Stat(goModPath); err != nil {
+			return nil
+		}
+		totalmodules++
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 
 	var opts map[string]string = map[string]string{
 		"releaser.working.directory": c.WD,
@@ -48,7 +69,10 @@ func newConfiguration(sess *happy.Session, path string) (*configuration, error) 
 		"releaser.git.dirty":         gitinfo.dirty,
 		"releaser.git.committer":     gitinfo.committer,
 		"releaser.git.email":         gitinfo.email,
+		"releaser.go.modules.count":  fmt.Sprint(totalmodules),
+		"releaser.go.monorepo":       fmt.Sprintf("%t", totalmodules > 1),
 	}
+
 	for key, value := range opts {
 		if err := sess.Set(key, value); err != nil {
 			return nil, err

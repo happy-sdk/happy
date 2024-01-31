@@ -39,43 +39,29 @@ func main() {
 		return loader.Err()
 	})
 
-	main.Before(func(sess *happy.Session, args happy.Args) error {
-		sess.Log().Info("main.Before")
-		return nil
-	})
+	// main.Before(func(sess *happy.Session, args happy.Args) error {
+	// 	sess.Log().Info("main.Before")
+	// 	return nil
+	// })
 
-	main.Do(func(sess *happy.Session, args happy.Args) error {
-		sess.Log().Info("main.Do")
+	// main.Do(func(sess *happy.Session, args happy.Args) error {
+	// 	return nil
+	// })
 
-		sess.Log().SystemDebug("main.Do SystemDebug")
-		sess.Log().Debug("main.Do Debug")
-		sess.Log().Info("main.Do Info")
-		sess.Log().Ok("main.Do Ok")
-		sess.Log().Notice("main.Do Notice")
-		sess.Log().NotImplemented("main.Do NotImplemented")
-		sess.Log().Warn("main.Do Warn")
-		sess.Log().Deprecated("main.Do Deprecated")
-		sess.Log().Error("main.Do Error")
-		sess.Log().BUG("main.Do BUG")
-		sess.Log().Println("main.Do Println")
-		<-sess.UserClosed()
-		return nil
-	})
+	// main.AfterSuccess(func(sess *happy.Session) error {
+	// 	sess.Log().NotImplemented("main.AfterSuccess")
+	// 	return nil
+	// })
 
-	main.AfterSuccess(func(sess *happy.Session) error {
-		sess.Log().NotImplemented("main.AfterSuccess")
-		return nil
-	})
+	// main.AfterFailure(func(sess *happy.Session, err error) error {
+	// 	sess.Log().NotImplemented("main.AfterFailure")
+	// 	return nil
+	// })
 
-	main.AfterFailure(func(sess *happy.Session, err error) error {
-		sess.Log().NotImplemented("main.AfterFailure")
-		return nil
-	})
-
-	main.AfterAlways(func(sess *happy.Session, err error) error {
-		sess.Log().NotImplemented("main.AfterAlways")
-		return nil
-	})
+	// main.AfterAlways(func(sess *happy.Session, err error) error {
+	// 	sess.Log().NotImplemented("main.AfterAlways")
+	// 	return nil
+	// })
 
 	main.Run()
 }

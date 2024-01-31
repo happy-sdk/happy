@@ -79,6 +79,7 @@ func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
 	case LevelNotice:
 		fg, bg = ansicolor.FgBlack, ansicolor.BgCyan
 	case LevelWarn:
+		fg, bg = ansicolor.FgYellow, 0
 	case LevelNotImplemented, LevelDeprecated:
 		fg, bg = ansicolor.FgBlack, ansicolor.BgYellow
 	case LevelError:

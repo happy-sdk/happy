@@ -7,7 +7,6 @@ package main
 import (
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser"
-	"github.com/happy-sdk/happy/internal/cmd/hap/migrations"
 	"github.com/happy-sdk/happy/sdk/cli/commands"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
@@ -65,7 +64,7 @@ func hap() *happy.Main {
 		// 		Repo:  "happy",
 		// 	},
 		// )).
-		WithMigrations(migrations.New()).
+		// WithMigrations(migrations.New()).
 		WithService(service()).
 		WithCommand(commands.Config()).
 		// WithFlag(nil).

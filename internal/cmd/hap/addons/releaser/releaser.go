@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser/module"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/settings"
@@ -44,6 +45,7 @@ func Addon(s Settings) *happy.Addon {
 
 	addon.Option("next", "auto", "specify next version to release auto|major|minor|batch", nil)
 	addon.Option("go.monorepo", false, "is project Go monorepo", nil)
+	addon.Option("go.modules.count", 0, "total go modules found", nil)
 	addon.Option("git.branch", "main", "branch to release from", nil)
 	addon.Option("git.remote.url", "", "URL of the remote repository", nil)
 	addon.Option("git.remote.name", "", "Name of the remote repository", nil)
@@ -57,9 +59,11 @@ func Addon(s Settings) *happy.Addon {
 
 type releaser struct {
 	happy.API
-	mu     sync.RWMutex
-	sess   *happy.Session
-	config configuration
+	mu       sync.RWMutex
+	sess     *happy.Session
+	config   configuration
+	packages []*module.Package
+	queue    []string
 }
 
 func newReleaser() *releaser {

@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/sdk/logging"
 )
 
 var (
@@ -83,7 +84,7 @@ func runCommand(sess *happy.Session, cmd *exec.Cmd) error {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
 	if sess.Get("app.main.exec.x").Bool() {
-		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
+		sess.Log().LogDepth(4, logging.LevelAlways, cmd.String())
 	}
 
 	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
@@ -141,7 +142,7 @@ func execCommandRaw(sess *happy.Session, cmd *exec.Cmd) ([]byte, error) {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
 	if sess.Get("app.main.exec.x").Bool() {
-		fmt.Fprintln(os.Stdout, "cmd: "+cmd.String())
+		sess.Log().LogDepth(4, logging.LevelAlways, cmd.String())
 	}
 
 	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
