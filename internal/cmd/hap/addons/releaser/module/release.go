@@ -30,7 +30,7 @@ func (p *Package) Release(sess *happy.Session) error {
 	if err := os.WriteFile(p.ModFilePath, updatedModFile, 0644); err != nil {
 		return err
 	}
-	sess.Log().Ok("updated go.mod", slog.String("package", p.Import))
+	sess.Log().Info("updated go.mod", slog.String("package", p.Import))
 
 	gomodtidy := exec.Command("go", "mod", "tidy")
 	gomodtidy.Dir = p.Dir
@@ -68,5 +68,6 @@ func (p *Package) Release(sess *happy.Session) error {
 		return err
 	}
 
+	sess.Log().Ok("released package", slog.String("package", p.Import), slog.String("version", p.NextRelease))
 	return nil
 }
