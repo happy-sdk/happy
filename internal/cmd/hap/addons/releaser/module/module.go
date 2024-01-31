@@ -105,6 +105,10 @@ func (p *Package) LoadReleaseInfo(sess *happy.Session) error {
 		p.NeedsRelease = true
 		p.NextRelease = fmt.Sprintf("%s%s", p.TagPrefix, "v0.1.0")
 		p.LastRelease = fmt.Sprintf("%s%s", p.TagPrefix, "v0.0.0")
+		if strings.Contains(p.Import, "internal") {
+			p.NeedsRelease = false
+			p.NextRelease = fmt.Sprintf("%s%s", p.TagPrefix, "v0.0.0")
+		}
 		return nil
 	}
 
