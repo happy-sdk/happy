@@ -9,7 +9,7 @@ on:
     branches:
       - 'main'
     tags-ignore:
-      - 'main'
+      - '*'
   pull_request:
     branches:
       - 'main'
