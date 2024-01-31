@@ -161,7 +161,9 @@ func (r *releaser) loadModules() error {
 							slog.String("dep", dep.Import),
 							slog.String("dep.version", dep.MaxVersion),
 						)
-						pkg.SetDep(dep.Import, dep.MaxVersion)
+						if err := pkg.SetDep(dep.Import, dep.MaxVersion); err != nil {
+							return err
+						}
 						break
 					}
 				}

@@ -147,7 +147,7 @@ func BenchmarkParseValid(b *testing.B) {
 		b.Run(group.Name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				for _, test := range group.Tests {
-					ParseValid(test.Pattern)
+					_, _ = ParseValid(test.Pattern)
 				}
 			}
 		})

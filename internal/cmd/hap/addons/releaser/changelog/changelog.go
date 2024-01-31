@@ -235,16 +235,16 @@ type Commit struct {
 	author    string
 }
 
-var entryTypes = []EntryType{
-	{Typ: "feat", Scope: "", Kind: EntryKindMinor},
-	{Typ: "fix", Scope: "", Kind: EntryKindPatch},
-	{Typ: "deps", Scope: "", Kind: EntryKindPatch},
-	{Typ: "docs", Scope: "", Kind: EntryKindPatch},
-	{Typ: "style", Scope: "", Kind: EntryKindPatch},
-	{Typ: "refactor", Scope: "", Kind: EntryKindPatch},
-	{Typ: "perf", Scope: "", Kind: EntryKindPatch},
-	{Typ: "test", Scope: "", Kind: EntryKindPatch},
-	{Typ: "devops", Scope: "", Kind: EntryKindPatch},
-	{Typ: "chore", Scope: "", Kind: EntryKindPatch},
-	{Typ: "revert", Scope: "", Kind: EntryKindPatch},
-}
+// var entryTypes = []EntryType{
+// 	{Typ: "feat", Scope: "", Kind: EntryKindMinor},
+// 	{Typ: "fix", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "deps", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "docs", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "style", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "refactor", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "perf", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "test", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "devops", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "chore", Scope: "", Kind: EntryKindPatch},
+// 	{Typ: "revert", Scope: "", Kind: EntryKindPatch},
+// }
