@@ -34,7 +34,9 @@ func Addon(s Settings) *happy.Addon {
 
 	r := newReleaser()
 
-	addon.ProvidesCommand(r.createReleaseCommand())
+	if s.CommandEnabled {
+		addon.ProvidesCommand(r.createReleaseCommand())
+	}
 
 	addon.Option("working.directory", "/tmp/happy", "working directory of the project", func(key string, val vars.Value) error {
 		if str := val.String(); val.Empty() || str == "" || !filepath.IsAbs(str) {
