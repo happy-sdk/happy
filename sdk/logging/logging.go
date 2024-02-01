@@ -90,6 +90,7 @@ type Logger interface {
 	Error(msg string, attrs ...slog.Attr)
 	BUG(msg string, attrs ...slog.Attr)
 	Println(msg string, attrs ...slog.Attr)
+	Printf(format string, v ...any)
 	HTTP(method, path string, status int, attrs ...slog.Attr)
 	Handle(r slog.Record) error
 
@@ -192,6 +193,10 @@ func (l *DefaultLogger) BUG(msg string, attrs ...slog.Attr) {
 
 func (l *DefaultLogger) Println(msg string, attrs ...slog.Attr) {
 	l.logDepth(levelAlways, msg, attrs...)
+}
+
+func (l *DefaultLogger) Printf(format string, v ...any) {
+	l.logDepth(levelAlways, fmt.Sprintf(format, v...))
 }
 
 func (l *DefaultLogger) HTTP(method, path string, status int, attrs ...slog.Attr) {
