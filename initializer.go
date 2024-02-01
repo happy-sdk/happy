@@ -200,6 +200,13 @@ func (i *initializer) Initialize(m *Main) error {
 				return err
 			}
 			m.slug = tmpaddr.Instance() + "-test"
+
+			if err := m.sess.opts.set("app.instance.namespace", tmpaddr.InstanceDomianReverse(), true); err != nil {
+				return err
+			}
+			if err := m.sess.opts.set("app.module", tmpaddr.Module(), true); err != nil {
+				return err
+			}
 		} else {
 			curr, err := address.Current()
 			if err != nil {
@@ -210,6 +217,7 @@ func (i *initializer) Initialize(m *Main) error {
 		if err := settingsb.SetDefault("app.slug", m.slug); err != nil {
 			return err
 		}
+
 	}
 	inst, err := instance.New(m.slug)
 	if err != nil {
@@ -261,17 +269,20 @@ func (i *initializer) Initialize(m *Main) error {
 	}
 
 	for _, opt := range i.pendingOpts {
+
 		group := "option"
 		if opt.kind&ConfigOption != 0 {
 			group = "config"
 		} else if opt.kind&SettingsOption != 0 {
 			group = "settings"
 		}
-		m.sess.Log().Warn("option not used", slog.Group(group,
+
+		m.sess.Log().Warn("option not used",
+			slog.String("group", group),
 			slog.String("key", opt.key),
 			slog.Any("value", opt.value),
 			slog.Bool("readOnly", opt.kind&ReadOnlyOption == ReadOnlyOption),
-		))
+		)
 	}
 
 	m.root.desc = m.sess.Get("app.description").String()
@@ -283,35 +294,10 @@ func (i *initializer) Initialize(m *Main) error {
 }
 
 func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint) error {
-	for key := range m.sess.opts.config {
-		for _, opt := range i.mainOpts {
-			if opt.key == key {
-				val, err := vars.NewValue(opt.value)
-				if err != nil {
-					i.log(logging.NewQueueRecord(logging.LevelError, fmt.Sprintf("%s: failed to parse value - %s", opt.key, err.Error()), 4))
-					continue
-				}
-				if err := m.sess.Set(key, val); err != nil {
-					i.log(logging.NewQueueRecord(logging.LevelError, fmt.Sprintf("%s: failed to set value - %s", opt.key, err.Error()), 4))
-					continue
-				}
-				break
-			} else {
-				// extend
-				m.sess.opts.config[opt.key] = opt
-			}
-
-		}
-		// if !provided {
-		// 	if err := a.session.opts.Set(key, cnf.value); err != nil {
-		// 		errs = append(errs, err)
-		// 		continue
-		// 	}
-		// }
-	}
-
 	for _, opt := range i.mainOpts {
-		if !m.sess.Has(opt.key) {
+		if m.sess.Has(opt.key) {
+			continue
+		} else {
 			i.pendingOpts = append(i.pendingOpts, opt)
 		}
 	}
@@ -647,12 +633,21 @@ func (i *initializer) unsafeConfigureOptions(m *Main) error {
 	// apply options
 	var pendingOpts []OptionArg
 	for _, opt := range i.pendingOpts {
-		// apply if it is custom glopal option
-		m.sess.Log().SystemDebug("opt", slog.Any(opt.key, opt.value))
+		m.sess.Log().SystemDebug("config", slog.Any(opt.key, opt.value))
 		if _, ok := m.sess.opts.config[opt.key]; ok {
-			if err := opt.apply(m.sess.opts); err != nil {
+			val, err := vars.New(opt.key, opt.value, opt.kind&ReadOnlyOption != 0)
+			if err != nil {
 				return err
 			}
+			if opt.validator != nil {
+				if err := opt.validator(opt.key, val.Value()); err != nil {
+					return err
+				}
+			}
+			if err := m.sess.opts.set(opt.key, val, true); err != nil {
+				return err
+			}
+
 			continue
 		}
 		pendingOpts = append(pendingOpts, opt)

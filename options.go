@@ -65,6 +65,7 @@ func Option(key string, value any) OptionArg {
 		kind:  RuntimeOption,
 	}
 }
+
 func OptionReadonly(key string, value any) OptionArg {
 	return OptionArg{
 		key:   key,
@@ -175,6 +176,11 @@ func (opts *Options) set(key string, value any, override bool) error {
 	var cnf *OptionArg
 	if c, ok := opts.config[key]; ok {
 		cnf = &c
+		if vv, ok := value.(vars.Variable); ok {
+			if vv.ReadOnly() {
+				cnf.kind |= ReadOnlyOption
+			}
+		}
 	} else if c, ok := opts.config["*"]; ok {
 		cnf = &c
 	}
@@ -321,6 +327,13 @@ func getRuntimeConfig() []OptionArg {
 		{
 			key:       "app.module",
 			value:     addr.Module(),
+			desc:      "application module",
+			kind:      ConfigOption | ReadOnlyOption,
+			validator: noopvalidator,
+		},
+		{
+			key:       "app.instance.namespace",
+			value:     addr.InstanceDomianReverse(),
 			desc:      "application module",
 			kind:      ConfigOption | ReadOnlyOption,
 			validator: noopvalidator,

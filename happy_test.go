@@ -38,7 +38,7 @@ func TestDefaultSettings(t *testing.T) {
 		testutils.Equal(t, "1", sess.Get("instance.max").String(), "instance.max")
 		testutils.Equal(t, 1, sess.Get("instance.max").Int(), "instance.max")
 
-		testutils.Equal(t, "com.github.happysdk.happy-test", sess.Get("app.slug").String(), "app.slug")
+		testutils.Equal(t, "com.github.happy-sdk.happy-test", sess.Get("app.slug").String(), "app.slug")
 
 		return nil
 	})
@@ -52,16 +52,18 @@ func TestDefaultConfig(t *testing.T) {
 	app := happy.New(happy.Settings{})
 	app.WithLogger(log)
 	app.Do(func(sess *happy.Session, args happy.Args) error {
-		testutils.Equal(t, 13, sess.Config().Len(), "default runtime config should be empty")
+		testutils.Equal(t, 14, sess.Config().Len(), "invalid default runtime config key cpunt")
 		host, err := os.Hostname()
 		if err != nil {
 			return err
 		}
-		addr := fmt.Sprintf("happy://%s/com.github.happysdk.happy-test", host)
+		addr := fmt.Sprintf("happy://%s/com.github.happy-sdk.happy-test", host)
 		testutils.Equal(t, addr, sess.Get("app.address").String(), "app.address")
 		testutils.Equal(t, true, sess.Get("app.devel").Bool(), "app.devel")
 		testutils.Equal(t, true, sess.Get("app.firstuse").Bool(), "app.firstuse")
+		testutils.Equal(t, "com.github.happy-sdk.happy", sess.Get("app.instance.namespace").String(), "app.instance.namespace")
 		testutils.Equal(t, false, sess.Get("app.main.exec.x").Bool(), "app.main.exec.x")
+		testutils.Equal(t, "github.com/happy-sdk/happy", sess.Get("app.module").String(), "app.module")
 		testutils.Equal(t, "default-devel", sess.Get("app.profile.name").String(), "app.profile.name")
 		testutils.Equal(t, "v1.0.0-0xDEV", sess.Get("app.version").String(), "app.version")
 
@@ -80,9 +82,10 @@ func TestDefaultConfig(t *testing.T) {
 		}
 		testutils.Equal(t, home, sess.Get("app.fs.path.home").String(), "app.fs.path.home")
 
-		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happysdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.config").String(), "app.fs.path.config")
-		testutils.Equal(t, fmt.Sprintf("%s/cache/com.github.happysdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.cache").String(), "app.fs.path.cache")
-		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happysdk.happy-test/profiles/default-devel/profile.preferences", tmpdir), sess.Get("app.profile.file").String(), "app.profile.file")
+		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.config").String(), "app.fs.path.config")
+		testutils.Equal(t, fmt.Sprintf("%s/cache/com.github.happy-sdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.cache").String(), "app.fs.path.cache")
+		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel/profile.preferences", tmpdir), sess.Get("app.profile.file").String(), "app.profile.file")
+
 		return nil
 	})
 	app.Run()

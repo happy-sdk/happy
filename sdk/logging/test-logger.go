@@ -97,6 +97,10 @@ func (l *TestLogger) Println(msg string, attrs ...slog.Attr) {
 	l.log.Println(msg, attrs...)
 }
 
+func (l *TestLogger) Printf(format string, v ...any) {
+	l.log.Printf(format, v...)
+}
+
 func (l *TestLogger) HTTP(method, path string, status int, attrs ...slog.Attr) {
 	l.log.HTTP(method, path, status, attrs...)
 }
