@@ -40,8 +40,20 @@ func newConfiguration(sess *happy.Session, path string, allowDirty bool) (*confi
 	if err != nil {
 		return nil, err
 	}
-	if gitinfo.dirty == "true" && !allowDirty {
-		return nil, fmt.Errorf("git repository is dirty - commit or stash changes before releasing")
+	if gitinfo.dirty == "true" {
+		if !allowDirty {
+			return nil, fmt.Errorf("git repository is dirty - commit or stash changes before releasing")
+		}
+		addCmd := exec.Command("git", "add", "-A")
+		addCmd.Dir = c.WD
+		if err := cli.RunCommand(sess, addCmd); err != nil {
+			return nil, err
+		}
+		commitCmd := exec.Command("git", "commit", "-sm", "wip: prepare release")
+		commitCmd.Dir = c.WD
+		if err := cli.RunCommand(sess, commitCmd); err != nil {
+			return nil, err
+		}
 	}
 
 	totalmodules := 0

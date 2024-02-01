@@ -285,7 +285,6 @@ func (m *Main) run() {
 	err := m.cmd.callDoAction(m.sess)
 
 	if svcerr := m.engine.stop(m.sess); svcerr != nil {
-		fmt.Println("happy-main.go: 513")
 		m.sess.Log().Error("failed to stop engine", slog.String("err", svcerr.Error()))
 	}
 

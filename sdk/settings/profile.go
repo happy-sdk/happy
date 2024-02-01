@@ -99,9 +99,6 @@ func (p *Profile) Has(key string) bool {
 
 func (p *Profile) Set(key string, val SettingField) (err error) {
 	if !p.Has(key) {
-		for s := range p.settings {
-			fmt.Println("SETTING: ", s)
-		}
 		return fmt.Errorf("setting not found %s", key)
 	}
 	p.mu.Lock()

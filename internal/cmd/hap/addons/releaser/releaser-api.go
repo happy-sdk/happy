@@ -48,7 +48,8 @@ func (r *releaser) Run(next string) error {
 		return err
 	}
 	sess.Log().Ok("releaser done")
-	return nil
+
+	return r.printChangelog()
 }
 
 func (r *releaser) session() (*happy.Session, error) {
@@ -129,6 +130,10 @@ func (r *releaser) loadModules() error {
 		return nil
 	}); err != nil {
 		return err
+	}
+
+	if len(pkgs) == 0 {
+		return fmt.Errorf("no modules found in %s", r.config.WD)
 	}
 
 	for _, pkg := range pkgs {
@@ -221,5 +226,112 @@ func (r *releaser) releaseModules() error {
 			}
 		}
 	}
+	return nil
+}
+
+type fullChangelog struct {
+	Root    *packageChangelog
+	Subpkgs []*packageChangelog
+}
+
+type packageChangelog struct {
+	pkg      *module.Package
+	Breaking []string
+	Changes  []string
+}
+
+func (r *releaser) printChangelog() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	cl := &fullChangelog{}
+
+	for _, pkg := range r.packages {
+		if !pkg.NeedsRelease || (pkg.Changelog == nil || pkg.Changelog.Empty()) {
+			continue
+		}
+		clp := &packageChangelog{pkg: pkg}
+
+		for _, breaking := range pkg.Changelog.Breaking() {
+			breaking := fmt.Sprintf("* %s %s", breaking.ShortHash, breaking.Subject)
+			clp.Breaking = append(clp.Breaking, breaking)
+		}
+		for _, entry := range pkg.Changelog.Entries() {
+			change := fmt.Sprintf("* %s %s", entry.ShortHash, entry.Subject)
+			clp.Changes = append(clp.Changes, change)
+		}
+
+		if pkg.Dir == r.config.WD {
+			cl.Root = clp
+		} else {
+			cl.Subpkgs = append(cl.Subpkgs, clp)
+		}
+	}
+
+	fmt.Println("## Changelog")
+
+	fmt.Printf("`%s@%s`", cl.Root.pkg.Import, cl.Root.pkg.NextRelease)
+
+	if cl.Root == nil {
+		return nil
+	}
+	var breakingsection string
+	for _, breaking := range cl.Root.Breaking {
+		for _, scl := range cl.Subpkgs {
+			found := false
+			for _, bcl := range scl.Breaking {
+				if bcl == breaking {
+					found = true
+				}
+			}
+			if !found {
+				breakingsection += breaking + "\n"
+			}
+		}
+	}
+	if len(breakingsection) > 0 {
+		fmt.Println("### Breaking Changes")
+		fmt.Println(breakingsection)
+	}
+
+	var changessection string
+	for _, change := range cl.Root.Changes {
+		for _, scl := range cl.Subpkgs {
+			found := false
+			for _, bcl := range scl.Changes {
+				if bcl == change {
+					found = true
+				}
+			}
+			if !found {
+				changessection += change + "\n"
+			}
+		}
+	}
+	if len(changessection) > 0 {
+		fmt.Println("### Changes")
+		fmt.Println(changessection)
+	}
+	fmt.Println("")
+
+	for i, scl := range cl.Subpkgs {
+		if i == 0 {
+			fmt.Printf("### %s\n\n`%s@%s`\n", scl.pkg.NextRelease, scl.pkg.Import, scl.pkg.NextRelease)
+		}
+		for i, breaking := range scl.Breaking {
+			if i == 0 {
+				fmt.Println("**Breaking Changes**")
+			}
+			fmt.Println(breaking)
+		}
+		for i, change := range scl.Changes {
+			if i == 0 {
+				fmt.Println("**Changes**")
+			}
+			fmt.Println(change)
+		}
+	}
+
+	fmt.Println("")
 	return nil
 }

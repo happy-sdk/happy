@@ -406,13 +406,6 @@ func (s *Session) isValid() bool {
 func (s *Session) setProfile(profile *settings.Profile) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// p := profile.All()
-
-	// for _, setting := range p {
-	// 	if setting.Persistent() {
-	// 		fmt.Println("key:", setting.Key(), " val:", setting.Value().String())
-	// 	}
-	// }
 	s.profile = profile
 }
 

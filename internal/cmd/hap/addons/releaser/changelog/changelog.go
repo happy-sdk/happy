@@ -104,6 +104,14 @@ type Changelog struct {
 	breaking []Entry
 }
 
+func (c *Changelog) Entries() []Entry {
+	return c.entries
+}
+
+func (c *Changelog) Breaking() []Entry {
+	return c.breaking
+}
+
 func (c *Changelog) Empty() bool {
 	return c.entries == nil && c.breaking == nil
 }
