@@ -7,6 +7,7 @@ package settings
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"runtime"
 	"strings"
 
@@ -18,14 +19,22 @@ var (
 )
 
 type Blueprint struct {
+	name string
 	mode ExecutionMode
 	pkg  string
 	// module string
 	// lang   language.Tag // default language
-	specs  map[string]SettingSpec
-	i18n   map[language.Tag]map[string]string
-	errs   []error
-	groups map[string]*Blueprint
+	specs      map[string]SettingSpec
+	i18n       map[language.Tag]map[string]string
+	errs       []error
+	groups     map[string]*Blueprint
+	migrations map[string]string
+}
+
+type groupSettings struct{}
+
+func (g groupSettings) Blueprint() (*Blueprint, error) {
+	return New(g)
 }
 
 func (b *Blueprint) AddSpec(spec SettingSpec) error {
@@ -35,8 +44,118 @@ func (b *Blueprint) AddSpec(spec SettingSpec) error {
 	if err := spec.Validate(); err != nil {
 		return err
 	}
+	if strings.Contains(spec.Key, ".") {
+		group, skey, _ := strings.Cut(spec.Key, ".")
+		g, ok := b.groups[group]
+		if !ok {
+			if err := b.Extend(group, groupSettings{}); err != nil {
+				return fmt.Errorf("%w: extending %s %s", ErrBlueprint, b.pkg, err.Error())
+			}
+			return b.AddSpec(spec)
+		}
+		spec.Key = skey
+		return g.AddSpec(spec)
+	}
+	if spec.Settings != nil {
+		if _, ok := b.groups[spec.Key]; ok {
+			return fmt.Errorf("%w: group %s already exists", ErrBlueprint, spec.Key)
+		}
+		b.groups[spec.Key] = spec.Settings
+	}
 	b.specs[spec.Key] = spec
 	return nil
+}
+
+func (b *Blueprint) Migrate(keyfrom, keyto string) error {
+	if b.migrations == nil {
+		b.migrations = make(map[string]string)
+	}
+	if to, ok := b.migrations[keyfrom]; ok {
+		return fmt.Errorf("%w: adding migration from %s to %s. from %s to %s already exists", ErrBlueprint, keyfrom, keyto, keyfrom, to)
+	}
+	b.migrations[keyfrom] = keyto
+	return nil
+}
+func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflect.Value) (SettingSpec, error) {
+
+	spec := SettingSpec{}
+
+	spec.IsSet = isFieldSet(value)
+
+	var persistent string
+	spec.Key, persistent, _ = strings.Cut(field.Tag.Get("key"), ",")
+
+	if persistent == "save" {
+		spec.Persistent = true
+	}
+
+	// spec.Persistent
+	// Use struct field name converted to dot.separated.format if 'key' tag is not present
+	if spec.Key == "" {
+		spec.Key = toUndersCoreSeparated(field.Name)
+	}
+
+	if fieldImplementsSettings(field) {
+		spec.Mutability = SettingImmutable
+		spec.IsSet = true
+		spec.Kind = KindSettings
+		var err error
+		spec.Settings, err = callBlueprintIfImplementsSettings(value)
+		if err != nil {
+			return spec, err
+		}
+	} else if fieldImplementsSetting(field) {
+		spec.Required = field.Tag.Get("required") == "" || field.Tag.Get("required") == "true"
+
+		mutation := field.Tag.Get("mutation")
+		switch mutation {
+		case "once":
+			spec.Mutability = SettingOnce
+		case "mutable":
+			spec.Mutability = SettingMutable
+		default:
+			spec.Mutability = SettingImmutable
+		}
+
+		kindGetterMethod := value.MethodByName("SettingKind")
+		if kindGetterMethod.IsValid() {
+			results := kindGetterMethod.Call(nil)
+			if len(results) != 1 {
+				return spec, fmt.Errorf("%w: %q field %q must implement either Setting or Settings interface", ErrBlueprint, b.pkg, spec.Key)
+			}
+			spec.Kind = results[0].Interface().(Kind)
+		} else {
+			spec.Kind = KindCustom
+		}
+
+		spec.Default = field.Tag.Get("default")
+
+		if spec.IsSet {
+			spec.Value = getStringValue(value)
+		} else {
+			spec.Value = spec.Default
+		}
+
+		if value.CanInterface() {
+			if unmarshaller, ok := value.Addr().Interface().(Unmarshaller); ok {
+				spec.Unmarchaler = unmarshaller
+			}
+		}
+		if marshaller, ok := value.Interface().(Marshaller); ok {
+			spec.Marchaler = marshaller
+		}
+
+		if spec.Unmarchaler == nil {
+			return spec, fmt.Errorf("%w: %q field %q must implement either SettingField interface missing UnmarshalSetting", ErrBlueprint, b.pkg, spec.Key)
+		}
+		if spec.Marchaler == nil {
+			return spec, fmt.Errorf("%w: %q field %q must implement either SettingField interface missing MarshalSetting", ErrBlueprint, b.pkg, spec.Key)
+		}
+	} else {
+		return spec, fmt.Errorf("%w: %q field %q must implement either Settings or SettingField interface", ErrBlueprint, b.pkg, spec.Key)
+	}
+
+	return spec, nil
 }
 
 type validator struct {
@@ -80,17 +199,42 @@ func (b *Blueprint) Describe(key string, lang language.Tag, description string) 
 }
 
 func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {
-	spec, ok := b.specs[key]
-	if !ok {
-		return spec, fmt.Errorf("%s: not found", key)
+	var (
+		spec SettingSpec
+	)
+	if strings.Contains(key, ".") {
+		group, skey, _ := strings.Cut(key, ".")
+		if g, ok := b.groups[group]; ok {
+			return g.GetSpec(skey)
+		}
+		return spec, fmt.Errorf("no settings group found %s in %s (%s)", group, b.name, b.pkg)
 	}
+
+	if g, ok := b.groups[key]; ok {
+		return g.GetSpec(key)
+	}
+
+	var ok bool
+	spec, ok = b.specs[key]
+	if !ok {
+		return spec, fmt.Errorf("no settings group or key found %s in %s (%s)", key, b.name, b.pkg)
+	}
+
 	return spec, nil
 }
 
 func (b *Blueprint) SetDefault(key string, value string) error {
+	if strings.Contains(key, ".") {
+		group, skey, _ := strings.Cut(key, ".")
+		g, ok := b.groups[group]
+		if !ok {
+			return fmt.Errorf("%w: SetDefault group %s not found", ErrBlueprint, group)
+		}
+		return g.SetDefault(skey, value)
+	}
 	spec, ok := b.specs[key]
 	if !ok {
-		return fmt.Errorf("%s: not found", key)
+		return fmt.Errorf("%w: SetDefault key %s not found", ErrBlueprint, key)
 	}
 	spec.Value = value
 	b.specs[key] = spec
@@ -100,6 +244,7 @@ func (b *Blueprint) SetDefault(key string, value string) error {
 
 func (b *Blueprint) Extend(group string, ext Settings) error {
 	exptbp, err := ext.Blueprint()
+	exptbp.name = group
 	if err != nil {
 		return fmt.Errorf("%w: extending %s %s", ErrBlueprint, b.pkg, err.Error())
 	}
@@ -115,11 +260,12 @@ func (b *Blueprint) Extend(group string, ext Settings) error {
 
 func (b *Blueprint) Schema(module, version string) (Schema, error) {
 	s := Schema{
-		version:  version,
-		mode:     b.mode,
-		pkg:      b.pkg,
-		module:   module,
-		settings: make(map[string]SettingSpec),
+		version:    version,
+		mode:       b.mode,
+		pkg:        b.pkg,
+		module:     module,
+		settings:   make(map[string]SettingSpec),
+		migrations: b.migrations,
 	}
 	s.setID()
 

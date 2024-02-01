@@ -55,8 +55,8 @@ type Address struct {
 	// Instance is the instance component of the happy address, which defines the service mesh the address belongs to.
 	instance string
 
-	module  string
-	mrevese string
+	module     string
+	reversedns string
 }
 
 // String reassembles the Address into a valid URL string.
@@ -85,8 +85,8 @@ func (a *Address) Instance() string {
 	return a.instance
 }
 
-func (a *Address) InstanceDomianReverse() string {
-	return a.mrevese
+func (a *Address) ReverseDNS() string {
+	return a.reversedns
 }
 
 func (a *Address) Module() string {
@@ -151,13 +151,13 @@ func FromModule(host, modulepath string) (*Address, error) {
 		}
 		rev = append(rev, (sl[i]))
 	}
-	mrevese := strings.Join(rev, ".")
-	addr, err := Parse("happy://" + host + "/" + mrevese)
+	reversedns := strings.Join(rev, ".")
+	addr, err := Parse("happy://" + host + "/" + reversedns)
 	if err != nil {
 		return nil, err
 	}
 	addr.module = modulepath
-	addr.mrevese = mrevese
+	addr.reversedns = reversedns
 	return addr, nil
 }
 

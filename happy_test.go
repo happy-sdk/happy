@@ -26,17 +26,18 @@ func TestDefaultSettings(t *testing.T) {
 		testutils.Equal(t, "Local", sess.Get("app.datetime.location").String(), "app.datetime.location")
 		testutils.Equal(t, "", sess.Get("app.description").String(), "app.description")
 		testutils.Equal(t, "", sess.Get("app.license").String(), "app.license")
-		testutils.Equal(t, "0", sess.Get("app.main.argn.max").String(), "app.main.argn.max")
+		testutils.Equal(t, "0", sess.Get("app.main.argn_max").String(), "app.main.argn_max")
 		testutils.Equal(t, "Happy Prototype", sess.Get("app.name").String(), "app.name")
 
-		testutils.Equal(t, "30s", sess.Get("app.service.loader.timeout").String(), "app.service.loader.timeout")
-		testutils.Equal(t, time.Second*30, sess.Get("app.service.loader.timeout").Duration(), "app.service.loader.timeout")
+		testutils.Equal(t, "30s", sess.Get("app.service_loader.timeout").String(), "app.service_loader.timeout")
+		testutils.Equal(t, time.Second*30, sess.Get("app.service_loader.timeout").Duration(), "app.service_loader.timeout")
 
-		testutils.Equal(t, "1s", sess.Get("app.throttle.ticks").String(), "app.throttle.ticks")
-		testutils.Equal(t, time.Second*1, sess.Get("app.throttle.ticks").Duration(), "app.throttle.ticks")
+		testutils.Equal(t, "1s", sess.Get("app.engine.throttle_ticks").String(), "app.engine.throttle_ticks")
+		testutils.Equal(t, time.Second*1, sess.Get("app.engine.throttle_ticks").Duration(), "app.engine.throttle_ticks")
 
-		testutils.Equal(t, "1", sess.Get("instance.max").String(), "instance.max")
-		testutils.Equal(t, 1, sess.Get("instance.max").Int(), "instance.max")
+		testutils.Equal(t, "1", sess.Get("app.instance.max").String(), "app.instance.max")
+		testutils.Equal(t, 1, sess.Get("app.instance.max").Int(), "app.instance.max")
+		testutils.Equal(t, "com.github.happy-sdk.happy.test", sess.Get("app.instance.reverse_dns").String(), "app.instance.reverse_dns")
 
 		testutils.Equal(t, "com.github.happy-sdk.happy-test", sess.Get("app.slug").String(), "app.slug")
 
@@ -52,7 +53,7 @@ func TestDefaultConfig(t *testing.T) {
 	app := happy.New(happy.Settings{})
 	app.WithLogger(log)
 	app.Do(func(sess *happy.Session, args happy.Args) error {
-		testutils.Equal(t, 14, sess.Config().Len(), "invalid default runtime config key cpunt")
+		testutils.Equal(t, 13, sess.Config().Len(), "invalid default runtime config key cpunt")
 		host, err := os.Hostname()
 		if err != nil {
 			return err
@@ -61,7 +62,6 @@ func TestDefaultConfig(t *testing.T) {
 		testutils.Equal(t, addr, sess.Get("app.address").String(), "app.address")
 		testutils.Equal(t, true, sess.Get("app.devel").Bool(), "app.devel")
 		testutils.Equal(t, true, sess.Get("app.firstuse").Bool(), "app.firstuse")
-		testutils.Equal(t, "com.github.happy-sdk.happy", sess.Get("app.instance.namespace").String(), "app.instance.namespace")
 		testutils.Equal(t, false, sess.Get("app.main.exec.x").Bool(), "app.main.exec.x")
 		testutils.Equal(t, "github.com/happy-sdk/happy", sess.Get("app.module").String(), "app.module")
 		testutils.Equal(t, "default-devel", sess.Get("app.profile.name").String(), "app.profile.name")

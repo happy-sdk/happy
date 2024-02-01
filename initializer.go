@@ -192,6 +192,12 @@ func (i *initializer) Initialize(m *Main) error {
 	if slugErr != nil {
 		return slugErr
 	}
+	insRevDNSSpec, insRevDNSErr := settingsb.GetSpec("app.instance.reverse_dns")
+	if insRevDNSErr != nil {
+		return insRevDNSErr
+	}
+	rdns := insRevDNSSpec.Value
+
 	m.slug = slugSpec.Value
 	if len(m.slug) == 0 {
 		if testing.Testing() {
@@ -201,25 +207,28 @@ func (i *initializer) Initialize(m *Main) error {
 			}
 			m.slug = tmpaddr.Instance() + "-test"
 
-			if err := m.sess.opts.set("app.instance.namespace", tmpaddr.InstanceDomianReverse(), true); err != nil {
-				return err
-			}
 			if err := m.sess.opts.set("app.module", tmpaddr.Module(), true); err != nil {
 				return err
 			}
+			rdns = tmpaddr.ReverseDNS() + ".test"
 		} else {
 			curr, err := address.Current()
 			if err != nil {
 				return err
 			}
 			m.slug = curr.Instance()
+
+			rdns = curr.ReverseDNS()
 		}
 		if err := settingsb.SetDefault("app.slug", m.slug); err != nil {
 			return err
 		}
-
 	}
-	inst, err := instance.New(m.slug)
+	if err := settingsb.SetDefault("app.instance.reverse_dns", rdns); err != nil {
+		return err
+	}
+
+	inst, err := instance.New(m.slug, rdns)
 	if err != nil {
 		return err
 	}
@@ -304,7 +313,7 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 
 	i.log(logging.NewQueueRecord(logging.LevelSystemDebug, "app slug set to", 2, slog.String("slug", m.slug)))
 
-	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argn.max")
+	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argn_max")
 	if mainArgcMaxErr != nil {
 		return mainArgcMaxErr
 	}

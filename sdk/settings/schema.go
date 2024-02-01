@@ -15,12 +15,13 @@ var (
 )
 
 type Schema struct {
-	id       string
-	pkg      string
-	module   string
-	mode     ExecutionMode
-	version  string
-	settings map[string]SettingSpec
+	id         string
+	pkg        string
+	module     string
+	mode       ExecutionMode
+	version    string
+	settings   map[string]SettingSpec
+	migrations map[string]string
 }
 
 func (s *Schema) set(key string, spec SettingSpec) error {

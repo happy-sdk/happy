@@ -99,6 +99,9 @@ func (p *Profile) Has(key string) bool {
 
 func (p *Profile) Set(key string, val SettingField) (err error) {
 	if !p.Has(key) {
+		for s := range p.settings {
+			fmt.Println("SETTING: ", s)
+		}
 		return fmt.Errorf("setting not found %s", key)
 	}
 	p.mu.Lock()
@@ -137,22 +140,30 @@ func (p *Profile) load(prefs *Preferences) (err error) {
 
 	if prefs != nil {
 		for key, val := range prefs.data {
-			if s, ok := p.settings[key]; ok {
+			lkey := key
+			s, ok := p.settings[lkey]
+			if !ok && p.schema.migrations != nil {
+				if to, has := p.schema.migrations[lkey]; has {
+					lkey = to
+					s, ok = p.settings[lkey]
+				}
+			}
 
-				s.vv, err = vars.NewAs(key, val, true, vars.Kind(s.kind))
+			if ok {
+				s.vv, err = vars.NewAs(lkey, val, true, vars.Kind(s.kind))
 				if err != nil {
-					return fmt.Errorf("%w: preferences key(%s) %s", ErrProfile, key, err.Error())
+					return fmt.Errorf("%w: preferences key(%s) %s", ErrProfile, lkey, err.Error())
 				}
 				s.isSet = true
 
-				for _, v := range p.schema.settings[key].validators {
+				for _, v := range p.schema.settings[lkey].validators {
 					if err := v.fn(s); err != nil {
 						return err
 					}
 				}
-				p.settings[key] = s
+				p.settings[lkey] = s
 			} else {
-				return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, key)
+				return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, lkey)
 			}
 		}
 	}

@@ -332,13 +332,6 @@ func getRuntimeConfig() []OptionArg {
 			validator: noopvalidator,
 		},
 		{
-			key:       "app.instance.namespace",
-			value:     addr.InstanceDomianReverse(),
-			desc:      "application module",
-			kind:      ConfigOption | ReadOnlyOption,
-			validator: noopvalidator,
-		},
-		{
 			key:       "app.address",
 			value:     "",
 			desc:      "application address",

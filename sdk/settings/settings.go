@@ -105,101 +105,22 @@ func New(s Settings) (*Blueprint, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// handle short syntax group keys
 		if err := b.AddSpec(spec); err != nil {
 			return nil, err
 		}
+
 	}
 
 	return b, nil
 }
 
-func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflect.Value) (SettingSpec, error) {
-
-	spec := SettingSpec{}
-
-	spec.IsSet = isFieldSet(value)
-
-	var persistent string
-	spec.Key, persistent, _ = strings.Cut(field.Tag.Get("key"), ",")
-
-	if persistent == "save" {
-		spec.Persistent = true
-	}
-
-	// spec.Persistent
-	// Use struct field name converted to dot.separated.format if 'key' tag is not present
-	if spec.Key == "" {
-		spec.Key = toDotSeparated(field.Name)
-	}
-
-	if fieldImplementsSettings(field) {
-		spec.Mutability = SettingImmutable
-		spec.IsSet = true
-		spec.Kind = KindSettings
-		var err error
-		spec.Settings, err = callBlueprintIfImplementsSettings(value)
-		if err != nil {
-			return spec, err
-		}
-	} else if fieldImplementsSetting(field) {
-		spec.Required = field.Tag.Get("required") == "" || field.Tag.Get("required") == "true"
-
-		mutation := field.Tag.Get("mutation")
-		switch mutation {
-		case "once":
-			spec.Mutability = SettingOnce
-		case "mutable":
-			spec.Mutability = SettingMutable
-		default:
-			spec.Mutability = SettingImmutable
-		}
-
-		kindGetterMethod := value.MethodByName("SettingKind")
-		if kindGetterMethod.IsValid() {
-			results := kindGetterMethod.Call(nil)
-			if len(results) != 1 {
-				return spec, fmt.Errorf("%w: %q field %q must implement either Setting or Settings interface", ErrBlueprint, b.pkg, spec.Key)
-			}
-			spec.Kind = results[0].Interface().(Kind)
-		} else {
-			spec.Kind = KindCustom
-		}
-
-		spec.Default = field.Tag.Get("default")
-
-		if spec.IsSet {
-			spec.Value = getStringValue(value)
-		} else {
-			spec.Value = spec.Default
-		}
-
-		if value.CanInterface() {
-			if unmarshaller, ok := value.Addr().Interface().(Unmarshaller); ok {
-				spec.Unmarchaler = unmarshaller
-			}
-		}
-		if marshaller, ok := value.Interface().(Marshaller); ok {
-			spec.Marchaler = marshaller
-		}
-
-		if spec.Unmarchaler == nil {
-			return spec, fmt.Errorf("%w: %q field %q must implement either SettingField interface missing UnmarshalSetting", ErrBlueprint, b.pkg, spec.Key)
-		}
-		if spec.Marchaler == nil {
-			return spec, fmt.Errorf("%w: %q field %q must implement either SettingField interface missing MarshalSetting", ErrBlueprint, b.pkg, spec.Key)
-		}
-	} else {
-		return spec, fmt.Errorf("%w: %q field %q must implement either Settings or SettingField interface", ErrBlueprint, b.pkg, spec.Key)
-	}
-
-	return spec, nil
-}
-
-func toDotSeparated(s string) string {
+func toUndersCoreSeparated(s string) string {
 	var result []rune
 	for i, r := range s {
 		if unicode.IsUpper(r) && i > 0 {
-			result = append(result, '.')
+			result = append(result, '_')
 		}
 		result = append(result, unicode.ToLower(r))
 	}

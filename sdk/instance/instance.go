@@ -13,7 +13,8 @@ import (
 )
 
 type Settings struct {
-	Max settings.Uint `key:"max" default:"1" mutation:"once"`
+	Max        settings.Uint   `key:"max" default:"1" mutation:"once"`
+	ReverseDNS settings.String `key:"reverse_dns" default:"" mutation:"once"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
@@ -30,7 +31,7 @@ type Instance struct {
 	addr *address.Address
 }
 
-func New(slug string) (*Instance, error) {
+func New(slug, rdns string) (*Instance, error) {
 	curr, err := address.Current()
 	if err != nil {
 		return nil, err
