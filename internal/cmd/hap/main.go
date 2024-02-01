@@ -8,8 +8,74 @@ import (
 	"log/slog"
 
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser"
 	"github.com/happy-sdk/happy/pkg/vars"
+	"github.com/happy-sdk/happy/sdk/cli/commands"
+	"github.com/happy-sdk/happy/sdk/instance"
+	"github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy/sdk/settings"
 )
+
+type Settings struct {
+	// happy develpment
+	Happy struct {
+		Placeholder settings.String `key:"placeholder"`
+	} `group:"happy"`
+	Placeholder settings.String `key:"placeholder"`
+}
+
+func (s Settings) Blueprint() (*settings.Blueprint, error) {
+	b, err := settings.New(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func hap() *happy.Main {
+	settings := happy.Settings{
+		Name:           "Happy Prototyper",
+		Slug:           "happy-sdk",
+		CopyrightBy:    "The Happy Authors",
+		CopyrightSince: 2019,
+		License:        "Apache-2.0",
+		TimeLocation:   "Local",
+		MainArgcMax:    5,
+		Description:    "Happy Prototyper provides commands to work with Happy-SDK prototypes.",
+		// ThrottleTicks:  settings.Duration(time.Millisecond * 100),
+		Instance: instance.Settings{
+			Max: 100,
+		},
+	}
+
+	config := Settings{}
+	config.Happy.Placeholder = "happy-placeholder"
+	config.Placeholder = "app-placeholder"
+
+	settings.Extend(config)
+
+	main := happy.New(settings).
+		WithAddon(releaser.Addon(
+			releaser.Settings{
+				CommandEnabled: true,
+			},
+		)).
+		// WithAddon(github.Addon(
+		// 	github.Settings{
+		// 		Owner: "happy-sdk",
+		// 		Repo:  "happy",
+		// 	},
+		// )).
+		// WithMigrations(migrations.New()).
+		WithService(service()).
+		WithCommand(commands.Config()).
+		// WithFlag(nil).
+		WithLogger(logging.Console(logging.LevelOk)).
+		WithOptions(happy.Option("happy", "true"))
+
+	return main
+}
 
 func main() {
 	main := hap()

@@ -54,6 +54,7 @@ func Addon(s Settings) *happy.Addon {
 	addon.Option("git.dirty", "", "true if there are uncommitted changes", nil)
 	addon.Option("git.committer", "", "name of the committer", nil)
 	addon.Option("git.email", "", "email of the committer", nil)
+	addon.Option("git.allow.dirty", false, "Dirty git repo allowed", nil)
 	addon.Option("github.token", "", "committer github token for that repository with release permissions", nil)
 
 	return addon
@@ -92,13 +93,15 @@ func (r *releaser) createReleaseCommand() *happy.Command {
   hap release /path/to/app`)
 
 	cmd.AddFlag(varflag.OptionFunc("next", []string{"auto"}, []string{"auto", "major", "minor", "patch"}, "specify next version to release", "n"))
+	cmd.AddFlag(varflag.BoolFunc("dirty", false, "allow release from dirty git repository"))
 
 	cmd.Before(func(sess *happy.Session, args happy.Args) error {
 		path, err := args.ArgDefault(0, ".")
 		if err != nil {
 			return err
 		}
-		if err := r.Initialize(sess, path.String()); err != nil {
+
+		if err := r.Initialize(sess, path.String(), args.Flag("dirty").Present()); err != nil {
 			return err
 		}
 

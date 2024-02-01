@@ -17,8 +17,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-func (r *releaser) Initialize(sess *happy.Session, path string) error {
-	config, err := newConfiguration(sess, path)
+func (r *releaser) Initialize(sess *happy.Session, path string, allowDirty bool) error {
+	config, err := newConfiguration(sess, path, allowDirty)
 	if err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ type configuration struct {
 	WD string
 }
 
-func newConfiguration(sess *happy.Session, path string) (*configuration, error) {
+func newConfiguration(sess *happy.Session, path string, allowDirty bool) (*configuration, error) {
 	c := &configuration{}
 	if path == "" {
 		path = "."
@@ -40,7 +40,7 @@ func newConfiguration(sess *happy.Session, path string) (*configuration, error) 
 	if err != nil {
 		return nil, err
 	}
-	if gitinfo.dirty == "true" {
+	if gitinfo.dirty == "true" && !allowDirty {
 		return nil, fmt.Errorf("git repository is dirty - commit or stash changes before releasing")
 	}
 
@@ -90,6 +90,7 @@ func newConfiguration(sess *happy.Session, path string) (*configuration, error) 
 		"releaser.go.modules.count":  fmt.Sprint(totalmodules),
 		"releaser.go.monorepo":       fmt.Sprintf("%t", totalmodules > 1),
 		"releaser.github.token":      os.Getenv("GITHUB_TOKEN"),
+		"releaser.git.allow.dirty":   fmt.Sprintf("%t", allowDirty),
 	}
 
 	for key, value := range opts {
