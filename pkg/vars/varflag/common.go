@@ -66,7 +66,7 @@ func New(name string, value string, usage string, aliases ...string) (*Common, e
 	return f, nil
 }
 
-func NewFunc(name string, value string, usage string, aliases ...string) FlagCreateFunc {
+func StringFunc(name string, value string, usage string, aliases ...string) FlagCreateFunc {
 	return func() (Flag, error) {
 		return New(name, value, usage, aliases...)
 	}
