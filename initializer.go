@@ -199,6 +199,12 @@ func (i *initializer) Initialize(m *Main) error {
 	rdns := insRevDNSSpec.Value
 
 	m.slug = slugSpec.Value
+
+	curr, err := address.Current()
+	if err != nil {
+		return err
+	}
+
 	if len(m.slug) == 0 {
 		if testing.Testing() {
 			tmpaddr, err := address.CurrentForDepth(2)
@@ -212,16 +218,16 @@ func (i *initializer) Initialize(m *Main) error {
 			}
 			rdns = tmpaddr.ReverseDNS() + ".test"
 		} else {
-			curr, err := address.Current()
-			if err != nil {
-				return err
-			}
 			m.slug = curr.Instance()
-
-			rdns = curr.ReverseDNS()
 		}
 		if err := settingsb.SetDefault("app.slug", m.slug); err != nil {
 			return err
+		}
+	}
+	if len(rdns) == 0 {
+		rdns = curr.ReverseDNS()
+		if len(rdns) == 0 {
+			return fmt.Errorf("could not find app.instance.reverse_dns")
 		}
 	}
 	if err := settingsb.SetDefault("app.instance.reverse_dns", rdns); err != nil {
