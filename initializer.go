@@ -661,8 +661,8 @@ func (i *initializer) boot(m *Main) error {
 
 	for _, addon := range i.addons {
 		started := time.Now()
-		if addon.registerAction != nil && !m.cmd.skipAddons {
-			if err := addon.registerAction(m.sess); err != nil {
+		if !m.cmd.skipAddons {
+			if err := addon.register(m.sess); err != nil {
 				return err
 			}
 			m.sess.stats.Update()

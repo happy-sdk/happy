@@ -55,21 +55,21 @@ func opts() []options.OptionSpec {
 		sdk.Option("next", "auto", "specify next version to release auto|major|minor|batch", nil),
 		sdk.Option("go.monorepo", false, "is project Go monorepo", nil),
 		sdk.Option("go.modules.count", 0, "total go modules found", nil),
-		sdk.Option("git.branch", "", "Git branch of the project",
+		sdk.Option("git.branch", "main", "Git branch of the project",
 			func(key string, val vars.Value) error {
 				if val.Empty() {
 					return fmt.Errorf("can not set empty branch for %s", key)
 				}
 				return nil
 			}),
-		sdk.Option("git.remote.url", "", "URL of the remote repository",
+		sdk.Option("git.remote.url", "-", "URL of the remote repository",
 			func(key string, val vars.Value) error {
 				if val.Empty() {
 					return fmt.Errorf("can not set empty remote url for %s", key)
 				}
 				return nil
 			}),
-		sdk.Option("git.remote.name", "", "Name of the remote repository",
+		sdk.Option("git.remote.name", "origin", "Name of the remote repository",
 			func(key string, val vars.Value) error {
 				if val.Empty() {
 					return fmt.Errorf("can not set empty remote url for %s", key)

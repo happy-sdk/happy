@@ -5,6 +5,7 @@
 package happy
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"runtime/debug"
@@ -50,9 +51,6 @@ func NewAddon(name string, s settings.Settings, opts ...options.OptionSpec) *Add
 	var err error
 	addon.opts, err = options.New(name, append(getDefaultAddonConfig(), opts...))
 	if err != nil {
-		addon.perr(err)
-	}
-	if err := addon.opts.Seal(); err != nil {
 		addon.perr(err)
 	}
 	addon.setAddonPackageInfo()
@@ -154,4 +152,20 @@ func (addon *Addon) ProvidesAPI(api API) {
 // add pending error
 func (addon *Addon) perr(err error) {
 	addon.errs = append(addon.errs, err)
+}
+
+func (addon *Addon) register(sess *Session) error {
+	if addon.errs != nil {
+		return errors.Join(addon.errs...)
+	}
+
+	if addon.registerAction != nil {
+		if err := addon.registerAction(sess); err != nil {
+			return fmt.Errorf("%w(%s): %s", ErrAddon, addon.info.Name, err)
+		}
+	}
+	if err := addon.opts.Seal(); err != nil {
+		return err
+	}
+	return nil
 }
