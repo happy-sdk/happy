@@ -270,7 +270,7 @@ func (r *releaser) printChangelog() error {
 
 	fmt.Println("## Changelog")
 
-	fmt.Printf("`%s@%s`", cl.Root.pkg.Import, cl.Root.pkg.NextRelease)
+	fmt.Printf("`%s@%s`\n\n", cl.Root.pkg.Import, cl.Root.pkg.NextRelease)
 
 	if cl.Root == nil {
 		return nil
@@ -296,17 +296,22 @@ func (r *releaser) printChangelog() error {
 
 	var changessection string
 	for _, change := range cl.Root.Changes {
+		found := false
 		for _, scl := range cl.Subpkgs {
-			found := false
 			for _, bcl := range scl.Changes {
 				if bcl == change {
 					found = true
+					break
 				}
 			}
-			if !found {
-				changessection += change + "\n"
+			if found {
+				break
 			}
 		}
+		if found {
+			continue
+		}
+		changessection += change + "\n"
 	}
 	if len(changessection) > 0 {
 		fmt.Println("### Changes")
@@ -315,9 +320,8 @@ func (r *releaser) printChangelog() error {
 	fmt.Println("")
 
 	for i, scl := range cl.Subpkgs {
-		if i == 0 {
-			fmt.Printf("### %s\n\n`%s@%s`\n", scl.pkg.NextRelease, scl.pkg.Import, scl.pkg.NextRelease)
-		}
+		fmt.Printf("### %s\n\n`%s@%s`\n", scl.pkg.NextRelease, scl.pkg.Import, scl.pkg.NextRelease)
+
 		for i, breaking := range scl.Breaking {
 			if i == 0 {
 				fmt.Println("**Breaking Changes**")
