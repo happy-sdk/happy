@@ -13,6 +13,8 @@ import (
 
 	"log/slog"
 
+	"github.com/happy-sdk/happy/internal/fsutils"
+	"github.com/happy-sdk/happy/pkg/strings/humanize"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/networking/address"
@@ -69,6 +71,11 @@ func (e *engine) start(sess *Session) error {
 	var init sync.WaitGroup
 	e.mu.Unlock()
 
+	if sess.Get("app.stats.enabled").Bool() {
+		if err := e.registerService(sess, statsService()); err != nil {
+			return err
+		}
+	}
 	e.loopStart(sess, &init)
 
 	e.servicesInit(sess, &init)
@@ -81,7 +88,16 @@ func (e *engine) start(sess *Session) error {
 		sess.Destroy(fmt.Errorf("%w: starting engine failed", ErrEngine))
 	}
 
+	if sess.Get("app.stats.enabled").Bool() {
+		loader := NewServiceLoader(sess, "app.stats")
+		<-loader.Load()
+		if err := loader.Err(); err != nil {
+			return err
+		}
+	}
+
 	e.running = true
+	sess.stats.Update()
 	sess.Log().SystemDebug("engine started")
 	return nil
 }
@@ -206,7 +222,7 @@ func (e *engine) loopStart(sess *Session, init *sync.WaitGroup) {
 		<-sess.Ready()
 
 		lastTick := time.Now()
-		ttick := time.NewTicker(time.Duration(sess.Setting("app.engine.throttle_ticks").Value().Int64()))
+		ttick := time.NewTicker(time.Duration(sess.Get("app.engine.throttle_ticks").Int64()))
 		defer ttick.Stop()
 
 	engineLoop:
@@ -334,6 +350,7 @@ func (e *engine) servicesInit(sess *Session, init *sync.WaitGroup) {
 				_ = e.registerEvent(registrableEvent(scope, key, "has listener", nil))
 			}
 		}(svcaddrstr, svcc)
+		sess.stats.Update()
 	}
 	sess.Log().SystemDebug("initialize services ...")
 }
@@ -385,7 +402,7 @@ func (e *engine) serviceStart(sess *Session, svcurl string) {
 			return
 		}
 
-		ttick := time.NewTicker(time.Duration(sess.Setting("app.engine.throttle_ticks").Value().Int64()))
+		ttick := time.NewTicker(time.Duration(sess.Get("app.engine.throttle_ticks").Int64()))
 		defer ttick.Stop()
 
 		lastTick := time.Now()
@@ -434,4 +451,51 @@ func (e *engine) serviceStop(sess *Session, svcurl string, err error) {
 	if e := svcc.stop(sess, err); e != nil {
 		sess.Log().Error("failed to stop service", slog.String("err", err.Error()), sarg)
 	}
+}
+
+func statsService() *Service {
+	stats := NewService("app.stats")
+
+	var (
+		tt      = 0
+		initial = true
+	)
+	stats.Tick(func(sess *Session, ts time.Time, delta time.Duration) error {
+		sess.stats.Update()
+
+		return nil
+	})
+
+	stats.Tock(func(sess *Session, delta time.Duration, tps int) error {
+		// every 10 ticks
+		if tt < 10 && !initial {
+			return nil
+		}
+		initial = false
+
+		cachePath := sess.Get("app.fs.path.cache").String()
+		tmpPath := sess.Get("app.fs.path.tmp").String()
+
+		if cacheSize, err := fsutils.DirSize(cachePath); err != nil {
+			sess.Log().Error("failed to get cache size", slog.String("err", err.Error()))
+		} else {
+			_ = sess.stats.Set("app.fs.cache.size", humanize.Bytes(uint64(cacheSize)))
+		}
+
+		if tmpSize, err := fsutils.DirSize(tmpPath); err != nil {
+			sess.Log().Error("failed to get tmp size", slog.String("err", err.Error()))
+		} else {
+			_ = sess.stats.Set("app.fs.tmp.size", humanize.Bytes(uint64(tmpSize)))
+		}
+
+		if availableSpace, err := fsutils.AvailableSpace(cachePath); err != nil {
+			sess.Log().Error("failed to get available space", slog.String("err", err.Error()))
+		} else {
+			_ = sess.stats.Set("app.fs.available", humanize.Bytes(uint64(availableSpace)))
+		}
+
+		return nil
+	})
+
+	return stats
 }

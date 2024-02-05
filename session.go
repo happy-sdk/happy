@@ -18,7 +18,9 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy/sdk/options"
 	"github.com/happy-sdk/happy/sdk/settings"
+	"github.com/happy-sdk/happy/sdk/stats"
 )
 
 var (
@@ -31,7 +33,7 @@ type Session struct {
 
 	logger  logging.Logger
 	profile *settings.Profile
-	opts    *Options
+	opts    *options.Options
 
 	ready         context.Context
 	readyCancel   context.CancelFunc
@@ -51,6 +53,9 @@ type Session struct {
 	terminated      bool
 	disposed        bool
 	valid           bool
+
+	stats   *stats.Runtime
+	timeloc *time.Location
 }
 
 // Ready returns channel which blocks until session considers application to be ready.
@@ -176,13 +181,11 @@ func (s *Session) Closed() <-chan struct{} {
 	return d
 }
 
-// UserClosed allows user to cancel application by pressing Ctrl+C
+// Wait allows user to cancel application by pressing Ctrl+C
 // or sending SIGINT or SIGTERM while application is running.
-// By default this is not allowed. If you want to allow user to cancel
-// application, you call this method any point at application runtime.
-// Calling this method multiple times has no effect and triggers Warning
-// log message.
-func (s *Session) UserClosed() <-chan struct{} {
+// By default this is not allowed. It returns a channel which blocks until
+// application is closed by user or signal is reveived.
+func (s *Session) Wait() <-chan struct{} {
 	s.mu.Lock()
 	s.allowUserCancel = true
 	s.mu.Unlock()
@@ -238,7 +241,7 @@ func (s *Session) Get(key string) vars.Variable {
 }
 
 func (s *Session) Set(key string, val any) error {
-	if s.Profile().Has(key) {
+	if s.Settings().Has(key) {
 		return fmt.Errorf("setting profile options is not allowed to be set as option, call Profile.Set instead, attempt to set %s = %v", key, val)
 	}
 	if !s.opts.Accepts(key) {
@@ -276,8 +279,7 @@ func (s *Session) Has(key string) bool {
 
 func (s *Session) Describe(key string) string {
 	if s.profile != nil && s.profile.Has(key) {
-		// return s.profile.Get(key).Description()
-		return "<setting>"
+		return s.profile.Get(key).Description()
 	}
 	return s.opts.Describe(key)
 }
@@ -301,20 +303,6 @@ func (s *Session) Dispatch(ev Event) {
 	}
 }
 
-func (s *Session) Setting(key string) settings.Setting {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	if s.profile == nil || !s.profile.Loaded() {
-		s.logger.Warn("session profile not loaded, while accessing settings", slog.String("key", key))
-		return settings.Setting{}
-	}
-	if !s.profile.Has(key) {
-		s.logger.Warn("accessing non existing setting", slog.String("key", key))
-	}
-
-	return s.profile.Get(key)
-}
-
 func (s *Session) API(addonName string) (API, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -327,7 +315,7 @@ func (s *Session) API(addonName string) (API, error) {
 
 // Settings returns a map of all settings which are defined by application
 // and are user configurable.
-func (s *Session) Profile() *settings.Profile {
+func (s *Session) Settings() *settings.Profile {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if s.profile == nil || !s.profile.Loaded() {
@@ -337,41 +325,12 @@ func (s *Session) Profile() *settings.Profile {
 	return profile
 }
 
-// Config returns a map of all config options which are defined by application
-func (s *Session) Config() *vars.Map {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	config := &vars.Map{}
-	for _, cnf := range s.opts.config {
-		if cnf.kind&ConfigOption != 0 {
-			if err := config.Store(cnf.key, s.opts.Get(cnf.key).Value()); err != nil {
-				s.Log().Warn("storing config failed", slog.String("key", cnf.key), slog.String("err", err.Error()))
-			}
-		}
-	}
-	return config
-}
-
 // Opts returns a map of all options which are defined by application
 // turing current session life cycle.
-func (s *Session) Opts() *vars.Map {
+func (s *Session) Opts() *options.Options {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	opts := &vars.Map{}
-	for _, opt := range s.opts.db.All() {
-		cnf, ok := s.opts.config[opt.Name()]
-		if ok {
-			if cnf.kind&RuntimeOption != 0 {
-				if err := opts.Store(cnf.key, s.opts.Get(cnf.key).Value()); err != nil {
-					s.Log().Warn("storing option failed", slog.String("key", opt.Name()), slog.String("err", err.Error()))
-				}
-			}
-		} else {
-			if err := opts.Store(opt.Name(), opt.Value()); err != nil {
-				s.Log().Warn("storing option failed", slog.String("key", opt.Name()), slog.String("err", err.Error()))
-			}
-		}
-	}
+	opts := s.opts
 	return opts
 }
 
@@ -380,13 +339,33 @@ func (s *Session) ServiceLoader(svcs ...string) *ServiceLoader {
 	return NewServiceLoader(s, svcs...)
 }
 
+func (s *Session) Stats() stats.State {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	stats := s.stats.State()
+	return stats
+}
+
 func (s *Session) start() (err error) {
 	s.ready, s.readyCancel = context.WithCancel(context.Background())
 	s.terminate, s.terminateStop = signal.NotifyContext(s, os.Interrupt)
 	s.kill, s.killStop = signal.NotifyContext(s, os.Kill)
 	s.evch = make(chan Event, 100)
+	if s.Get("app.datetime.location").String() != "" {
+		s.timeloc, err = time.LoadLocation(s.Get("app.datetime.location").String())
+		if err != nil {
+			return fmt.Errorf("failed to load time location: %w", err)
+		}
+	} else {
+		s.timeloc = time.Local
+	}
+	s.stats.SetTimezone(s.timeloc)
 	s.Log().SystemDebug("session started")
 	return err
+}
+
+func (s *Session) time(t time.Time) time.Time {
+	return t.In(s.timeloc)
 }
 
 func (s *Session) setReady() {
@@ -449,9 +428,10 @@ func (s *Session) setServiceInfo(info *ServiceInfo) {
 func newSession(logger logging.Logger) *Session {
 	s := &Session{
 		logger: logger,
+		stats:  stats.New("APPLICATION STATS"),
 	}
 	var err error
-	s.opts, err = NewOptions("app", getRuntimeConfig())
+	s.opts, err = options.New("app", getConfig())
 	s.err = errors.Join(s.err, err)
 	return s
 }

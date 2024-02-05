@@ -73,12 +73,16 @@ func ErrorIs(tt TestingIface, err, target error, msgAndArgs ...any) bool {
 // Equal asserts comparables.
 //
 //	testutils.Equal(t, "hello", "hello")
-func Equal[V comparable](tt TestingIface, expected, actual V, msgAndArgs ...any) bool {
+func Equal[V comparable](tt TestingIface, want, got V, msgAndArgs ...any) bool {
 	tt.Helper()
-	if expected != actual {
+	return equal(tt, want, got, msgAndArgs...)
+}
+func equal[V comparable](tt TestingIface, want, got V, msgAndArgs ...any) bool {
+	tt.Helper()
+	if got != want {
 		return fail(tt, fmt.Sprintf("Not equal: \n"+
-			"expected: %v\n"+
-			"actual  : %v", expected, actual), msgAndArgs...)
+			"want: %v\n"+
+			"got  : %v", want, got), msgAndArgs...)
 	}
 	return true
 }
@@ -103,36 +107,36 @@ func HasSuffix(tt TestingIface, s, suffix string, msgAndArgs ...any) bool {
 	return true
 }
 
-func NotEqual[V comparable](tt TestingIface, expected, actual V, msgAndArgs ...any) bool {
+func NotEqual[V comparable](tt TestingIface, want, got V, msgAndArgs ...any) bool {
 	tt.Helper()
-	if expected == actual {
+	if got == got {
 		return fail(tt, fmt.Sprintf("Equal: \n"+
-			"expected: %v != %v", expected, actual), msgAndArgs...)
+			"expected: %v != %v", want, got), msgAndArgs...)
 	}
 	return true
 }
 
-func EqualAny(tt TestingIface, expected, actual any, msgAndArgs ...any) bool {
+func EqualAny(tt TestingIface, want, got any, msgAndArgs ...any) bool {
 	tt.Helper()
-	if err := validateEqualArgs(expected, actual); err != nil {
+	if err := validateEqualArgs(want, got); err != nil {
 		return fail(tt, fmt.Sprintf("Invalid operation: %#v == %#v (%s)",
-			expected, actual, err), msgAndArgs...)
+			want, got, err), msgAndArgs...)
 	}
 
-	if !ObjectsAreEqual(expected, actual) {
-		expected, actual = formatUnequalValues(expected, actual)
+	if !ObjectsAreEqual(want, got) {
+		want, got = formatUnequalValues(want, got)
 		return fail(tt, fmt.Sprintf("Not equal: \n"+
 			"expected: %s\n"+
-			"actual  : %s", expected, actual), msgAndArgs...)
+			"actual  : %s", want, got), msgAndArgs...)
 	}
 
 	return true
 
 }
 
-func EqualAnyf(tt TestingIface, expected any, actual any, msg string, args ...any) bool {
+func EqualAnyf(tt TestingIface, want, got any, msg string, args ...any) bool {
 	tt.Helper()
-	return EqualAny(tt, expected, actual, append([]any{msg}, args...)...)
+	return EqualAny(tt, want, got, append([]any{msg}, args...)...)
 }
 
 // True asserts that the specified value is true.
@@ -365,12 +369,12 @@ func buildErrorChainString(err error) string {
 
 // validateEqualArgs checks whether provided arguments can be safely used in the
 // Equal/NotEqual functions.
-func validateEqualArgs(expected, actual interface{}) error {
-	if expected == nil && actual == nil {
+func validateEqualArgs(want, got interface{}) error {
+	if want == nil && got == nil {
 		return nil
 	}
 
-	if isFunction(expected) || isFunction(actual) {
+	if isFunction(want) || isFunction(got) {
 		return errors.New("cannot take func type as argument")
 	}
 	return nil

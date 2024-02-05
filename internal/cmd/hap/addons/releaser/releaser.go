@@ -14,6 +14,8 @@ import (
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser/module"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
+	"github.com/happy-sdk/happy/sdk"
+	"github.com/happy-sdk/happy/sdk/options"
 	"github.com/happy-sdk/happy/sdk/settings"
 )
 
@@ -30,7 +32,7 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 }
 
 func Addon(s Settings) *happy.Addon {
-	addon := happy.NewAddon("releaser", s)
+	addon := happy.NewAddon("releaser", s, opts()...)
 
 	r := newReleaser()
 
@@ -38,26 +40,48 @@ func Addon(s Settings) *happy.Addon {
 		addon.ProvidesCommand(r.createReleaseCommand())
 	}
 
-	addon.Option("working.directory", "/tmp/happy", "working directory of the project", func(key string, val vars.Value) error {
-		if str := val.String(); val.Empty() || str == "" || !filepath.IsAbs(str) {
-			return fmt.Errorf("invalid value for %s: %q", key, val)
-		}
-		return nil
-	})
-
-	addon.Option("next", "auto", "specify next version to release auto|major|minor|batch", nil)
-	addon.Option("go.monorepo", false, "is project Go monorepo", nil)
-	addon.Option("go.modules.count", 0, "total go modules found", nil)
-	addon.Option("git.branch", "main", "branch to release from", nil)
-	addon.Option("git.remote.url", "", "URL of the remote repository", nil)
-	addon.Option("git.remote.name", "", "Name of the remote repository", nil)
-	addon.Option("git.dirty", "", "true if there are uncommitted changes", nil)
-	addon.Option("git.committer", "", "name of the committer", nil)
-	addon.Option("git.email", "", "email of the committer", nil)
-	addon.Option("git.allow.dirty", false, "Dirty git repo allowed", nil)
-	addon.Option("github.token", "", "committer github token for that repository with release permissions", nil)
-
 	return addon
+}
+
+func opts() []options.OptionSpec {
+	return []options.OptionSpec{
+		sdk.Option("working.directory", "/tmp/happy", "working directory of the project",
+			func(key string, val vars.Value) error {
+				if str := val.String(); val.Empty() || str == "" || !filepath.IsAbs(str) {
+					return fmt.Errorf("invalid value for %s: %q", key, val)
+				}
+				return nil
+			}),
+		sdk.Option("next", "auto", "specify next version to release auto|major|minor|batch", nil),
+		sdk.Option("go.monorepo", false, "is project Go monorepo", nil),
+		sdk.Option("go.modules.count", 0, "total go modules found", nil),
+		sdk.Option("git.branch", "", "Git branch of the project",
+			func(key string, val vars.Value) error {
+				if val.Empty() {
+					return fmt.Errorf("can not set empty branch for %s", key)
+				}
+				return nil
+			}),
+		sdk.Option("git.remote.url", "", "URL of the remote repository",
+			func(key string, val vars.Value) error {
+				if val.Empty() {
+					return fmt.Errorf("can not set empty remote url for %s", key)
+				}
+				return nil
+			}),
+		sdk.Option("git.remote.name", "", "Name of the remote repository",
+			func(key string, val vars.Value) error {
+				if val.Empty() {
+					return fmt.Errorf("can not set empty remote url for %s", key)
+				}
+				return nil
+			}),
+		sdk.Option("git.dirty", false, "Set to true if there are uncommitted changes", nil),
+		sdk.Option("git.committer", "", "Name of the committer", nil),
+		sdk.Option("git.email", "", "Email of the committer", nil),
+		sdk.Option("git.allow.dirty", false, "Dirty git repo allowed", nil),
+		sdk.Option("github.token", "", "Github token for that repository with release permissions", nil),
+	}
 }
 
 type releaser struct {

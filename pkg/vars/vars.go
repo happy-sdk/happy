@@ -18,7 +18,7 @@ var (
 )
 
 var (
-	ErrReadOnly = errors.New("readonly")
+	ErrReadOnly = errors.New("vars.readonly")
 
 	// Key errors
 	ErrKey                      = errors.New("key error")

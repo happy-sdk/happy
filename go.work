@@ -7,6 +7,8 @@ use (
 	./pkg/devel/testutils
 	./pkg/scheduling/cron
 	./pkg/strings/bexp
+	./pkg/strings/humanize
+	./pkg/strings/textfmt
 	./pkg/vars
 	./pkg/version
 )

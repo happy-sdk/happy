@@ -223,7 +223,7 @@ type DescribedOption struct {
 
 // getConfirmConfigModel returns the model for the confirmation table.
 func (c *configuration) getConfirmConfigModel(sess *happy.Session) (configTable, error) {
-	releaserOptions := sess.Opts().ExtractWithPrefix("releaser.")
+	releaserOptions := sess.Opts().WithPrefix("releaser.")
 	// sort keys
 	var (
 		longestKey         int = 10

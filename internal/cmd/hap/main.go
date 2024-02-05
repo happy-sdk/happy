@@ -5,11 +5,8 @@
 package main
 
 import (
-	"log/slog"
-
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser"
-	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/cli/commands"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
@@ -71,8 +68,7 @@ func hap() *happy.Main {
 		WithService(service()).
 		WithCommand(commands.Config()).
 		// WithFlag(nil).
-		WithLogger(logging.Console(logging.LevelOk)).
-		WithOptions(happy.Option("happy", "true"))
+		WithLogger(logging.Console(logging.LevelOk))
 
 	return main
 }
@@ -87,21 +83,6 @@ func main() {
 		)
 
 		<-loader.Load()
-
-		sess.Log().Debug("SETTINGS")
-		for _, s := range sess.Profile().All() {
-			sess.Log().Debug(s.Key(), slog.String("value", s.Value().String()))
-		}
-		sess.Log().Debug("OPTIONS")
-		sess.Opts().Range(func(v vars.Variable) bool {
-			sess.Log().Debug(v.Name(), slog.String("value", v.String()))
-			return true
-		})
-		sess.Log().Debug("CONFIG")
-		sess.Config().Range(func(v vars.Variable) bool {
-			sess.Log().Debug(v.Name(), slog.String("value", v.String()))
-			return true
-		})
 		return loader.Err()
 	})
 
