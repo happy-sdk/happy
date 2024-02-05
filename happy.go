@@ -21,6 +21,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
+	"github.com/happy-sdk/happy/sdk/options"
 )
 
 var (
@@ -34,7 +35,7 @@ type ActionTick func(sess *Session, ts time.Time, delta time.Duration) error
 type ActionTock func(sess *Session, delta time.Duration, tps int) error
 type ActionWithPrevErr func(sess *Session, err error) error
 type ActionWithEvent func(sess *Session, ev Event) error
-type ActionWithOptions func(sess *Session, opts *Options) error
+type ActionWithOptions func(sess *Session, opts *options.Options) error
 
 type Args interface {
 	Arg(i uint) vars.Value
@@ -47,7 +48,7 @@ type Args interface {
 type Flags interface {
 	// Get named flag
 	Get(name string) (varflag.Flag, error)
-	Args() []vars.Value
+	// Args() []vars.Value
 }
 
 type API interface {
@@ -63,4 +64,8 @@ func GetAPI[A API](sess *Session, addonName string) (api A, err error) {
 		return aa, nil
 	}
 	return api, fmt.Errorf("%w: unable to cast %s API to given type", Error, addonName)
+}
+
+func Option(key string, val any) options.Arg {
+	return options.NewArg(key, val)
 }

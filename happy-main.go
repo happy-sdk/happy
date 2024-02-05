@@ -23,6 +23,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/migration"
+	"github.com/happy-sdk/happy/sdk/options"
 )
 
 type Main struct {
@@ -41,14 +42,18 @@ type Main struct {
 	exitTrap bool
 	exitFunc []func(sess *Session, code int) error
 	exitCh   chan struct{}
+
+	createdAt time.Time
+	startedAt time.Time
 }
 
 // New is alias to prototype.New
 func New(s Settings) *Main {
 	m := &Main{
-		init:     newInitializer(&s),
-		root:     NewCommand(filepath.Base(os.Args[0])),
-		exitTrap: testing.Testing(),
+		init:      newInitializer(&s),
+		root:      NewCommand(filepath.Base(os.Args[0])),
+		exitTrap:  testing.Testing(),
+		createdAt: time.Now(),
 	}
 
 	m.init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, "creating new application", 3))
@@ -124,9 +129,16 @@ func (m *Main) WithLogger(l logging.Logger) *Main {
 	return m
 }
 
-func (m *Main) WithOptions(opts ...OptionArg) *Main {
+func (m *Main) WithOptions(opts ...options.OptionSpec) *Main {
 	if init, ok := m.canConfigure("with options"); ok {
 		init.AddOptions(opts...)
+	}
+	return m
+}
+
+func (m *Main) SetOptions(a ...options.Arg) *Main {
+	if init, ok := m.canConfigure("setting options"); ok {
+		init.SetOptions(a...)
 	}
 	return m
 }
@@ -200,6 +212,7 @@ func (m *Main) Tock(a ActionTock) *Main {
 
 // Run starts the Application.
 func (m *Main) Run() {
+	startedAt := time.Now()
 	m.mu.RLock()
 	sealed := m.sealed
 	m.mu.RUnlock()
@@ -207,6 +220,16 @@ func (m *Main) Run() {
 		m.log(logging.LevelError, "can not call .Run application is already sealed")
 		return
 	}
+
+	// when we disable os.Exit e.g. for tests
+	// and use channel which would block main thread.
+	m.mu.Lock()
+	if m.exitTrap {
+		m.exitCh = make(chan struct{}, 1)
+		defer close(m.exitCh)
+	}
+	m.startedAt = startedAt
+	m.mu.Unlock()
 
 	// initialize (mutex is locked inside)
 	if err := m.init.Initialize(m); err != nil {
@@ -217,22 +240,6 @@ func (m *Main) Run() {
 		}
 		m.exit(1)
 		return
-	}
-
-	if m.root.flag("help").Present() || m.cmd == nil || (m.cmd == m.root && m.root.doAction == nil) {
-		m.sess.Log().SetLevel(logging.LevelAlways)
-		if err := m.help(); err != nil {
-			m.sess.Log().Error("failed to print help", slog.String("err", err.Error()))
-			return
-		}
-		return
-	}
-
-	// when we disable os.Exit e.g. for tests
-	// and use channel which would block main thread.
-	if m.exitTrap {
-		m.exitCh = make(chan struct{}, 1)
-		defer close(m.exitCh)
 	}
 
 	// Start application main process
@@ -249,11 +256,6 @@ func (m *Main) printVersion() {
 func (m *Main) run() {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	if err := m.sess.start(); err != nil {
-		m.sess.Log().Error("failed to start session", slog.String("err", err.Error()))
-		m.exit(1)
-		return
-	}
 
 	if m.sess.Get("app.devel").Bool() {
 		m.sess.Log().Info("development mode",
@@ -436,12 +438,12 @@ func (m *Main) save() error {
 		slog.String("profile", m.sess.Get("app.profile.name").String()),
 		slog.String("file", profileFilePath),
 	)
-	if m.sess.Profile() == nil || !m.cmd.allowOnFreshInstall {
+	if m.sess.Settings() == nil || !m.cmd.allowOnFreshInstall {
 		m.sess.Log().SystemDebug("skip saving")
 		return nil
 	}
 
-	profile := m.sess.Profile().All()
+	profile := m.sess.Settings().All()
 
 	pd := vars.Map{}
 	for _, setting := range profile {

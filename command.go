@@ -14,6 +14,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk"
+	"github.com/happy-sdk/happy/sdk/options"
 )
 
 var (
@@ -52,23 +53,21 @@ type Command struct {
 	argnmin uint
 }
 
-func NewCommand(name string, options ...OptionArg) *Command {
+func NewCommand(name string, args ...options.Arg) *Command {
 	c := &Command{}
 
 	n, err := vars.ParseKey(name)
 	c.errs = append(c.errs, err)
 	c.name = n
 
-	opts, err := NewOptions(fmt.Sprintf("cmd.%s", name), getDefaultCommandOpts())
+	opts, err := options.New(fmt.Sprintf("cmd.%s", name), getDefaultCommandOpts())
 	c.errs = append(c.errs, err)
 
-	for _, opt := range options {
-		if err := opt.apply(opts); err != nil {
-			c.errs = append(c.errs, err)
-		}
+	for _, arg := range args {
+		c.errs = append(c.errs, opts.Set(arg.Key(), arg.Value()))
 	}
 
-	if err := opts.setDefaults(); err != nil {
+	if err := opts.Seal(); err != nil {
 		c.errs = append(c.errs, err)
 	}
 	c.argnmin = opts.Get("argn.min").Uint()
@@ -467,4 +466,17 @@ func (c *Command) callAfterAlwaysAction(session *Session, err error) error {
 		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	return nil
+}
+
+func getDefaultCommandOpts() []options.OptionSpec {
+	opts := []options.OptionSpec{
+		options.NewOption("description", "", "Long escription for command", options.KindConfig|options.KindReadOnly, nil),
+		options.NewOption("usage", "", "Usage description for command", options.KindConfig|options.KindReadOnly, nil),
+		options.NewOption("category", "", "Command category", options.KindConfig|options.KindReadOnly, nil),
+		options.NewOption("firstuse.allowed", true, "Is command allowed to be used when application is used first time", options.KindConfig|options.KindReadOnly, nil),
+		options.NewOption("skip.addons", false, "Skip registering addons for this command, Addons and their provided services will not be loaded when this command is used.", options.KindConfig|options.KindReadOnly, nil),
+		options.NewOption("argn.min", 0, "Minimum argument count for command", options.KindConfig|options.KindReadOnly, nil),
+		options.NewOption("argn.max", 0, "Maximum argument count for command", options.KindConfig|options.KindReadOnly, nil),
+	}
+	return opts
 }

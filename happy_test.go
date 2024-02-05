@@ -49,11 +49,10 @@ func TestDefaultSettings(t *testing.T) {
 
 func TestDefaultConfig(t *testing.T) {
 	log := logging.NewTestLogger(logging.LevelError)
-
 	app := happy.New(happy.Settings{})
 	app.WithLogger(log)
 	app.Do(func(sess *happy.Session, args happy.Args) error {
-		testutils.Equal(t, 13, sess.Config().Len(), "invalid default runtime config key cpunt")
+		testutils.Equal(t, 13, sess.Opts().Len(), "invalid default runtime config key cpunt")
 		host, err := os.Hostname()
 		if err != nil {
 			return err
@@ -86,18 +85,6 @@ func TestDefaultConfig(t *testing.T) {
 		testutils.Equal(t, fmt.Sprintf("%s/cache/com.github.happy-sdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.cache").String(), "app.fs.path.cache")
 		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel/profile.preferences", tmpdir), sess.Get("app.profile.file").String(), "app.profile.file")
 
-		return nil
-	})
-	app.Run()
-}
-
-func TestDefaultOptions(t *testing.T) {
-	log := logging.NewTestLogger(logging.LevelError)
-
-	app := happy.New(happy.Settings{})
-	app.WithLogger(log)
-	app.Do(func(sess *happy.Session, args happy.Args) error {
-		testutils.Equal(t, 0, sess.Opts().Len(), "default runtime opts should be empty")
 		return nil
 	})
 	app.Run()

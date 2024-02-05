@@ -5,7 +5,6 @@
 package happy
 
 import (
-	"errors"
 	"fmt"
 	"runtime"
 	"runtime/debug"
@@ -13,21 +12,20 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/version"
+	"github.com/happy-sdk/happy/sdk/options"
 	"github.com/happy-sdk/happy/sdk/settings"
-	"golang.org/x/mod/semver"
 )
 
 var ErrAddon = fmt.Errorf("%w:addon", Error)
 
 type Addon struct {
 	info     AddonInfo
-	opts     *Options
+	opts     *options.Options
 	settings settings.Settings
 	errs     []error
 
-	registerAction ActionWithOptions
+	registerAction Action
 	events         []Event
-	acceptsOpts    []OptionArg
 
 	cmds []*Command
 	svcs []*Service
@@ -42,7 +40,7 @@ type AddonInfo struct {
 	Module      string
 }
 
-func NewAddon(name string, s settings.Settings, opts ...OptionArg) *Addon {
+func NewAddon(name string, s settings.Settings, opts ...options.OptionSpec) *Addon {
 	addon := &Addon{
 		settings: s,
 		info: AddonInfo{
@@ -50,8 +48,11 @@ func NewAddon(name string, s settings.Settings, opts ...OptionArg) *Addon {
 		},
 	}
 	var err error
-	addon.opts, err = NewOptions("config", getDefaultAddonConfig())
+	addon.opts, err = options.New(name, append(getDefaultAddonConfig(), opts...))
 	if err != nil {
+		addon.perr(err)
+	}
+	if err := addon.opts.Seal(); err != nil {
 		addon.perr(err)
 	}
 	addon.setAddonPackageInfo()
@@ -107,31 +108,14 @@ func (addon *Addon) setAddonPackageInfo() {
 	addon.info.Version = version.Current()
 }
 
-func getDefaultAddonConfig() []OptionArg {
-	addonOpts := []OptionArg{
-		{
-			key:   "description",
-			value: "",
-			desc:  "Short description for addon",
-			kind:  ReadOnlyOption | ConfigOption,
-		},
-		{
-			key:   "version",
-			value: version.Current(),
-			desc:  "Addon version",
-			kind:  ReadOnlyOption | ConfigOption,
-			validator: func(key string, val vars.Value) error {
-				if !semver.IsValid(val.String()) {
-					return fmt.Errorf("%w: %q, version must be valid semantic version", errors.Join(Error, version.Error), val)
-				}
-				return nil
-			},
-		},
+func getDefaultAddonConfig() []options.OptionSpec {
+	addonOpts := []options.OptionSpec{
+		options.NewOption("events.discard", false, "will discard all events this addon emits", options.KindReadOnly|options.KindConfig, nil),
 	}
 	return addonOpts
 }
 
-func (addon *Addon) OnRegister(action ActionWithOptions) {
+func (addon *Addon) OnRegister(action Action) {
 	addon.registerAction = action
 }
 
@@ -141,16 +125,6 @@ func (addon *Addon) Emits(scope, key, description string, example *vars.Map) {
 
 func (addon *Addon) EmitsEvent(event Event) {
 	addon.events = append(addon.events, event)
-}
-
-func (addon *Addon) Option(key string, value any, description string, validator OptionValueValidator) {
-	addon.acceptsOpts = append(addon.acceptsOpts, OptionArg{
-		key:       key,
-		value:     value,
-		desc:      description,
-		kind:      RuntimeOption,
-		validator: validator,
-	})
 }
 
 func (addon *Addon) ProvidesCommand(cmd *Command) {

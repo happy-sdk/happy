@@ -12,7 +12,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -20,10 +19,9 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
-	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/migration"
-	"github.com/happy-sdk/happy/sdk/networking/address"
+	"github.com/happy-sdk/happy/sdk/options"
 	"github.com/happy-sdk/happy/sdk/settings"
 )
 
@@ -31,7 +29,6 @@ type initializer struct {
 	mu         sync.Mutex
 	logger     logging.Logger
 	loaded     time.Time
-	took       time.Duration
 	settings   *Settings
 	tick       ActionTick
 	tock       ActionTock
@@ -40,8 +37,9 @@ type initializer struct {
 	addons     []*Addon
 	migrations *migration.Manager
 	// pendingOpts contains options which are not yet applied.
-	mainOpts    []OptionArg
-	pendingOpts []OptionArg
+	mainOptSpecs []options.OptionSpec
+	pendingOpts  []options.Arg
+	took         time.Duration
 }
 
 func newInitializer(s *Settings) *initializer {
@@ -127,10 +125,16 @@ func (i *initializer) AddMigrations(mm *migration.Manager) {
 	i.migrations = mm
 }
 
-func (i *initializer) AddOptions(opts ...OptionArg) {
+func (i *initializer) AddOptions(opts ...options.OptionSpec) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
-	i.mainOpts = append(i.mainOpts, opts...)
+	i.mainOptSpecs = append(i.mainOptSpecs, opts...)
+}
+
+func (i *initializer) SetOptions(args ...options.Arg) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.pendingOpts = append(i.pendingOpts, args...)
 }
 
 func (i *initializer) Log(r logging.QueueRecord) {
@@ -145,10 +149,6 @@ func (i *initializer) Log(r logging.QueueRecord) {
 }
 
 func (i *initializer) dispose() {
-	i.took = time.Since(i.loaded)
-
-	i.logger.SystemDebug("initialization done", slog.Duration("took", i.took))
-
 	i.logger = nil
 	i.tick = nil
 	i.tock = nil
@@ -188,66 +188,6 @@ func (i *initializer) Initialize(m *Main) error {
 		return err
 	}
 
-	slugSpec, slugErr := settingsb.GetSpec("app.slug")
-	if slugErr != nil {
-		return slugErr
-	}
-	insRevDNSSpec, insRevDNSErr := settingsb.GetSpec("app.instance.reverse_dns")
-	if insRevDNSErr != nil {
-		return insRevDNSErr
-	}
-	rdns := insRevDNSSpec.Value
-
-	m.slug = slugSpec.Value
-
-	curr, err := address.Current()
-	if err != nil {
-		return err
-	}
-
-	if len(m.slug) == 0 {
-		if testing.Testing() {
-			tmpaddr, err := address.CurrentForDepth(2)
-			if err != nil {
-				return err
-			}
-			m.slug = tmpaddr.Instance() + "-test"
-
-			if err := m.sess.opts.set("app.module", tmpaddr.Module(), true); err != nil {
-				return err
-			}
-			rdns = tmpaddr.ReverseDNS() + ".test"
-		} else {
-			m.slug = curr.Instance()
-		}
-		if err := settingsb.SetDefault("app.slug", m.slug); err != nil {
-			return err
-		}
-	}
-	if len(rdns) == 0 {
-		rdns = curr.ReverseDNS()
-		if len(rdns) == 0 {
-			return fmt.Errorf("could not find app.instance.reverse_dns")
-		}
-	}
-	if err := settingsb.SetDefault("app.instance.reverse_dns", rdns); err != nil {
-		return err
-	}
-
-	inst, err := instance.New(m.slug, rdns)
-	if err != nil {
-		return err
-	}
-	m.instance = inst
-
-	if err := slugSpec.ValidateValue(m.slug); err != nil {
-		return err
-	}
-
-	if err := m.sess.opts.set("app.address", inst.Address().String(), true); err != nil {
-		return err
-	}
-
 	if err := i.unsafeInitAddonSettingsAndCommands(m, settingsb); err != nil {
 		return err
 	}
@@ -262,10 +202,6 @@ func (i *initializer) Initialize(m *Main) error {
 		m.sess.Log().SetLevel(logging.LevelDebug)
 	} else if m.root.flag("verbose").Var().Bool() {
 		m.sess.Log().SetLevel(logging.LevelInfo)
-	}
-
-	if err := m.sess.opts.setDefaults(); err != nil {
-		return err
 	}
 
 	if m.root.flag("version").Present() {
@@ -283,20 +219,13 @@ func (i *initializer) Initialize(m *Main) error {
 		return err
 	}
 
+	if err := m.sess.opts.Seal(); err != nil {
+		return err
+	}
 	for _, opt := range i.pendingOpts {
-
-		group := "option"
-		if opt.kind&ConfigOption != 0 {
-			group = "config"
-		} else if opt.kind&SettingsOption != 0 {
-			group = "settings"
-		}
-
 		m.sess.Log().Warn("option not used",
-			slog.String("group", group),
-			slog.String("key", opt.key),
-			slog.Any("value", opt.value),
-			slog.Bool("readOnly", opt.kind&ReadOnlyOption == ReadOnlyOption),
+			slog.String("key", opt.Key()),
+			slog.Any("value", opt.Value()),
 		)
 	}
 
@@ -305,30 +234,21 @@ func (i *initializer) Initialize(m *Main) error {
 		m.sess.Log().NotImplemented("migrations not supported at the moment")
 	}
 
-	return nil
-}
-
-func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint) error {
-	for _, opt := range i.mainOpts {
-		if m.sess.Has(opt.key) {
-			continue
-		} else {
-			i.pendingOpts = append(i.pendingOpts, opt)
+	if m.root.flag("help").Present() || m.cmd == nil || (m.cmd == m.root && m.root.doAction == nil) {
+		m.sess.Log().SetLevel(logging.LevelAlways)
+		if err := m.help(); err != nil {
+			return fmt.Errorf("%w: failed to print help %w", Error, err)
 		}
+		return errExitSuccess
 	}
 
-	i.log(logging.NewQueueRecord(logging.LevelSystemDebug, "app slug set to", 2, slog.String("slug", m.slug)))
-
-	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argn_max")
-	if mainArgcMaxErr != nil {
-		return mainArgcMaxErr
-	}
-	argnmax, err := strconv.ParseUint(mainArgcMaxSpec.Value, 10, 64)
-	if err != nil {
-		return err
+	if err := m.sess.start(); err != nil {
+		return fmt.Errorf("%w: failed to start session %w", Error, err)
 	}
 
-	return m.root.setArgcMax(uint(argnmax))
+	i.took = time.Since(i.loaded)
+	i.logger.SystemDebug("initialization done", slog.String("took", i.took.String()))
+	return i.boot(m)
 }
 
 func (i *initializer) unsafeInitLogger() logging.Logger {
@@ -382,7 +302,7 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 		m.root.AddFlag(varflag.BoolFunc(flag.Name, flag.Value, flag.Usage, flag.Aliases...))
 	}
 
-	m.root.AddFlag(varflag.NewFunc("profile", "default", "session profile to be used"))
+	m.root.AddFlag(varflag.StringFunc("profile", "default", "session profile to be used"))
 
 	if err := m.root.verify(); err != nil {
 		return err
@@ -413,15 +333,16 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 
 // configure is called after logger is set to correct level.
 func (i *initializer) unsafeConfigure(m *Main, settingsb *settings.Blueprint) error {
-	if err := m.sess.opts.set("app.main.exec.x", m.root.flag("x").Present(), true); err != nil {
-		return err
+	if err := m.sess.opts.Set("app.main.exec.x", m.root.flag("x").Present()); err != nil {
+
+		return fmt.Errorf("%w: unsafeConfigure %s", Error, err)
 	}
 
 	profileName := m.root.flag("profile").String()
 	if m.sess.Get("app.devel").Bool() {
 		profileName += "-devel"
 	}
-	if err := m.sess.opts.set("app.profile.name", profileName, true); err != nil {
+	if err := m.sess.opts.Set("app.profile.name", profileName); err != nil {
 		return err
 	}
 
@@ -443,7 +364,7 @@ func (i *initializer) unsafeConfigure(m *Main, settingsb *settings.Blueprint) er
 		}
 	}
 
-	m.sess.Log().LogDepth(3, logging.LevelSystemDebug, "initialize", slog.Bool("firstuse", m.sess.Get("app.firstuse").Bool()))
+	m.sess.Log().LogDepth(2, logging.LevelSystemDebug, "initialize", slog.Bool("firstuse", m.sess.Get("app.firstuse").Bool()))
 
 	if err := i.unsafeConfigureOptions(m); err != nil {
 		return err
@@ -478,7 +399,7 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 	if err := os.MkdirAll(tempDir, 0700); err != nil {
 		return err
 	}
-	if err := m.sess.opts.set("app.fs.path.tmp", tempDir, true); err != nil {
+	if err := m.sess.opts.Set("app.fs.path.tmp", tempDir); err != nil {
 		return err
 	}
 
@@ -495,7 +416,7 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 	if err != nil {
 		return err
 	}
-	if err := m.sess.opts.set("app.fs.path.home", userHomeDir, true); err != nil {
+	if err := m.sess.opts.Set("app.fs.path.home", userHomeDir); err != nil {
 		return err
 	}
 
@@ -503,7 +424,7 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 	if err != nil {
 		return err
 	}
-	if err := m.sess.opts.set("app.fs.path.pwd", wd, true); err != nil {
+	if err := m.sess.opts.Set("app.fs.path.pwd", wd); err != nil {
 		return err
 	}
 
@@ -535,7 +456,7 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 			return err
 		}
 	}
-	if err := m.sess.opts.set("app.fs.path.cache", appCacheDir, true); err != nil {
+	if err := m.sess.opts.Set("app.fs.path.cache", appCacheDir); err != nil {
 		return err
 	}
 
@@ -545,12 +466,12 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 		if err := os.MkdirAll(appConfigDir, 0700); err != nil {
 			return err
 		}
-		if err := m.sess.opts.set("app.firstuse", true, true); err != nil {
+		if err := m.sess.opts.Set("app.firstuse", true); err != nil {
 			return err
 		}
 	}
 
-	if err := m.sess.opts.set("app.fs.path.config", appConfigDir, true); err != nil {
+	if err := m.sess.opts.Set("app.fs.path.config", appConfigDir); err != nil {
 		return err
 	}
 	return nil
@@ -562,7 +483,7 @@ func (i *initializer) unsafeConfigureProfile(m *Main, settingsb *settings.Bluepr
 		return fmt.Errorf("%w: profile name is empty", Error)
 	}
 	m.sess.Log().SystemDebug("load app profile", slog.String("profile", profileName))
-	if err := m.sess.opts.set("app.profile.name", profileName, true); err != nil {
+	if err := m.sess.opts.Set("app.profile.name", profileName); err != nil {
 		return err
 	}
 
@@ -571,7 +492,7 @@ func (i *initializer) unsafeConfigureProfile(m *Main, settingsb *settings.Bluepr
 		return fmt.Errorf("%w: config path empty", Error)
 	}
 	cfile := filepath.Join(cpath, "profile.preferences")
-	if err := m.sess.opts.set("app.profile.file", cfile, true); err != nil {
+	if err := m.sess.opts.Set("app.profile.file", cfile); err != nil {
 		return err
 	}
 
@@ -581,7 +502,7 @@ func (i *initializer) unsafeConfigureProfile(m *Main, settingsb *settings.Bluepr
 		if !errors.Is(err, fs.ErrNotExist) {
 			return err
 		}
-		if err := m.sess.opts.set("app.firstuse", true, true); err != nil {
+		if err := m.sess.opts.Set("app.firstuse", true); err != nil {
 			return err
 		}
 	} else {
@@ -646,20 +567,11 @@ func (i *initializer) unsafeConfigureSystemEvents(m *Main) error {
 
 func (i *initializer) unsafeConfigureOptions(m *Main) error {
 	// apply options
-	var pendingOpts []OptionArg
+	var pendingOpts []options.Arg
 	for _, opt := range i.pendingOpts {
-		m.sess.Log().SystemDebug("config", slog.Any(opt.key, opt.value))
-		if _, ok := m.sess.opts.config[opt.key]; ok {
-			val, err := vars.New(opt.key, opt.value, opt.kind&ReadOnlyOption != 0)
-			if err != nil {
-				return err
-			}
-			if opt.validator != nil {
-				if err := opt.validator(opt.key, val.Value()); err != nil {
-					return err
-				}
-			}
-			if err := m.sess.opts.set(opt.key, val, true); err != nil {
+		m.sess.Log().SystemDebug("config", slog.Any(opt.Key(), opt.Value()))
+		if m.sess.opts.Accepts(opt.Key()) {
+			if err := m.sess.opts.Set(opt.Key(), opt.Value()); err != nil {
 				return err
 			}
 
@@ -672,6 +584,7 @@ func (i *initializer) unsafeConfigureOptions(m *Main) error {
 }
 
 func (i *initializer) unsafeConfigureAddons(m *Main) error {
+
 	var provided bool
 
 	for _, addon := range i.addons {
@@ -679,61 +592,21 @@ func (i *initializer) unsafeConfigureAddons(m *Main) error {
 			return errors.Join(addon.errs...)
 		}
 
-		opts, err := NewOptions(addon.info.Name, addon.acceptsOpts)
-		if err != nil {
+		if err := options.MergeOptions(m.sess.opts, addon.opts); err != nil {
 			return err
-		}
-		// first use
-		rtopts := m.sess.Opts()
-		if rtopts != nil {
-			for _, rtopt := range rtopts.All() {
-				if !strings.HasPrefix(rtopt.Name(), addon.info.Name+".") {
-					continue
-				}
-				key := strings.TrimPrefix(rtopt.Name(), addon.info.Name+".")
-				if err := opts.Set(key, rtopt); err != nil {
-					return err
-				}
-			}
-		}
-
-		// map addon settings to session options
-		for _, gopt := range addon.acceptsOpts {
-			gkey := addon.info.Name + "." + gopt.key
-			if eopt, ok := m.sess.opts.config[gkey]; ok {
-				return fmt.Errorf("%w: option %q already in use (%s)", ErrOption, gkey, eopt.desc)
-			}
-			m.sess.opts.config[gkey] = OptionArg{
-				key:       gkey,
-				desc:      gopt.desc,
-				value:     gopt.value,
-				kind:      gopt.kind,
-				validator: gopt.validator,
-			}
 		}
 
 		// apply options
-		var pendingOpts []OptionArg
+		var pendingOpts []options.Arg
 
 		for _, opt := range i.pendingOpts {
-			if !strings.HasPrefix(opt.key, addon.info.Name+".") {
+			if !strings.HasPrefix(opt.Key(), addon.info.Name+".") {
 				pendingOpts = append(pendingOpts, opt)
 				continue
-			}
-
-			key := strings.TrimPrefix(opt.key, addon.info.Name+".")
-			if !opts.Accepts(key) {
-				pendingOpts = append(pendingOpts, opt)
-				continue
-			}
-			globalkey := opt.key
-			opt.key = key
-			if err := opt.apply(opts); err != nil {
-				return err
 			}
 
 			// save it to session
-			if err := m.sess.Set(globalkey, opt.value); err != nil {
+			if err := m.sess.Set(opt.Key(), opt.Value()); err != nil {
 				return err
 			}
 		}
@@ -741,32 +614,6 @@ func (i *initializer) unsafeConfigureAddons(m *Main) error {
 		if len(pendingOpts) != len(i.pendingOpts) {
 			i.pendingOpts = pendingOpts
 		}
-
-		if err := opts.setDefaults(); err != nil {
-			return err
-		}
-
-		if addon.registerAction != nil && !m.cmd.skipAddons {
-			if err := addon.registerAction(m.sess, opts); err != nil {
-				return err
-			}
-		}
-
-		// Apply initial value
-		for _, opt := range opts.db.All() {
-			key := addon.info.Name + "." + opt.Name()
-			if err := m.sess.Set(key, opt.Any()); err != nil {
-				return err
-			}
-		}
-
-		provided = true
-		m.sess.Log().Debug(
-			"registered addon",
-			slog.String("name", addon.info.Name),
-			slog.String("version", addon.info.Version.String()),
-			slog.String("module", addon.info.Module),
-		)
 
 		if !m.cmd.skipAddons {
 			for _, svc := range addon.svcs {
@@ -782,16 +629,51 @@ func (i *initializer) unsafeConfigureAddons(m *Main) error {
 				return err
 			}
 		}
-
 		if addon.api != nil {
 			if err := m.sess.registerAPI(addon.info.Name, addon.api); err != nil {
 				return err
 			}
 		}
+
+		provided = true
+		m.sess.Log().Debug(
+			"registered addon",
+			slog.String("name", addon.info.Name),
+			slog.String("version", addon.info.Version.String()),
+			slog.String("module", addon.info.Module),
+		)
 	}
 	if provided {
 		m.sess.Log().SystemDebug("registeration of addons completed")
 	}
 
+	return nil
+}
+
+// session has been started now
+func (i *initializer) boot(m *Main) error {
+	m.sess.stats.Update()
+	var stats = map[string]any{
+		"app.initialization.took": i.took,
+		"app.created.at":          m.sess.time(m.createdAt).String(),
+		"app.started.at":          m.sess.time(m.startedAt).String(),
+	}
+
+	for _, addon := range i.addons {
+		started := time.Now()
+		if addon.registerAction != nil && !m.cmd.skipAddons {
+			if err := addon.registerAction(m.sess); err != nil {
+				return err
+			}
+			m.sess.stats.Update()
+		}
+		stats[fmt.Sprintf("addon.%s.OnRegister.elapsed", addon.info.Name)] = time.Since(started)
+	}
+
+	for k, v := range stats {
+		if err := m.sess.stats.Set(k, v); err != nil {
+			return err
+		}
+	}
 	return nil
 }

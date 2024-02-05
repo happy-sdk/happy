@@ -16,6 +16,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/scheduling/cron"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/networking/address"
+	"github.com/happy-sdk/happy/sdk/options"
 )
 
 var (
@@ -23,8 +24,8 @@ var (
 )
 
 type Service struct {
-	name string
-
+	name             string
+	opts             *options.Options
 	initializeAction Action
 	startAction      Action
 	stopAction       Action
@@ -33,13 +34,17 @@ type Service struct {
 	listeners        map[string][]ActionWithEvent
 
 	cronsetup func(schedule CronScheduler)
+	errs      []error
 }
 
 // NewService cretes new draft service which you can compose
 // before passing it to applciation or providing it from addon.
-func NewService(name string, opts ...OptionArg) *Service {
+func NewService(name string, opts ...options.OptionSpec) *Service {
+	options, err := options.New(name, opts)
 	svc := &Service{
 		name: name,
+		opts: options,
+		errs: []error{err},
 	}
 	return svc
 }
@@ -156,7 +161,7 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 		return sl.loaderCh
 	}
 
-	timeout := sl.sess.Setting("app.service_loader.timeout").Value().Duration()
+	timeout := sl.sess.Get("app.service_loader.timeout").Duration()
 	if timeout <= 0 {
 		timeout = time.Duration(time.Second * 30)
 		sl.sess.Log().SystemDebug(
@@ -390,6 +395,10 @@ type serviceContainer struct {
 }
 
 func (s *serviceContainer) initialize(sess *Session) error {
+	initerrs := errors.Join(s.svc.errs...)
+	if initerrs != nil {
+		return fmt.Errorf("%w(%s): service failed to initialize: %w", ErrService, s.svc.name, initerrs)
+	}
 	if s.svc.initializeAction != nil {
 		if err := s.svc.initializeAction(sess); err != nil {
 			s.info.addErr(err)

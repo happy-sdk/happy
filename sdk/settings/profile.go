@@ -105,6 +105,11 @@ func (p *Profile) Set(key string, val SettingField) (err error) {
 	defer p.mu.Unlock()
 	setting := p.settings[key]
 
+	if setting.mutability == SettingImmutable {
+		return fmt.Errorf("setting is immutable %s", key)
+	} else if setting.isSet && setting.mutability == SettingOnce {
+		return fmt.Errorf("setting is set once %s", key)
+	}
 	for _, v := range p.schema.settings[key].validators {
 		if err := v.fn(setting); err != nil {
 			return err

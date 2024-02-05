@@ -13,11 +13,26 @@ import (
 type Mutability uint8
 
 const (
-	// Mutability
+	// SettingImmutable can not be changed on runtime.
 	SettingImmutable Mutability = 254
-	SettingOnce      Mutability = 253
-	SettingMutable   Mutability = 252
+	// SettingOnce can be set only once on runtime.
+	// When changed typically requires a reload of application.
+	SettingOnce Mutability = 253
+	// SettingMutable can be changed on runtime.
+	SettingMutable Mutability = 252
 )
+
+func (m Mutability) String() string {
+	switch m {
+	case SettingImmutable:
+		return "immutable"
+	case SettingOnce:
+		return "once"
+	case SettingMutable:
+		return "mutable"
+	}
+	return "unknown"
+}
 
 type SettingSpec struct {
 	IsSet       bool
@@ -78,6 +93,7 @@ type Setting struct {
 	isSet      bool
 	mutability Mutability
 	persistent bool
+	desc       string
 }
 
 func (s Setting) String() string {
@@ -102,4 +118,12 @@ func (s Setting) Kind() Kind {
 
 func (s Setting) Persistent() bool {
 	return s.persistent
+}
+
+func (s Setting) Mutability() Mutability {
+	return s.mutability
+}
+
+func (s Setting) Description() string {
+	return s.desc
 }
