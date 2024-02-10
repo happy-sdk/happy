@@ -1,4 +1,5 @@
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
+github.com/happy-sdk/happy v0.17.0/go.mod h1:lQaqH+6taEbEAG1PN0HS81k+GkDkvfdRSbJimY3nsjA=
 github.com/happy-sdk/happy-go/devel/testutils v0.3.0 h1:DAbUWDZ4m2D052/+uKrtIVQU3bQmUkD4wfPRcQzfNkk=
 github.com/happy-sdk/happy-go/devel/testutils v0.3.0/go.mod h1:7LUvV4q/cL0QiNV9c/5paeJJaUZUh7HsiIU3e+TWAEo=
 github.com/happy-sdk/happy/pkg/devel/testutils v0.5.0/go.mod h1:RhJucLCtEYMceBiIex9+9YmR05q0zs9qchSLnUDdFeY=

@@ -8,8 +8,8 @@ github.com/charmbracelet/lipgloss v0.9.1 h1:PNyd3jvaJbg4jRHKWXnCj1akQm4rh8dbEzN1
 github.com/charmbracelet/lipgloss v0.9.1/go.mod h1:1mPmG4cxScwUQALAAnacHaigiiHB9Pmr+v1VEawJl6I=
 github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 h1:q2hJAaP1k2wIvVRd/hEHD7lacgqrCPS+k8g1MndzfWY=
 github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81/go.mod h1:YynlIjWYF8myEu6sdkwKIvGQq+cOckRm6So2avqoYAk=
-github.com/happy-sdk/happy v0.16.0 h1:Y2HXt4gdefQhWv4tZRld/PRgknwSC1ul41ufdZY98KU=
-github.com/happy-sdk/happy v0.16.0/go.mod h1:+loVQxCk/FehXvpiocsGuGBI13Z49BzzrGgaOMaU9Vk=
+github.com/happy-sdk/happy v0.17.0 h1:z6aE6gNWwutkPYiFEQ2lbFqztF+XZuXPoOvG7mMVHEs=
+github.com/happy-sdk/happy v0.17.0/go.mod h1:lQaqH+6taEbEAG1PN0HS81k+GkDkvfdRSbJimY3nsjA=
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2 h1:UuNvNDjuzz0QnGCrupyXk9/qeiA+/5H/ZuarSS6qBjw=
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2/go.mod h1:QXrUuCN5F3kh1q/JTF6THVQ1k37eylyyu2NPlmc/l1E=
 github.com/happy-sdk/happy/pkg/devel/testutils v0.6.0 h1:0JZqOzQNWzfD6RVYKe8f3UETg4E8PRcp4wsMJ7z5/wQ=
