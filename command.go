@@ -391,7 +391,7 @@ func (c *Command) callBeforeAction(sess *Session) error {
 		return nil
 	}
 
-	args := sdk.NewArgs(c.flags.Args(), c.flags)
+	args := sdk.NewArgs(c.flags)
 
 	if c.argnmin == 0 && c.argnmax == 0 && args.Argn() > 0 {
 		return fmt.Errorf("%w: %s: %s", ErrCommandAction, c.name, "command does not accept arguments")
@@ -418,7 +418,7 @@ func (c *Command) callDoAction(session *Session) error {
 		return nil
 	}
 
-	args := sdk.NewArgs(c.flags.Args(), c.flags)
+	args := sdk.NewArgs(c.flags)
 
 	if err := c.doAction(session, args); err != nil {
 		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)

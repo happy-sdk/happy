@@ -19,6 +19,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
+	"github.com/happy-sdk/happy/sdk"
 	"github.com/happy-sdk/happy/sdk/cli/help"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
@@ -33,7 +34,7 @@ type Main struct {
 	init   *initializer
 	sess   *Session
 
-	beforeAlways ActionWithFlags
+	beforeAlways ActionWithArgs
 	root         *Command
 	cmd          *Command
 	engine       *engine
@@ -144,7 +145,7 @@ func (m *Main) SetOptions(a ...options.Arg) *Main {
 }
 
 // BeforeAlways is executed before any command.
-func (m *Main) BeforeAlways(a ActionWithFlags) *Main {
+func (m *Main) BeforeAlways(a ActionWithArgs) *Main {
 	if _, ok := m.canConfigure("adding BeforeAlways action"); ok {
 		m.mu.Lock()
 		m.beforeAlways = a
@@ -317,7 +318,8 @@ func (m *Main) run() {
 func (m *Main) executeBeforeActions() error {
 	if m.beforeAlways != nil {
 		m.log(logging.LevelSystemDebug, "executing before always")
-		if err := m.beforeAlways(m.sess, m.root.getFlags()); err != nil {
+		args := sdk.NewArgs(m.root.getFlags())
+		if err := m.beforeAlways(m.sess, args); err != nil {
 			return err
 		}
 	}

@@ -99,6 +99,8 @@ type Logger interface {
 	SetLevel(lvl Level)
 
 	LogDepth(depth int, lvl Level, msg string, attrs ...slog.Attr)
+
+	Logger() *slog.Logger
 }
 
 type DefaultLogger struct {
@@ -252,6 +254,10 @@ func (l *DefaultLogger) Handle(r slog.Record) error {
 		return nil
 	}
 	return l.log.Handler().Handle(l.ctx, r)
+}
+
+func (l *DefaultLogger) Logger() *slog.Logger {
+	return l.log
 }
 
 func (l *DefaultLogger) http(method, path string, status int, attrs ...slog.Attr) {

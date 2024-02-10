@@ -76,7 +76,7 @@ func hap() *happy.Main {
 func main() {
 	main := hap()
 
-	main.BeforeAlways(func(sess *happy.Session, flags happy.Flags) error {
+	main.BeforeAlways(func(sess *happy.Session, flags happy.Args) error {
 
 		loader := sess.ServiceLoader(
 			"background",

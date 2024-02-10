@@ -29,7 +29,8 @@ var (
 )
 
 type Action func(sess *Session) error
-type ActionWithFlags func(sess *Session, flags Flags) error
+
+// type ActionWithFlags func(sess *Session, flags Flags) error
 type ActionWithArgs func(sess *Session, args Args) error
 type ActionTick func(sess *Session, ts time.Time, delta time.Duration) error
 type ActionTock func(sess *Session, delta time.Duration, tps int) error

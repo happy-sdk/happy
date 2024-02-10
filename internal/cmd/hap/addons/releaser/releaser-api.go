@@ -319,7 +319,7 @@ func (r *releaser) printChangelog() error {
 	}
 	fmt.Println("")
 
-	for i, scl := range cl.Subpkgs {
+	for _, scl := range cl.Subpkgs {
 		fmt.Printf("### %s\n\n`%s@%s`\n", scl.pkg.NextRelease, scl.pkg.Import, scl.pkg.NextRelease)
 
 		for i, breaking := range scl.Breaking {

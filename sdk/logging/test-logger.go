@@ -116,3 +116,7 @@ func (l *TestLogger) LogDepth(depth int, lvl Level, msg string, attrs ...slog.At
 func (l *TestLogger) Handle(r slog.Record) error {
 	return l.log.Handle(r)
 }
+
+func (l *TestLogger) Logger() *slog.Logger {
+	return l.log.log
+}

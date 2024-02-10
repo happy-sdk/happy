@@ -10,15 +10,16 @@ import (
 )
 
 type Args struct {
-	argv  []vars.Value
+	args  []vars.Value
 	argn  uint
 	flags varflag.Flags
 }
 
-func NewArgs(argv []vars.Value, flags varflag.Flags) *Args {
+func NewArgs(flags varflag.Flags) *Args {
+	args := flags.Args()
 	return &Args{
-		argv:  argv,
-		argn:  uint(len(argv)),
+		args:  args,
+		argn:  uint(len(args)),
 		flags: flags,
 	}
 }
@@ -27,7 +28,7 @@ func (a *Args) Arg(i uint) vars.Value {
 	if a.argn <= i {
 		return vars.EmptyValue
 	}
-	return a.argv[i]
+	return a.args[i]
 }
 
 func (a *Args) ArgDefault(i uint, value any) (vars.Value, error) {
@@ -41,11 +42,11 @@ func (a *Args) ArgVarDefault(i uint, key string, value any) (vars.Variable, erro
 	if a.argn <= i {
 		return vars.New(key, value, true)
 	}
-	return vars.New(key, a.argv[i], true)
+	return vars.New(key, a.args[i], true)
 }
 
 func (a *Args) Args() []vars.Value {
-	return a.argv
+	return a.args
 }
 func (a *Args) Argn() uint {
 	return a.argn
