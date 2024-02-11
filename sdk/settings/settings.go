@@ -201,9 +201,15 @@ func getStringValue(v reflect.Value) string {
 		return "<invalid>"
 	}
 
-	// Check if the value implements fmt.Stringer
-	if v.Type().Implements(reflect.TypeOf((*fmt.Stringer)(nil)).Elem()) {
+	// Check if the value directly implements fmt.Stringer
+	stringerType := reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
+	if v.Type().Implements(stringerType) {
 		return v.Interface().(fmt.Stringer).String()
+	}
+
+	// Check if the pointer to the value implements fmt.Stringer, if it's addressable
+	if v.CanAddr() && v.Addr().Type().Implements(stringerType) {
+		return v.Addr().Interface().(fmt.Stringer).String()
 	}
 
 	// Fallback for non-Stringer string types
