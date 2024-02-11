@@ -1,6 +1,6 @@
 module github.com/happy-sdk/happy
 
-go 1.21.5
+go 1.22rc2
 
 require (
 	github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2

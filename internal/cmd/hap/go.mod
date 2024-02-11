@@ -1,6 +1,6 @@
 module github.com/happy-sdk/happy/internal/cmd/hap
 
-go 1.21.5
+go 1.22rc2
 
 require (
 	github.com/charmbracelet/bubbles v0.17.1
