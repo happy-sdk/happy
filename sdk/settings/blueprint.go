@@ -242,17 +242,49 @@ func (b *Blueprint) SetDefault(key string, value string) error {
 	return nil
 }
 
-func (b *Blueprint) Extend(group string, ext Settings) error {
-	exptbp, err := ext.Blueprint()
-	exptbp.name = group
-	if err != nil {
-		return fmt.Errorf("%w: extending %s %s", ErrBlueprint, b.pkg, err.Error())
+func (b *Blueprint) Extend(group string, ext Settings) (err error) {
+	if ext == nil {
+		return fmt.Errorf("%w: extending %s with nil", ErrBlueprint, group)
 	}
+
+	var exptbp *Blueprint
+	var berr error
+
+	// Attempt to call Blueprint with panic recovery
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// Panic occurred, treat it as Blueprint being not safely callable
+				berr = fmt.Errorf("failed to call Blueprint safely: %v", r)
+			}
+		}()
+
+		exptbp, err = ext.Blueprint()
+	}()
+
+	// Check if there was an error or panic during Blueprint call
+	if err != nil {
+		return fmt.Errorf("%w: extending %s with error: %s", ErrBlueprint, b.pkg, err)
+	}
+
+	// Check if there was an error or panic during Blueprint call
+	if berr != nil {
+		exptbp, err = New(ext)
+		if err != nil {
+			return fmt.Errorf("%w: extending %s with error: %s", ErrBlueprint, b.pkg, err)
+		}
+	}
+	if exptbp == nil {
+		// Handle the case where Blueprint does not return an expected value
+		return fmt.Errorf("%w: Blueprint returned a nil value for group %s", ErrBlueprint, group)
+	}
+
+	exptbp.name = group
 	if b.groups == nil {
 		b.groups = make(map[string]*Blueprint)
 	}
 	if _, ok := b.groups[group]; ok {
-		return fmt.Errorf("%w: group %s already exists, can not extend with %s", ErrBlueprint, group, exptbp.pkg)
+		return fmt.Errorf("%w: group %s already exists, cannot extend with %s", ErrBlueprint, group, exptbp.pkg)
 	}
 	b.groups[group] = exptbp
 	return nil
