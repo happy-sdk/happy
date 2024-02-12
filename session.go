@@ -192,10 +192,10 @@ func (s *Session) Wait() <-chan struct{} {
 	return s.Closed()
 }
 
-// AlowUserCancel allows user to cancel application by pressing Ctrl+C
+// AllowUserCancel allows user to cancel application by pressing Ctrl+C
 // or sending SIGINT or SIGTERM while application is running.
 // By default this is not allowed unless application is blocked with Wait.
-func (s *Session) AlowUserCancel() {
+func (s *Session) AllowUserCancel() {
 	s.mu.Lock()
 	s.allowUserCancel = true
 	s.mu.Unlock()

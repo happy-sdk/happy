@@ -655,8 +655,8 @@ func (i *initializer) boot(m *Main) error {
 	m.sess.stats.Update()
 	var stats = map[string]any{
 		"app.initialization.took": i.took,
-		"app.created.at":          m.sess.time(m.createdAt).String(),
-		"app.started.at":          m.sess.time(m.startedAt).String(),
+		"app.created.at":          m.sess.time(m.createdAt).Format(time.RFC3339),
+		"app.started.at":          m.sess.time(m.startedAt).Format(time.RFC3339),
 	}
 
 	for _, addon := range i.addons {

@@ -459,11 +459,24 @@ func statsService() *Service {
 	var (
 		tt      = 0
 		initial = true
+		started time.Time
 	)
-	stats.Tick(func(sess *Session, ts time.Time, delta time.Duration) error {
+	stats.Tick(func(sess *Session, ts time.Time, delta time.Duration) (err error) {
 		sess.stats.Update()
-
-		return nil
+		tt++
+		if initial {
+			startedAt := sess.stats.Get("app.started.at").String()
+			if startedAt == "" {
+				return nil
+			}
+			started, err = time.Parse(time.RFC3339, startedAt)
+			if err != nil {
+				return err
+			}
+			initial = false
+		}
+		uptime := time.Since(started)
+		return sess.stats.Set("app.uptime", uptime.String())
 	})
 
 	stats.Tock(func(sess *Session, delta time.Duration, tps int) error {
@@ -471,7 +484,7 @@ func statsService() *Service {
 		if tt < 10 && !initial {
 			return nil
 		}
-		initial = false
+		tt = 0
 
 		cachePath := sess.Get("app.fs.path.cache").String()
 		tmpPath := sess.Get("app.fs.path.tmp").String()

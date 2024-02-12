@@ -38,6 +38,13 @@ func New(title string) *Runtime {
 	}
 }
 
+func (r *Runtime) Get(key string) vars.Variable {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	v := r.db.Get(key)
+	return v
+}
+
 func (r *Runtime) Set(key string, value any) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
