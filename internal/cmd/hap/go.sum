@@ -8,8 +8,8 @@ github.com/charmbracelet/lipgloss v0.9.1 h1:PNyd3jvaJbg4jRHKWXnCj1akQm4rh8dbEzN1
 github.com/charmbracelet/lipgloss v0.9.1/go.mod h1:1mPmG4cxScwUQALAAnacHaigiiHB9Pmr+v1VEawJl6I=
 github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 h1:q2hJAaP1k2wIvVRd/hEHD7lacgqrCPS+k8g1MndzfWY=
 github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81/go.mod h1:YynlIjWYF8myEu6sdkwKIvGQq+cOckRm6So2avqoYAk=
-github.com/happy-sdk/happy v0.18.0 h1:hSSBVsROoq+wpJ8Nm2gwr2irceMOzzjSbWRff9Cbarw=
-github.com/happy-sdk/happy v0.18.0/go.mod h1:Y/4r5Iu3di7wQcYte0W0wDdyozoEgfKf3wCAMwNZGus=
+github.com/happy-sdk/happy v0.19.0 h1:VzAXYWGCKZz4za7DHFvxY8fI2VPVJlUCGTPGbOXRyFI=
+github.com/happy-sdk/happy v0.19.0/go.mod h1:8pND3rDvQoP+zhm3Dd9qRzMGOWmMG3emRTAZv+rDjdU=
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2 h1:UuNvNDjuzz0QnGCrupyXk9/qeiA+/5H/ZuarSS6qBjw=
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2/go.mod h1:QXrUuCN5F3kh1q/JTF6THVQ1k37eylyyu2NPlmc/l1E=
 github.com/happy-sdk/happy/pkg/devel/testutils v0.6.0 h1:0JZqOzQNWzfD6RVYKe8f3UETg4E8PRcp4wsMJ7z5/wQ=
@@ -22,8 +22,8 @@ github.com/happy-sdk/happy/pkg/strings/humanize v0.0.0-20240205104833-e1f07c9db0
 github.com/happy-sdk/happy/pkg/strings/humanize v0.0.0-20240205104833-e1f07c9db011/go.mod h1:q0sB6KbO8yhHJpXAHwA/550JaqYCPCE1vgRBoo9YMJw=
 github.com/happy-sdk/happy/pkg/strings/textfmt v0.0.0-20240205104833-e1f07c9db011 h1:ZHRrl3v7KCfLIsZ2e4CxyyGSntBCrsdDj/Ol1hDAYBE=
 github.com/happy-sdk/happy/pkg/strings/textfmt v0.0.0-20240205104833-e1f07c9db011/go.mod h1:l8HRtyzolQpj05+H9giuFl94bWZOCRLsshpfpn4GU8g=
-github.com/happy-sdk/happy/pkg/vars v0.7.0 h1:m7wE147lGvx74DAybLKlNtg5RnWFPQrO84Sv+bCofPc=
-github.com/happy-sdk/happy/pkg/vars v0.7.0/go.mod h1:mUoykJWi12uGRS+cH0FY6BaeuHXKWraj+jLQe0tafJU=
+github.com/happy-sdk/happy/pkg/vars v0.8.0 h1:+O81OGEDXZV9J7YnJFDfMSbwGu5Tx8q1Ox9RdqQQ/sk=
+github.com/happy-sdk/happy/pkg/vars v0.8.0/go.mod h1:mUoykJWi12uGRS+cH0FY6BaeuHXKWraj+jLQe0tafJU=
 github.com/happy-sdk/happy/pkg/version v0.1.1 h1:1YxZbP3vaUHmccyW+f3HmTX/MMELa1+R5FyekIZuBOw=
 github.com/happy-sdk/happy/pkg/version v0.1.1/go.mod h1:0cYSG2YMvEiyfiFmpQHVq0bXuYGMjJBYqmug+WBnfUs=
 github.com/lucasb-eyer/go-colorful v1.2.0 h1:1nnpGOrhyZZuNyfu1QjKiUICQ74+3FNCN69Aj6K7nkY=
