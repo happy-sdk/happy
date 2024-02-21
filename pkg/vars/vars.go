@@ -403,6 +403,8 @@ func ParseValueAs(val string, kind Kind) (Value, error) {
 		var rawd uint64
 		rawd, str, err = parseUint(val, 10, 64)
 		raw = uintptr(rawd)
+	case KindSlice:
+		raw, str = val, val
 	default:
 		err = fmt.Errorf("%w: can not create kind value %s from %s", ErrValue, kind.String(), val)
 	}

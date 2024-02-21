@@ -24,14 +24,14 @@ var (
 )
 
 type Service struct {
-	name             string
-	opts             *options.Options
-	initializeAction Action
-	startAction      Action
-	stopAction       Action
-	tickAction       ActionTick
-	tockAction       ActionTock
-	listeners        map[string][]ActionWithEvent
+	name           string
+	opts           *options.Options
+	registerAction Action
+	startAction    Action
+	stopAction     Action
+	tickAction     ActionTick
+	tockAction     ActionTock
+	listeners      map[string][]ActionWithEvent
 
 	cronsetup func(schedule CronScheduler)
 	errs      []error
@@ -49,10 +49,10 @@ func NewService(name string, opts ...options.OptionSpec) *Service {
 	return svc
 }
 
-// OnInitialize is called when app is preparing runtime
-// and attaching services.
-func (s *Service) OnInitialize(action Action) {
-	s.initializeAction = action
+// OnRegister is called when app is preparing runtime and attaching services,
+// This does not mean that service will be used or started.
+func (s *Service) OnRegister(action Action) {
+	s.registerAction = action
 }
 
 // OnStart is called when service is requested to be started.
@@ -399,8 +399,8 @@ func (s *serviceContainer) initialize(sess *Session) error {
 	if initerrs != nil {
 		return fmt.Errorf("%w(%s): service failed to initialize: %w", ErrService, s.svc.name, initerrs)
 	}
-	if s.svc.initializeAction != nil {
-		if err := s.svc.initializeAction(sess); err != nil {
+	if s.svc.registerAction != nil {
+		if err := s.svc.registerAction(sess); err != nil {
 			s.info.addErr(err)
 			return err
 		}

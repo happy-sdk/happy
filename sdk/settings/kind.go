@@ -7,6 +7,7 @@ package settings
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -18,12 +19,13 @@ const (
 	KindSettings = Kind(vars.KindInterface)
 	KindCustom   = Kind(vars.KindByteSlice)
 
-	KindInvalid  = Kind(vars.KindInvalid)
-	KindBool     = Kind(vars.KindBool)
-	KindInt      = Kind(vars.KindInt)
-	KindUint     = Kind(vars.KindUint)
-	KindString   = Kind(vars.KindString)
-	KindDuration = Kind(vars.KindDuration)
+	KindInvalid     = Kind(vars.KindInvalid)
+	KindBool        = Kind(vars.KindBool)
+	KindInt         = Kind(vars.KindInt)
+	KindUint        = Kind(vars.KindUint)
+	KindString      = Kind(vars.KindString)
+	KindDuration    = Kind(vars.KindDuration)
+	KindStringSlice = Kind(vars.KindSlice)
 )
 
 func (k Kind) String() string {
@@ -168,4 +170,23 @@ func (d *Duration) UnmarshalSetting(data []byte) error {
 
 func (d Duration) SettingKind() Kind {
 	return KindDuration
+}
+
+type StringSlice []string
+
+func (ss StringSlice) String() string {
+	return strings.Join(ss, "|")
+}
+
+func (ss StringSlice) MarshalSetting() ([]byte, error) {
+	return []byte(ss.String()), nil
+}
+
+func (ss *StringSlice) UnmarshalSetting(data []byte) error {
+	*ss = strings.Split(string(data), "|")
+	return nil
+}
+
+func (ss StringSlice) SettingKind() Kind {
+	return KindStringSlice
 }
