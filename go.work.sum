@@ -1,8 +1,8 @@
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
-github.com/happy-sdk/happy v0.18.0/go.mod h1:Y/4r5Iu3di7wQcYte0W0wDdyozoEgfKf3wCAMwNZGus=
 github.com/happy-sdk/happy-go/devel/testutils v0.3.0 h1:DAbUWDZ4m2D052/+uKrtIVQU3bQmUkD4wfPRcQzfNkk=
 github.com/happy-sdk/happy-go/devel/testutils v0.3.0/go.mod h1:7LUvV4q/cL0QiNV9c/5paeJJaUZUh7HsiIU3e+TWAEo=
 github.com/happy-sdk/happy/pkg/devel/testutils v0.5.0/go.mod h1:RhJucLCtEYMceBiIex9+9YmR05q0zs9qchSLnUDdFeY=
+github.com/happy-sdk/happy/pkg/vars v0.8.0/go.mod h1:mUoykJWi12uGRS+cH0FY6BaeuHXKWraj+jLQe0tafJU=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/mod v0.8.0 h1:LUYupSeNrTNCGzR/hVBk2NHZO4hXcVaW1k4Qx7rjPx8=
 golang.org/x/mod v0.8.0/go.mod h1:iBbtSCu2XBx23ZKBPSOrRkjjQPZFPuis4dIYUhu/chs=
