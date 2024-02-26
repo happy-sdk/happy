@@ -36,6 +36,7 @@ type Command struct {
 	subCommands map[string]*Command
 
 	beforeAction       ActionWithArgs
+	beforeActionShared bool
 	doAction           ActionWithArgs
 	afterSuccessAction Action
 	afterFailureAction ActionWithPrevErr
@@ -51,10 +52,16 @@ type Command struct {
 
 	argnmax uint
 	argnmin uint
+
+	sharedCalled bool
+
+	catdesc map[string]string
 }
 
 func NewCommand(name string, args ...options.Arg) *Command {
-	c := &Command{}
+	c := &Command{
+		catdesc: make(map[string]string),
+	}
 
 	n, err := vars.ParseKey(name)
 	c.errs = append(c.errs, err)
@@ -72,6 +79,7 @@ func NewCommand(name string, args ...options.Arg) *Command {
 	}
 	c.argnmin = opts.Get("argn.min").Uint()
 	c.argnmax = opts.Get("argn.max").Uint()
+	c.beforeActionShared = opts.Get("before.shared").Bool()
 
 	if c.argnmin > c.argnmax {
 		c.argnmax = c.argnmin
@@ -100,6 +108,13 @@ func (c *Command) AddInfo(paragraph string) {
 	defer c.mu.Unlock()
 
 	c.info = append(c.info, paragraph)
+}
+
+func (c *Command) WithFalgs(flafuncs ...varflag.FlagCreateFunc) *Command {
+	for _, fn := range flafuncs {
+		c.AddFlag(fn)
+	}
+	return c
 }
 
 func (c *Command) AddFlag(fn varflag.FlagCreateFunc) {
@@ -199,6 +214,13 @@ func (c *Command) AddSubCommand(cmd *Command) {
 		return
 	}
 	c.subCommands[cmd.name] = cmd
+	cmd.parent = c
+}
+
+func (c *Command) DescribeCategory(cat, desc string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.catdesc[strings.ToLower(cat)] = desc
 }
 
 func (c *Command) setArgcMax(max uint) error {
@@ -342,6 +364,31 @@ func (c *Command) getFlags() varflag.Flags {
 	return c.flags
 }
 
+func (c *Command) getSharedFlags() varflag.Flags {
+
+	if c.parent == nil {
+		return nil
+	}
+
+	var flags varflag.Flags
+	if c.parent.beforeActionShared {
+		flags = c.parent.getFlags()
+	}
+	if flags == nil {
+		flags, _ = varflag.NewFlagSet(c.name, 0)
+	}
+
+	parentFlags := c.parent.getSharedFlags()
+
+	if parentFlags != nil {
+		for _, flag := range parentFlags.Flags() {
+			_ = flags.Add(flag)
+		}
+	}
+
+	return flags
+}
+
 func (c *Command) getSubCommand(name string) (cmd *Command, exists bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -365,7 +412,7 @@ func (c *Command) getActiveCommand() (*Command, error) {
 	subtree := c.flags.GetActiveSets()
 
 	// Skip self
-	for _, subset := range subtree[1:] {
+	for _, subset := range subtree {
 		cmd, exists := c.getSubCommand(subset.Name())
 		if exists {
 			return cmd.getActiveCommand()
@@ -380,18 +427,46 @@ func (c *Command) getActiveCommand() (*Command, error) {
 	return c, nil
 }
 
+func (c *Command) callSharedBeforeAction(sess *Session) error {
+	if c.parent != nil {
+		if err := c.parent.callSharedBeforeAction(sess); err != nil {
+			return err
+		}
+	}
+	if c.beforeActionShared {
+		c.sharedCalled = true
+		return c.callBeforeAction(sess)
+	}
+	return nil
+}
+
 func (c *Command) callBeforeAction(sess *Session) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.parent != nil {
-		sess.Log().BUG("Command.parent used", slog.String("command", c.name), slog.String("parent", c.parent.getName()))
+	if c.parent != nil && !c.sharedCalled {
+		if err := c.parent.callSharedBeforeAction(sess); err != nil {
+			return err
+		}
 	}
 	if c.beforeAction == nil {
 		return nil
 	}
 
-	args := sdk.NewArgs(c.flags)
+	flags, err := varflag.NewFlagSet(c.name, 0)
+	if err != nil {
+		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+	}
+	for _, flag := range c.flags.Flags() {
+		flags.Add(flag)
+	}
+	pflags := c.getSharedFlags()
+	if pflags != nil {
+		for _, flag := range pflags.Flags() {
+			flags.Add(flag)
+		}
+	}
+	args := sdk.NewArgs(flags)
 
 	if c.argnmin == 0 && c.argnmax == 0 && args.Argn() > 0 {
 		return fmt.Errorf("%w: %s: %s", ErrCommandAction, c.name, "command does not accept arguments")
@@ -418,7 +493,20 @@ func (c *Command) callDoAction(session *Session) error {
 		return nil
 	}
 
-	args := sdk.NewArgs(c.flags)
+	flags, err := varflag.NewFlagSet(c.name, 0)
+	if err != nil {
+		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+	}
+	for _, flag := range c.flags.Flags() {
+		flags.Add(flag)
+	}
+	pflags := c.getSharedFlags()
+	if pflags != nil {
+		for _, flag := range pflags.Flags() {
+			flags.Add(flag)
+		}
+	}
+	args := sdk.NewArgs(flags)
 
 	if err := c.doAction(session, args); err != nil {
 		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
@@ -477,6 +565,7 @@ func getDefaultCommandOpts() []options.OptionSpec {
 		options.NewOption("skip.addons", false, "Skip registering addons for this command, Addons and their provided services will not be loaded when this command is used.", options.KindConfig|options.KindReadOnly, nil),
 		options.NewOption("argn.min", 0, "Minimum argument count for command", options.KindConfig|options.KindReadOnly, nil),
 		options.NewOption("argn.max", 0, "Maximum argument count for command", options.KindConfig|options.KindReadOnly, nil),
+		options.NewOption("before.shared", false, "Call Before action for all subcommands", options.KindConfig|options.KindReadOnly, nil),
 	}
 	return opts
 }
