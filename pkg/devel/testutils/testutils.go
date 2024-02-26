@@ -66,7 +66,7 @@ func ErrorIs(tt TestingIface, err, target error, msgAndArgs ...any) bool {
 
 	return fail(tt, fmt.Sprintf("Target error should be in err chain:\n"+
 		"expected: %q\n"+
-		"in chain: %s", expectedText, chain,
+		"got chain: %q", expectedText, chain,
 	), msgAndArgs...)
 }
 

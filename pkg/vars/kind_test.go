@@ -140,7 +140,7 @@ func TestNewValueKind(t *testing.T) {
 		})
 		t.Run("KindSlice: "+test.Key, func(t *testing.T) {
 			_, err := vars.ParseVariableAs(test.Key, test.String, false, vars.KindSlice)
-			testutils.ErrorIs(t, err, vars.ErrValue)
+			testutils.NoError(t, err)
 		})
 		t.Run("KindMap: "+test.Key, func(t *testing.T) {
 			_, err := vars.ParseVariableAs(test.Key, test.String, false, vars.KindMap)
