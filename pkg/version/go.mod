@@ -1,5 +1,5 @@
 module github.com/happy-sdk/happy/pkg/version
 
-go 1.21.5
+go 1.22
 
-require golang.org/x/mod v0.14.0
+require golang.org/x/mod v0.15.0
