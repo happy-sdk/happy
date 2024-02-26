@@ -91,7 +91,7 @@ type Logger interface {
 	BUG(msg string, attrs ...slog.Attr)
 	Println(msg string, attrs ...slog.Attr)
 	Printf(format string, v ...any)
-	HTTP(method, path string, status int, attrs ...slog.Attr)
+	HTTP(status int, method, path string, attrs ...slog.Attr)
 	Handle(r slog.Record) error
 
 	Enabled(lvl Level) bool
@@ -201,28 +201,28 @@ func (l *DefaultLogger) Printf(format string, v ...any) {
 	l.logDepth(levelAlways, fmt.Sprintf(format, v...))
 }
 
-func (l *DefaultLogger) HTTP(method, path string, status int, attrs ...slog.Attr) {
+func (l *DefaultLogger) HTTP(status int, method, path string, attrs ...slog.Attr) {
 	switch status {
 	case 100, 200:
 		if l.log.Enabled(l.ctx, levelInfo) {
-			l.http(method, path, status, attrs...)
+			l.http(status, method, path, attrs...)
 		}
 	case 300:
 		if l.log.Enabled(l.ctx, levelWarn) {
-			l.http(method, path, status, attrs...)
+			l.http(status, method, path, attrs...)
 		}
 	case 400:
 		if l.log.Enabled(l.ctx, levelError) {
-			l.http(method, path, status, attrs...)
+			l.http(status, method, path, attrs...)
 		}
 	case 500:
 		if l.log.Enabled(l.ctx, levelError) {
-			l.http(method, path, status, attrs...)
+			l.http(status, method, path, attrs...)
 		}
 	default:
 		if l.log.Enabled(l.ctx, levelBUG) {
 			attrs = append(attrs, slog.String("err", "invalid status code"))
-			l.http(method, path, status, attrs...)
+			l.http(status, method, path, attrs...)
 		}
 	}
 }
@@ -260,9 +260,9 @@ func (l *DefaultLogger) Logger() *slog.Logger {
 	return l.log
 }
 
-func (l *DefaultLogger) http(method, path string, status int, attrs ...slog.Attr) {
+func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr) {
 	if ch, ok := l.log.Handler().(*ConsoleHandler); ok {
-		ch.http(method, path, status, attrs...)
+		ch.http(status, method, path, attrs...)
 		return
 	}
 

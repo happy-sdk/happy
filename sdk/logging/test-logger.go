@@ -101,8 +101,8 @@ func (l *TestLogger) Printf(format string, v ...any) {
 	l.log.Printf(format, v...)
 }
 
-func (l *TestLogger) HTTP(method, path string, status int, attrs ...slog.Attr) {
-	l.log.HTTP(method, path, status, attrs...)
+func (l *TestLogger) HTTP(status int, method, path string, attrs ...slog.Attr) {
+	l.log.HTTP(status, method, path, attrs...)
 }
 
 func (l *TestLogger) Enabled(lvl Level) bool { return l.log.Enabled(lvl) }
