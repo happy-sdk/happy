@@ -1,4 +1,9 @@
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/happy-sdk/happy v0.19.0/go.mod h1:8pND3rDvQoP+zhm3Dd9qRzMGOWmMG3emRTAZv+rDjdU=
-github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.0/go.mod h1:31cuN6nBnI7cWiNoJG951P6aZvDje0NACQHWbsszuhI=
+github.com/happy-sdk/happy/pkg/branding v0.1.0/go.mod h1:2LFkUQwOgwe9jKLQVfLqYaPbCJgTHqbfbjznq6IzbNs=
+github.com/happy-sdk/happy/pkg/scheduling/cron v0.4.0/go.mod h1:9k/p1Zh3YwW8/pcEffP06p/imhqlbRCcdwXCMKkDoFY=
+github.com/happy-sdk/happy/pkg/strings/humanize v0.2.0/go.mod h1:Dp6qnkbB06h37NYewyH0wzLJYFGFzel//NIUuVuddyQ=
+github.com/happy-sdk/happy/pkg/strings/textfmt v0.2.0/go.mod h1:kaz61MKCgaIj1NtWrA9wm5RlvnztCY3x2BAfGGUg82o=
+github.com/happy-sdk/happy/pkg/vars v0.9.0/go.mod h1:sDPlycMrTvyLHcUzFc+jx57JEmORoic0gfO1wRWRY0o=
+github.com/happy-sdk/happy/pkg/version v0.1.2/go.mod h1:mFhI4DRvXZ8Ls8D5/aXIqcMnjCUBNtI3Ye9ilYL2Bz0=
 golang.org/x/tools v0.13.0/go.mod h1:HvlwmtVNQAhOuCjW7xxvovg8wbNq7LwfXh/k7wXUl58=
