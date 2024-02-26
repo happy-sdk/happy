@@ -1,8 +1,11 @@
 go 1.22rc2
 
+toolchain go1.22.0
+
 use (
 	.
 	./internal/cmd/hap
+	./pkg/branding
 	./pkg/cli/ansicolor
 	./pkg/devel/testutils
 	./pkg/scheduling/cron
