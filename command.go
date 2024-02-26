@@ -458,12 +458,16 @@ func (c *Command) callBeforeAction(sess *Session) error {
 		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	for _, flag := range c.flags.Flags() {
-		flags.Add(flag)
+		if err := flags.Add(flag); err != nil {
+			return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+		}
 	}
 	pflags := c.getSharedFlags()
 	if pflags != nil {
 		for _, flag := range pflags.Flags() {
-			flags.Add(flag)
+			if err := flags.Add(flag); err != nil {
+				return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+			}
 		}
 	}
 	args := sdk.NewArgs(flags)
@@ -498,12 +502,16 @@ func (c *Command) callDoAction(session *Session) error {
 		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
 	}
 	for _, flag := range c.flags.Flags() {
-		flags.Add(flag)
+		if err := flags.Add(flag); err != nil {
+			return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+		}
 	}
 	pflags := c.getSharedFlags()
 	if pflags != nil {
 		for _, flag := range pflags.Flags() {
-			flags.Add(flag)
+			if err := flags.Add(flag); err != nil {
+				return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+			}
 		}
 	}
 	args := sdk.NewArgs(flags)

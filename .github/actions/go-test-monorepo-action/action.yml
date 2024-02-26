@@ -3,7 +3,7 @@ description: 'Automatically find and test all Go packages in a monorepo'
 inputs:
   go-version:
     description: 'Go version'
-    default: '1.21.5'
+    default: '>=1.22.0'
   race:
     description: 'Add -race flag to go tests'
     default: 'true'
