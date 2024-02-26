@@ -169,19 +169,85 @@ func (s *FlagSet) Sets() []Flags {
 
 // Parse all flags recursively.
 func (s *FlagSet) Parse(args []string) error {
+	// s.mu.Lock()
+	// defer s.mu.Unlock()
+
+	// if s.parsed {
+	// 	return fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, s.name)
+	// }
+	// s.parsed = true
+	// var currargs []string
+	// if s.name == "/" || s.name == "*" || s.name == filepath.Base(os.Args[0]) {
+	// 	currargs = args[1:]
+	// 	// root cmd is always considered as present
+	// 	s.present = true
+	// } else {
+	// 	for i, arg := range args {
+	// 		if arg == s.name {
+	// 			s.pos = i
+	// 			currargs = args[i:]
+	// 			s.present = true
+	// 		}
+	// 	}
+	// }
+
+	// // if set is not present it is not an error
+	// if !s.present {
+	// 	return nil
+	// }
+
+	// // first parse flags for current set
+	// for _, gflag := range s.flags {
+	// 	_, err := gflag.Parse(currargs)
+	// 	if err != nil && !errors.Is(err, ErrFlagAlreadyParsed) {
+	// 		return fmt.Errorf("%s %w", s.name, err)
+	// 	}
+	// 	// this flag need to be removed from sub command args
+	// 	if gflag.Present() {
+	// 		currargs = slicediff(currargs, gflag.Input())
+	// 	}
+	// }
+
+	// // nothing to parse
+	// if len(currargs) == 0 {
+	// 	return nil
+	// }
+	// // parse sets
+	// for _, set := range s.sets {
+	// 	if set.Name() != currargs[0] {
+	// 		continue
+	// 	}
+	// 	fmt.Println("set: ", set.Name(), currargs)
+
+	// 	if err := set.Parse(currargs); err != nil {
+	// 		return err
+	// 	}
+	// 	if set.Present() {
+	// 		fmt.Println("set present: ", set.Name())
+	// 		if s.name == "/" {
+	// 			// update global flag command names
+	// 			for _, flag := range s.flags {
+	// 				if !flag.Present() {
+	// 					continue
+	// 				}
+	// 			}
+	// 		}
+	// 		break
+	// 	}
+	// }
+
+	// // since we did not have errors we can look up args
+	// return s.extractArgs(currargs)
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.parsed {
 		return fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, s.name)
 	}
-	s.parsed = true
+
 	var currargs []string
-	if s.name == "/" || s.name == "*" || s.name == filepath.Base(os.Args[0]) {
-		currargs = args[1:]
-		// root cmd is always considered as present
-		s.present = true
-	} else {
+	if s.name != "/" && s.name != "*" && s.name != filepath.Base(os.Args[0]) {
 		for i, arg := range args {
 			if arg == s.name {
 				s.pos = i
@@ -189,6 +255,10 @@ func (s *FlagSet) Parse(args []string) error {
 				s.present = true
 			}
 		}
+	} else {
+		currargs = args
+		// root cmd is always considered as present
+		s.present = true
 	}
 
 	// if set is not present it is not an error
@@ -208,16 +278,8 @@ func (s *FlagSet) Parse(args []string) error {
 		}
 	}
 
-	// nothing to parse
-	if len(currargs) == 0 {
-		return nil
-	}
-	// parse sets
+	// parse flags for sets
 	for _, set := range s.sets {
-		if set.Name() != currargs[0] {
-			continue
-		}
-
 		err := set.Parse(currargs)
 		if err != nil {
 			return err
