@@ -8,17 +8,20 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 )
 
 type Help struct {
-	fg, bg      ansicolor.Color
+	style       Style
 	info        *Info
 	cmds        map[string][]commandInfo
-	globalFlags []flagInfo
 	flags       []flagInfo
+	sharedFlags []flagInfo
+	globalFlags []flagInfo
+	catdesc     map[string]string
 }
 
 type commandInfo struct {
@@ -32,11 +35,22 @@ type flagInfo struct {
 	Usage        string
 }
 
-func New(info Info) *Help {
+type Style struct {
+	Primary     ansicolor.Style
+	Info        ansicolor.Style
+	Version     ansicolor.Style
+	Credits     ansicolor.Style
+	License     ansicolor.Style
+	Description ansicolor.Style
+	Category    ansicolor.Style
+}
+
+func New(info Info, style Style) *Help {
 	return &Help{
-		fg:   ansicolor.FgRGB(255, 237, 86),
-		info: &info,
-		cmds: make(map[string][]commandInfo),
+		style:   style,
+		info:    &info,
+		cmds:    make(map[string][]commandInfo),
+		catdesc: make(map[string]string),
 	}
 }
 
@@ -63,6 +77,19 @@ func (h *Help) AddGlobalFlags(f varflag.Flags) {
 	}
 }
 
+func (h *Help) AddSharedFlags(f varflag.Flags) {
+	if f == nil {
+		return
+	}
+	for _, flag := range f.Flags() {
+		h.sharedFlags = append(h.sharedFlags, flagInfo{
+			Flag:         flag.Flag(),
+			UsageAliases: flag.UsageAliases(),
+			Usage:        flag.Usage(),
+		})
+	}
+}
+
 func (h *Help) AddCommandFlags(f varflag.Flags) {
 	if f == nil {
 		return
@@ -73,6 +100,11 @@ func (h *Help) AddCommandFlags(f varflag.Flags) {
 			UsageAliases: flag.UsageAliases(),
 			Usage:        flag.Usage(),
 		})
+	}
+}
+func (h *Help) AddCategoryDescriptions(catdescs map[string]string) {
+	for category, desc := range catdescs {
+		h.catdesc[category] = desc
 	}
 }
 
@@ -101,8 +133,7 @@ func (h *Help) printCommands() error {
 	// commands
 	if len(h.cmds) > 0 {
 		fmt.Println("")
-		fmt.Println("COMMANDS:")
-		fmt.Println("")
+		fmt.Println(h.style.Primary.String(" COMMANDS:"))
 		var categories []string
 
 		var maxNameLength int
@@ -123,12 +154,14 @@ func (h *Help) printCommands() error {
 		sort.Strings(categories)
 
 		// Handle "default" category
+
 		if commands, ok := h.cmds["default"]; ok {
+
 			// Sort commands within the "default" category alphabetically
 			sort.Slice(commands, func(i, j int) bool {
 				return commands[i].name < commands[j].name
 			})
-
+			fmt.Println("")
 			for _, cmd := range commands {
 				h.printSubcommand(maxNameLength, cmd.name, cmd.description)
 			}
@@ -137,7 +170,7 @@ func (h *Help) printCommands() error {
 		// Print other categories
 		for _, category := range categories {
 			fmt.Println("")
-			fmt.Println(" ", ansicolor.Text(strings.ToUpper(category), h.fg, h.bg, 0))
+			fmt.Println(" ", h.style.Category.String(strings.ToUpper(category))+h.getCategoryDesc(category))
 			fmt.Println("")
 			commands := h.cmds[category]
 
@@ -157,7 +190,7 @@ func (h *Help) printCommands() error {
 func (h *Help) printCommandFlags() error {
 	if len(h.flags) > 0 {
 		fmt.Println("")
-		fmt.Println("FLAGS:")
+		fmt.Println(h.style.Primary.String(" FLAGS:"))
 		fmt.Println("")
 
 		// Sort the globalFlags by flag name
@@ -182,12 +215,41 @@ func (h *Help) printCommandFlags() error {
 			h.printFlag(maxFlagLength, maxAliasLength, flag)
 		}
 	}
+
+	if len(h.sharedFlags) > 0 {
+		fmt.Println("")
+		fmt.Println(h.style.Primary.String(" SHARED FLAGS:"))
+		fmt.Println("")
+
+		// Sort the globalFlags by flag name
+		sort.Slice(h.flags, func(i, j int) bool {
+			return h.sharedFlags[i].Flag < h.sharedFlags[j].Flag
+		})
+
+		var (
+			maxFlagLength  int
+			maxAliasLength int
+		)
+		for _, flag := range h.sharedFlags {
+			if mfl := len(flag.Flag); mfl > maxFlagLength {
+				maxFlagLength = mfl
+			}
+			if mal := len(flag.UsageAliases); mal > maxAliasLength {
+				maxAliasLength = mal
+			}
+		}
+
+		for _, flag := range h.sharedFlags {
+			h.printFlag(maxFlagLength, maxAliasLength, flag)
+		}
+	}
+
 	return nil
 }
 func (h *Help) printGlobalFlags() error {
 	if len(h.globalFlags) > 0 {
 		fmt.Println("")
-		fmt.Println("GLOBAL FLAGS:")
+		fmt.Println(h.style.Primary.String(" GLOBAL FLAGS:"))
 		fmt.Println("")
 
 		// Sort the globalFlags by flag name
@@ -221,9 +283,11 @@ func (h *Help) printFlag(maxFlagLength, maxAliasLength int, flag flagInfo) {
 		aliases = strings.Repeat(" ", maxAliasLength)
 	}
 	fstr := fmt.Sprintf(
-		"  %-"+fmt.Sprint(maxFlagLength+12)+"s %-"+fmt.Sprint(maxAliasLength+2)+"s ",
-		ansicolor.Text(flag.Flag, ansicolor.FgWhite, 0, 1),
-		ansicolor.Text(aliases, ansicolor.FgWhite, 0, 1),
+		"  %-"+fmt.Sprint(maxFlagLength)+"s %-"+fmt.Sprint(maxAliasLength+2)+"s ",
+		// ansicolor.Text(flag.Flag, ansicolor.FgWhite, 0, 1),
+		// ansicolor.Text(aliases, ansicolor.FgWhite, 0, 1),
+		flag.Flag,
+		aliases,
 	)
 
 	prefix := strings.Repeat(" ", maxFlagLength+maxAliasLength+6)
@@ -236,32 +300,32 @@ func (h *Help) printSubcommand(maxNameLength int, name, description string) {
 	prefix := strings.Repeat(" ", maxNameLength)
 	desc := wordWrapWithPrefix(description, prefix, 80)
 
-	str := fmt.Sprintf("  %-"+fmt.Sprint(maxNameLength)+"s  %s", ansicolor.Text(name, ansicolor.FgWhite, 0, 1), desc)
-
+	str := fmt.Sprintf("  %-"+fmt.Sprint(maxNameLength+10)+"s  %s", ansicolor.Format(name, ansicolor.Bold), desc)
 	fmt.Println(str)
 }
 
 func (h *Help) printBanner() error {
-	name := ansicolor.Text(h.info.Name, h.fg, 0, 1)
-	version := ansicolor.Text(h.info.Version, ansicolor.FgWhite, 0, 2)
+	// name := ansicolor.Text(h.info.Name, h.theme.Primary, 0, 1)
+	name := h.style.Primary.String(h.info.Name)
+	version := h.style.Version.String(h.info.Version)
 
 	fmt.Println(" ", name, "-", version)
 
 	copyr := h.info.copyright()
 	if copyr != "" {
-		fmt.Println(" ", ansicolor.Text(copyr, h.fg, 0, 0))
+		fmt.Println(" ", h.style.Credits.String(copyr))
 	}
 	license := h.info.license()
 	if license != "" {
-		fmt.Println(" ", ansicolor.Text(license, ansicolor.FgWhite, 0, 2))
+		fmt.Println(" ", h.style.License.String(license))
 	}
 	description := h.info.description()
 	if description != "" {
-		fmt.Println(" ", ansicolor.Text(description, ansicolor.FgWhite, 0, 2))
+		fmt.Println(" ", h.style.Description.String(description))
 	}
 	fmt.Println("")
 	for _, usage := range h.info.Usage {
-		fmt.Println(" ", ansicolor.Text(usage, ansicolor.FgWhite, 0, 0))
+		fmt.Println(" ", ansicolor.Format(usage, ansicolor.Bold))
 	}
 	return nil
 }
@@ -270,10 +334,22 @@ func (h *Help) printInfo() error {
 	if len(h.info.Info) > 0 {
 		fmt.Println("")
 		for _, info := range h.info.Info {
-			fmt.Println(" ", ansicolor.Text(info, ansicolor.FgWhite, 0, 2))
+			fmt.Println(" ", h.style.Info.String(info))
 		}
 	}
 	return nil
+}
+
+func (h *Help) getCategoryDesc(category string) string {
+	switch category {
+	case "default":
+		return ""
+	default:
+		if desc, ok := h.catdesc[strings.ToLower(category)]; ok {
+			return " - " + h.style.Description.String(desc)
+		}
+		return ""
+	}
 }
 
 type Info struct {
@@ -292,7 +368,14 @@ func (i *Info) copyright() string {
 	if i.CopyrightBy == "" {
 		return ""
 	}
-	return "Copyright © " + i.CopyrightBy
+	str := "Copyright ©"
+	year := time.Now().Year()
+	if i.CopyrightSince > 0 && year != i.CopyrightSince {
+		str += " " + fmt.Sprint(i.CopyrightSince) + " - " + fmt.Sprint(year)
+	} else {
+		str += " " + fmt.Sprint(year)
+	}
+	return str + " " + i.CopyrightBy
 }
 func (i *Info) license() string {
 	if i.License == "" {

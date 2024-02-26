@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/branding"
+	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/options"
@@ -70,3 +72,10 @@ func GetAPI[A API](sess *Session, addonName string) (api A, err error) {
 func Option(key string, val any) options.Arg {
 	return options.NewArg(key, val)
 }
+
+type Brand interface {
+	Info() branding.Info
+	ANSI() ansicolor.Theme
+}
+
+type BrandFunc func() (Brand, error)

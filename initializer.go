@@ -40,6 +40,7 @@ type initializer struct {
 	mainOptSpecs []options.OptionSpec
 	pendingOpts  []options.Arg
 	took         time.Duration
+	brand        Brand
 }
 
 func newInitializer(s *Settings) *initializer {
@@ -137,6 +138,20 @@ func (i *initializer) SetOptions(args ...options.Arg) {
 	i.pendingOpts = append(i.pendingOpts, args...)
 }
 
+func (i *initializer) SetBrand(bfunc BrandFunc) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if bfunc == nil {
+		i.log(logging.NewQueueRecord(logging.LevelBUG, "with brand", 4, slog.Any("brand", nil)))
+		return
+	}
+	if brand, err := bfunc(); err != nil {
+		i.log(logging.NewQueueRecord(logging.LevelError, "with brand", 4, slog.String("err", err.Error())))
+	} else {
+		i.brand = brand
+	}
+}
+
 func (i *initializer) Log(r logging.QueueRecord) {
 	if i.logQueue == nil {
 		if i.logger != nil {
@@ -185,6 +200,10 @@ func (i *initializer) Initialize(m *Main) error {
 	}
 
 	if err := i.unsafeInitSettings(m, settingsb); err != nil {
+		return err
+	}
+
+	if err := i.unsafeInitBrand(m, settingsb); err != nil {
 		return err
 	}
 

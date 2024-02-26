@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk"
@@ -46,6 +47,8 @@ type Main struct {
 
 	createdAt time.Time
 	startedAt time.Time
+
+	brand Brand
 }
 
 // New is alias to prototype.New
@@ -133,6 +136,13 @@ func (m *Main) WithLogger(l logging.Logger) *Main {
 func (m *Main) WithOptions(opts ...options.OptionSpec) *Main {
 	if init, ok := m.canConfigure("with options"); ok {
 		init.AddOptions(opts...)
+	}
+	return m
+}
+
+func (m *Main) WithBrand(b BrandFunc) *Main {
+	if init, ok := m.canConfigure("with brand"); ok {
+		init.SetBrand(b)
 	}
 	return m
 }
@@ -327,6 +337,7 @@ func (m *Main) executeBeforeActions() error {
 }
 
 func (m *Main) help() error {
+	theme := m.brand.ANSI()
 	h := help.New(
 		help.Info{
 			Name:           m.sess.Get("app.name").String(),
@@ -339,14 +350,25 @@ func (m *Main) help() error {
 			Usage:          m.cmd.getUsage(),
 			Info:           m.cmd.getInfo(),
 		},
+		help.Style{
+			Primary:     ansicolor.Style{FG: theme.Primary, Format: ansicolor.Bold},
+			Info:        ansicolor.Style{FG: theme.Info},
+			Version:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
+			Credits:     ansicolor.Style{FG: theme.Secondary},
+			License:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
+			Description: ansicolor.Style{FG: theme.Secondary},
+			Category:    ansicolor.Style{FG: theme.Accent, Format: ansicolor.Bold},
+		},
 	)
 
 	for _, cmd := range m.cmd.getSubCommands() {
 		h.AddCommand(cmd.getCategory(), cmd.getName(), cmd.getDescription())
 	}
+	h.AddCategoryDescriptions(m.cmd.catdesc)
 
 	if m.cmd != m.root {
 		h.AddCommandFlags(m.cmd.getFlags())
+		h.AddSharedFlags(m.cmd.getSharedFlags())
 	}
 
 	h.AddGlobalFlags(m.root.getFlags())

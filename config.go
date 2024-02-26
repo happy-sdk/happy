@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/networking/address"
@@ -30,7 +31,7 @@ type Settings struct {
 	EngineThrottleTicks  settings.Duration `key:"app.engine.throttle_ticks,save" default:"1s" mutation:"once"`
 	ServiceLoaderTimeout settings.Duration `key:"app.service_loader.timeout" default:"30s" mutation:"once"`
 	Instance             instance.Settings `key:"app.instance"`
-	StatsEnabled         settings.Bool     `key:"app.stats.enabled" default:"true" mutation:"once"`
+	StatsEnabled         settings.Bool     `key:"app.stats.enabled" default:"false" mutation:"once"`
 	global               []settings.Settings
 	migrations           map[string]string
 	errs                 []error
@@ -276,4 +277,26 @@ func getConfig() []options.OptionSpec {
 		),
 	}
 	return opts
+}
+
+func (i *initializer) unsafeInitBrand(m *Main, settingsb *settings.Blueprint) error {
+	if i.brand != nil {
+		m.brand = i.brand
+	} else {
+		nameSpec, nameErr := settingsb.GetSpec("app.name")
+		if nameErr != nil {
+			return nameErr
+		}
+		builder := branding.New(branding.Info{
+			Name:    nameSpec.Value,
+			Slug:    m.slug,
+			Version: m.sess.Get("app.version").String(),
+		})
+		brand, err := builder.Build()
+		if err != nil {
+			return err
+		}
+		m.brand = brand
+	}
+	return nil
 }
