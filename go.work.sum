@@ -1,4 +1,4 @@
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/happy-sdk/happy v0.19.0/go.mod h1:8pND3rDvQoP+zhm3Dd9qRzMGOWmMG3emRTAZv+rDjdU=
-github.com/happy-sdk/happy/pkg/strings/bexp v1.4.0/go.mod h1:Rh/N0HD/+4opgD1Sby7pXb+zHoWbGgJVQ2frGxUVYY0=
+github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.0/go.mod h1:31cuN6nBnI7cWiNoJG951P6aZvDje0NACQHWbsszuhI=
 golang.org/x/tools v0.13.0/go.mod h1:HvlwmtVNQAhOuCjW7xxvovg8wbNq7LwfXh/k7wXUl58=

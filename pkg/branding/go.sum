@@ -1,2 +1,2 @@
-github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2 h1:UuNvNDjuzz0QnGCrupyXk9/qeiA+/5H/ZuarSS6qBjw=
-github.com/happy-sdk/happy/pkg/cli/ansicolor v0.1.2/go.mod h1:QXrUuCN5F3kh1q/JTF6THVQ1k37eylyyu2NPlmc/l1E=
+github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.0 h1:jAP1rK2y+eeFgAQIJVqfY8AWS4IHw+4KW0HhDM3cRT8=
+github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.0/go.mod h1:31cuN6nBnI7cWiNoJG951P6aZvDje0NACQHWbsszuhI=
