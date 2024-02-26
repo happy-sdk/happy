@@ -2,129 +2,195 @@
 //
 // Copyright © 2017 The Happy Authors
 
-// Package ansicolor provides utilities for colorizing text in console applications.
 package ansicolor
 
-type Color uint32
-
-const (
-	fgBit Color = 1 << 24
-	bgBit Color = 1 << 25
-
-	fgShift = 16
-	bgShift = 8
+import (
+	"errors"
+	"fmt"
+	"image/color"
 )
 
-// Foreground color constants
+var ErrInvalidHex = errors.New("invalid HEX color code")
+
+var InvalidColor = Color{valid: true}
+
+type Color struct {
+	valid bool
+	rgb   color.RGBA
+	fg    string
+	bg    string
+	err   error
+}
+
+type Theme struct {
+	Primary        Color // Primary color for standard text
+	Secondary      Color // Secondary color for accentuating text
+	Accent         Color // Accent color for highlighting text
+	Success        Color // Color for success messages
+	Info           Color // Color for informational messages
+	Warning        Color // Color for warning messages
+	Error          Color // Color for error messages
+	Debug          Color // Color for debugging messages
+	Notice         Color // Color for notice messages
+	NotImplemented Color // Color for not implemented features
+	Deprecated     Color // Color for deprecated features or elements
+	BUG            Color // Color for bug reports or critical issues
+	Light          Color // Light color
+	Dark           Color // Dark color
+	Muted          Color // Muted color
+}
+
+func New() Theme {
+	return Theme{
+		Primary:        RGB(255, 237, 86),
+		Secondary:      RGB(221, 199, 89),
+		Accent:         RGB(221, 199, 89),
+		Success:        RGB(76, 175, 80),
+		Info:           RGB(173, 216, 230),
+		Warning:        RGB(255, 152, 0),
+		Error:          RGB(213, 0, 0),
+		Debug:          RGB(96, 125, 139),
+		Notice:         RGB(33, 150, 243),
+		NotImplemented: RGB(156, 39, 176),
+		Deprecated:     RGB(150, 115, 19),
+		BUG:            RGB(244, 67, 54),
+		Light:          RGB(245, 245, 245),
+		Dark:           RGB(28, 28, 28),
+		Muted:          RGB(150, 150, 150),
+	}
+}
+
+type Flag uint32
+
 const (
-	FgBlack Color = iota | fgBit
-	FgRed
-	FgGreen
-	FgYellow
-	FgBlue
-	FgMagenta
-	FgCyan
-	FgWhite
+	Reset Flag = 1 << iota
+	Bold
+	Faint
+	Italic
+	Underline
+	Reverse
+	Conceal
+	CrossedOut
+	Overlined
+	BrightForeground
+	BrightBackground
 )
 
-// Background color constants
-const (
-	BgBlack Color = iota | bgBit
-	BgRed
-	BgGreen
-	BgYellow
-	BgBlue
-	BgMagenta
-	BgCyan
-	BgWhite
-)
-
-type Flag uint8
-
-const (
-	Reset     Flag = 0
-	Bold      Flag = 1 << iota // 1
-	Dim                        // 2
-	Italic                     // 4
-	Underline                  // 8
-	Blink                      // 16
-	Reverse                    // 32
-	Hidden                     // 64
-)
-
-const (
-	esc   = "\033["
-	clear = esc + "0m"
-)
-
-// Text styles a given string with foreground and background colors.
-func Text(text string, fg, bg Color, format Flag) string {
-	style := buildStyleCode(fg, bg, format)
-	if style == "" {
-		return text
-	}
-	return style + text + clear
+var ansiflags = map[Flag]string{
+	Reset:            "0",
+	Bold:             "1",
+	Faint:            "2",
+	Italic:           "3",
+	Underline:        "4",
+	Reverse:          "7",
+	Conceal:          "8",
+	CrossedOut:       "9",
+	Overlined:        "53",
+	BrightForeground: "90",
+	BrightBackground: "100",
 }
 
-// TextPadded styles and pads the text with a space on both sides.
-func TextPadded(text string, fg, bg Color, format Flag) string {
-	return Text(" "+text+" ", fg, bg, format)
-}
-
-// FgRGB creates a foreground color from RGB values.
-func FgRGB(r, g, b byte) Color {
-	return Color(r)<<fgShift | Color(g)<<bgShift | Color(b) | fgBit
-}
-
-// BgRGB creates a background color from RGB values.
-func BgRGB(r, g, b byte) Color {
-	return Color(r)<<fgShift | Color(g)<<bgShift | Color(b) | bgBit
-}
-
-func buildStyleCode(fg, bg Color, format Flag) string {
-	var parts []string
-
-	if format != 0 {
-		parts = append(parts, coloritoa(byte(format)))
+func Text(text string, fg, bg Color, flags Flag) string {
+	// Initialize with the ANSI reset code to ensure a clean state
+	var str = "\033[0m"
+	for flag, code := range ansiflags {
+		if flags&flag != 0 {
+			str += "\033[" + code + "m"
+		}
 	}
 
-	if fg&fgBit != 0 {
-		parts = append(parts, buildColorCode(fg, '3'))
+	// If the foreground color is valid, append its ANSI code
+	if fg.valid {
+		str += "\033[" + fg.fg + "m"
 	}
 
-	if bg&bgBit != 0 {
-		parts = append(parts, buildColorCode(bg, '4'))
+	// If the background color is valid, append its ANSI code
+	if bg.valid {
+		str += "\033[" + bg.bg + "m"
 	}
 
-	if len(parts) == 0 {
-		return ""
-	}
+	// Append the text and reset the formatting at the end
+	str += text + "\033[0m"
 
-	return esc + stringJoin(parts, ";") + "m"
+	return str
 }
 
-func buildColorCode(color Color, baseChar byte) string {
-	if color&0xFF0000 != 0 { // RGB color
-		r := (color >> fgShift) & 0xFF
-		g := (color >> bgShift) & 0xFF
-		b := color & 0xFF
-		return string(baseChar) + "8;2;" + coloritoa(byte(r)) + ";" + coloritoa(byte(g)) + ";" + coloritoa(byte(b))
-	}
-
-	// Standard color
-	colorValue := color & 0xFF
-	return string(baseChar) + coloritoa(byte(colorValue))
+func Format(text string, fmtf Flag) string {
+	return Style{Format: fmtf}.String(text)
 }
 
-func stringJoin(elements []string, delimiter string) string {
-	switch len(elements) {
-	case 0:
-		return ""
-	case 1:
-		return elements[0]
+type Style struct {
+	FG     Color
+	BG     Color
+	Format Flag
+}
+
+func (s Style) String(text string) string {
+	return Text(text, s.FG, s.BG, s.Format)
+}
+
+// HEX converts a hex color code to an Color.
+func HEX(hex string) (c Color) {
+	if hex[0] != '#' {
+		c = InvalidColor
+		c.err = fmt.Errorf("%w: %s", ErrInvalidHex, hex)
+		return
+	}
+
+	hex2b := func(b byte) byte {
+		if c.err != nil {
+			return 0
+		}
+		switch {
+		case b >= '0' && b <= '9':
+			return b - '0'
+		case b >= 'a' && b <= 'f':
+			return b - 'a' + 10
+		case b >= 'A' && b <= 'F':
+			return b - 'A' + 10
+		}
+		c = InvalidColor
+		c.err = fmt.Errorf("%w: %c found in %s", ErrInvalidHex, b, hex)
+		return 0
+	}
+
+	var rgb [3]byte
+
+	switch len(hex) {
+	case 4:
+		for i := range 3 {
+			// scale each nibble
+			rgb[i] = hex2b(hex[i+1]) * 0x11
+		}
+	case 7:
+		for i := range 3 {
+			rgb[i] = hex2b(hex[i*2+1])<<4 + hex2b(hex[i*2+2])
+		}
 	default:
-		return elements[0] + delimiter + stringJoin(elements[1:], delimiter)
+		c = InvalidColor
+		c.err = fmt.Errorf("%w: %s", ErrInvalidHex, hex)
 	}
+	if c.err != nil {
+		return
+	}
+	c = RGB(rgb[0], rgb[1], rgb[2])
+	return
+}
+
+func RGB(r, g, b byte) Color {
+	c := Color{rgb: color.RGBA{r, g, b, 0xff}}
+	c.fg = toAnsi(c.rgb, '3')
+	c.bg = toAnsi(c.rgb, '4')
+	c.valid = true
+	return c
+}
+
+func (c Color) RGB() color.RGBA {
+	return c.rgb
+}
+
+func toAnsi(rgba color.RGBA, base byte) string {
+	return string(base) + "8;2;" + coloritoa(rgba.R) + ";" + coloritoa(rgba.G) + ";" + coloritoa(rgba.B)
 }
 
 // coloritoa converts a byte to a string. Used in constructing ANSI color codes.

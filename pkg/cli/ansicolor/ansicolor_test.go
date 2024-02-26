@@ -4,154 +4,84 @@
 
 package ansicolor
 
-import "testing"
+import (
+	"image/color"
+	"strings"
+	"testing"
+)
+
+func TestHEX(t *testing.T) {
+	tests := []struct {
+		name    string
+		hex     string
+		wantErr bool
+		want    Color
+	}{
+		{"Valid HEX Short #000", "#000", false, RGB(0, 0, 0)},
+		{"Valid HEX Short #FFF", "#FFF", false, RGB(255, 255, 255)},
+		{"Valid HEX Long #FFFFFF", "#FFFFFF", false, RGB(255, 255, 255)},
+		{"Invalid HEX No #", "FFFFFF", true, InvalidColor},
+		{"Invalid HEX Wrong Length", "#FFFF", true, InvalidColor},
+		{"Invalid HEX Non-Hex Characters", "#ZZZZZZ", true, InvalidColor},
+		{"Invalid HEX Short Non-Hex Characters", "#GGG", true, InvalidColor},
+		{"Invalid HEX Lowercase", "#ffffff", false, RGB(255, 255, 255)},
+		{"Invalid HEX Short Lowercase", "#fff", false, RGB(255, 255, 255)},
+		{"Valid HEX Mixed Case", "#FfFfFf", false, RGB(255, 255, 255)},
+		{"Invalid HEX Too Long", "#FFFFFFFF", true, InvalidColor},
+		{"Valid HEX Digits", "#012345", false, RGB(1, 35, 69)},
+		{"Valid HEX Digit and Letter Combo", "#0A1B2C", false, RGB(10, 27, 44)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := HEX(tt.hex)
+			if (got.Err() != nil) != tt.wantErr {
+				t.Errorf("HEX() error = %v, wantErr %v", got.err, tt.wantErr)
+			}
+			if !tt.wantErr && !colorsEqual(got.RGB(), tt.want.RGB()) {
+				t.Errorf("HEX() got = %v, want %v", got.RGB(), tt.want.RGB())
+			}
+		})
+	}
+}
+
+// colorsEqual checks if two color.RGBA values are equal.
+func colorsEqual(a, b color.RGBA) bool {
+	return a.R == b.R && a.G == b.G && a.B == b.B && a.A == b.A
+}
+
+func TestRGB(t *testing.T) {
+	c := RGB(255, 255, 255)
+	if !c.Valid() {
+		t.Error("RGB() should create a valid color")
+	}
+	if c.RGB().R != 255 || c.RGB().G != 255 || c.RGB().B != 255 {
+		t.Errorf("RGB() produced incorrect color: got %v", c.RGB())
+	}
+}
 
 func TestText(t *testing.T) {
-	cases := []struct {
-		text     string
-		fg, bg   Color
-		format   Flag
-		expected string
-	}{
-		{"No Color", 0, 0, 0, "No Color"},
-		{"Hello, world!", FgRed, BgBlack, 1, "\033[1;31;40mHello, world!\033[0m"},
-		{"Test", FgGreen, BgWhite, 0, "\033[32;47mTest\033[0m"},
-		{"", FgBlue, BgYellow, 0, "\033[34;43m\033[0m"},                   // Test with empty string
-		{"Sample", FgCyan, 0, 0, "\033[36mSample\033[0m"},                 // Test with only foreground color
-		{"Text", 0, BgMagenta, 4, "\033[4;45mText\033[0m"},                // Test with only background color and underline
-		{"Bold Text", FgWhite, BgRed, 1, "\033[1;37;41mBold Text\033[0m"}, // Test with bold formatting
-	}
+	theme := New()
+	txt := "Test"
+	fg := theme.Primary
+	bg := theme.Dark
+	flags := Reset // Add more flags to test other cases
 
-	for _, c := range cases {
-		got := Text(c.text, c.fg, c.bg, c.format)
-		if got != c.expected {
-			t.Errorf("Text(%q, %v, %v, %d) == %q, want %q", c.text, c.fg, c.bg, c.format, got, c.expected)
-		}
+	formattedText := Text(txt, fg, bg, flags)
+	if formattedText == "" || !containsSubstring(formattedText, txt) {
+		t.Errorf("Text() did not format correctly, got %v", formattedText)
 	}
 }
 
-func TestTextPadded(t *testing.T) {
-	cases := []struct {
-		text     string
-		fg, bg   Color
-		format   Flag
-		expected string
-	}{
-		// Basic test cases
-		{"Hello, world!", FgRed, BgBlack, 1, "\033[1;31;40m Hello, world! \033[0m"},
-		{"Test", FgGreen, BgWhite, 0, "\033[32;47m Test \033[0m"},
-
-		// Testing with no color and format
-		{"No Color", 0, 0, 0, " No Color "},
-	}
-
-	for _, c := range cases {
-		got := TextPadded(c.text, c.fg, c.bg, c.format)
-		if got != c.expected {
-			t.Errorf("TextPadded(%q, %v, %v, %d) == %q, want %q", c.text, c.fg, c.bg, c.format, got, c.expected)
-		}
-	}
+// containsSubstring checks if a string contains another string.
+func containsSubstring(s, substr string) bool {
+	return strings.Contains(s, substr)
 }
 
-func TestFgRGB(t *testing.T) {
-	tests := []struct {
-		r, g, b byte
-		want    Color
-	}{
-		{0, 0, 0, fgBit},                         // Black
-		{255, 0, 0, Color(255)<<fgShift | fgBit}, // Red
-		{0, 255, 0, Color(255)<<bgShift | fgBit}, // Green
-		{0, 0, 255, Color(255) | fgBit},          // Blue
-		// Add more test cases as needed
-	}
-
-	for _, tt := range tests {
-		got := FgRGB(tt.r, tt.g, tt.b)
-		if got != tt.want {
-			t.Errorf("FgRGB(%d, %d, %d) = %v, want %v", tt.r, tt.g, tt.b, got, tt.want)
-		}
-	}
+func (c Color) Err() error {
+	return c.err
 }
 
-func TestBgRGB(t *testing.T) {
-	tests := []struct {
-		r, g, b byte
-		want    Color
-	}{
-		{0, 0, 0, bgBit},                         // Black
-		{255, 0, 0, Color(255)<<fgShift | bgBit}, // Red
-		{0, 255, 0, Color(255)<<bgShift | bgBit}, // Green
-		{0, 0, 255, Color(255) | bgBit},          // Blue
-		// Add more test cases as needed
-	}
-
-	for _, tt := range tests {
-		got := BgRGB(tt.r, tt.g, tt.b)
-		if got != tt.want {
-			t.Errorf("BgRGB(%d, %d, %d) = %v, want %v", tt.r, tt.g, tt.b, got, tt.want)
-		}
-	}
+func (c Color) Valid() bool {
+	return c.valid
 }
-
-// func TestBrightColorCodes(t *testing.T) {
-// 	cases := []struct {
-// 		color    Color
-// 		expected string // Expected ANSI code for bright colors
-// 	}{
-// 		{FgBlack | FgRed, "\033[31m"}, // Combining FgBlack and FgRed to ensure colorValue <= 15
-// 	}
-
-// 	for _, c := range cases {
-// 		got := Text("test", c.color, 0, 0) // Text function will use buildColorCode internally
-// 		if !strings.Contains(got, c.expected) {
-// 			t.Errorf("Expected ANSI code %q not found in %q", c.expected, got)
-// 		}
-// 	}
-// }
-
-// func TestColoritoa(t *testing.T) {
-// 	cases := []struct {
-// 		input    byte
-// 		expected string
-// 	}{
-// 		{0, "0"},
-// 		{9, "9"},
-// 		{10, "10"},
-// 		{255, "255"},
-// 		// Add more cases as needed
-// 	}
-
-// 	for _, c := range cases {
-// 		got := coloritoa(c.input)
-// 		if got != c.expected {
-// 			t.Errorf("coloritoa(%d) == %q, want %q", c.input, got, c.expected)
-// 		}
-// 	}
-// }
-
-// func TestTextFormatting(t *testing.T) {
-// 	// Test various formatting options
-// 	formattingCases := []struct {
-// 		format   uint
-// 		expected string // Expected ANSI formatting code
-// 	}{
-// 		{1, "\033[1m"}, // Bold
-// 		{4, "\033[4m"}, // Underline
-// 		// Add more formatting options as needed
-// 	}
-
-// 	for _, c := range formattingCases {
-// 		got := Text("test", 0, 0, c.format)
-// 		if !strings.Contains(got, c.expected) {
-// 			t.Errorf("Expected formatting code %q not found in %q", c.expected, got)
-// 		}
-// 	}
-// }
-
-// // stripANSI removes ANSI escape codes from a string.
-// func stripANSI(str string) string {
-// 	// Regular expression to match ANSI escape codes
-// 	ansiRegex := regexp.MustCompile("\x1b\\[[0-9;]*[a-zA-Z]")
-// 	// Replace all ANSI escape codes with an empty string
-// 	return ansiRegex.ReplaceAllString(str, "")
-// }
