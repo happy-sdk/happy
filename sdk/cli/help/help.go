@@ -284,20 +284,18 @@ func (h *Help) printFlag(maxFlagLength, maxAliasLength int, flag flagInfo) {
 	}
 	fstr := fmt.Sprintf(
 		"  %-"+fmt.Sprint(maxFlagLength)+"s %-"+fmt.Sprint(maxAliasLength+2)+"s ",
-		// ansicolor.Text(flag.Flag, ansicolor.FgWhite, 0, 1),
-		// ansicolor.Text(aliases, ansicolor.FgWhite, 0, 1),
 		flag.Flag,
 		aliases,
 	)
 
-	prefix := strings.Repeat(" ", maxFlagLength+maxAliasLength+6)
+	prefix := strings.Repeat(" ", maxFlagLength+maxAliasLength+7)
 	desc := wordWrapWithPrefix(flag.Usage, prefix, 80)
 
 	fmt.Println(fstr, desc)
 }
 
 func (h *Help) printSubcommand(maxNameLength int, name, description string) {
-	prefix := strings.Repeat(" ", maxNameLength)
+	prefix := strings.Repeat(" ", maxNameLength+2)
 	desc := wordWrapWithPrefix(description, prefix, 80)
 
 	str := fmt.Sprintf("  %-"+fmt.Sprint(maxNameLength+10)+"s  %s", ansicolor.Format(name, ansicolor.Bold), desc)
