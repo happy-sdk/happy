@@ -17,12 +17,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/migration"
 	"github.com/happy-sdk/happy/sdk/options"
-	"github.com/happy-sdk/happy/sdk/settings"
 )
 
 type initializer struct {
@@ -41,6 +41,7 @@ type initializer struct {
 	pendingOpts  []options.Arg
 	took         time.Duration
 	brand        Brand
+	asSerivce    bool
 }
 
 func newInitializer(s *Settings) *initializer {
@@ -211,7 +212,7 @@ func (i *initializer) Initialize(m *Main) error {
 		return err
 	}
 
-	if err := i.unsafeInitRootCommand(m); err != nil {
+	if err := i.unsafeInitRootCommand(m, settingsb); err != nil {
 		return err
 	}
 
@@ -249,6 +250,7 @@ func (i *initializer) Initialize(m *Main) error {
 	}
 
 	m.root.desc = m.sess.Get("app.description").String()
+
 	if !m.root.flag("help").Present() && i.migrations != nil {
 		m.sess.Log().NotImplemented("migrations not supported at the moment")
 	}
@@ -274,6 +276,7 @@ func (i *initializer) unsafeInitLogger() logging.Logger {
 	if i.logger == nil {
 		i.logger = logging.Default(logging.LevelOk)
 	}
+	slog.SetDefault(i.logger.Logger())
 	return i.logger
 }
 
@@ -302,7 +305,7 @@ func (i *initializer) unsafeInitAddonSettingsAndCommands(m *Main, settingsb *set
 	return nil
 }
 
-func (i *initializer) unsafeInitRootCommand(m *Main) error {
+func (i *initializer) unsafeInitRootCommand(m *Main, settingsb *settings.Blueprint) error {
 	i.log(logging.NewQueueRecord(logging.LevelSystemDebug, "initializing root command", 3))
 	var boolflags = []struct {
 		Name    string
@@ -323,6 +326,16 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 
 	m.root.AddFlag(varflag.StringFunc("profile", "default", "session profile to be used"))
 
+	asService, err := settingsb.GetSpec("app.as_service")
+	if err != nil {
+		return err
+	}
+	if asService.Value == "true" {
+		if err := convertToSystemService(m, settingsb); err != nil {
+			return err
+		}
+	}
+
 	if err := m.root.verify(); err != nil {
 		return err
 	}
@@ -333,7 +346,8 @@ func (i *initializer) unsafeInitRootCommand(m *Main) error {
 
 	settree := m.root.flags.GetActiveSets()
 	name := settree[len(settree)-1].Name()
-	if name == "/" {
+
+	if name == "/" || (asService.Value == "true" && name == "run") {
 		m.cmd = m.root
 		// only set app tick tock if current command is root command
 		m.engine.onTick(m.init.tick)
@@ -493,6 +507,19 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 	if err := m.sess.opts.Set("app.fs.path.config", appConfigDir); err != nil {
 		return err
 	}
+
+	pidsDir := filepath.Join(appConfigDir, "pids")
+	_, err = os.Stat(pidsDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		if err := os.MkdirAll(pidsDir, 0700); err != nil {
+			return err
+		}
+	}
+
+	if err := m.sess.opts.Set("app.fs.path.pids", pidsDir); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -694,5 +721,17 @@ func (i *initializer) boot(m *Main) error {
 			return err
 		}
 	}
+
+	if err := m.instance.Boot(m.sess.Get("app.fs.path.pids").String()); err != nil {
+		return err
+	}
+	if err := m.sess.opts.Set("app.pid", m.instance.PID()); err != nil {
+		return err
+	}
+
+	m.exitFunc = append(m.exitFunc, func(sess *Session, code int) error {
+		sess.Log().SystemDebug("shutdown instance...")
+		return m.instance.Shutdown()
+	})
 	return nil
 }

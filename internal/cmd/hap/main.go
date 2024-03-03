@@ -7,10 +7,10 @@ package main
 import (
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser"
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/sdk/cli/commands"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
-	"github.com/happy-sdk/happy/sdk/settings"
 )
 
 type Settings struct {

@@ -101,13 +101,14 @@ func NewCommand(name string, args ...options.Arg) *Command {
 	return c
 }
 
-func (c *Command) AddInfo(paragraph string) {
+func (c *Command) AddInfo(paragraph string) *Command {
 	if !c.tryLock("AddInfo") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 
 	c.info = append(c.info, paragraph)
+	return c
 }
 
 func (c *Command) WithFalgs(flafuncs ...varflag.FlagCreateFunc) *Command {
@@ -117,87 +118,93 @@ func (c *Command) WithFalgs(flafuncs ...varflag.FlagCreateFunc) *Command {
 	return c
 }
 
-func (c *Command) AddFlag(fn varflag.FlagCreateFunc) {
+func (c *Command) AddFlag(fn varflag.FlagCreateFunc) *Command {
 	if !c.tryLock("AddFlag") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 
 	f, cerr := fn()
 	if cerr != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: %s", ErrCommandFlags, cerr.Error()))
-		return
+		return c
 	}
 
 	if err := c.flags.Add(f); err != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: %s", ErrCommandFlags, err.Error()))
 	}
+	return c
 }
 
-func (c *Command) Before(a ActionWithArgs) {
+func (c *Command) Before(a ActionWithArgs) *Command {
 	if !c.tryLock("Before") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 
 	if c.beforeAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override Before action for %s", ErrCommand, c.name))
-		return
+		return c
 	}
 	c.beforeAction = a
+	return c
 }
 
-func (c *Command) Do(action ActionWithArgs) {
+func (c *Command) Do(action ActionWithArgs) *Command {
 	if !c.tryLock("Do") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 	if c.doAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override Before action for %s", ErrCommand, c.name))
-		return
+		return c
 	}
 	c.doAction = action
+	return c
 }
 
-func (c *Command) AfterSuccess(a Action) {
+func (c *Command) AfterSuccess(a Action) *Command {
 	if !c.tryLock("AfterSuccess") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 	if c.afterSuccessAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override AfterSuccess action for %s", ErrCommand, c.name))
-		return
+		return c
 	}
 	c.afterSuccessAction = a
+	return c
 }
 
-func (c *Command) AfterFailure(a ActionWithPrevErr) {
+func (c *Command) AfterFailure(a ActionWithPrevErr) *Command {
 	if !c.tryLock("AfterFailure") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 	if c.afterFailureAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override AfterFailure action for %s", ErrCommand, c.name))
-		return
+		return c
 	}
 	c.afterFailureAction = a
+	return c
 }
 
-func (c *Command) AfterAlways(a ActionWithPrevErr) {
+func (c *Command) AfterAlways(a ActionWithPrevErr) *Command {
 	if !c.tryLock("AfterAlways") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 	if c.afterAlwaysAction != nil {
 		c.errs = append(c.errs, fmt.Errorf("%w: attempt to override AfterAlways action for %s", ErrCommand, c.name))
-		return
+		return c
 	}
 	c.afterAlwaysAction = a
+	return c
 }
 
-func (c *Command) AddSubCommand(cmd *Command) {
+func (c *Command) AddSubCommand(cmd *Command) *Command {
 	if !c.tryLock("AddSubCommand") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 	if c.subCommands == nil {
@@ -211,16 +218,18 @@ func (c *Command) AddSubCommand(cmd *Command) {
 			cmd.name,
 			c.name,
 		))
-		return
+		return c
 	}
 	c.subCommands[cmd.name] = cmd
 	cmd.parent = c
+	return c
 }
 
-func (c *Command) DescribeCategory(cat, desc string) {
+func (c *Command) DescribeCategory(cat, desc string) *Command {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.catdesc[strings.ToLower(cat)] = desc
+	return c
 }
 
 func (c *Command) setArgcMax(max uint) error {
@@ -398,6 +407,7 @@ func (c *Command) getSubCommand(name string) (cmd *Command, exists bool) {
 	}
 	return
 }
+
 func (c *Command) getSubCommands() (cmds []*Command) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

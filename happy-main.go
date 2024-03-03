@@ -297,6 +297,10 @@ func (m *Main) run() {
 
 	err := m.cmd.callDoAction(m.sess)
 
+	if err != nil {
+		m.sess.Log().Error("failed", slog.String("err", err.Error()))
+	}
+
 	if svcerr := m.engine.stop(m.sess); svcerr != nil {
 		m.sess.Log().Error("failed to stop engine", slog.String("err", svcerr.Error()))
 	}

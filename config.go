@@ -11,11 +11,11 @@ import (
 	"testing"
 
 	"github.com/happy-sdk/happy/pkg/branding"
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/networking/address"
 	"github.com/happy-sdk/happy/sdk/options"
-	"github.com/happy-sdk/happy/sdk/settings"
 	"golang.org/x/text/language"
 )
 
@@ -32,6 +32,7 @@ type Settings struct {
 	ServiceLoaderTimeout settings.Duration `key:"app.service_loader.timeout" default:"30s" mutation:"once"`
 	Instance             instance.Settings `key:"app.instance"`
 	StatsEnabled         settings.Bool     `key:"app.stats.enabled" default:"false" mutation:"once"`
+	AsService            settings.Bool     `key:"app.as_service" default:"false"`
 	global               []settings.Settings
 	migrations           map[string]string
 	errs                 []error
@@ -234,6 +235,13 @@ func getConfig() []options.OptionSpec {
 			options.NoopValueValidator,
 		),
 		options.NewOption(
+			"app.fs.path.pids",
+			"",
+			"Application pids directory",
+			options.KindConfig|options.KindReadOnly,
+			options.NoopValueValidator,
+		),
+		options.NewOption(
 			"app.main.exec.x",
 			"",
 			"-x flag is set to print all commands as executed",
@@ -272,6 +280,13 @@ func getConfig() []options.OptionSpec {
 			"app.address",
 			"",
 			"application address",
+			options.KindConfig|options.KindReadOnly,
+			options.NoopValueValidator,
+		),
+		options.NewOption(
+			"app.pid",
+			0,
+			"application process id",
 			options.KindConfig|options.KindReadOnly,
 			options.NoopValueValidator,
 		),

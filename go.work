@@ -6,7 +6,9 @@ use (
 	./pkg/branding
 	./pkg/cli/ansicolor
 	./pkg/devel/testutils
+	./pkg/platform/daemon
 	./pkg/scheduling/cron
+	./pkg/settings
 	./pkg/strings/bexp
 	./pkg/strings/humanize
 	./pkg/strings/textfmt
