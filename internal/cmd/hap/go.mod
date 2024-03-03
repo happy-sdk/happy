@@ -6,7 +6,8 @@ require (
 	github.com/charmbracelet/bubbles v0.17.1
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.9.1
-	github.com/happy-sdk/happy v0.20.0
+	github.com/happy-sdk/happy v0.21.0
+	github.com/happy-sdk/happy/pkg/settings v0.1.0
 	github.com/happy-sdk/happy/pkg/vars v0.9.0
 	golang.org/x/mod v0.15.0
 )
@@ -16,6 +17,7 @@ require (
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/happy-sdk/happy/pkg/branding v0.1.0 // indirect
 	github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.0 // indirect
+	github.com/happy-sdk/happy/pkg/platform/daemon v0.1.0 // indirect
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.4.0 // indirect
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.4.0 // indirect
 	github.com/happy-sdk/happy/pkg/strings/humanize v0.2.0 // indirect
