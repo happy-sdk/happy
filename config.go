@@ -91,8 +91,6 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 		}
 	}
 
-	// i.log(logging.NewQueueRecord(logging.LevelSystemDebug, "app slug set to", 2, slog.String("slug", m.slug)))
-
 	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argn_max")
 	if mainArgcMaxErr != nil {
 		return mainArgcMaxErr
@@ -116,6 +114,9 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 	rdns := insRevDNSSpec.Value
 
 	m.slug = slugSpec.Value
+
+	// Set the root name to the slug early so that it can be used by help menu
+	m.root.name = m.slug
 
 	curr, err := address.Current()
 	if err != nil {

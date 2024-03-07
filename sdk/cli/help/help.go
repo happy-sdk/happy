@@ -303,7 +303,6 @@ func (h *Help) printSubcommand(maxNameLength int, name, description string) {
 }
 
 func (h *Help) printBanner() error {
-	// name := ansicolor.Text(h.info.Name, h.theme.Primary, 0, 1)
 	name := h.style.Primary.String(h.info.Name)
 	version := h.style.Version.String(h.info.Version)
 
