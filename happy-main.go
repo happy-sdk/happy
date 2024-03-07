@@ -330,6 +330,11 @@ func (m *Main) run() {
 }
 
 func (m *Main) executeBeforeActions() error {
+	if m.cmd.doAction == nil && m.cmd.subCommands != nil {
+		if len(m.cmd.flags.Args()) == 0 {
+			return m.help()
+		}
+	}
 	if m.beforeAlways != nil {
 		m.log(logging.LevelSystemDebug, "executing before always")
 		args := sdk.NewArgs(m.root.getFlags())
