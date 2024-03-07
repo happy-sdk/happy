@@ -326,16 +326,6 @@ func (i *initializer) unsafeInitRootCommand(m *Main, settingsb *settings.Bluepri
 
 	m.root.AddFlag(varflag.StringFunc("profile", "default", "session profile to be used"))
 
-	asService, err := settingsb.GetSpec("app.as_service")
-	if err != nil {
-		return err
-	}
-	if asService.Value == "true" {
-		if err := convertToSystemService(m, settingsb); err != nil {
-			return err
-		}
-	}
-
 	if err := m.root.verify(); err != nil {
 		return err
 	}
@@ -347,7 +337,7 @@ func (i *initializer) unsafeInitRootCommand(m *Main, settingsb *settings.Bluepri
 	settree := m.root.flags.GetActiveSets()
 	name := settree[len(settree)-1].Name()
 
-	if name == "/" || (asService.Value == "true" && name == "run") {
+	if name == "/" {
 		m.cmd = m.root
 		// only set app tick tock if current command is root command
 		m.engine.onTick(m.init.tick)

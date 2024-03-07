@@ -32,7 +32,6 @@ type Settings struct {
 	ServiceLoaderTimeout settings.Duration `key:"app.service_loader.timeout" default:"30s" mutation:"once"`
 	Instance             instance.Settings `key:"app.instance"`
 	StatsEnabled         settings.Bool     `key:"app.stats.enabled" default:"false" mutation:"once"`
-	AsService            settings.Bool     `key:"app.as_service" default:"false"`
 	global               []settings.Settings
 	migrations           map[string]string
 	errs                 []error

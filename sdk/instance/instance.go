@@ -69,9 +69,6 @@ func (i *Instance) Address() *address.Address {
 }
 
 func (i *Instance) Boot(pidsDir string) error {
-	daemonPidFile := fmt.Sprintf("%s-daemon.pid", i.slug)
-	i.daemonPidFilePath = filepath.Join(pidsDir, daemonPidFile)
-
 	// depending on Max setting, we can boot multiple instances
 	// lets check if we are within the limit and assign id for current instance.
 	pidfiles, err := os.ReadDir(pidsDir)
@@ -81,9 +78,7 @@ func (i *Instance) Boot(pidsDir string) error {
 	instanceID := 1
 	existingInstances := make(map[int]bool)
 	for _, file := range pidfiles {
-		if file.Name() == daemonPidFile {
-			continue
-		}
+		fmt.Println(file.Name())
 		if strings.HasPrefix(file.Name(), i.slug+"-") && strings.HasSuffix(file.Name(), ".pid") {
 			after, found := strings.CutPrefix(file.Name(), i.slug+"-")
 			if !found {
@@ -115,7 +110,6 @@ func (i *Instance) Boot(pidsDir string) error {
 	if err := os.WriteFile(i.pidFilePath, []byte(strconv.Itoa(i.pid)), 0644); err != nil {
 		return fmt.Errorf("failed to write PID file: %w", err)
 	}
-
 	return nil
 }
 
@@ -131,12 +125,6 @@ func (i *Instance) PID() int {
 	return i.pid
 }
 
-func (i *Instance) DaemonPIDFile() string {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
-	return i.daemonPidFilePath
-}
-
 func (i *Instance) Shutdown() error {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
@@ -149,26 +137,5 @@ func (i *Instance) Shutdown() error {
 	if err := os.Remove(i.pidFilePath); err != nil {
 		return fmt.Errorf("failed to remove PID file: %w", err)
 	}
-	return nil
-}
-
-func (i *Instance) Daemonize() error {
-	if i.daemonPidFilePath == "" {
-		return errors.New("instance is not booted, missing daemon pid file")
-	}
-	if _, err := os.Stat(i.daemonPidFilePath); err == nil {
-		return fmt.Errorf("daemon PID file already exists: %s", i.daemonPidFilePath)
-	}
-	fmt.Println(i.daemonPidFilePath)
-	if err := os.WriteFile(i.daemonPidFilePath, []byte(strconv.Itoa(os.Getpid())), 0644); err != nil {
-		return fmt.Errorf("failed to write daemon PID file: %w", err)
-	}
-	if _, err := os.Stat(i.pidFilePath); err != nil {
-		return fmt.Errorf("failed to stat PID file: %w", err)
-	}
-	if err := os.Remove(i.pidFilePath); err != nil {
-		return fmt.Errorf("failed to remove PID file: %w", err)
-	}
-	i.pidFilePath = i.daemonPidFilePath
 	return nil
 }

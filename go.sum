@@ -4,8 +4,6 @@ github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.0 h1:jAP1rK2y+eeFgAQIJVqfY8AWS
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.0/go.mod h1:31cuN6nBnI7cWiNoJG951P6aZvDje0NACQHWbsszuhI=
 github.com/happy-sdk/happy/pkg/devel/testutils v0.7.0 h1:Tyym7OiArjuKnKRIAITioGjuobvhFUMsIGg0bZ58CUs=
 github.com/happy-sdk/happy/pkg/devel/testutils v0.7.0/go.mod h1:K/VIXChL6yiZTWsYrrl3lauYUAQL1cMaIJK5aPvG/xs=
-github.com/happy-sdk/happy/pkg/platform/daemon v0.1.0 h1:1OzRDPI4/gmrznemBi/pbz3h4aR/xTWiuBPY59CQzl0=
-github.com/happy-sdk/happy/pkg/platform/daemon v0.1.0/go.mod h1:v1AZ73QPdmyxoTX69RvoNJxDjJ1/5PtbPRTl2sHUqn8=
 github.com/happy-sdk/happy/pkg/scheduling/cron v0.4.0 h1:7wi0iB1Zr3/RvtGOxT5Mb77851Z6P6dGtYKw7D3HVvs=
 github.com/happy-sdk/happy/pkg/scheduling/cron v0.4.0/go.mod h1:9k/p1Zh3YwW8/pcEffP06p/imhqlbRCcdwXCMKkDoFY=
 github.com/happy-sdk/happy/pkg/settings v0.1.0 h1:UmXFjD0bXvIx2wVuTSpQl8hn9/lj6yJM6x60dnpsDr4=
