@@ -18,9 +18,9 @@ import (
 )
 
 var (
-	ErrCommand       = errors.New("command error")
-	ErrCommandFlags  = errors.New("command flags error")
-	ErrCommandAction = errors.New("command action error")
+	ErrCommand            = errors.New("command error")
+	ErrCommandFlags       = errors.New("command flags error")
+	ErrCommandHasNoParent = errors.New("command has no parent command")
 )
 
 type Command struct {
@@ -373,29 +373,30 @@ func (c *Command) getFlags() varflag.Flags {
 	return c.flags
 }
 
-func (c *Command) getSharedFlags() varflag.Flags {
-
+func (c *Command) getSharedFlags() (varflag.Flags, error) {
 	if c.parent == nil {
-		return nil
+		flags, _ := varflag.NewFlagSet(c.name+"-noparent", 0)
+		return flags, ErrCommandHasNoParent
 	}
 
-	var flags varflag.Flags
-	if c.parent.beforeActionShared {
-		flags = c.parent.getFlags()
-	}
+	flags := c.parent.getFlags()
 	if flags == nil {
-		flags, _ = varflag.NewFlagSet(c.name, 0)
+		flags, _ = varflag.NewFlagSet(c.parent.name, 0)
 	}
-
-	parentFlags := c.parent.getSharedFlags()
+	parentFlags, err := c.parent.getSharedFlags()
+	if err != nil {
+		return nil, err
+	}
 
 	if parentFlags != nil {
 		for _, flag := range parentFlags.Flags() {
-			_ = flags.Add(flag)
+			if err := flags.Add(flag); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	return flags
+	return flags, nil
 }
 
 func (c *Command) getSubCommand(name string) (cmd *Command, exists bool) {
@@ -439,6 +440,7 @@ func (c *Command) getActiveCommand() (*Command, error) {
 
 func (c *Command) callSharedBeforeAction(sess *Session) error {
 	if c.parent != nil {
+		c.parent.isWrapperCommand = true // prevents args from being added to parent command
 		if err := c.parent.callSharedBeforeAction(sess); err != nil {
 			return err
 		}
@@ -454,38 +456,42 @@ func (c *Command) callBeforeAction(sess *Session) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	pflags, err := c.getSharedFlags()
+	if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
+		return err
+	}
+	if pflags != nil {
+		for _, flag := range pflags.Flags() {
+			if err := c.flags.Add(flag); err != nil {
+				return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
+			}
+		}
+	}
+
+	args := sdk.NewArgs(c.flags)
+	if c.argnmin == 0 && c.argnmax == 0 && args.Argn() > 0 {
+		return fmt.Errorf("%w: %s: %s", ErrCommand, c.name, "does not accept arguments")
+	}
+
+	if args.Argn() < c.argnmin {
+		return fmt.Errorf("%w: %s: requires min %d arguments, %d provided", ErrCommand, c.name, c.argnmin, args.Argn())
+	}
+	if args.Argn() > c.argnmax {
+		return fmt.Errorf("%w: %s: accepts max %d arguments, %d provided, extra %v", ErrCommand, c.name, c.argnmax, args.Argn(), args.Args()[c.argnmax:args.Argn()])
+	}
+
 	if c.parent != nil && !c.sharedCalled {
 		if err := c.parent.callSharedBeforeAction(sess); err != nil {
 			return err
 		}
 	}
+
 	if c.beforeAction == nil {
 		return nil
 	}
 
-	pflags := c.getSharedFlags()
-	if pflags != nil {
-		for _, flag := range pflags.Flags() {
-			if err := c.flags.Add(flag); err != nil {
-				return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
-			}
-		}
-	}
-	args := sdk.NewArgs(c.flags)
-
-	if c.argnmin == 0 && c.argnmax == 0 && args.Argn() > 0 {
-		return fmt.Errorf("%w: %s: %s", ErrCommandAction, c.name, "command does not accept arguments")
-	}
-
-	if args.Argn() < c.argnmin {
-		return fmt.Errorf("%w: %s: command requires min %d arguments, %d provided", ErrCommandAction, c.name, c.argnmin, args.Argn())
-	}
-	if args.Argn() > c.argnmax {
-		return fmt.Errorf("%w: %s: command accepts max %d arguments, %d provided, extra %v", ErrCommandAction, c.name, c.argnmax, args.Argn(), args.Args()[c.argnmax:args.Argn()])
-	}
-
 	if err := c.beforeAction(sess, args); err != nil {
-		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+		return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
 	}
 	return nil
 }
@@ -498,11 +504,14 @@ func (c *Command) callDoAction(session *Session) error {
 		return nil
 	}
 
-	pflags := c.getSharedFlags()
+	pflags, err := c.getSharedFlags()
+	if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
+		return err
+	}
 	if pflags != nil {
 		for _, flag := range pflags.Flags() {
 			if err := c.flags.Add(flag); err != nil {
-				return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+				return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
 			}
 		}
 	}
@@ -510,7 +519,7 @@ func (c *Command) callDoAction(session *Session) error {
 	args := sdk.NewArgs(c.flags)
 
 	if err := c.doAction(session, args); err != nil {
-		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+		return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
 	}
 	return nil
 }
@@ -524,7 +533,7 @@ func (c *Command) callAfterFailureAction(session *Session, err error) error {
 	}
 
 	if err := c.afterFailureAction(session, err); err != nil {
-		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+		return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
 	}
 	return nil
 }
@@ -538,7 +547,7 @@ func (c *Command) callAfterSuccessAction(session *Session) error {
 	}
 
 	if err := c.afterSuccessAction(session); err != nil {
-		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+		return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
 	}
 	return nil
 }
@@ -552,7 +561,7 @@ func (c *Command) callAfterAlwaysAction(session *Session, err error) error {
 	}
 
 	if err := c.afterAlwaysAction(session, err); err != nil {
-		return fmt.Errorf("%w: %s: %w", ErrCommandAction, c.name, err)
+		return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
 	}
 	return nil
 }

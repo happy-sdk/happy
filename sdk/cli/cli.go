@@ -20,8 +20,6 @@ import (
 )
 
 var (
-	// ErrCommand        = happyx.NewError("command error")
-	// ErrCommandAction  = happyx.NewError("command action error")
 	ErrCommandInvalid = errors.New("invalid command definition")
 	ErrCommandArgs    = errors.New("command arguments error")
 	ErrCommandFlags   = errors.New("command flags error")

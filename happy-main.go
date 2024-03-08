@@ -281,7 +281,7 @@ func (m *Main) run() {
 	}
 
 	if err := m.executeBeforeActions(); err != nil {
-		m.sess.Log().Error("failed to call before always", slog.String("err", err.Error()))
+		m.sess.Log().Error(err.Error(), slog.String("action", "before"))
 		m.exit(1)
 		return
 	}
@@ -342,6 +342,7 @@ func (m *Main) executeBeforeActions() error {
 			return err
 		}
 	}
+
 	return m.cmd.callBeforeAction(m.sess)
 }
 
@@ -377,7 +378,11 @@ func (m *Main) help() error {
 
 	if m.cmd != m.root {
 		h.AddCommandFlags(m.cmd.getFlags())
-		h.AddSharedFlags(m.cmd.getSharedFlags())
+		flags, err := m.cmd.getSharedFlags()
+		if err != nil {
+			return err
+		}
+		h.AddSharedFlags(flags)
 	}
 
 	h.AddGlobalFlags(m.root.getFlags())
@@ -449,7 +454,7 @@ func (m *Main) exit(code int) {
 	}
 	if !testing.Testing() {
 		if err := m.save(); err != nil {
-			m.sess.Log().Error("failed to save state", slog.String("err", err.Error()))
+			m.sess.Log().Error(err.Error())
 		}
 	}
 
