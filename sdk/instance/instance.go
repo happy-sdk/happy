@@ -7,6 +7,7 @@ package instance
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -33,14 +34,13 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 }
 
 type Instance struct {
-	mu                sync.RWMutex
-	addr              *address.Address
-	slug              string
-	pidFilePath       string
-	daemonPidFilePath string
-	id                int
-	max               int
-	pid               int
+	mu          sync.RWMutex
+	addr        *address.Address
+	slug        string
+	pidFilePath string
+	id          int
+	max         int
+	pid         int
 }
 
 func New(slug, rdns string) (*Instance, error) {
@@ -131,11 +131,13 @@ func (i *Instance) Shutdown() error {
 	if i.pidFilePath == "" {
 		return errors.New("instance is not booted, missing pid file")
 	}
-	if _, err := os.Stat(i.pidFilePath); err != nil {
+	if _, err := os.Stat(i.pidFilePath); err == nil {
+		if err := os.Remove(i.pidFilePath); err != nil {
+			return fmt.Errorf("failed to remove PID file: %w", err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to stat PID file: %w", err)
 	}
-	if err := os.Remove(i.pidFilePath); err != nil {
-		return fmt.Errorf("failed to remove PID file: %w", err)
-	}
+
 	return nil
 }

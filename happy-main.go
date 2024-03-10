@@ -244,11 +244,11 @@ func (m *Main) Run() {
 
 	// initialize (mutex is locked inside)
 	if err := m.init.Initialize(m); err != nil {
-		m.sess.Log().LogDepth(2, logging.LevelError, "initialization error", slog.String("err", err.Error()))
 		if errors.Is(err, errExitSuccess) {
 			m.exit(0)
 			return
 		}
+		m.sess.Log().LogDepth(2, logging.LevelError, err.Error())
 		m.exit(1)
 		return
 	}
@@ -379,7 +379,7 @@ func (m *Main) help() error {
 	if m.cmd != m.root {
 		h.AddCommandFlags(m.cmd.getFlags())
 		flags, err := m.cmd.getSharedFlags()
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
 			return err
 		}
 		h.AddSharedFlags(flags)
@@ -453,7 +453,7 @@ func (m *Main) exit(code int) {
 		m.exitCh <- struct{}{}
 	}
 	if !testing.Testing() {
-		if err := m.save(); err != nil {
+		if err := m.save(); err != nil && !errors.Is(err, errSessionInvalid) {
 			m.sess.Log().Error(err.Error())
 		}
 	}
@@ -464,9 +464,11 @@ func (m *Main) exit(code int) {
 	}
 }
 
+var errSessionInvalid = errors.New("session is not valid, skip saving profile")
+
 func (m *Main) save() error {
 	if !m.sess.isValid() {
-		return fmt.Errorf("session is not valid, skip saving profile")
+		return errSessionInvalid
 	}
 	profileFilePath := m.sess.Get("app.profile.file").String()
 	if len(profileFilePath) == 0 {

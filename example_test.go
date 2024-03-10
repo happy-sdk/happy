@@ -20,6 +20,7 @@ func ExampleNew() {
 		sess.Log().Println("Hello, world!")
 		return nil
 	})
+
 	app.Run()
 	fmt.Println(log.Output())
 	// Output:

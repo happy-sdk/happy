@@ -40,6 +40,7 @@ func TestDefaultSettings(t *testing.T) {
 		testutils.Equal(t, "com.github.happy-sdk.happy.test", sess.Get("app.instance.reverse_dns").String(), "app.instance.reverse_dns")
 
 		testutils.Equal(t, "com.github.happy-sdk.happy-test", sess.Get("app.slug").String(), "app.slug")
+		testutils.Equal(t, false, sess.Get("app.stats.enabled").Bool(), "app.stats.enabled")
 
 		return nil
 	})
@@ -52,7 +53,7 @@ func TestDefaultConfig(t *testing.T) {
 	app := happy.New(happy.Settings{})
 	app.WithLogger(log)
 	app.Do(func(sess *happy.Session, args happy.Args) error {
-		testutils.Equal(t, 13, sess.Opts().Len(), "invalid default runtime config key cpunt")
+		testutils.Equal(t, 15, sess.Opts().Len(), "invalid default runtime config key count")
 		host, err := os.Hostname()
 		if err != nil {
 			return err
@@ -84,6 +85,8 @@ func TestDefaultConfig(t *testing.T) {
 		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.config").String(), "app.fs.path.config")
 		testutils.Equal(t, fmt.Sprintf("%s/cache/com.github.happy-sdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.cache").String(), "app.fs.path.cache")
 		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel/profile.preferences", tmpdir), sess.Get("app.profile.file").String(), "app.profile.file")
+		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel/pids", tmpdir), sess.Get("app.fs.path.pids").String(), "app.fs.path.pids")
+		testutils.Equal(t, os.Getpid(), sess.Get("app.pid").Int(), "app.pid")
 
 		return nil
 	})

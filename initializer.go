@@ -41,7 +41,6 @@ type initializer struct {
 	pendingOpts  []options.Arg
 	took         time.Duration
 	brand        Brand
-	asSerivce    bool
 }
 
 func newInitializer(s *Settings) *initializer {
@@ -249,6 +248,8 @@ func (i *initializer) Initialize(m *Main) error {
 		)
 	}
 
+	m.sess.Log().SystemDebug("configuration done")
+
 	m.root.desc = m.sess.Get("app.description").String()
 
 	if !m.root.flag("help").Present() && i.migrations != nil {
@@ -256,7 +257,6 @@ func (i *initializer) Initialize(m *Main) error {
 	}
 
 	if m.root.flag("help").Present() || m.cmd == nil || (m.cmd == m.root && m.root.doAction == nil) {
-		m.sess.Log().SetLevel(logging.LevelAlways)
 		if err := m.help(); err != nil {
 			return fmt.Errorf("%w: failed to print help %w", Error, err)
 		}

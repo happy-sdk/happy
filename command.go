@@ -111,8 +111,8 @@ func (c *Command) AddInfo(paragraph string) *Command {
 	return c
 }
 
-func (c *Command) WithFalgs(flafuncs ...varflag.FlagCreateFunc) *Command {
-	for _, fn := range flafuncs {
+func (c *Command) WithFalgs(flagfuncs ...varflag.FlagCreateFunc) *Command {
+	for _, fn := range flagfuncs {
 		c.AddFlag(fn)
 	}
 	return c
@@ -261,7 +261,8 @@ func (c *Command) verify() error {
 		var withargs []string
 		withargs = append(withargs, c.parents...)
 		withargs = append(withargs, c.name)
-		withargs = append(withargs, fmt.Sprintf("[args...] // max %d", c.argnmax))
+		withargs = append(withargs, "[args...]")
+		withargs = append(withargs, fmt.Sprintf(" // min %d max %d", c.argnmin, c.argnmax))
 		c.usage = append(c.usage, strings.Join(withargs, " "))
 	}
 
@@ -375,7 +376,10 @@ func (c *Command) getFlags() varflag.Flags {
 
 func (c *Command) getSharedFlags() (varflag.Flags, error) {
 	if c.parent == nil {
-		flags, _ := varflag.NewFlagSet(c.name+"-noparent", 0)
+		flags, err := varflag.NewFlagSet("x-"+c.name+"-noparent", 0)
+		if err != nil {
+			return nil, err
+		}
 		return flags, ErrCommandHasNoParent
 	}
 
@@ -384,7 +388,7 @@ func (c *Command) getSharedFlags() (varflag.Flags, error) {
 		flags, _ = varflag.NewFlagSet(c.parent.name, 0)
 	}
 	parentFlags, err := c.parent.getSharedFlags()
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
 		return nil, err
 	}
 
@@ -440,7 +444,6 @@ func (c *Command) getActiveCommand() (*Command, error) {
 
 func (c *Command) callSharedBeforeAction(sess *Session) error {
 	if c.parent != nil {
-		c.parent.isWrapperCommand = true // prevents args from being added to parent command
 		if err := c.parent.callSharedBeforeAction(sess); err != nil {
 			return err
 		}
@@ -502,18 +505,6 @@ func (c *Command) callDoAction(session *Session) error {
 
 	if c.doAction == nil {
 		return nil
-	}
-
-	pflags, err := c.getSharedFlags()
-	if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
-		return err
-	}
-	if pflags != nil {
-		for _, flag := range pflags.Flags() {
-			if err := c.flags.Add(flag); err != nil {
-				return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
-			}
-		}
 	}
 
 	args := sdk.NewArgs(c.flags)
