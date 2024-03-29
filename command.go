@@ -501,7 +501,7 @@ func (c *Command) callBeforeAction(sess *Session) error {
 	return nil
 }
 
-func (c *Command) callDoAction(session *Session) error {
+func (c *Command) callDoAction(session *Session) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -509,12 +509,18 @@ func (c *Command) callDoAction(session *Session) error {
 		return nil
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%w: %s: %v (recovered)", ErrCommand, c.name, r)
+		}
+	}()
+
 	args := sdk.NewArgs(c.flags)
 
 	if err := c.doAction(session, args); err != nil {
 		return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
 	}
-	return nil
+	return err
 }
 
 func (c *Command) callAfterFailureAction(session *Session, err error) error {
