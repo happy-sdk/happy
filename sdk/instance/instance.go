@@ -78,7 +78,6 @@ func (i *Instance) Boot(pidsDir string) error {
 	instanceID := 1
 	existingInstances := make(map[int]bool)
 	for _, file := range pidfiles {
-		fmt.Println(file.Name())
 		if strings.HasPrefix(file.Name(), i.slug+"-") && strings.HasSuffix(file.Name(), ".pid") {
 			after, found := strings.CutPrefix(file.Name(), i.slug+"-")
 			if !found {

@@ -222,7 +222,7 @@ func (h *Help) printCommandFlags() error {
 		fmt.Println("")
 
 		// Sort the globalFlags by flag name
-		sort.Slice(h.flags, func(i, j int) bool {
+		sort.Slice(h.sharedFlags, func(i, j int) bool {
 			return h.sharedFlags[i].Flag < h.sharedFlags[j].Flag
 		})
 

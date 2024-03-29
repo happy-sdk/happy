@@ -122,6 +122,19 @@ type ServiceLoader struct {
 	svcs     []*address.Address
 }
 
+// LoadServices is a non blocking helper function to load services in backgrond
+func LoadServices(sess *Session, svcs ...string) {
+	go func() {
+		loader := NewServiceLoader(sess, svcs...)
+		<-loader.Load()
+		if loader.Err() != nil {
+			sess.Log().Error(loader.Err().Error())
+		}
+	}()
+}
+
+// NewServiceLoader creates new service loader which can be used to load
+// services before application starts or during runtime.
 func NewServiceLoader(sess *Session, svcs ...string) *ServiceLoader {
 	loader := &ServiceLoader{
 		sess:     sess,
@@ -238,7 +251,7 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 						for _, err := range errs {
 							sl.addErr(err)
 						}
-						sl.cancel(fmt.Errorf("%w: service loader failed to load required services %s", ErrService, status.Addr().String()))
+						sl.cancel(fmt.Errorf("%w: service loader failed to load required services %s, %s", ErrService, status.Addr().String(), errors.Join(sl.errs...).Error()))
 						return
 					}
 					if status.Running() {
@@ -418,7 +431,9 @@ func (s *serviceContainer) initialize(sess *Session) error {
 
 func (s *serviceContainer) start(ectx context.Context, sess *Session) (err error) {
 	if s.svc.startAction != nil {
-		err = s.svc.startAction(sess)
+		if err := s.svc.startAction(sess); err != nil {
+			return err
+		}
 	}
 	if s.cron != nil {
 		sess.Log().SystemDebug("starting cron jobs", slog.String("service", s.info.Addr().String()))

@@ -376,16 +376,19 @@ func (m *Main) help() error {
 	}
 	h.AddCategoryDescriptions(m.cmd.catdesc)
 
+	gloablFlags := m.root.getFlags()
+
 	if m.cmd != m.root {
 		h.AddCommandFlags(m.cmd.getFlags())
 		flags, err := m.cmd.getSharedFlags()
 		if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
 			return err
 		}
+
 		h.AddSharedFlags(flags)
 	}
 
-	h.AddGlobalFlags(m.root.getFlags())
+	h.AddGlobalFlags(gloablFlags)
 
 	return h.Print()
 }

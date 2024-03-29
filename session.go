@@ -168,29 +168,29 @@ func (s *Session) Done() <-chan struct{} {
 	return d
 }
 
-// Closed returns channel which blocks until session is closed.
-// It is ensured that Closed closes before root or command
-// "Do" after functions are called. This is useful for graceful shutdown actions.
-func (s *Session) Closed() <-chan struct{} {
-	s.mu.Lock()
-	if s.closed == nil {
-		s.closed = make(chan struct{})
-	}
-	d := s.closed
-	s.mu.Unlock()
-	return d
-}
+// // Closed returns channel which blocks until session is closed.
+// // It is ensured that Closed closes before root or command
+// // "Do" after functions are called. This is useful for graceful shutdown actions.
+// func (s *Session) Closed() <-chan struct{} {
+// 	s.mu.Lock()
+// 	if s.closed == nil {
+// 		s.closed = make(chan struct{})
+// 	}
+// 	d := s.closed
+// 	s.mu.Unlock()
+// 	return d
+// }
 
-// Wait allows user to cancel application by pressing Ctrl+C
-// or sending SIGINT or SIGTERM while application is running.
-// By default this is not allowed. It returns a channel which blocks until
-// application is closed by user or signal is reveived.
-func (s *Session) Wait() <-chan struct{} {
-	s.mu.Lock()
-	s.allowUserCancel = true
-	s.mu.Unlock()
-	return s.Closed()
-}
+// // Wait allows user to cancel application by pressing Ctrl+C
+// // or sending SIGINT or SIGTERM while application is running.
+// // By default this is not allowed. It returns a channel which blocks until
+// // application is closed by user or signal is reveived.
+// func (s *Session) Wait() <-chan struct{} {
+// 	s.mu.Lock()
+// 	s.allowUserCancel = true
+// 	s.mu.Unlock()
+// 	return s.Closed()
+// }
 
 // AllowUserCancel allows user to cancel application by pressing Ctrl+C
 // or sending SIGINT or SIGTERM while application is running.
@@ -216,10 +216,11 @@ func (s *Session) Value(key any) any {
 				s.terminate = nil
 				s.terminated = true
 				s.terminateStop = nil
-				if s.closed != nil {
-					close(s.closed)
-					s.closed = nil
+				if s.done != nil {
+					close(s.done)
+					s.done = nil
 				}
+				s.err = errExitSuccess
 				s.mu.Unlock()
 				return nil
 			}

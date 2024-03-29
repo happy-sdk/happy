@@ -375,7 +375,8 @@ func (c *Command) getFlags() varflag.Flags {
 }
 
 func (c *Command) getSharedFlags() (varflag.Flags, error) {
-	if c.parent == nil {
+	// ignore global flags
+	if c.parent == nil || c.parent.parent == nil {
 		flags, err := varflag.NewFlagSet("x-"+c.name+"-noparent", 0)
 		if err != nil {
 			return nil, err
@@ -459,17 +460,18 @@ func (c *Command) callBeforeAction(sess *Session) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	pflags, err := c.getSharedFlags()
-	if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
-		return err
-	}
-	if pflags != nil {
-		for _, flag := range pflags.Flags() {
-			if err := c.flags.Add(flag); err != nil {
-				return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
-			}
-		}
-	}
+	// TODO: enusre flag chain is correctly populated
+	// pflags, err := c.getSharedFlags()
+	// if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
+	// 	return err
+	// }
+	// if pflags != nil {
+	// 	for _, flag := range pflags.Flags() {
+	// 		if err := c.flags.Add(flag); err != nil {
+	// 			return fmt.Errorf("%w: %s: %w", ErrCommand, c.name, err)
+	// 		}
+	// 	}
+	// }
 
 	args := sdk.NewArgs(c.flags)
 	if c.argnmin == 0 && c.argnmax == 0 && args.Argn() > 0 {
