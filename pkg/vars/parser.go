@@ -7,6 +7,7 @@ package vars
 import (
 	"errors"
 	"sync"
+	"time"
 )
 
 type (
@@ -324,6 +325,9 @@ func (p *parser) parseValue(val any) (typ Kind, err error) {
 	case string:
 		typ = KindString
 		p.fmt.string(v)
+	case time.Duration:
+		typ = KindDuration
+		p.fmt.string(v.String())
 	default:
 		typ, err = p.parseUnderlyingAsKind(val)
 	}
