@@ -44,7 +44,8 @@ var (
 	// ErrMissingOptions is returned when option flag parser does not find options.
 	ErrMissingOptions = errors.New("missing options")
 	// ErrNoNamedFlag is returned when flag lookup can not find named flag.
-	ErrNoNamedFlag = errors.New("no such flag")
+	ErrNoNamedFlag      = errors.New("no such flag")
+	ErrInvalidArguments = errors.New("invalid arguments")
 )
 
 type (

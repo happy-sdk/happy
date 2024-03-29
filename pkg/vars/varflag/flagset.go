@@ -302,9 +302,10 @@ func (s *FlagSet) Parse(args []string) error {
 }
 
 func (s *FlagSet) extractArgs(args []string) error {
-	if len(args) == 0 || s.argn == 0 {
+	if len(args) == 0 {
 		return nil
 	}
+
 	// rm subcmds
 includessubset:
 	for _, set := range s.sets {
@@ -330,6 +331,11 @@ includessubset:
 	}
 
 	sargs := slicediff(args, used)
+
+	if s.argn == 0 && len(sargs) > 0 {
+		return fmt.Errorf("%w: %s does not accept arg %s", ErrInvalidArguments, s.name, sargs[0])
+	}
+
 	for _, arg := range sargs {
 		a, err := vars.NewValue(arg)
 		if err != nil {
