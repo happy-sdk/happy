@@ -17,6 +17,8 @@ package happy
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/branding"
@@ -79,3 +81,20 @@ type Brand interface {
 }
 
 type BrandFunc func() (Brand, error)
+
+// HasProfile checks if the given profile exists
+func HasProfile(sess *Session, profile string) (ok bool, dir string) {
+	if sess == nil {
+		return false, filepath.Join(os.TempDir(), "happy-failure")
+	}
+	if sess.Get("app.devel").Bool() {
+		profile += "-devel"
+	}
+
+	profilepath := filepath.Join(filepath.Dir(sess.Get("app.fs.path.config").String()), profile)
+	if _, err := os.Stat(profilepath); err == nil {
+		return true, profilepath
+	}
+
+	return false, sess.Get("app.fs.path.config").String()
+}
