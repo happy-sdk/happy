@@ -467,18 +467,21 @@ func (c *Command) callBeforeAction(sess *Session) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	for _, flag := range c.getGlobalFlags().Flags() {
-		if err := c.flags.Add(flag); err != nil {
+	// skip this for root command
+	if c.parent != nil {
+		for _, flag := range c.getGlobalFlags().Flags() {
+			if err := c.flags.Add(flag); err != nil {
+				return fmt.Errorf("%w: %s: %s", ErrCommand, c.name, err.Error())
+			}
+		}
+		sharedf, err := c.getSharedFlags()
+		if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
 			return fmt.Errorf("%w: %s: %s", ErrCommand, c.name, err.Error())
 		}
-	}
-	sharedf, err := c.getSharedFlags()
-	if err != nil && !errors.Is(err, ErrCommandHasNoParent) {
-		return fmt.Errorf("%w: %s: %s", ErrCommand, c.name, err.Error())
-	}
-	for _, flag := range sharedf.Flags() {
-		if err := c.flags.Add(flag); err != nil {
-			return fmt.Errorf("%w: %s: %s", ErrCommand, c.name, err.Error())
+		for _, flag := range sharedf.Flags() {
+			if err := c.flags.Add(flag); err != nil {
+				return fmt.Errorf("%w: %s: %s", ErrCommand, c.name, err.Error())
+			}
 		}
 	}
 

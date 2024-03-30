@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -49,19 +48,6 @@ type Main struct {
 	startedAt time.Time
 
 	brand Brand
-}
-
-// New is alias to prototype.New
-func New(s Settings) *Main {
-	m := &Main{
-		init:      newInitializer(&s),
-		root:      NewCommand(filepath.Base(os.Args[0])),
-		exitTrap:  testing.Testing(),
-		createdAt: time.Now(),
-	}
-
-	m.init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, "creating new application", 3))
-	return m
 }
 
 const withAddonMsg = "with addon"

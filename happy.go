@@ -19,12 +19,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"testing"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
+	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/options"
 )
 
@@ -58,6 +61,28 @@ type Flags interface {
 
 type API interface {
 	happy() bool
+}
+
+// New is alias to prototype.New
+func New(s Settings) *Main {
+	var osargs []string
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, "-test.") {
+			continue
+		}
+		osargs = append(osargs, arg)
+	}
+	os.Args = osargs
+
+	m := &Main{
+		init:      newInitializer(&s),
+		root:      NewCommand(filepath.Base(os.Args[0])),
+		exitTrap:  testing.Testing(),
+		createdAt: time.Now(),
+	}
+
+	m.init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, "creating new application", 3))
+	return m
 }
 
 func GetAPI[A API](sess *Session, addonName string) (api A, err error) {

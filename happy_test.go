@@ -64,7 +64,7 @@ func TestDefaultConfig(t *testing.T) {
 		testutils.Equal(t, true, sess.Get("app.firstuse").Bool(), "app.firstuse")
 		testutils.Equal(t, false, sess.Get("app.main.exec.x").Bool(), "app.main.exec.x")
 		testutils.Equal(t, "github.com/happy-sdk/happy", sess.Get("app.module").String(), "app.module")
-		testutils.Equal(t, "default-devel", sess.Get("app.profile.name").String(), "app.profile.name")
+		testutils.Equal(t, "public-devel", sess.Get("app.profile.name").String(), "app.profile.name")
 		testutils.Equal(t, "v1.0.0-0xDEV", sess.Get("app.version").String(), "app.version")
 
 		tmpdir := sess.Get("app.fs.path.tmp").String()
@@ -82,10 +82,10 @@ func TestDefaultConfig(t *testing.T) {
 		}
 		testutils.Equal(t, home, sess.Get("app.fs.path.home").String(), "app.fs.path.home")
 
-		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.config").String(), "app.fs.path.config")
-		testutils.Equal(t, fmt.Sprintf("%s/cache/com.github.happy-sdk.happy-test/profiles/default-devel", tmpdir), sess.Get("app.fs.path.cache").String(), "app.fs.path.cache")
-		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel/profile.preferences", tmpdir), sess.Get("app.profile.file").String(), "app.profile.file")
-		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/default-devel/pids", tmpdir), sess.Get("app.fs.path.pids").String(), "app.fs.path.pids")
+		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/public-devel", tmpdir), sess.Get("app.fs.path.config").String(), "app.fs.path.config")
+		testutils.Equal(t, fmt.Sprintf("%s/cache/com.github.happy-sdk.happy-test/profiles/public-devel", tmpdir), sess.Get("app.fs.path.cache").String(), "app.fs.path.cache")
+		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/public-devel/profile.preferences", tmpdir), sess.Get("app.profile.file").String(), "app.profile.file")
+		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/public-devel/pids", tmpdir), sess.Get("app.fs.path.pids").String(), "app.fs.path.pids")
 		testutils.Equal(t, os.Getpid(), sess.Get("app.pid").Int(), "app.pid")
 
 		return nil

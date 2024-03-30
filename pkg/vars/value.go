@@ -4,7 +4,11 @@
 
 package vars
 
-import "time"
+import (
+	"fmt"
+	"math"
+	"time"
+)
 
 type (
 	// Value describes an arbitrary value. When the Kind of the value is detected
@@ -97,6 +101,12 @@ func (v Value) Int() (int, error) {
 		if vv, ok := v.raw.(int); ok {
 			return vv, nil
 		}
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		if vi > math.MaxInt {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
+		return int(vi), nil
 	}
 	if v.isCustom {
 		vv, err := v.CloneAs(KindInt)
@@ -115,6 +125,12 @@ func (v Value) Int8() (int8, error) {
 		if vv, ok := v.raw.(int8); ok {
 			return vv, nil
 		}
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		if vi > math.MaxInt8 {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
+		return int8(vi), nil
 	}
 	if v.isCustom {
 		vv, err := v.CloneAs(KindInt8)
@@ -150,28 +166,17 @@ func (v Value) Int16() (int16, error) {
 			return 0, err
 		}
 		return vv.Int16()
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		if vi > math.MaxInt16 {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
+		return int16(vi), nil
 	}
 	var vi int64
 	vi, _, err = parseInt(v.str, 10, 16)
 	i = int16(vi)
 	return i, err
-}
-func (v Value) Duration() (time.Duration, error) {
-	if v.kind == KindDuration {
-		if vv, ok := v.raw.(time.Duration); ok {
-			return vv, nil
-		}
-	}
-	if v.isCustom {
-		vv, err := v.CloneAs(KindDuration)
-		if err != nil {
-			return 0, err
-		}
-		return vv.Duration()
-	}
-
-	val, err := time.ParseDuration(v.str)
-	return val, err
 }
 
 // Int32 returns int32 representation of the Value.
@@ -200,6 +205,12 @@ func (v Value) Int32() (int32, error) {
 		var vi int16
 		vi, err = v.Int16()
 		i = int32(vi)
+	case KindDuration:
+		vi, _ := v.raw.(time.Duration)
+		if vi > math.MaxInt32 {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
+		return int32(vi), nil
 	default:
 		if v.isCustom {
 			vv, err := v.CloneAs(KindInt32)
@@ -250,6 +261,9 @@ func (v Value) Int64() (int64, error) {
 		var vi int32
 		vi, err = v.Int32()
 		i = int64(vi)
+	case KindDuration:
+		vi, _ := v.raw.(time.Duration)
+		return int64(vi), nil
 	default:
 		if v.isCustom {
 			vv, err := v.CloneAs(KindInt64)
@@ -269,6 +283,9 @@ func (v Value) Uint() (uint, error) {
 		if vv, ok := v.raw.(uint); ok {
 			return vv, nil
 		}
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		return uint(vi), nil
 	}
 	if v.isCustom {
 		vv, err := v.CloneAs(KindUint)
@@ -294,6 +311,12 @@ func (v Value) Uint8() (uint8, error) {
 			return 0, err
 		}
 		return vv.Uint8()
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		if vi > math.MaxUint8 {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
+		return uint8(vi), nil
 	}
 	val, _, err := parseUint(v.str, 10, 8)
 	return uint8(val), err
@@ -316,6 +339,12 @@ func (v Value) Uint16() (uint16, error) {
 		var vi uint8
 		vi, err = v.Uint8()
 		return uint16(vi), err
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		if vi > math.MaxUint16 {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
+		return uint16(vi), nil
 	} else if v.isCustom {
 		vv, err := v.CloneAs(KindUint16)
 		if err != nil {
@@ -354,6 +383,12 @@ func (v Value) Uint32() (uint32, error) {
 	case KindInt16:
 		var vi uint16
 		vi, err = v.Uint16()
+		i = uint32(vi)
+	case KindDuration:
+		vi, _ := v.raw.(time.Duration)
+		if vi > math.MaxUint32 {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
 		i = uint32(vi)
 	default:
 		if v.isCustom {
@@ -399,6 +434,9 @@ func (v Value) Uint64() (uint64, error) {
 		var vi uint32
 		vi, err = v.Uint32()
 		i = uint64(vi)
+	case KindDuration:
+		vi, _ := v.raw.(time.Duration)
+		i = uint64(vi)
 	default:
 		if v.isCustom {
 			vv, err := v.CloneAs(KindUint64)
@@ -425,7 +463,11 @@ func (v Value) Float32() (float32, error) {
 			return 0, err
 		}
 		return vv.Float32()
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		return float32(vi.Nanoseconds()), nil
 	}
+
 	val, _, err := parseFloat(v.str, 32)
 	return float32(val), err
 }
@@ -441,6 +483,9 @@ func (v Value) Float64() (float64, error) {
 		if vv, ok := v.raw.(float32); ok {
 			return float64(vv), nil
 		}
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		return float64(vi), nil
 	}
 	if v.isCustom {
 		vv, err := v.CloneAs(KindFloat64)
@@ -466,6 +511,10 @@ func (v Value) Complex64() (complex64, error) {
 			return 0, err
 		}
 		return vv.Complex64()
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		realPart := float32(vi.Nanoseconds())
+		return complex(realPart, 0), nil
 	}
 	val, _, err := parseComplex64(v.str)
 	return val, err
@@ -484,6 +533,9 @@ func (v Value) Complex128() (complex128, error) {
 			return 0, err
 		}
 		return vv.Complex128()
+	} else if v.kind == KindDuration {
+		vi, _ := v.raw.(time.Duration)
+		return complex(float64(vi), 0), nil
 	}
 	val, _, err := parseComplex128(v.str)
 	return val, err
@@ -505,6 +557,24 @@ func (v Value) Uintptr() (uintptr, error) {
 	}
 	val, _, err := parseUint(v.str, 10, 64)
 	return uintptr(val), err
+}
+
+func (v Value) Duration() (time.Duration, error) {
+	if v.kind == KindDuration {
+		if vv, ok := v.raw.(time.Duration); ok {
+			return vv, nil
+		}
+	}
+	if v.isCustom {
+		vv, err := v.CloneAs(KindDuration)
+		if err != nil {
+			return 0, err
+		}
+		return vv.Duration()
+	}
+
+	val, err := time.ParseDuration(v.str)
+	return val, err
 }
 
 // FormatInt returns the string representation of i in the given base,

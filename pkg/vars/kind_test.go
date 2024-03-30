@@ -234,7 +234,7 @@ func TestCustomKinds(t *testing.T) {
 		len        int
 		typtest    kindTest
 	}{
-		{time.Duration(-123456), int64(-123456), vars.KindInt64, "-123.456µs", 11, kindTest{
+		{time.Duration(-123456), time.Duration(-123456), vars.KindDuration, "-123.456µs", 11, kindTest{
 			Bool:       false,
 			Float32:    -123456,
 			Float64:    -123456,
@@ -250,29 +250,29 @@ func TestCustomKinds(t *testing.T) {
 			Uint16:     7616,
 			Uint32:     4294843840,
 			Uint64:     18446744073709428160,
-			Uintptr:    18446744073709428160,
-			String:     "-123456",
+			Uintptr:    0,
+			String:     "-123.456µs",
 		}},
-		{time.Duration(123456), int64(123456), vars.KindInt64, "123.456µs", 10, kindTest{
+		{time.Duration(123456), time.Duration(123456), vars.KindDuration, "123.456µs", 10, kindTest{
 			Bool:       false,
 			Float32:    123456,
 			Float64:    123456,
 			Complex64:  complex(123456, 0),
 			Complex128: complex(123456, 0),
 			Int:        123456,
-			Int8:       64,
-			Int16:      -7616,
+			Int8:       0,
+			Int16:      0,
 			Int32:      123456,
 			Int64:      123456,
 			Uint:       123456,
-			Uint8:      64,
-			Uint16:     57920,
+			Uint8:      0,
+			Uint16:     0,
 			Uint32:     123456,
 			Uint64:     123456,
-			Uintptr:    123456,
-			String:     "123456",
+			Uintptr:    0,
+			String:     "123.456µs",
 		}},
-		{time.Duration(123), int64(123), vars.KindInt64, "123ns", 5, kindTest{
+		{time.Duration(123), time.Duration(123), vars.KindDuration, "123ns", 5, kindTest{
 			Bool:       false,
 			Float32:    123,
 			Float64:    123,
@@ -288,8 +288,8 @@ func TestCustomKinds(t *testing.T) {
 			Uint16:     123,
 			Uint32:     123,
 			Uint64:     123,
-			Uintptr:    123,
-			String:     "123",
+			Uintptr:    0,
+			String:     "123ns",
 		}},
 		{time.Month(1), int(1), vars.KindInt, "January", 7, kindTest{
 			Bool:       true,
@@ -756,7 +756,7 @@ func TestCustomKinds(t *testing.T) {
 			if test.orig != nil {
 				testutils.NoError(t, err)
 			}
-			testutils.Equal(t, test.typ.String(), v.Kind().String())
+			testutils.Equal(t, test.typ.String(), v.Kind().String(), "type string")
 			testutils.EqualAny(t, test.underlying, v.Any())
 			testutils.Equal(t, test.str, v.String())
 
