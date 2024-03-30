@@ -324,7 +324,7 @@ func (i *initializer) unsafeInitRootCommand(m *Main, settingsb *settings.Bluepri
 		m.root.AddFlag(varflag.BoolFunc(flag.Name, flag.Value, flag.Usage, flag.Aliases...))
 	}
 
-	m.root.AddFlag(varflag.StringFunc("profile", "default", "session profile to be used"))
+	m.root.AddFlag(varflag.StringFunc("profile", "public", "session profile to be used"))
 
 	if err := m.root.verify(); err != nil {
 		return err
@@ -413,7 +413,7 @@ func (i *initializer) unsafeConfigurePaths(m *Main, settingsb *settings.Blueprin
 	}
 
 	dir := m.slug
-	if profileName != "default" {
+	if profileName != "public" {
 		dir = filepath.Join(dir, "profiles", profileName)
 	}
 
@@ -534,8 +534,11 @@ func (i *initializer) unsafeConfigureProfile(m *Main, settingsb *settings.Bluepr
 
 	var pref *settings.Preferences
 	if _, err := os.Stat(cfile); err != nil {
-		m.sess.Log().SystemDebug("no profile found", slog.String("path", cfile))
-		if !errors.Is(err, fs.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
+			if profileName != "public" && profileName != "public-devel" {
+				return fmt.Errorf("%w: profile %s does not exist", Error, profileName)
+			}
+		} else {
 			return err
 		}
 		if err := m.sess.opts.Set("app.firstuse", true); err != nil {
