@@ -336,6 +336,8 @@ func (c *Cron) Stop() context.Context {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		c.jobWaiter.Wait()
+		// BUG(mkungla) prevent immediate exit
+		time.Sleep(time.Nanosecond)
 		cancel()
 	}()
 	return ctx
