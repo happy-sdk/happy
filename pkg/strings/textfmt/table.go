@@ -16,6 +16,7 @@ type Table struct {
 	SkipEmptyRows bool
 	rows          [][]string
 	cols          int
+	dividers      map[int]bool
 }
 
 func (t *Table) AddRow(cols ...string) {
@@ -28,6 +29,13 @@ func (t *Table) AddRow(cols ...string) {
 	if len(cols) > t.cols {
 		t.cols = len(cols)
 	}
+}
+
+func (t *Table) AddDivider() {
+	if t.dividers == nil {
+		t.dividers = make(map[int]bool)
+	}
+	t.dividers[len(t.rows)] = true
 }
 
 func (t *Table) String() string {
@@ -51,10 +59,18 @@ func (t *Table) String() string {
 		b.WriteString(t.buildBorder('┌', '┬', '┐', maxColWidth))
 	}
 	for i, row := range t.rows {
+		// divider
+		if t.dividers != nil {
+			if _, ok := t.dividers[i]; ok {
+				b.WriteString(t.buildBorder('├', '┼', '┤', maxColWidth))
+			}
+		}
 		b.WriteString(t.formatRow(row, maxColWidth))
+		// header
 		if i == 0 && t.WithHeader {
 			b.WriteString(t.buildBorder('├', '┼', '┤', maxColWidth))
 		}
+
 	}
 
 	b.WriteString(t.buildBorder('└', '┴', '┘', maxColWidth))
@@ -64,12 +80,14 @@ func (t *Table) String() string {
 
 func (t *Table) calculateMaxColumnWidths() (cw []int, total int) {
 	maxColWidth := make([]int, t.cols)
+	var totalWidthOfCols int
 
 	for _, row := range t.rows {
 		for i, col := range row {
 			colLen := len(col) + 2
 			if colLen > maxColWidth[i] {
 				maxColWidth[i] = colLen
+				totalWidthOfCols += colLen
 			}
 
 		}
@@ -78,6 +96,7 @@ func (t *Table) calculateMaxColumnWidths() (cw []int, total int) {
 	for _, w := range maxColWidth {
 		total += w
 	}
+
 	return maxColWidth, total
 }
 
@@ -94,8 +113,6 @@ func (t *Table) buildBorder(left, middle, right rune, clens []int) string {
 	b.WriteRune('\n')
 	return b.String()
 }
-
-// ... [Other parts of your Table struct] ...
 
 func (t *Table) formatRow(row []string, colWidths []int) string {
 	var b strings.Builder
