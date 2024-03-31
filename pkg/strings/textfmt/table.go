@@ -80,24 +80,22 @@ func (t *Table) String() string {
 
 func (t *Table) calculateMaxColumnWidths() (cw []int, total int) {
 	maxColWidth := make([]int, t.cols)
-	var totalWidthOfCols int
 
 	for _, row := range t.rows {
 		for i, col := range row {
-			colLen := len(col) + 2
+			colLen := utf8.RuneCountInString(col) + 2
 			if colLen > maxColWidth[i] {
 				maxColWidth[i] = colLen
-				totalWidthOfCols += colLen
 			}
-
 		}
 	}
-	total = -1
-	for _, w := range maxColWidth {
-		total += w
-	}
 
-	return maxColWidth, total
+	totalWidthOfCols := 0
+	for _, w := range maxColWidth {
+		totalWidthOfCols += w
+	}
+	totalWidthOfCols++
+	return maxColWidth, totalWidthOfCols
 }
 
 func (t *Table) buildBorder(left, middle, right rune, clens []int) string {
