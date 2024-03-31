@@ -256,7 +256,7 @@ func getConfig() []options.OptionSpec {
 			options.NoopValueValidator,
 		),
 		options.NewOption(
-			"app.profile.file",
+			"app.profile.preferences",
 			"",
 			"file path of current settings profile file",
 			options.KindConfig|options.KindReadOnly,

@@ -528,18 +528,14 @@ func (i *initializer) unsafeConfigureProfile(m *Main, settingsb *settings.Bluepr
 		return fmt.Errorf("%w: config path empty", Error)
 	}
 	cfile := filepath.Join(cpath, "profile.preferences")
-	if err := m.sess.opts.Set("app.profile.file", cfile); err != nil {
+	if err := m.sess.opts.Set("app.profile.preferences", cfile); err != nil {
 		return err
 	}
 
 	var pref *settings.Preferences
 	if _, err := os.Stat(cfile); err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			if profileName != "public" && profileName != "public-devel" {
-				return fmt.Errorf("%w: profile %s does not exist", Error, profileName)
-			}
-		} else {
-			return err
+		if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("%w: error loading profile %s - %s", Error, profileName, err.Error())
 		}
 		if err := m.sess.opts.Set("app.firstuse", true); err != nil {
 			return err

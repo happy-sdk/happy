@@ -84,7 +84,7 @@ func TestDefaultConfig(t *testing.T) {
 
 		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/public-devel", tmpdir), sess.Get("app.fs.path.config").String(), "app.fs.path.config")
 		testutils.Equal(t, fmt.Sprintf("%s/cache/com.github.happy-sdk.happy-test/profiles/public-devel", tmpdir), sess.Get("app.fs.path.cache").String(), "app.fs.path.cache")
-		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/public-devel/profile.preferences", tmpdir), sess.Get("app.profile.file").String(), "app.profile.file")
+		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/public-devel/profile.preferences", tmpdir), sess.Get("app.profile.preferences").String(), "app.profile.preferences")
 		testutils.Equal(t, fmt.Sprintf("%s/config/com.github.happy-sdk.happy-test/profiles/public-devel/pids", tmpdir), sess.Get("app.fs.path.pids").String(), "app.fs.path.pids")
 		testutils.Equal(t, os.Getpid(), sess.Get("app.pid").Int(), "app.pid")
 

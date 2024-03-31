@@ -246,6 +246,10 @@ func (m *Main) Run() {
 	osmain(m.exitCh)
 }
 
+func (m *Main) AddInfo(paragraph string) *Main {
+	m.root.AddInfo(paragraph)
+	return m
+}
 func (m *Main) printVersion() {
 	fmt.Println(m.sess.Get("app.version").String())
 }
@@ -459,7 +463,8 @@ func (m *Main) save() error {
 	if !m.sess.isValid() {
 		return errSessionInvalid
 	}
-	profileFilePath := m.sess.Get("app.profile.file").String()
+
+	profileFilePath := m.sess.Get("app.profile.preferences").String()
 	if len(profileFilePath) == 0 {
 		return fmt.Errorf("profile file path is empty")
 	}
