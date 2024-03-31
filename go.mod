@@ -9,7 +9,7 @@ require (
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.4.1
 	github.com/happy-sdk/happy/pkg/settings v0.1.0
 	github.com/happy-sdk/happy/pkg/strings/humanize v0.2.0
-	github.com/happy-sdk/happy/pkg/strings/textfmt v0.3.0
+	github.com/happy-sdk/happy/pkg/strings/textfmt v0.3.1
 	github.com/happy-sdk/happy/pkg/vars v0.10.0
 	github.com/happy-sdk/happy/pkg/version v0.1.2
 	golang.org/x/sys v0.17.0
