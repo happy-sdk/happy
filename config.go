@@ -11,30 +11,41 @@ import (
 	"testing"
 
 	"github.com/happy-sdk/happy/pkg/branding"
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/version"
-	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/networking/address"
-	"github.com/happy-sdk/happy/sdk/options"
+
+	"github.com/happy-sdk/happy/sdk/cli"
+	"github.com/happy-sdk/happy/sdk/datetime"
+	"github.com/happy-sdk/happy/sdk/instance"
+	"github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy/sdk/services"
+	"github.com/happy-sdk/happy/sdk/stats"
 	"golang.org/x/text/language"
 )
 
 type Settings struct {
-	Name                 settings.String   `key:"app.name" default:"Happy Prototype"`
-	Slug                 settings.String   `key:"app.slug" default:""`
-	Description          settings.String   `key:"app.description" default:""`
-	CopyrightBy          settings.String   `key:"app.copyright.by"`
-	CopyrightSince       settings.Uint     `key:"app.copyright.since" default:"0" mutation:"once"`
-	License              settings.String   `key:"app.license"`
-	MainArgcMax          settings.Uint     `key:"app.main.argn_max" default:"0"`
-	TimeLocation         settings.String   `key:"app.datetime.location,save" default:"Local" mutation:"mutable"`
-	EngineThrottleTicks  settings.Duration `key:"app.engine.throttle_ticks,save" default:"1s" mutation:"once"`
-	ServiceLoaderTimeout settings.Duration `key:"app.service_loader.timeout" default:"30s" mutation:"once"`
-	Instance             instance.Settings `key:"app.instance"`
-	StatsEnabled         settings.Bool     `key:"app.stats.enabled" default:"false" mutation:"once"`
-	global               []settings.Settings
-	migrations           map[string]string
-	errs                 []error
+	// Appication info
+	Name           settings.String `key:"app.name" default:"Happy Prototype"`
+	Slug           settings.String `key:"app.slug" default:"" mutation:"once"`
+	Identifier     settings.String `key:"app.identifier"`
+	Description    settings.String `key:"app.description" default:"This application is built using the Happy-SDK to provide enhanced functionality and features."`
+	CopyrightBy    settings.String `key:"app.copyright_by" default:"Anonymous"`
+	CopyrightSince settings.Uint   `key:"app.copyright_since" default:"0" mutation:"once"`
+	License        settings.String `key:"app.license" default:"NOASSERTION"`
+
+	// Application settings
+	CLI      cli.Settings      `key:"app.cli"`
+	DateTime datetime.Settings `key:"app.datetime"`
+	Instance instance.Settings `key:"app.instance"`
+	Logging  logging.Settings  `key:"app.logging"`
+	Services services.Settings `key:"app.services"`
+	Stats    stats.Settings    `key:"app.stats"`
+
+	global     []settings.Settings
+	migrations map[string]string
+	errs       []error
 }
 
 // Blueprint returns a blueprint for the settings.
@@ -91,7 +102,7 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 		}
 	}
 
-	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.main.argn_max")
+	mainArgcMaxSpec, mainArgcMaxErr := settingsb.GetSpec("app.cli.argn_max")
 	if mainArgcMaxErr != nil {
 		return mainArgcMaxErr
 	}
@@ -107,7 +118,7 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 	if slugErr != nil {
 		return slugErr
 	}
-	insRevDNSSpec, insRevDNSErr := settingsb.GetSpec("app.instance.reverse_dns")
+	insRevDNSSpec, insRevDNSErr := settingsb.GetSpec("app.identifier")
 	if insRevDNSErr != nil {
 		return insRevDNSErr
 	}
@@ -145,10 +156,10 @@ func (i *initializer) unsafeInitSettings(m *Main, settingsb *settings.Blueprint)
 	if len(rdns) == 0 {
 		rdns = curr.ReverseDNS()
 		if len(rdns) == 0 {
-			return fmt.Errorf("could not find app.instance.reverse_dns")
+			return fmt.Errorf("could not find app.identifier")
 		}
 	}
-	if err := settingsb.SetDefault("app.instance.reverse_dns", rdns); err != nil {
+	if err := settingsb.SetDefault("app.identifier", rdns); err != nil {
 		return err
 	}
 

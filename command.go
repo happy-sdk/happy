@@ -11,10 +11,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk"
-	"github.com/happy-sdk/happy/sdk/options"
 )
 
 var (

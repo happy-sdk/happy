@@ -16,10 +16,10 @@ import (
 
 	"log/slog"
 
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/logging"
-	"github.com/happy-sdk/happy/sdk/options"
 	"github.com/happy-sdk/happy/sdk/stats"
 )
 

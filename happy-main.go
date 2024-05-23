@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk"
@@ -24,7 +25,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/migration"
-	"github.com/happy-sdk/happy/sdk/options"
 )
 
 type Main struct {
@@ -343,8 +343,8 @@ func (m *Main) help() error {
 			Name:           m.sess.Get("app.name").String(),
 			Description:    m.cmd.desc,
 			Version:        m.sess.Get("app.version").String(),
-			CopyrightBy:    m.sess.Get("app.copyright.by").String(),
-			CopyrightSince: m.sess.Get("app.copyright.since").Int(),
+			CopyrightBy:    m.sess.Get("app.copyright_by").String(),
+			CopyrightSince: m.sess.Get("app.copyright_since").Int(),
 			License:        m.sess.Get("app.license").String(),
 			Address:        m.sess.Get("app.address").String(),
 			Usage:          m.cmd.getUsage(),

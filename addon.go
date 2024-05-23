@@ -11,10 +11,10 @@ import (
 	"runtime/debug"
 	"strings"
 
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/version"
-	"github.com/happy-sdk/happy/sdk/options"
 )
 
 var ErrAddon = fmt.Errorf("%w:addon", Error)

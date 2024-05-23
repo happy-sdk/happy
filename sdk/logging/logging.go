@@ -13,7 +13,22 @@ import (
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/happy-sdk/happy/pkg/settings"
 )
+
+type Settings struct {
+	Level Level `key:"level,save" default:"info" mutation:"once"`
+}
+
+func (s Settings) Blueprint() (*settings.Blueprint, error) {
+	b, err := settings.New(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
 
 type Level int
 
@@ -76,6 +91,27 @@ func (l Level) String() string {
 		return str
 	}
 	return slog.Level(l).String()
+}
+
+func (l Level) MarshalSetting() ([]byte, error) {
+	// Simply cast the String to a byte slice.
+	return []byte(l.String()), nil
+}
+
+func (l *Level) UnmarshalSetting(data []byte) error {
+	// Directly convert the byte slice to String.
+	lvl := string(data)
+	for k, v := range lvlval {
+		if v == lvl {
+			*l = k
+			return nil
+		}
+	}
+	return nil
+}
+
+func (l Level) SettingKind() settings.Kind {
+	return settings.KindString
 }
 
 type Logger interface {

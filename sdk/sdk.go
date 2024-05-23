@@ -4,7 +4,7 @@
 
 package sdk
 
-import "github.com/happy-sdk/happy/sdk/options"
+import "github.com/happy-sdk/happy/pkg/options"
 
 func Option(key string, dval any, desc string, vfunc options.ValueValidator) options.OptionSpec {
 	return options.NewOption(key, dval, desc, options.KindRuntime, vfunc)

@@ -41,6 +41,9 @@ func (b *Blueprint) AddSpec(spec SettingSpec) error {
 	if b.specs == nil {
 		b.specs = make(map[string]SettingSpec)
 	}
+	if b.groups == nil {
+		b.groups = make(map[string]*Blueprint)
+	}
 	if err := spec.Validate(); err != nil {
 		return err
 	}
@@ -207,7 +210,7 @@ func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {
 		if g, ok := b.groups[group]; ok {
 			return g.GetSpec(skey)
 		}
-		return spec, fmt.Errorf("no settings group found %s in %s (%s)", group, b.name, b.pkg)
+		return spec, fmt.Errorf("no settings group %s found in %s (%s) key: %s", group, b.name, b.pkg, key)
 	}
 
 	if g, ok := b.groups[key]; ok {

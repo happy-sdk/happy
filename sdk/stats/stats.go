@@ -11,10 +11,24 @@ import (
 	"sync"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/humanize"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/vars"
 )
+
+type Settings struct {
+	Enabled settings.Bool `key:"enabled,save" default:"false" mutation:"once"`
+}
+
+func (s Settings) Blueprint() (*settings.Blueprint, error) {
+	b, err := settings.New(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
 
 type Runtime struct {
 	title       string

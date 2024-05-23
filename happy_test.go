@@ -15,31 +15,46 @@ import (
 	"github.com/happy-sdk/happy/sdk/logging"
 )
 
+func TestDefaultInfo(t *testing.T) {
+	log := logging.NewTestLogger(logging.LevelError)
+
+	app := happy.New(happy.Settings{})
+	app.WithLogger(log)
+	app.Do(func(sess *happy.Session, args happy.Args) error {
+		testutils.Equal(t, "Happy Prototype", sess.Get("app.name").String(), "app.name")
+		testutils.Equal(t, "com.github.happy-sdk.happy-test", sess.Get("app.slug").String(), "app.slug")
+		testutils.Equal(t, "This application is built using the Happy-SDK to provide enhanced functionality and features.", sess.Get("app.description").String(), "app.description")
+		testutils.Equal(t, "Anonymous", sess.Get("app.copyright_by").String(), "app.copyright_by")
+		testutils.Equal(t, time.Now().Year(), sess.Get("app.copyright_since").Int(), "app.copyright_since")
+		testutils.Equal(t, "NOASSERTION", sess.Get("app.license").String(), "app.license")
+		testutils.Equal(t, "com.github.happy-sdk.happy.test", sess.Get("app.identifier").String(), "app.identifier")
+		return nil
+	})
+
+	app.Run()
+}
+
 func TestDefaultSettings(t *testing.T) {
 	log := logging.NewTestLogger(logging.LevelError)
 
 	app := happy.New(happy.Settings{})
 	app.WithLogger(log)
 	app.Do(func(sess *happy.Session, args happy.Args) error {
-		testutils.Equal(t, "", sess.Get("app.copyright.by").String(), "app.copyright.by")
-		testutils.Equal(t, time.Now().Year(), sess.Get("app.copyright.since").Int(), "app.copyright.since")
+		// CLI
+		testutils.Equal(t, "0", sess.Get("app.cli.argn_max").String(), "app.cli.argn_max")
+		// DateTime
 		testutils.Equal(t, "Local", sess.Get("app.datetime.location").String(), "app.datetime.location")
-		testutils.Equal(t, "", sess.Get("app.description").String(), "app.description")
-		testutils.Equal(t, "", sess.Get("app.license").String(), "app.license")
-		testutils.Equal(t, "0", sess.Get("app.main.argn_max").String(), "app.main.argn_max")
-		testutils.Equal(t, "Happy Prototype", sess.Get("app.name").String(), "app.name")
-
-		testutils.Equal(t, "30s", sess.Get("app.service_loader.timeout").String(), "app.service_loader.timeout")
-		testutils.Equal(t, time.Second*30, sess.Get("app.service_loader.timeout").Duration(), "app.service_loader.timeout")
-
-		testutils.Equal(t, "1s", sess.Get("app.engine.throttle_ticks").String(), "app.engine.throttle_ticks")
-		testutils.Equal(t, time.Second*1, sess.Get("app.engine.throttle_ticks").Duration(), "app.engine.throttle_ticks")
-
+		// Instance
+		testutils.Equal(t, "1s", sess.Get("app.instance.throttle_ticks").String(), "app.engine.throttle_ticks")
+		testutils.Equal(t, time.Second*1, sess.Get("app.instance.throttle_ticks").Duration(), "app.engine.throttle_ticks")
 		testutils.Equal(t, "1", sess.Get("app.instance.max").String(), "app.instance.max")
 		testutils.Equal(t, 1, sess.Get("app.instance.max").Int(), "app.instance.max")
-		testutils.Equal(t, "com.github.happy-sdk.happy.test", sess.Get("app.instance.reverse_dns").String(), "app.instance.reverse_dns")
+		// Logging
 
-		testutils.Equal(t, "com.github.happy-sdk.happy-test", sess.Get("app.slug").String(), "app.slug")
+		// Services
+		testutils.Equal(t, "30s", sess.Get("app.services.loader_timeout").String(), "app.services.loader_timeout")
+		testutils.Equal(t, time.Second*30, sess.Get("app.services.loader_timeout").Duration(), "app.services.loader_timeout")
+		// Stats
 		testutils.Equal(t, false, sess.Get("app.stats.enabled").Bool(), "app.stats.enabled")
 
 		return nil

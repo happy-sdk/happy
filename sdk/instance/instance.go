@@ -19,9 +19,8 @@ import (
 )
 
 type Settings struct {
-	Slug       settings.String `key:"slug" default:"" mutation:"once"`
-	Max        settings.Uint   `key:"max" default:"1" mutation:"once"`
-	ReverseDNS settings.String `key:"reverse_dns" default:"" mutation:"once"`
+	Max           settings.Uint     `key:"max" default:"1" mutation:"once"`
+	ThrottleTicks settings.Duration `key:"throttle_ticks,save" default:"1s" mutation:"once"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {

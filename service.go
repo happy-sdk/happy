@@ -13,10 +13,10 @@ import (
 
 	"log/slog"
 
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/scheduling/cron"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/networking/address"
-	"github.com/happy-sdk/happy/sdk/options"
 )
 
 var (

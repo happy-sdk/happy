@@ -17,12 +17,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/migration"
-	"github.com/happy-sdk/happy/sdk/options"
 )
 
 type initializer struct {
@@ -235,6 +235,10 @@ func (i *initializer) Initialize(m *Main) error {
 	}
 	i.logQueue = nil
 	if err := i.unsafeConfigure(m, settingsb); err != nil {
+		return err
+	}
+
+	if err := m.sess.opts.Set("app.pid", os.Getpid()); err != nil {
 		return err
 	}
 
@@ -573,8 +577,8 @@ func (i *initializer) unsafeConfigureProfile(m *Main, settingsb *settings.Bluepr
 	if err != nil {
 		return err
 	}
-	if !profile.Get("app.copyright.since").IsSet() {
-		if err := profile.Set("app.copyright.since", settings.Uint(time.Now().Year())); err != nil {
+	if !profile.Get("app.copyright_since").IsSet() {
+		if err := profile.Set("app.copyright_since", settings.Uint(time.Now().Year())); err != nil {
 			return err
 		}
 	}
@@ -712,9 +716,6 @@ func (i *initializer) boot(m *Main) error {
 	}
 
 	if err := m.instance.Boot(m.sess.Get("app.fs.path.pids").String()); err != nil {
-		return err
-	}
-	if err := m.sess.opts.Set("app.pid", m.instance.PID()); err != nil {
 		return err
 	}
 
