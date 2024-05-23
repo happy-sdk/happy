@@ -55,7 +55,6 @@ type (
 const (
 	KindRuntime Kind = 1 << iota
 	KindReadOnly
-	KindSettings
 	KindConfig
 )
 
@@ -141,6 +140,7 @@ func (opts *Options) set(key string, value any, override bool) error {
 	if key == "*" {
 		return nil
 	}
+
 	if !opts.Accepts(key) {
 		return fmt.Errorf(
 			"%w: %s does not accept option %s",
@@ -153,7 +153,7 @@ func (opts *Options) set(key string, value any, override bool) error {
 	if opts.sealed && opts.db.Get(key).ReadOnly() {
 		if !override {
 			return fmt.Errorf(
-				"%w: can not set %s for %s %t",
+				"%w: can not set %s for %s, (opts sealed %t)",
 				ErrOptionReadOnly,
 				key,
 				opts.name,
@@ -161,6 +161,9 @@ func (opts *Options) set(key string, value any, override bool) error {
 			)
 		}
 		// remove old readonly option
+	}
+
+	if override {
 		opts.db.Delete(key)
 	}
 
@@ -171,7 +174,7 @@ func (opts *Options) set(key string, value any, override bool) error {
 
 	// there is no validation required
 	if opts.config == nil {
-		return opts.db.Store(key, val)
+		return opts.db.StoreReadOnly(key, val, opts.db.Get(key).ReadOnly())
 	}
 
 	var cnf *OptionSpec
@@ -192,7 +195,7 @@ func (opts *Options) set(key string, value any, override bool) error {
 		}
 	}
 
-	return opts.db.StoreReadOnly(key, val, cnf.kind&KindReadOnly != 0 && opts.sealed)
+	return opts.db.StoreReadOnly(key, val, cnf.kind&KindReadOnly != 0)
 }
 
 func (opts *Options) Set(key string, value any) error {
