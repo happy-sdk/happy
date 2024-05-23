@@ -9,42 +9,30 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
-	"github.com/happy-sdk/happy/sdk/options"
 )
 
 func Info() *happy.Command {
 	cmd := happy.NewCommand("info",
 		happy.Option("description", "Display information about application"),
 	)
+
 	cmd.Do(func(sess *happy.Session, args happy.Args) error {
-
-		settbl := textfmt.Table{
-			Title:      "APPLICATION SETTINGS",
-			WithHeader: true,
+		infoTbl := textfmt.Table{
+			Title: "APPLICATION INFO",
 		}
-		settbl.AddRow("KEY", "KIND", "IS SET", "PERSISTENT", "MUTABILITY", "VALUE", "DESCRIPTION")
-		for _, s := range sess.Settings().All() {
-			settbl.AddRow(s.Key(), s.Kind().String(), fmt.Sprint(s.IsSet()), fmt.Sprint(s.Persistent()), fmt.Sprint(s.Mutability()), s.Value().String(), s.Description())
 
-		}
-		fmt.Println(settbl.String())
+		infoTbl.AddRow("Name", sess.Get("app.name").String())
+		infoTbl.AddRow("Slug", sess.Get("app.slug").String())
+		infoTbl.AddRow("Description", sess.Get("app.description").String())
+		infoTbl.AddRow("Copyright by", sess.Get("app.copyright_by").String())
+		infoTbl.AddRow("Copyright since", sess.Get("app.copyright_since").String())
+		infoTbl.AddRow("License", sess.Get("app.license").String())
+		infoTbl.AddRow("Identifier", sess.Get("app.identifier").String())
+		infoTbl.AddRow("", "")
+		infoTbl.AddRow("Version", sess.Get("app.version").String())
 
-		opttbl := textfmt.Table{
-			Title:      "APPLICATION OPTIONS",
-			WithHeader: true,
-		}
-		opttbl.AddRow("KEY", "KIND", "READONLY", "VALUE")
-		sess.Opts().Range(func(opt options.Option) bool {
-			opttbl.AddRow(opt.Name(), opt.Kind().String(), fmt.Sprintf("%t", opt.ReadOnly()), opt.Value().String())
-			return true
-		})
-		fmt.Println(opttbl.String())
+		fmt.Println(infoTbl.String())
 
-		// sess.Log().Debug("CONFIG")
-		// sess.Config().Range(func(v vars.Variable) bool {
-		// 	sess.Log().Debug(v.Name(), slog.String("value", v.String()))
-		// 	return true
-		// })
 		return nil
 	})
 	return cmd

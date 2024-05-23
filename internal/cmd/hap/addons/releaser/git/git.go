@@ -10,14 +10,14 @@ import (
 	"os/exec"
 
 	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/sdk/cli"
+	"github.com/happy-sdk/happy/sdk/cli/oscmd"
 )
 
 func AddAndCommit(sess *happy.Session, wd, typ, scope, msg string) error {
 	// Check for uncommitted changes
 	statusCmd := exec.Command("git", "status", "--porcelain")
 	statusCmd.Dir = wd
-	status, err := cli.ExecCommandRaw(sess, statusCmd)
+	status, err := oscmd.ExecRaw(sess, statusCmd)
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func AddAndCommit(sess *happy.Session, wd, typ, scope, msg string) error {
 
 	gitadd := exec.Command("git", "add", "-A")
 	gitadd.Dir = wd
-	if err := cli.RunCommand(sess, gitadd); err != nil {
+	if err := oscmd.Run(sess, gitadd); err != nil {
 		return err
 	}
 	commitMsg := fmt.Sprintf("%s(%s): %s", typ, scope, msg)
@@ -36,7 +36,7 @@ func AddAndCommit(sess *happy.Session, wd, typ, scope, msg string) error {
 	}
 	gitcommit := exec.Command("git", "commit", "-sm", commitMsg)
 	gitcommit.Dir = wd
-	if err := cli.RunCommand(sess, gitcommit); err != nil {
+	if err := oscmd.Run(sess, gitcommit); err != nil {
 		return err
 	}
 	return nil

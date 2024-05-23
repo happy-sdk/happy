@@ -13,7 +13,7 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser/git"
-	"github.com/happy-sdk/happy/sdk/cli"
+	"github.com/happy-sdk/happy/sdk/cli/oscmd"
 )
 
 func (p *Package) Release(sess *happy.Session) error {
@@ -34,7 +34,7 @@ func (p *Package) Release(sess *happy.Session) error {
 
 	gomodtidy := exec.Command("go", "mod", "tidy")
 	gomodtidy.Dir = p.Dir
-	if err := cli.RunCommand(sess, gomodtidy); err != nil {
+	if err := oscmd.Run(sess, gomodtidy); err != nil {
 		return err
 	}
 	localpath := strings.TrimSuffix(p.TagPrefix, "/")
@@ -48,7 +48,7 @@ func (p *Package) Release(sess *happy.Session) error {
 
 	gitpush := exec.Command("git", "push", origin, branch)
 	gitpush.Dir = sess.Get("releaser.working.directory").String()
-	if err := cli.RunCommand(sess, gitpush); err != nil {
+	if err := oscmd.Run(sess, gitpush); err != nil {
 		return err
 	}
 
@@ -59,13 +59,13 @@ func (p *Package) Release(sess *happy.Session) error {
 
 	gitag := exec.Command("git", "tag", "-sm", fmt.Sprintf("%q", p.NextRelease), p.NextRelease)
 	gitag.Dir = sess.Get("releaser.working.directory").String()
-	if err := cli.RunCommand(sess, gitag); err != nil {
+	if err := oscmd.Run(sess, gitag); err != nil {
 		return err
 	}
 
 	gitpushtag := exec.Command("git", "push", origin, p.NextRelease)
 	gitpushtag.Dir = sess.Get("releaser.working.directory").String()
-	if err := cli.RunCommand(sess, gitpushtag); err != nil {
+	if err := oscmd.Run(sess, gitpushtag); err != nil {
 		return err
 	}
 

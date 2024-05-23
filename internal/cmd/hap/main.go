@@ -8,7 +8,9 @@ import (
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser"
 	"github.com/happy-sdk/happy/pkg/settings"
+	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/commands"
+	"github.com/happy-sdk/happy/sdk/datetime"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 )
@@ -37,12 +39,16 @@ func hap() *happy.Main {
 		CopyrightBy:    "The Happy Authors",
 		CopyrightSince: 2019,
 		License:        "Apache-2.0",
-		TimeLocation:   "Local",
-		MainArgcMax:    5,
 		Description:    "Happy Prototyper provides commands to work with Happy-SDK prototypes.",
 		// ThrottleTicks:  settings.Duration(time.Millisecond * 100),
 		Instance: instance.Settings{
 			Max: 100,
+		},
+		DateTime: datetime.Settings{
+			Location: "Local",
+		},
+		CLI: cli.Settings{
+			MainArgcMax: 5,
 		},
 	}
 

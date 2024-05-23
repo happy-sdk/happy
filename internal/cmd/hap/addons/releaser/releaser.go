@@ -12,11 +12,11 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser/module"
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk"
-	"github.com/happy-sdk/happy/sdk/options"
 )
 
 type Settings struct {

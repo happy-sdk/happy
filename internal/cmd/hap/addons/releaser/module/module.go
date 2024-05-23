@@ -20,7 +20,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser/changelog"
-	"github.com/happy-sdk/happy/sdk/cli"
+	"github.com/happy-sdk/happy/sdk/cli/oscmd"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/semver"
 )
@@ -95,7 +95,7 @@ func (p *Package) LoadReleaseInfo(sess *happy.Session) error {
 	sess.Log().Debug("getting latest release", slog.String("package", p.Modfile.Module.Mod.Path))
 	tagscmd := exec.Command("git", "tag", "--list", p.TagPrefix+"*")
 	tagscmd.Dir = p.Dir
-	tagsout, err := cli.ExecCommand(sess, tagscmd)
+	tagsout, err := oscmd.Exec(sess, tagscmd)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (p *Package) getChangelog(sess *happy.Session) error {
 	lastTagQuery = append(lastTagQuery, []string{"--pretty=format::COMMIT_START:%nSHORT:%h%nLONG:%H%nAUTHOR:%an%nMESSAGE:%B:COMMIT_END:", "--", localpath}...)
 	logcmd := exec.Command("git", lastTagQuery...)
 	logcmd.Dir = sess.Get("releaser.working.directory").String()
-	logout, err := cli.ExecCommand(sess, logcmd)
+	logout, err := oscmd.Exec(sess, logcmd)
 	if err != nil {
 		return err
 	}

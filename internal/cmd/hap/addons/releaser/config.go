@@ -20,7 +20,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/pkg/vars"
-	"github.com/happy-sdk/happy/sdk/cli"
+	"github.com/happy-sdk/happy/sdk/cli/oscmd"
 )
 
 type configuration struct {
@@ -46,12 +46,12 @@ func newConfiguration(sess *happy.Session, path string, allowDirty bool) (*confi
 		}
 		addCmd := exec.Command("git", "add", "-A")
 		addCmd.Dir = c.WD
-		if err := cli.RunCommand(sess, addCmd); err != nil {
+		if err := oscmd.Run(sess, addCmd); err != nil {
 			return nil, err
 		}
 		commitCmd := exec.Command("git", "commit", "-sm", "wip: prepare release")
 		commitCmd.Dir = c.WD
-		if err := cli.RunCommand(sess, commitCmd); err != nil {
+		if err := oscmd.Run(sess, commitCmd); err != nil {
 			return nil, err
 		}
 	}
@@ -155,7 +155,7 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 	// Get current branch
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	branchCmd.Dir = c.WD
-	branch, err := cli.ExecCommandRaw(sess, branchCmd)
+	branch, err := oscmd.ExecRaw(sess, branchCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 	// Get remote name
 	remoteCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "@{u}")
 	remoteCmd.Dir = c.WD
-	remote, err := cli.ExecCommandRaw(sess, remoteCmd)
+	remote, err := oscmd.ExecRaw(sess, remoteCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 	// Get origin URL
 	remoteURLCmd := exec.Command("git", "config", "--get", "remote."+info.remoteName+".url")
 	remoteURLCmd.Dir = c.WD
-	remoteURL, err := cli.ExecCommandRaw(sess, remoteURLCmd)
+	remoteURL, err := oscmd.ExecRaw(sess, remoteURLCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 	// Check for uncommitted changes
 	statusCmd := exec.Command("git", "status", "--porcelain")
 	statusCmd.Dir = c.WD
-	status, err := cli.ExecCommandRaw(sess, statusCmd)
+	status, err := oscmd.ExecRaw(sess, statusCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 	// Get committer name and email
 	committerCmd := exec.Command("git", "config", "user.name")
 	committerCmd.Dir = c.WD
-	committer, err := cli.ExecCommandRaw(sess, committerCmd)
+	committer, err := oscmd.ExecRaw(sess, committerCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +206,7 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 
 	emailCmd := exec.Command("git", "config", "user.email")
 	emailCmd.Dir = c.WD
-	email, err := cli.ExecCommandRaw(sess, emailCmd)
+	email, err := oscmd.ExecRaw(sess, emailCmd)
 	if err != nil {
 		return nil, err
 	}
