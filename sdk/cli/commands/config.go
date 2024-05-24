@@ -82,7 +82,24 @@ func Config() *happy.Command {
 		return nil
 	})
 
+	cmd.AddSubCommand(configGet())
 	cmd.AddSubCommand(configSet())
+	return cmd
+}
+
+func configGet() *happy.Command {
+	cmd := happy.NewCommand("get",
+		happy.Option("description", "Get application configuration values by key"),
+		happy.Option("argn.min", 1),
+		happy.Option("argn.max", 1),
+		happy.Option("firstuse.allowed", true),
+	)
+	cmd.Do(func(sess *happy.Session, args happy.Args) error {
+		key := args.Arg(0).String()
+		fmt.Println(sess.Settings().Get(key).Value().String())
+		return nil
+	})
+
 	return cmd
 }
 
@@ -94,10 +111,6 @@ func configSet() *happy.Command {
 		happy.Option("firstuse.allowed", true),
 	)
 	cmd.Do(func(sess *happy.Session, args happy.Args) error {
-		if args.Argn() != 2 {
-			return fmt.Errorf("expecting exactly 2 arguments key value")
-		}
-
 		key := args.Arg(0).String()
 		val := args.Arg(1).String()
 
@@ -117,9 +130,5 @@ func configSet() *happy.Command {
 		return fmt.Errorf("setting key %q is not persistent setting", key)
 	})
 
-	cmd.AfterAlways(func(sess *happy.Session, err error) error {
-		fmt.Println("AfterAlways: ", sess.Get("app.stats.enabled"))
-		return nil
-	})
 	return cmd
 }
