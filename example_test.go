@@ -24,5 +24,6 @@ func ExampleNew() {
 	app.Run()
 	fmt.Println(log.Output())
 	// Output:
+	// {"level":"info","msg":"development mode","profile":"public-devel"}
 	// {"level":"out","msg":"Hello, world!"}
 }

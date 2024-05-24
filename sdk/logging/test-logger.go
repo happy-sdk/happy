@@ -9,14 +9,16 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 )
 
 // NewTestLogger returns a new test logger that writes to a buffer
 // with slog.JSONHandler. The buffer can be accessed via the Output method.
 func NewTestLogger(lvl Level) *TestLogger {
 	l := &DefaultLogger{
-		lvl: new(slog.LevelVar),
-		ctx: context.Background(),
+		lvl:   new(slog.LevelVar),
+		ctx:   context.Background(),
+		tsloc: time.Local,
 	}
 	out := new(bytes.Buffer)
 
