@@ -73,12 +73,20 @@ func Config() *happy.Command {
 			Title:      fmt.Sprintf("PROFILE SETTINGS FOR %s", sess.Get("app.profile.name").String()),
 			WithHeader: true,
 		}
-		ptbl.AddRow("KEY", "KIND", "IS SET", "MUTABILITY", "VALUE", "DESCRIPTION")
+		ptbl.AddRow("KEY", "KIND", "IS SET", "MUTABILITY", "VALUE", "DEFAULT", "DESCRIPTION")
 		for _, s := range sess.Settings().All() {
 			if !s.Persistent() {
 				continue
 			}
-			ptbl.AddRow(s.Key(), s.Kind().String(), fmt.Sprint(s.IsSet()), fmt.Sprint(s.Mutability()), s.Value().String(), s.Description())
+			ptbl.AddRow(
+				s.Key(),
+				s.Kind().String(),
+				fmt.Sprint(s.IsSet()),
+				fmt.Sprint(s.Mutability()),
+				s.Value().String(),
+				s.Default().String(),
+				s.Description(),
+			)
 		}
 		fmt.Println(ptbl.String())
 

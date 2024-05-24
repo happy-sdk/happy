@@ -100,12 +100,17 @@ func (s SettingSpec) setting() (Setting, error) {
 	if err != nil {
 		return Setting{}, fmt.Errorf("%w: key(%s)  %s", ErrProfile, s.Key, err.Error())
 	}
+	setting.dvv, err = vars.NewAs(s.Key, s.Default, true, vars.Kind(s.Kind))
+	if err != nil {
+		return Setting{}, fmt.Errorf("%w: key(%s)  %s", ErrProfile, s.Key, err.Error())
+	}
 	return setting, nil
 }
 
 type Setting struct {
 	key        string
 	vv         vars.Variable
+	dvv        vars.Variable
 	kind       Kind
 	isSet      bool
 	mutability Mutability
@@ -127,6 +132,10 @@ func (s Setting) IsSet() bool {
 
 func (s Setting) Value() vars.Variable {
 	return s.vv
+}
+
+func (s Setting) Default() vars.Variable {
+	return s.dvv
 }
 
 func (s Setting) Kind() Kind {
