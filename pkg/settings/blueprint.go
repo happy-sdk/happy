@@ -25,7 +25,6 @@ type Blueprint struct {
 	// module string
 	// lang   language.Tag // default language
 	specs      map[string]SettingSpec
-	i18n       map[language.Tag]map[string]string
 	errs       []error
 	groups     map[string]*Blueprint
 	migrations map[string]string
@@ -183,22 +182,24 @@ func (b *Blueprint) AddValidator(key, desc string, fn func(s Setting) error) {
 }
 
 func (b *Blueprint) Describe(key string, lang language.Tag, description string) {
-	// check are languages initialized
-	if b.i18n == nil {
-		b.i18n = make(map[language.Tag]map[string]string)
-	}
-	// check does language exist already
-	i18n, ok := b.i18n[lang]
+	spec, ok := b.specs[key]
 	if !ok {
-		i18n = make(map[string]string)
+		b.errs = append(b.errs, fmt.Errorf("%w: %s not found to add description", ErrBlueprint, key))
+		return
 	}
-	// check is setting already described in language
-	if v, described := i18n[key]; described {
+
+	if spec.i18n == nil {
+		spec.i18n = make(map[language.Tag]string)
+	}
+
+	// check does language exist already
+	if v, ok := spec.i18n[lang]; ok {
 		b.errs = append(b.errs, fmt.Errorf("%w: %s already described in %s: %s", ErrBlueprint, key, lang, v))
 		return
 	}
 
-	i18n[key] = description
+	spec.i18n[lang] = description
+	b.specs[key] = spec
 }
 
 func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {

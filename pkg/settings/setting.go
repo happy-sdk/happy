@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/happy-sdk/happy/pkg/vars"
+	"golang.org/x/text/language"
 )
 
 type Mutability uint8
@@ -47,6 +48,7 @@ type SettingSpec struct {
 	Marchaler   Marshaller
 	Settings    *Blueprint
 	validators  []validator
+	i18n        map[language.Tag]string
 }
 
 func (s SettingSpec) Validate() error {
@@ -58,7 +60,7 @@ func (s SettingSpec) Validate() error {
 
 func (s SettingSpec) ValidateValue(value string) error {
 	s.Value = value
-	setting, err := s.Setting()
+	setting, err := s.setting()
 	if err != nil {
 		return err
 	}
@@ -70,7 +72,21 @@ func (s SettingSpec) ValidateValue(value string) error {
 	return nil
 }
 
-func (s SettingSpec) Setting() (Setting, error) {
+func (s SettingSpec) Setting(lang language.Tag) (Setting, error) {
+	setting, err := s.setting()
+	if err != nil {
+		return setting, err
+	}
+	if s.i18n != nil {
+
+		if desc, ok := s.i18n[lang]; ok {
+			setting.desc = desc
+		}
+	}
+	return setting, nil
+}
+
+func (s SettingSpec) setting() (Setting, error) {
 	setting := Setting{
 		key:        s.Key,
 		kind:       s.Kind,
@@ -78,6 +94,7 @@ func (s SettingSpec) Setting() (Setting, error) {
 		mutability: s.Mutability,
 		persistent: s.Persistent,
 	}
+
 	var err error
 	setting.vv, err = vars.NewAs(s.Key, s.Value, true, vars.Kind(s.Kind))
 	if err != nil {

@@ -95,7 +95,7 @@ func NewCommand(name string, args ...options.Arg) *Command {
 	}
 	c.desc = opts.Get("description").String()
 	c.category = opts.Get("category").String()
-	c.allowOnFreshInstall = opts.Get("init.allowed").Bool()
+	c.allowOnFreshInstall = opts.Get("firstuse.allowed").Bool()
 	c.skipAddons = opts.Get("skip.addons").Bool()
 
 	return c

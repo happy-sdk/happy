@@ -30,8 +30,6 @@ import (
 	"reflect"
 	"strings"
 	"unicode"
-
-	"golang.org/x/text/language"
 )
 
 var (
@@ -87,7 +85,6 @@ func New(s Settings) (*Blueprint, error) {
 	}
 
 	b := &Blueprint{
-		i18n: make(map[language.Tag]map[string]string),
 		mode: getExecutionMode(),
 	}
 

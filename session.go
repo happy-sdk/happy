@@ -252,7 +252,7 @@ func (s *Session) Get(key string) vars.Variable {
 
 func (s *Session) Set(key string, val any) error {
 	if s.Settings().Has(key) {
-		return fmt.Errorf("setting profile options is not allowed to be set as option, call Profile.Set instead, attempt to set %s = %v", key, val)
+		return fmt.Errorf("setting profile options is not allowed to be set as option, call Settings.Set instead, attempt to set %s = %v", key, val)
 	}
 	if !s.opts.Accepts(key) {
 		s.Log().Warn("setting non existing runtime options", slog.String("key", key))

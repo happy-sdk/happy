@@ -67,14 +67,6 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 		return nil
 	})
 
-	s.Migrate("app.throttle.ticks", "app.engine.throttle_ticks")
-	if s.migrations != nil {
-		for from, to := range s.migrations {
-			if err := b.Migrate(from, to); err != nil {
-				return nil, err
-			}
-		}
-	}
 	return b, errors.Join(s.errs...)
 }
 

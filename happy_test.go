@@ -45,8 +45,8 @@ func TestDefaultSettings(t *testing.T) {
 		// DateTime
 		testutils.Equal(t, "Local", sess.Get("app.datetime.location").String(), "app.datetime.location")
 		// Instance
-		testutils.Equal(t, "1s", sess.Get("app.instance.throttle_ticks").String(), "app.engine.throttle_ticks")
-		testutils.Equal(t, time.Second*1, sess.Get("app.instance.throttle_ticks").Duration(), "app.engine.throttle_ticks")
+		testutils.Equal(t, "1s", sess.Get("app.instance.throttle_ticks").String(), "app.instance.throttle_ticks")
+		testutils.Equal(t, time.Second*1, sess.Get("app.instance.throttle_ticks").Duration(), "app.instance.throttle_ticks")
 		testutils.Equal(t, "1", sess.Get("app.instance.max").String(), "app.instance.max")
 		testutils.Equal(t, 1, sess.Get("app.instance.max").Int(), "app.instance.max")
 		// Logging

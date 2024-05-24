@@ -222,7 +222,7 @@ func (e *engine) loopStart(sess *Session, init *sync.WaitGroup) {
 		<-sess.Ready()
 
 		lastTick := time.Now()
-		ttick := time.NewTicker(time.Duration(sess.Get("app.engine.throttle_ticks").Int64()))
+		ttick := time.NewTicker(time.Duration(sess.Get("app.instance.throttle_ticks").Int64()))
 		defer ttick.Stop()
 
 	engineLoop:
@@ -402,7 +402,7 @@ func (e *engine) serviceStart(sess *Session, svcurl string) {
 			return
 		}
 
-		ttick := time.NewTicker(time.Duration(sess.Get("app.engine.throttle_ticks").Int64()))
+		ttick := time.NewTicker(time.Duration(sess.Get("app.instance.throttle_ticks").Int64()))
 		defer ttick.Stop()
 
 		lastTick := time.Now()

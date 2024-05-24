@@ -174,13 +174,13 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 		return sl.loaderCh
 	}
 
-	timeout := sl.sess.Get("app.service_loader.timeout").Duration()
+	timeout := sl.sess.Get("app.services.loader_timeout").Duration()
 	if timeout <= 0 {
 		timeout = time.Duration(time.Second * 30)
 		sl.sess.Log().SystemDebug(
 			"service loader using default timeout",
 			slog.Duration("timeout", timeout),
-			slog.Duration("app.service_loader.timeout", timeout),
+			slog.Duration("app.services.loader_timeout", timeout),
 		)
 	}
 

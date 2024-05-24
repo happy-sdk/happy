@@ -122,6 +122,7 @@ func (p *Profile) Set(key string, val SettingField) (err error) {
 	setting.isSet = true
 
 	p.settings[key] = setting
+	fmt.Println(setting.String())
 	return nil
 }
 
@@ -133,7 +134,7 @@ func (p *Profile) load(prefs *Preferences) (err error) {
 	}
 	p.settings = make(map[string]Setting)
 	for _, spec := range p.schema.settings {
-		setting, err := spec.Setting()
+		setting, err := spec.Setting(p.lang)
 		if err != nil {
 			return fmt.Errorf("%w: %s", ErrProfile, err.Error())
 		}

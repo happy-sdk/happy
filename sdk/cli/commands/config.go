@@ -6,10 +6,12 @@ package commands
 
 import (
 	"fmt"
+	"log/slog"
 	"slices"
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/pkg/options"
+	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 )
 
@@ -80,5 +82,44 @@ func Config() *happy.Command {
 		return nil
 	})
 
+	cmd.AddSubCommand(configSet())
+	return cmd
+}
+
+func configSet() *happy.Command {
+	cmd := happy.NewCommand("set",
+		happy.Option("description", "Set application configuration values"),
+		happy.Option("argn.min", 2),
+		happy.Option("argn.max", 2),
+		happy.Option("firstuse.allowed", true),
+	)
+	cmd.Do(func(sess *happy.Session, args happy.Args) error {
+		if args.Argn() != 2 {
+			return fmt.Errorf("expecting exactly 2 arguments key value")
+		}
+
+		key := args.Arg(0).String()
+		val := args.Arg(1).String()
+
+		for _, s := range sess.Settings().All() {
+			if !s.Persistent() {
+				continue
+			}
+			if s.Key() == key {
+				if err := sess.Settings().Set(key, settings.String(val)); err != nil {
+					return err
+				}
+				sess.Log().Ok("setting updated", slog.String("key", key), slog.String("val", val))
+				return nil
+			}
+		}
+
+		return fmt.Errorf("setting key %q is not persistent setting", key)
+	})
+
+	cmd.AfterAlways(func(sess *happy.Session, err error) error {
+		fmt.Println("AfterAlways: ", sess.Get("app.stats.enabled"))
+		return nil
+	})
 	return cmd
 }

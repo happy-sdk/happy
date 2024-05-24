@@ -8,6 +8,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+
+	"golang.org/x/text/language"
 )
 
 var (
@@ -39,6 +41,7 @@ func (s *Schema) Profile(name string, pref *Preferences) (*Profile, error) {
 	profile := &Profile{
 		name:   name,
 		schema: *s,
+		lang:   language.English,
 	}
 	if err := profile.load(pref); err != nil {
 		return nil, err
