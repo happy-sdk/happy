@@ -6,8 +6,9 @@ require (
 	github.com/charmbracelet/bubbles v0.17.1
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.9.1
-	github.com/happy-sdk/happy v0.23.1
-	github.com/happy-sdk/happy/pkg/settings v0.1.0
+	github.com/happy-sdk/happy v0.24.0
+	github.com/happy-sdk/happy/pkg/options v0.0.0-20240524194728-716f7cf590d5
+	github.com/happy-sdk/happy/pkg/settings v0.2.0
 	github.com/happy-sdk/happy/pkg/vars v0.10.0
 	golang.org/x/mod v0.15.0
 )
