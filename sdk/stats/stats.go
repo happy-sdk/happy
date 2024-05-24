@@ -18,7 +18,7 @@ import (
 )
 
 type Settings struct {
-	Enabled settings.Bool `key:"enabled,save" default:"false" mutation:"once"`
+	Enabled settings.Bool `key:"enabled,save" default:"false" mutation:"mutable"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {

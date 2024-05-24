@@ -433,7 +433,9 @@ func (m *Main) exit(code int) {
 			m.sess.Log().Error("failed to stop engine", slog.String("err", err.Error()))
 		}
 	}
-
+	if m.sess.Get("app.stats.enabled").Bool() {
+		fmt.Println(m.sess.Stats().String())
+	}
 	m.sess.Destroy(nil)
 	if err := m.sess.Err(); err != nil && !errors.Is(err, ErrSessionDestroyed) {
 		m.sess.Log().Warn("session", slog.String("err", err.Error()))
