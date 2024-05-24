@@ -3,6 +3,7 @@ github.com/charmbracelet/harmonica v0.2.0/go.mod h1:KSri/1RMQOZLbw7AHqgcBycp8pgJ
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/happy-sdk/happy v0.19.0/go.mod h1:8pND3rDvQoP+zhm3Dd9qRzMGOWmMG3emRTAZv+rDjdU=
 github.com/happy-sdk/happy v0.23.0/go.mod h1:OjnEjUhw5mmRKDoMHRsi2JkukNWsABeM+4G87CbgtH0=
+github.com/happy-sdk/happy/pkg/settings v0.2.0/go.mod h1:pEGgAuM0xgmHO4nO3GyfZhq41y1LCEI5MuLJdVVGw4E=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/sahilm/fuzzy v0.1.1-0.20230530133925-c48e322e2a8f/go.mod h1:VFvziUEIMCrT6A6tw2RFIXPXXmzXbOsSHF0DOI8ZK9Y=
 golang.org/x/tools v0.13.0/go.mod h1:HvlwmtVNQAhOuCjW7xxvovg8wbNq7LwfXh/k7wXUl58=
