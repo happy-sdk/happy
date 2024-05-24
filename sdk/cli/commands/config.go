@@ -42,6 +42,7 @@ func Config() *happy.Command {
 		}
 		fmt.Println(infotbl.String())
 
+		// Application settings
 		stbl := textfmt.Table{
 			Title:      "APPLICATION SETTINGS",
 			WithHeader: true,
@@ -55,6 +56,19 @@ func Config() *happy.Command {
 		}
 		fmt.Println(stbl.String())
 
+		// Runtime options
+		opttbl := textfmt.Table{
+			Title:      "APPLICATION OPTIONS",
+			WithHeader: true,
+		}
+		opttbl.AddRow("KEY", "KIND", "READONLY", "VALUE")
+		sess.Opts().Range(func(opt options.Option) bool {
+			opttbl.AddRow(opt.Name(), opt.Kind().String(), fmt.Sprintf("%t", opt.ReadOnly()), opt.Value().String())
+			return true
+		})
+		fmt.Println(opttbl.String())
+
+		// Profile settings
 		ptbl := textfmt.Table{
 			Title:      fmt.Sprintf("PROFILE SETTINGS FOR %s", sess.Get("app.profile.name").String()),
 			WithHeader: true,
@@ -67,17 +81,6 @@ func Config() *happy.Command {
 			ptbl.AddRow(s.Key(), s.Kind().String(), fmt.Sprint(s.IsSet()), fmt.Sprint(s.Mutability()), s.Value().String(), s.Description())
 		}
 		fmt.Println(ptbl.String())
-
-		opttbl := textfmt.Table{
-			Title:      "APPLICATION OPTIONS",
-			WithHeader: true,
-		}
-		opttbl.AddRow("KEY", "KIND", "READONLY", "VALUE")
-		sess.Opts().Range(func(opt options.Option) bool {
-			opttbl.AddRow(opt.Name(), opt.Kind().String(), fmt.Sprintf("%t", opt.ReadOnly()), opt.Value().String())
-			return true
-		})
-		fmt.Println(opttbl.String())
 
 		return nil
 	})

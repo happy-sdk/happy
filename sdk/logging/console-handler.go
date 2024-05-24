@@ -39,6 +39,7 @@ type ConsoleOptions struct {
 	Theme       ansicolor.Theme
 	ReplaceAttr func(groups []string, a slog.Attr) slog.Attr
 	AddSource   bool
+	TsLoc       *time.Location
 }
 
 func ConsoleDefaultOptions() ConsoleOptions {
@@ -51,9 +52,17 @@ func ConsoleDefaultOptions() ConsoleOptions {
 }
 
 func Console(opts ConsoleOptions) *DefaultLogger {
+	var tsloc *time.Location
+	if opts.TsLoc != nil {
+		tsloc = opts.TsLoc
+	} else {
+		tsloc = time.Local
+	}
+
 	l := &DefaultLogger{
-		lvl: new(slog.LevelVar),
-		ctx: context.Background(),
+		lvl:   new(slog.LevelVar),
+		ctx:   context.Background(),
+		tsloc: tsloc,
 	}
 	l.lvl.Set(slog.Level(opts.Level))
 

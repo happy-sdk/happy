@@ -6,6 +6,7 @@ package logging
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -18,7 +19,7 @@ import (
 )
 
 type Settings struct {
-	Level Level `key:"level,save" default:"info" mutation:"once"`
+	Level Level `key:"level,save" default:"info" mutation:"mutable"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
@@ -86,6 +87,22 @@ var lvlval = map[Level]string{
 	LevelAlways:         levelAlwaysStr,
 }
 
+// String lookup table
+var strToLvl = make(map[string]Level)
+
+func init() {
+	for level, str := range lvlval {
+		strToLvl[str] = level
+	}
+}
+
+func LevelFromString(levelStr string) (Level, error) {
+	if level, ok := strToLvl[levelStr]; ok {
+		return level, nil
+	}
+	return 0, errors.New("invalid level string")
+}
+
 func (l Level) String() string {
 	if str, ok := lvlval[l]; ok {
 		return str
@@ -140,16 +157,19 @@ type Logger interface {
 }
 
 type DefaultLogger struct {
-	lvl *slog.LevelVar
-	log *slog.Logger
-	ctx context.Context
+	tsloc *time.Location
+	lvl   *slog.LevelVar
+	log   *slog.Logger
+	ctx   context.Context
 }
 
 func New(w io.Writer, lvl Level) *DefaultLogger {
 	l := &DefaultLogger{
-		lvl: new(slog.LevelVar),
-		ctx: context.Background(),
+		lvl:   new(slog.LevelVar),
+		ctx:   context.Background(),
+		tsloc: time.Local,
 	}
+
 	l.lvl.Set(slog.Level(lvl))
 
 	h := slog.NewTextHandler(w, &slog.HandlerOptions{
@@ -169,9 +189,11 @@ func New(w io.Writer, lvl Level) *DefaultLogger {
 
 func Default(lvl Level) *DefaultLogger {
 	l := &DefaultLogger{
-		lvl: new(slog.LevelVar),
-		ctx: context.Background(),
+		lvl:   new(slog.LevelVar),
+		ctx:   context.Background(),
+		tsloc: time.Local,
 	}
+
 	l.lvl.Set(slog.Level(lvl))
 
 	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -280,7 +302,7 @@ func (l *DefaultLogger) LogDepth(depth int, lvl Level, msg string, attrs ...slog
 	}
 	var pcs [1]uintptr
 	runtime.Callers(depth, pcs[:])
-	r := slog.NewRecord(time.Now(), slog.Level(lvl), msg, pcs[0])
+	r := slog.NewRecord(l.ts(), slog.Level(lvl), msg, pcs[0])
 	r.AddAttrs(attrs...)
 	_ = l.log.Handler().Handle(l.ctx, r)
 }
@@ -304,7 +326,7 @@ func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr
 
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
-	r := slog.NewRecord(time.Now(), levelAlways, fmt.Sprintf("[%-8s %-3s] %s", method, fmt.Sprint(status), path), pcs[0])
+	r := slog.NewRecord(l.ts(), levelAlways, fmt.Sprintf("[%-8s %-3s] %s", method, fmt.Sprint(status), path), pcs[0])
 	r.AddAttrs(attrs...)
 	_ = l.log.Handler().Handle(l.ctx, r)
 
@@ -316,9 +338,16 @@ func (l *DefaultLogger) logDepth(lvl slog.Level, msg string, attrs ...slog.Attr)
 	}
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
-	r := slog.NewRecord(time.Now(), lvl, msg, pcs[0])
+	r := slog.NewRecord(l.ts(), lvl, msg, pcs[0])
 	r.AddAttrs(attrs...)
 	_ = l.log.Handler().Handle(l.ctx, r)
+}
+
+func (l *DefaultLogger) ts() time.Time {
+	if l.tsloc == nil {
+		panic("logging: time location is nil")
+	}
+	return time.Now().In(l.tsloc)
 }
 
 type QueueRecord struct {
@@ -342,8 +371,8 @@ func NewQueueRecord(lvl Level, msg string, detph int, attrs ...slog.Attr) QueueR
 	}
 }
 
-func (qr QueueRecord) Record() slog.Record {
-	r := slog.NewRecord(qr.ts, slog.Level(qr.lvl), qr.msg, qr.pc)
+func (qr QueueRecord) Record(loc *time.Location) slog.Record {
+	r := slog.NewRecord(qr.ts.In(loc), slog.Level(qr.lvl), qr.msg, qr.pc)
 	r.AddAttrs(qr.attrs...)
 	return r
 }

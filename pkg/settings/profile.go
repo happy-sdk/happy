@@ -122,7 +122,6 @@ func (p *Profile) Set(key string, val SettingField) (err error) {
 	setting.isSet = true
 
 	p.settings[key] = setting
-	fmt.Println(setting.String())
 	return nil
 }
 

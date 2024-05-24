@@ -155,7 +155,7 @@ func (i *initializer) SetBrand(bfunc BrandFunc) {
 func (i *initializer) Log(r logging.QueueRecord) {
 	if i.logQueue == nil {
 		if i.logger != nil {
-			i.logger.BUG("log queue is already consumed", slog.Any("record", r.Record()))
+			i.logger.BUG("log queue is already consumed", slog.Any("record", r.Record(time.Local)))
 			return
 		}
 		return
@@ -231,11 +231,18 @@ func (i *initializer) Initialize(m *Main) error {
 
 	close(i.logQueue)
 	for r := range i.logQueue {
-		_ = i.logger.Handle(r.Record())
+		_ = i.logger.Handle(r.Record(time.Local))
 	}
 	i.logQueue = nil
 	if err := i.unsafeConfigure(m, settingsb); err != nil {
 		return err
+	}
+	level, err := logging.LevelFromString(m.sess.Get("app.logging.level").String())
+	if err != nil {
+		return err
+	}
+	if m.sess.Log().Level() > level {
+		m.sess.Log().SetLevel(level)
 	}
 
 	if err := m.sess.opts.Set("app.pid", os.Getpid()); err != nil {
