@@ -35,11 +35,12 @@ type consoleTheme struct {
 }
 
 type ConsoleOptions struct {
-	Level       Level
-	Theme       ansicolor.Theme
-	ReplaceAttr func(groups []string, a slog.Attr) slog.Attr
-	AddSource   bool
-	TsLoc       *time.Location
+	Level           Level
+	Theme           ansicolor.Theme
+	ReplaceAttr     func(groups []string, a slog.Attr) slog.Attr
+	AddSource       bool
+	TimeLocation    *time.Location
+	TimestampFormat string
 }
 
 func ConsoleDefaultOptions() ConsoleOptions {
@@ -53,8 +54,8 @@ func ConsoleDefaultOptions() ConsoleOptions {
 
 func Console(opts ConsoleOptions) *DefaultLogger {
 	var tsloc *time.Location
-	if opts.TsLoc != nil {
-		tsloc = opts.TsLoc
+	if opts.TimeLocation != nil {
+		tsloc = opts.TimeLocation
 	} else {
 		tsloc = time.Local
 	}
@@ -68,6 +69,10 @@ func Console(opts ConsoleOptions) *DefaultLogger {
 
 	replaceAttr := opts.ReplaceAttr
 
+	tsfmt := "15:04:05.000"
+	if opts.TimestampFormat != "" {
+		tsfmt = opts.TimestampFormat
+	}
 	h := &ConsoleHandler{
 		styles: consoleTheme{
 			attrs:      ansicolor.Style{FG: opts.Theme.Secondary},
@@ -100,7 +105,7 @@ func Console(opts ConsoleOptions) *DefaultLogger {
 			AddSource: opts.AddSource,
 		}),
 		l:     log.New(os.Stdout, "", 0),
-		tsfmt: "15:04:05.000",
+		tsfmt: tsfmt,
 	}
 
 	l.log = slog.New(h)
@@ -123,7 +128,7 @@ func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
 
 	var c ansicolor.Style
 	switch l {
-	case LevelSystemDebug:
+	case levelHappy, levelInit:
 		c = h.styles.sysdebug
 	case LevelDebug:
 		c = h.styles.debug

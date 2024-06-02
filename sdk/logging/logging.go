@@ -6,20 +6,23 @@ package logging
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"math"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/settings"
 )
 
 type Settings struct {
-	Level Level `key:"level,save" default:"info" mutation:"mutable"`
+	Level           Level           `key:"level,config" default:"info" mutation:"mutable" desc:"logging level"`
+	NoSource        settings.Bool   `key:"no_source,config" default:"false" mutation:"once" desc:"Hide source location from log messages"`
+	TimestampFormat settings.String `key:"timeestamp_format,config" default:"15:04:05.000" mutation:"once" desc:"Timestamp format for log messages"`
+	NoSlogDefault   settings.Bool   `key:"no_slog_default" default:"false" mutation:"once" desc:"Do not set the default slog logger"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
@@ -34,33 +37,36 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 type Level int
 
 const (
-	levelSystemDebug    = slog.Level(math.MinInt)
-	levelDebug          = slog.LevelDebug
-	levelInfo           = slog.LevelInfo
-	levelOk             = slog.Level(1)
-	levelNotice         = slog.Level(2)
-	levelNotImplemented = slog.Level(3)
-	levelWarn           = slog.LevelWarn
-	levelDeprecated     = slog.Level(5)
-	levelError          = slog.LevelError
-	levelBUG            = slog.Level(9)
-	levelAlways         = slog.Level(math.MaxInt - 1)
-	levelQuiet          = slog.Level(math.MaxInt)
+	lvlHappy          = slog.Level(math.MinInt)
+	lvlHappyInit      = slog.Level(lvlHappy + 1)
+	lvlDebug          = slog.LevelDebug
+	lvlInfo           = slog.LevelInfo
+	lvlOk             = slog.Level(1)
+	lvlNotice         = slog.Level(2)
+	lvlNotImplemented = slog.Level(3)
+	lvlWarn           = slog.LevelWarn
+	lvlDeprecated     = slog.Level(5)
+	lvlError          = slog.LevelError
+	lvlBUG            = slog.Level(9)
+	lvlAlways         = slog.Level(math.MaxInt - 1)
+	lvlQuiet          = slog.Level(math.MaxInt)
 
-	LevelSystemDebug    Level = Level(levelSystemDebug)
-	LevelDebug          Level = Level(levelDebug)
-	LevelInfo           Level = Level(levelInfo)
-	LevelOk             Level = Level(levelOk)
-	LevelNotice         Level = Level(levelNotice)
-	LevelNotImplemented Level = Level(levelNotImplemented)
-	LevelWarn           Level = Level(levelWarn)
-	LevelDeprecated     Level = Level(levelDeprecated)
-	LevelError          Level = Level(levelError)
-	LevelBUG            Level = Level(levelBUG)
-	LevelAlways         Level = Level(levelAlways)
-	LevelQuiet          Level = Level(levelQuiet)
+	levelHappy          Level = Level(lvlHappy)
+	levelInit           Level = Level(lvlHappyInit)
+	LevelDebug          Level = Level(lvlDebug)
+	LevelInfo           Level = Level(lvlInfo)
+	LevelOk             Level = Level(lvlOk)
+	LevelNotice         Level = Level(lvlNotice)
+	LevelNotImplemented Level = Level(lvlNotImplemented)
+	LevelWarn           Level = Level(lvlWarn)
+	LevelDeprecated     Level = Level(lvlDeprecated)
+	LevelError          Level = Level(lvlError)
+	LevelBUG            Level = Level(lvlBUG)
+	LevelAlways         Level = Level(lvlAlways)
+	LevelQuiet          Level = Level(lvlQuiet)
 
-	levelSystemDebugStr    = "system"
+	levelHappyStr          = "happy"
+	levelInitStr           = "happy:init"
 	levelDebugStr          = "debug"
 	levelInfoStr           = "info"
 	levelOkStr             = "ok"
@@ -74,7 +80,8 @@ const (
 )
 
 var lvlval = map[Level]string{
-	LevelSystemDebug:    levelSystemDebugStr,
+	levelHappy:          levelHappyStr,
+	levelInit:           levelInitStr,
 	LevelDebug:          levelDebugStr,
 	LevelInfo:           levelInfoStr,
 	LevelOk:             levelOkStr,
@@ -100,7 +107,7 @@ func LevelFromString(levelStr string) (Level, error) {
 	if level, ok := strToLvl[levelStr]; ok {
 		return level, nil
 	}
-	return 0, errors.New("invalid level string")
+	return 0, fmt.Errorf("invalid level string %q", levelStr)
 }
 
 func (l Level) String() string {
@@ -132,7 +139,6 @@ func (l Level) SettingKind() settings.Kind {
 }
 
 type Logger interface {
-	SystemDebug(msg string, attrs ...slog.Attr)
 	Debug(msg string, attrs ...slog.Attr)
 	Info(msg string, attrs ...slog.Attr)
 	Ok(msg string, attrs ...slog.Attr)
@@ -154,6 +160,8 @@ type Logger interface {
 	LogDepth(depth int, lvl Level, msg string, attrs ...slog.Attr)
 
 	Logger() *slog.Logger
+
+	ConsumeQueue(queue *QueueLogger)
 }
 
 type DefaultLogger struct {
@@ -187,7 +195,7 @@ func New(w io.Writer, lvl Level) *DefaultLogger {
 	return l
 }
 
-func Default(lvl Level) *DefaultLogger {
+func NewDefault(lvl Level) *DefaultLogger {
 	l := &DefaultLogger{
 		lvl:   new(slog.LevelVar),
 		ctx:   context.Background(),
@@ -211,74 +219,71 @@ func Default(lvl Level) *DefaultLogger {
 	return l
 }
 
-func (l *DefaultLogger) SystemDebug(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelSystemDebug, msg, attrs...)
-}
-
 func (l *DefaultLogger) Debug(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelDebug, msg, attrs...)
+	l.logDepth(lvlDebug, msg, attrs...)
 }
 
 func (l *DefaultLogger) Info(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelInfo, msg, attrs...)
+	l.logDepth(lvlInfo, msg, attrs...)
 }
 
 func (l *DefaultLogger) Ok(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelOk, msg, attrs...)
+	l.logDepth(lvlOk, msg, attrs...)
 }
 
 func (l *DefaultLogger) Notice(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelNotice, msg, attrs...)
+	l.logDepth(lvlNotice, msg, attrs...)
 }
 
 func (l *DefaultLogger) Warn(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelWarn, msg, attrs...)
+	l.logDepth(lvlWarn, msg, attrs...)
 }
 
 func (l *DefaultLogger) NotImplemented(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelNotImplemented, msg, attrs...)
+	l.logDepth(lvlNotImplemented, msg, attrs...)
 }
 
 func (l *DefaultLogger) Deprecated(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelDeprecated, msg, attrs...)
+	l.logDepth(lvlDeprecated, msg, attrs...)
 }
 
 func (l *DefaultLogger) Error(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelError, msg, attrs...)
+	l.logDepth(lvlError, msg, attrs...)
 }
 
 func (l *DefaultLogger) BUG(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelBUG, msg, attrs...)
+	l.logDepth(lvlBUG, msg, attrs...)
 }
 
-func (l *DefaultLogger) Println(msg string, attrs ...slog.Attr) {
-	l.logDepth(levelAlways, msg, attrs...)
+func (l *DefaultLogger) Println(line string, attrs ...slog.Attr) {
+	line = strings.TrimRight(line, "\n") + "\n"
+	l.logDepth(lvlAlways, line, attrs...)
 }
 
 func (l *DefaultLogger) Printf(format string, v ...any) {
-	l.logDepth(levelAlways, fmt.Sprintf(format, v...))
+	l.logDepth(lvlAlways, fmt.Sprintf(format, v...))
 }
 
 func (l *DefaultLogger) HTTP(status int, method, path string, attrs ...slog.Attr) {
 	switch status {
 	case 100, 200:
-		if l.log.Enabled(l.ctx, levelInfo) {
+		if l.log.Enabled(l.ctx, lvlInfo) {
 			l.http(status, method, path, attrs...)
 		}
 	case 300:
-		if l.log.Enabled(l.ctx, levelWarn) {
+		if l.log.Enabled(l.ctx, lvlWarn) {
 			l.http(status, method, path, attrs...)
 		}
 	case 400:
-		if l.log.Enabled(l.ctx, levelError) {
+		if l.log.Enabled(l.ctx, lvlError) {
 			l.http(status, method, path, attrs...)
 		}
 	case 500:
-		if l.log.Enabled(l.ctx, levelError) {
+		if l.log.Enabled(l.ctx, lvlError) {
 			l.http(status, method, path, attrs...)
 		}
 	default:
-		if l.log.Enabled(l.ctx, levelBUG) {
+		if l.log.Enabled(l.ctx, lvlBUG) {
 			attrs = append(attrs, slog.String("err", "invalid status code"))
 			l.http(status, method, path, attrs...)
 		}
@@ -301,7 +306,7 @@ func (l *DefaultLogger) LogDepth(depth int, lvl Level, msg string, attrs ...slog
 		return
 	}
 	var pcs [1]uintptr
-	runtime.Callers(depth, pcs[:])
+	runtime.Callers(depth+2, pcs[:])
 	r := slog.NewRecord(l.ts(), slog.Level(lvl), msg, pcs[0])
 	r.AddAttrs(attrs...)
 	_ = l.log.Handler().Handle(l.ctx, r)
@@ -318,6 +323,13 @@ func (l *DefaultLogger) Logger() *slog.Logger {
 	return l.log
 }
 
+func (l *DefaultLogger) ConsumeQueue(queue *QueueLogger) {
+	records := queue.Consume()
+	for _, r := range records {
+		l.Handle(r.Record(l.tsloc))
+	}
+}
+
 func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr) {
 	if ch, ok := l.log.Handler().(*ConsoleHandler); ok {
 		ch.http(status, method, path, attrs...)
@@ -326,7 +338,7 @@ func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr
 
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
-	r := slog.NewRecord(l.ts(), levelAlways, fmt.Sprintf("[%-8s %-3s] %s", method, fmt.Sprint(status), path), pcs[0])
+	r := slog.NewRecord(l.ts(), lvlAlways, fmt.Sprintf("[%-8s %-3s] %s", method, fmt.Sprint(status), path), pcs[0])
 	r.AddAttrs(attrs...)
 	_ = l.log.Handler().Handle(l.ctx, r)
 
@@ -348,31 +360,4 @@ func (l *DefaultLogger) ts() time.Time {
 		panic("logging: time location is nil")
 	}
 	return time.Now().In(l.tsloc)
-}
-
-type QueueRecord struct {
-	pc    uintptr
-	lvl   Level
-	ts    time.Time
-	msg   string
-	attrs []slog.Attr
-}
-
-func NewQueueRecord(lvl Level, msg string, detph int, attrs ...slog.Attr) QueueRecord {
-	var pcs [1]uintptr
-	runtime.Callers(detph, pcs[:])
-
-	return QueueRecord{
-		lvl:   lvl,
-		ts:    time.Now(),
-		msg:   msg,
-		attrs: attrs,
-		pc:    pcs[0],
-	}
-}
-
-func (qr QueueRecord) Record(loc *time.Location) slog.Record {
-	r := slog.NewRecord(qr.ts.In(loc), slog.Level(qr.lvl), qr.msg, qr.pc)
-	r.AddAttrs(qr.attrs...)
-	return r
 }

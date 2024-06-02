@@ -55,10 +55,6 @@ func (tl *TestLogger) Output() string {
 	return tl.out.String()
 }
 
-func (l *TestLogger) SystemDebug(msg string, attrs ...slog.Attr) {
-	l.log.SystemDebug(msg, attrs...)
-}
-
 func (l *TestLogger) Debug(msg string, attrs ...slog.Attr) {
 	l.log.Debug(msg, attrs...)
 }
@@ -121,4 +117,11 @@ func (l *TestLogger) Handle(r slog.Record) error {
 
 func (l *TestLogger) Logger() *slog.Logger {
 	return l.log.log
+}
+
+func (l *TestLogger) ConsumeQueue(queue *QueueLogger) {
+	records := queue.Consume()
+	for _, r := range records {
+		l.Handle(r.Record(l.log.tsloc))
+	}
 }
