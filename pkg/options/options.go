@@ -19,12 +19,12 @@ type (
 	Options struct {
 		name   string
 		db     vars.Map
-		config map[string]OptionSpec
+		config map[string]Spec
 		sealed bool
 	}
 
-	// OptionSpec holds specification for given option.
-	OptionSpec struct {
+	// Spec holds specification for given option.
+	Spec struct {
 		key       string
 		desc      string
 		value     any // default
@@ -64,9 +64,9 @@ var (
 	ErrOptionValidation = fmt.Errorf("%w: validation failed", ErrOption)
 )
 
-// Option returns new option specificationwith given key, value, description and validator.
-func NewOption(key string, dval any, desc string, kind Kind, vfunc ValueValidator) OptionSpec {
-	return OptionSpec{
+// NewOption returns new option specification with given key, value, description and validator.
+func NewOption(key string, dval any, desc string, kind Kind, vfunc ValueValidator) Spec {
+	return Spec{
 		key:       key,
 		value:     dval,
 		desc:      desc,
@@ -80,7 +80,7 @@ func NewOption(key string, dval any, desc string, kind Kind, vfunc ValueValidato
 // }
 
 // New returns new named options set.
-func New(name string, specs []OptionSpec) (*Options, error) {
+func New(name string, specs []Spec) (*Options, error) {
 	opts := &Options{
 		name: name,
 	}
@@ -177,7 +177,7 @@ func (opts *Options) set(key string, value any, override bool) error {
 		return opts.db.StoreReadOnly(key, val, opts.db.Get(key).ReadOnly())
 	}
 
-	var cnf *OptionSpec
+	var cnf *Spec
 	if c, ok := opts.config[key]; ok {
 		cnf = &c
 		if vv, ok := value.(vars.Variable); ok {
@@ -211,12 +211,12 @@ func (opts *Options) Len() int {
 	return opts.db.Len()
 }
 
-func (opts *Options) Add(spec OptionSpec) error {
+func (opts *Options) Add(spec Spec) error {
 	if opts.sealed {
 		return fmt.Errorf("%w: can not add %s to already sealed %s options", ErrOption, spec.key, opts.name)
 	}
 	if opts.config == nil {
-		opts.config = make(map[string]OptionSpec)
+		opts.config = make(map[string]Spec)
 	}
 	key, err := vars.ParseKey(spec.key)
 	if err != nil {
