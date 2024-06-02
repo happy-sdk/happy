@@ -78,11 +78,9 @@ func (b *Blueprint) Migrate(keyfrom, keyto string) error {
 	b.migrations[keyfrom] = keyto
 	return nil
 }
+
 func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflect.Value) (SettingSpec, error) {
-
 	spec := SettingSpec{}
-
-	spec.IsSet = isFieldSet(value)
 
 	var persistent string
 	spec.Key, persistent, _ = strings.Cut(field.Tag.Get("key"), ",")
@@ -90,8 +88,10 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 	if persistent == "save" {
 		spec.Persistent = true
 	}
+	if persistent == "config" {
+		spec.UserDefined = true
+	}
 
-	// spec.Persistent
 	// Use struct field name converted to dot.separated.format if 'key' tag is not present
 	if spec.Key == "" {
 		spec.Key = toUndersCoreSeparated(field.Name)
@@ -101,8 +101,19 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 		spec.Mutability = SettingImmutable
 		spec.IsSet = true
 		spec.Kind = KindSettings
+
+		// Handle nested settings
 		var err error
-		spec.Settings, err = callBlueprintIfImplementsSettings(value)
+		if value.Kind() == reflect.Ptr {
+			// If the value is a nil pointer, initialize it
+			if value.IsNil() {
+				value.Set(reflect.New(value.Type().Elem()))
+			}
+			spec.Settings, err = New(value.Interface().(Settings))
+		} else {
+			spec.Settings, err = New(value.Addr().Interface().(Settings))
+		}
+
 		if err != nil {
 			return spec, err
 		}
@@ -117,6 +128,7 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 			spec.Mutability = SettingMutable
 		default:
 			spec.Mutability = SettingImmutable
+			spec.IsSet = true
 		}
 
 		kindGetterMethod := value.MethodByName("SettingKind")
@@ -130,28 +142,39 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 			spec.Kind = KindCustom
 		}
 
+		desc := field.Tag.Get("desc")
+		if desc != "" {
+			if spec.i18n == nil {
+				spec.i18n = make(map[language.Tag]string)
+			}
+			spec.i18n[language.English] = desc
+		}
 		spec.Default = field.Tag.Get("default")
+		if spec.Kind == KindBool && (spec.Default != "" && spec.Default != "false") {
+			return spec, fmt.Errorf("%w: %q boolean field %q can have default value only false", ErrBlueprint, b.pkg, spec.Key)
+		}
 
-		if spec.IsSet {
-			spec.Value = getStringValue(value)
+		if isFieldSet(value) {
+			// if the field is set by the developer, then set it as the default value
+			val := getStringValue(value)
+			spec.Value = val
+			spec.Default = val
 		} else {
 			spec.Value = spec.Default
 		}
 
-		if value.CanInterface() {
-			if unmarshaller, ok := value.Addr().Interface().(Unmarshaller); ok {
+		// Check if value implements Marshaller and Unmarshaller
+		if value.CanAddr() {
+			ptr := value.Addr().Interface()
+			if unmarshaller, ok := ptr.(Unmarshaller); ok {
 				spec.Unmarchaler = unmarshaller
 			}
+			if marshaller, ok := ptr.(Marshaller); ok {
+				spec.Marchaler = marshaller
+			}
 		}
-		if marshaller, ok := value.Interface().(Marshaller); ok {
-			spec.Marchaler = marshaller
-		}
-
-		if spec.Unmarchaler == nil {
-			return spec, fmt.Errorf("%w: %q field %q must implement either SettingField interface missing UnmarshalSetting", ErrBlueprint, b.pkg, spec.Key)
-		}
-		if spec.Marchaler == nil {
-			return spec, fmt.Errorf("%w: %q field %q must implement either SettingField interface missing MarshalSetting", ErrBlueprint, b.pkg, spec.Key)
+		if spec.Unmarchaler == nil || spec.Marchaler == nil {
+			return spec, fmt.Errorf("%w: %q field %q must implement SettingField interface (both UnmarshalSetting and MarshalSetting methods required)", ErrBlueprint, b.pkg, spec.Key)
 		}
 	} else {
 		return spec, fmt.Errorf("%w: %q field %q must implement either Settings or SettingField interface", ErrBlueprint, b.pkg, spec.Key)

@@ -44,6 +44,7 @@ type SettingSpec struct {
 	Value       string
 	Required    bool
 	Persistent  bool
+	UserDefined bool
 	Unmarchaler Unmarshaller
 	Marchaler   Marshaller
 	Settings    *Blueprint
@@ -88,11 +89,12 @@ func (s SettingSpec) Setting(lang language.Tag) (Setting, error) {
 
 func (s SettingSpec) setting() (Setting, error) {
 	setting := Setting{
-		key:        s.Key,
-		kind:       s.Kind,
-		isSet:      s.IsSet,
-		mutability: s.Mutability,
-		persistent: s.Persistent,
+		key:         s.Key,
+		kind:        s.Kind,
+		isSet:       s.IsSet,
+		mutability:  s.Mutability,
+		persistent:  s.Persistent,
+		userDefined: s.UserDefined,
 	}
 
 	var err error
@@ -108,14 +110,15 @@ func (s SettingSpec) setting() (Setting, error) {
 }
 
 type Setting struct {
-	key        string
-	vv         vars.Variable
-	dvv        vars.Variable
-	kind       Kind
-	isSet      bool
-	mutability Mutability
-	persistent bool
-	desc       string
+	key         string
+	vv          vars.Variable
+	dvv         vars.Variable
+	kind        Kind
+	isSet       bool
+	mutability  Mutability
+	persistent  bool
+	userDefined bool
+	desc        string
 }
 
 func (s Setting) String() string {
@@ -144,6 +147,10 @@ func (s Setting) Kind() Kind {
 
 func (s Setting) Persistent() bool {
 	return s.persistent
+}
+
+func (s Setting) UserDefined() bool {
+	return s.userDefined
 }
 
 func (s Setting) Mutability() Mutability {

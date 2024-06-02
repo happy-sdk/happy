@@ -42,9 +42,9 @@ func (k Kind) String() string {
 type String string
 
 // MarshalSetting converts the String setting to a byte slice for storage or transmission.
-func (s String) MarshalSetting() ([]byte, error) {
+func (s *String) MarshalSetting() ([]byte, error) {
 	// Simply cast the String to a byte slice.
-	return []byte(s), nil
+	return []byte(*s), nil
 }
 
 // UnmarshalSetting updates the String setting from a byte slice, typically read from storage or received in a message.
@@ -54,10 +54,12 @@ func (s *String) UnmarshalSetting(data []byte) error {
 	return nil
 }
 
+// Stringer implementation for String type
 func (s String) String() string {
 	return string(s)
 }
 
+// SettingKind returns the kind of setting
 func (s String) SettingKind() Kind {
 	return KindString
 }
@@ -72,6 +74,9 @@ func (b Bool) MarshalSetting() ([]byte, error) {
 
 // UnmarshalSetting updates the Bool setting from a byte slice, interpreting it as "true" or "false".
 func (b *Bool) UnmarshalSetting(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
 	// Parse the byte slice as a boolean and store it in Bool.
 	val, err := strconv.ParseBool(string(data))
 	if err != nil {

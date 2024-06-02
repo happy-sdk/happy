@@ -97,7 +97,7 @@ func (p *Profile) Has(key string) bool {
 	return ok
 }
 
-func (p *Profile) Set(key string, val SettingField) (err error) {
+func (p *Profile) Set(key string, val any) (err error) {
 	if !p.Has(key) {
 		return fmt.Errorf("setting not found %s", key)
 	}
@@ -110,18 +110,42 @@ func (p *Profile) Set(key string, val SettingField) (err error) {
 	} else if setting.isSet && setting.mutability == SettingOnce {
 		return fmt.Errorf("setting is set once %s", key)
 	}
+	setting.vv, err = vars.NewAs(key, val, true, vars.Kind(setting.kind))
+	if err != nil {
+		return fmt.Errorf("%w: key(%s) %s", ErrProfile, key, err.Error())
+	}
+
 	for _, v := range p.schema.settings[key].validators {
 		if err := v.fn(setting); err != nil {
 			return err
 		}
 	}
-	setting.vv, err = vars.NewAs(key, val.String(), true, vars.Kind(setting.kind))
-	if err != nil {
-		return fmt.Errorf("%w: key(%s) %s", ErrProfile, key, err.Error())
-	}
+
 	setting.isSet = true
 
 	p.settings[key] = setting
+	return nil
+}
+
+func (p *Profile) Validate(key string, val any) (err error) {
+	if !p.Has(key) {
+		return fmt.Errorf("setting not found %s", key)
+	}
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	setting := p.settings[key]
+
+	setting.vv, err = vars.NewAs(key, val, true, vars.Kind(setting.kind))
+	if err != nil {
+		return fmt.Errorf("%w: key(%s) %s", ErrProfile, key, err.Error())
+	}
+
+	for _, v := range p.schema.settings[key].validators {
+		if err := v.fn(setting); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -165,7 +189,8 @@ func (p *Profile) load(prefs *Preferences) (err error) {
 				}
 				p.settings[lkey] = s
 			} else {
-				return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, lkey)
+				// return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, lkey)
+				prefs.data[lkey] = ""
 			}
 		}
 	}
