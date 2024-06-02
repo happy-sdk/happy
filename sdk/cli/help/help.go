@@ -64,11 +64,11 @@ func (h *Help) AddCommand(category, name, description string) {
 	})
 }
 
-func (h *Help) AddGlobalFlags(f varflag.Flags) {
-	if f == nil {
+func (h *Help) AddGlobalFlags(flags []varflag.Flag) {
+	if flags == nil {
 		return
 	}
-	for _, flag := range f.Flags() {
+	for _, flag := range flags {
 		h.globalFlags = append(h.globalFlags, flagInfo{
 			Flag:         flag.Flag(),
 			UsageAliases: flag.UsageAliases(),
@@ -77,11 +77,11 @@ func (h *Help) AddGlobalFlags(f varflag.Flags) {
 	}
 }
 
-func (h *Help) AddSharedFlags(f varflag.Flags) {
-	if f == nil {
+func (h *Help) AddSharedFlags(flags []varflag.Flag) {
+	if flags == nil {
 		return
 	}
-	for _, flag := range f.Flags() {
+	for _, flag := range flags {
 		h.sharedFlags = append(h.sharedFlags, flagInfo{
 			Flag:         flag.Flag(),
 			UsageAliases: flag.UsageAliases(),
@@ -90,11 +90,11 @@ func (h *Help) AddSharedFlags(f varflag.Flags) {
 	}
 }
 
-func (h *Help) AddCommandFlags(f varflag.Flags) {
-	if f == nil {
+func (h *Help) AddCommandFlags(flags []varflag.Flag) {
+	if flags == nil {
 		return
 	}
-	for _, flag := range f.Flags() {
+	for _, flag := range flags {
 		h.flags = append(h.flags, flagInfo{
 			Flag:         flag.Flag(),
 			UsageAliases: flag.UsageAliases(),
