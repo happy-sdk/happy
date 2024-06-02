@@ -16,10 +16,9 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"regexp"
 	"runtime"
 	"runtime/debug"
-	"sort"
+	"slices"
 	"strings"
 	"unicode"
 )
@@ -101,9 +100,10 @@ func (a *Address) Parse(ref string) (*Address, error) {
 		return nil, err
 	}
 	return &Address{
-		url:      refurl,
-		instance: a.instance,
-		host:     refurl.Host,
+		url:        refurl,
+		instance:   a.instance,
+		host:       refurl.Host,
+		reversedns: a.reversedns,
 	}, nil
 }
 
@@ -135,15 +135,28 @@ func FromModule(host, modulepath string) (*Address, error) {
 	if len(sl) == 1 {
 		return Parse("happy://" + host + "/" + ensure(modulepath))
 	}
+	reversedns := reverseDns(modulepath)
+	addr, err := Parse("happy://" + host + "/" + strings.ReplaceAll(reversedns, ".", "-"))
+	if err != nil {
+		return nil, err
+	}
+	addr.module = modulepath
+	addr.reversedns = reversedns
+	return addr, nil
+}
 
+func reverseDns(u string) string {
 	var rev []string
 	var rmdomain bool
+	sl := strings.Split(u, "/")
+
 	if strings.Contains(sl[0], ".") {
 		rmdomain = true
-		domainparts := sort.StringSlice(strings.Split(sl[0], "."))
-		sort.Sort(domainparts)
+		domainparts := strings.Split(sl[0], ".")
+		slices.Reverse(domainparts)
 		rev = append(rev, ensure(strings.Join(domainparts, ".")))
 	}
+
 	p := len(sl)
 	for i := 0; i < p; i++ {
 		if rmdomain && i == 0 {
@@ -151,14 +164,9 @@ func FromModule(host, modulepath string) (*Address, error) {
 		}
 		rev = append(rev, (sl[i]))
 	}
-	reversedns := strings.Join(rev, ".")
-	addr, err := Parse("happy://" + host + "/" + reversedns)
-	if err != nil {
-		return nil, err
-	}
-	addr.module = modulepath
-	addr.reversedns = reversedns
-	return addr, nil
+	// slices.Reverse(rev)
+	rdns := strings.Join(rev, ".")
+	return rdns
 }
 
 // Current returns format of current application happy proto address.
@@ -225,11 +233,11 @@ func CurrentForDepth(d int) (*Address, error) {
 	return FromModule(host, name)
 }
 
-// Valid returns true if s is string which is valid app name.
-func Valid(s string) bool {
-	re := regexp.MustCompile(Regexp)
-	return re.MatchString(s)
-}
+// // Valid returns true if s is string which is valid app name.
+// func Valid(s string) bool {
+// 	re := regexp.MustCompile(Regexp)
+// 	return re.MatchString(s)
+// }
 
 // Parse takes a string address and returns a new Address instance.
 // If the address is not valid, an error is returned.
@@ -256,6 +264,8 @@ func Parse(rawAddr string) (*Address, error) {
 	var instance string
 	if len(urlparts) > 1 {
 		instance = urlparts[1]
+	} else {
+		return nil, fmt.Errorf("%w: invalid address %s", ErrAddr, rawAddr)
 	}
 	return &Address{
 		url:      url,
@@ -268,6 +278,7 @@ func ensure(in string) string {
 	if in == "-" {
 		return in
 	}
+
 	var b bytes.Buffer
 	for _, c := range in {
 		isAlnum := unicode.Is(alnum, c)
