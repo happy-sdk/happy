@@ -15,6 +15,10 @@ import (
 var (
 	EmptyVariable = Variable{}
 	EmptyValue    = Value{}
+	NilValue      = Value{
+		kind: KindInvalid,
+		str:  "nil",
+	}
 )
 
 var (

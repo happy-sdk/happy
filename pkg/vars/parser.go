@@ -67,7 +67,7 @@ func parseBool(str string) (r bool, s string, e error) {
 	switch str {
 	case "1", "t", "T", "true", "TRUE", "True":
 		r, s = true, "true"
-	case "0", "f", "F", "false", "FALSE", "False":
+	case "", "0", "f", "F", "false", "FALSE", "False":
 		r, s = false, "false"
 	default:
 		r, s, e = false, "", errorf("%w: can not %s as bool", ErrValueConv, str)

@@ -28,6 +28,8 @@ type FlagSet struct {
 	parsed  bool
 }
 
+var ErrInvalidFlagSetName = errors.New("invalid flag set name")
+
 // NewFlagSet is wrapper to parse flags together.
 // e.g. under specific command. Where "name" is command name
 // to search before parsing the flags under this set.
@@ -35,10 +37,10 @@ type FlagSet struct {
 // If argsn is -gt 0 then parser will stop after finding argsn+1 argument
 // which is not a flag.
 func NewFlagSet(name string, argn int) (*FlagSet, error) {
-	if name == "/" || (len(os.Args) > 0 && name == filepath.Base(os.Args[0]) || name == os.Args[0]) {
-		name = "/"
+	if name == "/" {
+		name = filepath.Base(os.Args[0])
 	} else if !ValidFlagName(name) {
-		return nil, fmt.Errorf("%w: name %q is not valid for flag set", ErrFlag, name)
+		return nil, fmt.Errorf("%w: %q is not valid name for flag set", ErrInvalidFlagSetName, name)
 	}
 	return &FlagSet{name: name, argn: argn}, nil
 }
@@ -247,7 +249,7 @@ func (s *FlagSet) Parse(args []string) error {
 	}
 
 	var currargs []string
-	if s.name != "/" && s.name != "*" && s.name != filepath.Base(os.Args[0]) {
+	if s.name != "*" && s.name != filepath.Base(os.Args[0]) {
 		for i, arg := range args {
 			if arg == s.name {
 				s.pos = i
@@ -285,7 +287,7 @@ func (s *FlagSet) Parse(args []string) error {
 			return err
 		}
 		if set.Present() {
-			if s.name == "/" {
+			if s.name == filepath.Base(os.Args[0]) {
 				// update global flag command names
 				for _, flag := range s.flags {
 					if !flag.Present() {
