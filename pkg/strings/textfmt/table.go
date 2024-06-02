@@ -6,6 +6,7 @@
 package textfmt
 
 import (
+	"fmt"
 	"strings"
 	"unicode/utf8"
 )
@@ -46,14 +47,15 @@ func (t *Table) String() string {
 	maxColWidth, tableWidth := t.calculateMaxColumnWidths()
 
 	if t.Title != "" {
+		title := fmt.Sprint(t.Title)
 		b.WriteString(t.buildBorder('┌', '─', '┐', maxColWidth))
-		suffixlen := tableWidth - utf8.RuneCountInString(t.Title)
+		suffixlen := tableWidth - utf8.RuneCountInString(title) - 4
 
 		suffix := ""
 		if suffixlen > 0 {
 			suffix = strings.Repeat(" ", suffixlen)
 		}
-		b.WriteString("│ " + t.Title + suffix + " │\n")
+		b.WriteString("│ " + title + suffix + " │\n")
 		b.WriteString(t.buildBorder('├', '┬', '┤', maxColWidth))
 	} else {
 		b.WriteString(t.buildBorder('┌', '┬', '┐', maxColWidth))
@@ -90,11 +92,11 @@ func (t *Table) calculateMaxColumnWidths() (cw []int, total int) {
 		}
 	}
 
-	totalWidthOfCols := 0
+	totalWidthOfCols := 1
 	for _, w := range maxColWidth {
-		totalWidthOfCols += w
+		totalWidthOfCols += w + 1
 	}
-	totalWidthOfCols++
+
 	return maxColWidth, totalWidthOfCols
 }
 
