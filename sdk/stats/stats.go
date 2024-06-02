@@ -6,6 +6,7 @@ package stats
 
 import (
 	"fmt"
+	"log/slog"
 	"runtime"
 	"sort"
 	"sync"
@@ -15,10 +16,14 @@ import (
 	"github.com/happy-sdk/happy/pkg/strings/humanize"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/vars"
+	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/internal/fsutils"
+	"github.com/happy-sdk/happy/sdk/services"
+	"github.com/happy-sdk/happy/sdk/services/service"
 )
 
 type Settings struct {
-	Enabled settings.Bool `key:"enabled,save" default:"false" mutation:"mutable"`
+	Enabled settings.Bool `key:"enabled,save" default:"false" mutation:"once"  desc:"Enable runtime statistics"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
@@ -30,7 +35,7 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 	return b, nil
 }
 
-type Runtime struct {
+type Profiler struct {
 	title       string
 	mu          sync.RWMutex
 	db          *vars.Map
@@ -44,22 +49,22 @@ type Runtime struct {
 	}
 }
 
-func New(title string) *Runtime {
-	return &Runtime{
+func New(title string) *Profiler {
+	return &Profiler{
 		title: title,
 		db:    new(vars.Map),
 		tsloc: time.UTC,
 	}
 }
 
-func (r *Runtime) Get(key string) vars.Variable {
+func (r *Profiler) Get(key string) vars.Variable {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	v := r.db.Get(key)
 	return v
 }
 
-func (r *Runtime) Set(key string, value any) error {
+func (r *Profiler) Set(key string, value any) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -69,7 +74,7 @@ func (r *Runtime) Set(key string, value any) error {
 	return r.db.Store(key, value)
 }
 
-func (r *Runtime) State() State {
+func (r *Profiler) State() State {
 	r.Update()
 
 	r.mu.RLock()
@@ -87,7 +92,7 @@ func (r *Runtime) State() State {
 	return state
 }
 
-func (r *Runtime) Update() {
+func (r *Profiler) Update() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -119,7 +124,7 @@ func (r *Runtime) Update() {
 	r.lastUpdated = time.Now().In(r.tsloc)
 }
 
-func (r *Runtime) SetTimezone(loc *time.Location) {
+func (r *Profiler) SetTimeLocation(loc *time.Location) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.tsloc = loc
@@ -173,4 +178,56 @@ func (s State) String() string {
 		tbl.AddRow(s.vars[v].Name(), s.vars[v].String())
 	}
 	return tbl.String()
+}
+
+func AsService(prof *Profiler) *services.Service {
+	svc := services.New(service.Settings{
+		Name: "app-runtime-stats",
+	})
+
+	svc.Cron(func(schedule services.CronScheduler) {
+		schedule.Job("stats:update-uptime", "@every 5s", func(sess *session.Context) error {
+			prof.Update()
+
+			staprofedAt := prof.Get("app.started.at").String()
+			if staprofedAt != "" {
+				staprofed, err := time.Parse(time.RFC3339, staprofedAt)
+				if err != nil {
+					return err
+				}
+				uptime := time.Since(staprofed)
+				if err := prof.Set("app.uptime", uptime.String()); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+
+		schedule.Job("stats:collect-storage-info", "@every 15s", func(sess *session.Context) error {
+			cachePath := sess.Get("app.fs.path.cache").String()
+			tmpPath := sess.Get("app.fs.path.tmp").String()
+
+			if cacheSize, err := fsutils.DirSize(cachePath); err != nil {
+				sess.Log().Error("failed to get cache size", slog.String("err", err.Error()))
+			} else {
+				_ = prof.Set("app.fs.cache.size", humanize.Bytes(uint64(cacheSize)))
+			}
+
+			if tmpSize, err := fsutils.DirSize(tmpPath); err != nil {
+				sess.Log().Error("failed to get tmp size", slog.String("err", err.Error()))
+			} else {
+				_ = prof.Set("app.fs.tmp.size", humanize.Bytes(uint64(tmpSize)))
+			}
+
+			if availableSpace, err := fsutils.AvailableSpace(cachePath); err != nil {
+				sess.Log().Error("failed to get available space", slog.String("err", err.Error()))
+			} else {
+				_ = prof.Set("app.fs.available", humanize.Bytes(uint64(availableSpace)))
+			}
+
+			return nil
+		})
+	})
+	return svc
 }
