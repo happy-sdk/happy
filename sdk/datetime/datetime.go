@@ -10,7 +10,7 @@ import (
 )
 
 type Settings struct {
-	Location settings.String `key:"location,save" default:"Local" mutation:"mutable"`
+	Location settings.String `key:"location,config" default:"Local" desc:"The location to use for time operations."`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
