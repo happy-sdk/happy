@@ -5,22 +5,23 @@
 package instance
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
-	"sync"
+	"time"
 
 	"github.com/happy-sdk/happy/pkg/settings"
-	"github.com/happy-sdk/happy/sdk/networking/address"
+	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/internal"
 )
 
 type Settings struct {
-	Max           settings.Uint     `key:"max" default:"1" mutation:"once"`
-	ThrottleTicks settings.Duration `key:"throttle_ticks,save" default:"1s" mutation:"once"`
+	// How many instances of the applications can be booted at the same time.
+	Max settings.Uint `key:"max" default:"1" desc:"Maximum number of instances of the application that can be booted at the same time"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
@@ -33,109 +34,76 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 }
 
 type Instance struct {
-	mu          sync.RWMutex
-	addr        *address.Address
-	slug        string
-	pidFilePath string
-	id          int
-	max         int
-	pid         int
+	id      ID
+	slug    string
+	sess    *session.Context
+	pidfile string
 }
 
-func New(slug, rdns string) (*Instance, error) {
-	curr, err := address.Current()
+var Error = errors.New("instance error")
+
+type ID string
+
+func NewID() ID {
+	hasher := sha1.New()
+	hasher.Write([]byte(fmt.Sprint(time.Now().UnixMilli())))
+	hashSum := hasher.Sum(nil)
+	fullID := hex.EncodeToString(hashSum)
+	return ID(fullID[:8])
+}
+
+func (id ID) String() string {
+	return string(id)
+}
+
+// New creates a new instance for the application.
+func New(sess *session.Context) (*Instance, error) {
+	if sess == nil {
+		return nil, fmt.Errorf("%w: session is nil", Error)
+	}
+
+	pidsdir := sess.Opts().Get("app.fs.path.pids").String()
+	if _, err := os.Stat(pidsdir); err != nil {
+		return nil, fmt.Errorf("%w: pids directory not found: %s", Error, pidsdir)
+	}
+
+	pidfiles, err := os.ReadDir(pidsdir)
 	if err != nil {
 		return nil, err
 	}
-	if len(slug) == 0 {
-		return nil, errors.New("instance can not be created without slug")
+
+	inst := &Instance{
+		id:   ID(sess.Opts().Get("app.instance.id").String()),
+		sess: sess,
 	}
-	a, err := curr.Parse(slug)
-	if err != nil {
-		return nil, err
+
+	if len(pidfiles) >= sess.Settings().Get("app.instance.max").Value().Int() {
+		return nil, fmt.Errorf("%w: max instances reached (%s)", Error, sess.Settings().Get("app.instance.max").String())
 	}
-	return &Instance{
-		addr: a,
-		slug: slug,
-		max:  1,
-	}, nil
+
+	inst.pidfile = filepath.Join(
+		pidsdir,
+		fmt.Sprintf("instance-%s.pid", inst.id.String()),
+	)
+	internal.Log(sess.Log(), "create pid lock file", slog.String("file", inst.pidfile))
+
+	if err := os.WriteFile(inst.pidfile, []byte(inst.sess.Opts().Get("app.pid").String()), 0644); err != nil {
+		return nil, fmt.Errorf("%w: failed to write intance PID file: %s", Error, err.Error())
+	}
+
+	return inst, nil
 }
 
-func (i *Instance) Address() *address.Address {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
-	return i.addr
-}
-
-func (i *Instance) Boot(pidsDir string) error {
-	// depending on Max setting, we can boot multiple instances
-	// lets check if we are within the limit and assign id for current instance.
-	pidfiles, err := os.ReadDir(pidsDir)
-	if err != nil {
-		return fmt.Errorf("failed to read PIDs directory: %w", err)
-	}
-	instanceID := 1
-	existingInstances := make(map[int]bool)
-	for _, file := range pidfiles {
-		if strings.HasPrefix(file.Name(), i.slug+"-") && strings.HasSuffix(file.Name(), ".pid") {
-			after, found := strings.CutPrefix(file.Name(), i.slug+"-")
-			if !found {
-				return fmt.Errorf("unexpected PID file name: %s", file.Name())
-			}
-
-			previd, found := strings.CutSuffix(after, ".pid")
-			if !found {
-				return fmt.Errorf("unexpected PID file name: %s", file.Name())
-			}
-
-			id, err := strconv.Atoi(previd)
-			if err == nil {
-				existingInstances[id] = true
-			}
+func (inst *Instance) Dispose() error {
+	internal.Log(inst.sess.Log(), "disposing instance", slog.String("id", inst.id.String()))
+	// delete the pidfile
+	if _, err := os.Stat(inst.pidfile); err == nil {
+		if err := os.Remove(inst.pidfile); err != nil {
+			return fmt.Errorf("failed to delete pidfile %s: %w", inst.pidfile, err)
+		}
+		if inst.sess != nil {
+			internal.Log(inst.sess.Log(), "successfully deleted pidfile", slog.String("pidfile", inst.pidfile))
 		}
 	}
-	// Find the next available instanceID.
-	for existingInstances[instanceID] && instanceID <= i.max {
-		instanceID++
-	}
-	if instanceID > i.max {
-		return fmt.Errorf("maximum number of instances (%d) reached", i.max)
-	}
-	i.id = instanceID
-
-	i.pidFilePath = filepath.Join(pidsDir, fmt.Sprintf("%s-%d.pid", i.slug, instanceID))
-	i.pid = os.Getpid()
-	if err := os.WriteFile(i.pidFilePath, []byte(strconv.Itoa(i.pid)), 0644); err != nil {
-		return fmt.Errorf("failed to write PID file: %w", err)
-	}
-	return nil
-}
-
-func (i *Instance) ID() int {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
-	return i.id
-}
-
-func (i *Instance) PID() int {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
-	return i.pid
-}
-
-func (i *Instance) Shutdown() error {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
-	if i.pidFilePath == "" {
-		return errors.New("instance is not booted, missing pid file")
-	}
-	if _, err := os.Stat(i.pidFilePath); err == nil {
-		if err := os.Remove(i.pidFilePath); err != nil {
-			return fmt.Errorf("failed to remove PID file: %w", err)
-		}
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to stat PID file: %w", err)
-	}
-
 	return nil
 }

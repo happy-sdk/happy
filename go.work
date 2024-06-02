@@ -2,7 +2,7 @@ go 1.22
 
 use (
 	.
-	./internal/cmd/hap
+	// ./internal/cmd/hap
 	./pkg/branding
 	./pkg/cli/ansicolor
 	./pkg/devel/testutils
@@ -11,6 +11,7 @@ use (
 	./pkg/settings
 	./pkg/strings/bexp
 	./pkg/strings/humanize
+	./pkg/strings/slug
 	./pkg/strings/textfmt
 	./pkg/vars
 	./pkg/version

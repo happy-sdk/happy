@@ -17,92 +17,98 @@ package happy
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
 
-	"github.com/happy-sdk/happy/pkg/branding"
-	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
-	"github.com/happy-sdk/happy/pkg/options"
-	"github.com/happy-sdk/happy/pkg/vars"
-	"github.com/happy-sdk/happy/pkg/vars/varflag"
+	"github.com/happy-sdk/happy/pkg/settings"
+	"github.com/happy-sdk/happy/pkg/strings/slug"
+	"github.com/happy-sdk/happy/sdk/app"
+	"github.com/happy-sdk/happy/sdk/app/engine"
+	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/cli"
+	"github.com/happy-sdk/happy/sdk/config"
+	"github.com/happy-sdk/happy/sdk/custom"
+	"github.com/happy-sdk/happy/sdk/datetime"
+	"github.com/happy-sdk/happy/sdk/devel"
+	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy/sdk/services"
+	"github.com/happy-sdk/happy/sdk/stats"
+	"golang.org/x/text/language"
 )
 
-var (
-	Error = errors.New("happy")
-)
-
-type Action func(sess *Session) error
-
-// type ActionWithFlags func(sess *Session, flags Flags) error
-type ActionWithArgs func(sess *Session, args Args) error
-type ActionTick func(sess *Session, ts time.Time, delta time.Duration) error
-type ActionTock func(sess *Session, delta time.Duration, tps int) error
-type ActionWithPrevErr func(sess *Session, err error) error
-type ActionWithEvent func(sess *Session, ev Event) error
-type ActionWithOptions func(sess *Session, opts *options.Options) error
-
-type Args interface {
-	Arg(i uint) vars.Value
-	ArgDefault(i uint, value any) (vars.Value, error)
-	Args() []vars.Value
-	Argn() uint
-	Flag(name string) varflag.Flag
+func New(s Settings) *app.Main {
+	return app.New(s)
 }
 
-type Flags interface {
-	// Get named flag
-	Get(name string) (varflag.Flag, error)
-	// Args() []vars.Value
+type Settings struct {
+	// Appication info
+	Name           settings.String `key:"app.name" default:"Happy Prototype" desc:"Application name"`
+	Slug           settings.String `key:"app.slug" default:"" desc:"Application slug"`
+	Identifier     settings.String `key:"app.identifier" desc:"Application identifier"`
+	Description    settings.String `key:"app.description" default:"This application is built using the Happy-SDK to provide enhanced functionality and features." desc:"Application description"`
+	CopyrightBy    settings.String `key:"app.copyright_by" default:"Anonymous" desc:"Application author"`
+	CopyrightSince settings.Uint   `key:"app.copyright_since" default:"0" desc:"Application copyright since"`
+	License        settings.String `key:"app.license" default:"NOASSERTION" desc:"Application license"`
+
+	// Application settings
+	Engine   engine.Settings   `key:"app.engine"`
+	CLI      cli.Settings      `key:"app.cli"`
+	Config   config.Settings   `key:"app.config"`
+	DateTime datetime.Settings `key:"app.datetime"`
+	Instance instance.Settings `key:"app.instance"`
+	Logging  logging.Settings  `key:"app.logging"`
+	Services services.Settings `key:"app.services"`
+	Stats    stats.Settings    `key:"app.stats"`
+
+	Devel devel.Settings `key:"app.devel"`
+
+	global     []settings.Settings
+	migrations map[string]string
+	errs       []error
 }
 
-type API interface {
-	happy() bool
-}
+// Blueprint returns a blueprint for the settings.
+func (s Settings) Blueprint() (*settings.Blueprint, error) {
 
-// New is alias to prototype.New
-func New(s Settings) *Main {
-	var osargs []string
-	for _, arg := range os.Args {
-		if strings.HasPrefix(arg, "-test.") {
-			continue
-		}
-		osargs = append(osargs, arg)
-	}
-	os.Args = osargs
-
-	m := &Main{
-		init:      newInitializer(&s),
-		root:      NewCommand(filepath.Base(os.Args[0])),
-		exitTrap:  testing.Testing(),
-		createdAt: time.Now(),
-	}
-
-	m.init.Log(logging.NewQueueRecord(logging.LevelSystemDebug, "creating new application", 3))
-	return m
-}
-
-func GetAPI[A API](sess *Session, addonName string) (api A, err error) {
-	papi, err := sess.API(addonName)
+	b, err := settings.New(&s)
 	if err != nil {
-		return api, err
+		return nil, err
 	}
-	if aa, ok := papi.(A); ok {
-		return aa, nil
+	const appSlug = "app.slug"
+	b.Describe(appSlug, language.English, "Application slug")
+	b.AddValidator(appSlug, "", func(s settings.Setting) error {
+		if s.Value().Empty() {
+			return fmt.Errorf("%w: empty application slug", settings.ErrSetting)
+		}
+		if s.Value().Len() > 128 {
+			return fmt.Errorf("%w: application slug is too long %d/128", settings.ErrSetting, s.Value().Len())
+		}
+		if !slug.IsValid(s.Value().String()) {
+			return fmt.Errorf("%w: invalid application slug", settings.ErrSetting)
+		}
+		return nil
+	})
+
+	return b, errors.Join(s.errs...)
+}
+
+// Migrate allows auto migrate old settigns from keyfrom to keyto
+// when applying preferences from deprecated keyfrom.
+func (s *Settings) Migrate(keyfrom, keyto string) {
+	if s.migrations == nil {
+		s.migrations = make(map[string]string)
 	}
-	return api, fmt.Errorf("%w: unable to cast %s API to given type", Error, addonName)
+	if to, ok := s.migrations[keyfrom]; ok {
+		s.errs = append(s.errs, fmt.Errorf("%w: adding migration from %s to %s. from %s to %s already exists", settings.ErrSetting, keyfrom, keyto, keyfrom, to))
+	}
+	s.migrations[keyfrom] = keyto
 }
 
-func Option(key string, val any) options.Arg {
-	return options.NewArg(key, val)
+// Extend adds a new settings group to the application settings.
+func (s *Settings) Extend(ss settings.Settings) {
+	s.global = append(s.global, ss)
 }
 
-type Brand interface {
-	Info() branding.Info
-	ANSI() ansicolor.Theme
+// API returns the API for the given addon slug if addon has given API registered.
+func API[API custom.API](sess *session.Context, addonSlug string) (api API, err error) {
+	return session.API[API](sess, addonSlug)
 }
-
-type BrandFunc func() (Brand, error)
