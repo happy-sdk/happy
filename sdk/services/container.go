@@ -106,7 +106,8 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 			return fmt.Errorf("%w: service start cancelled: max retries reached", Error)
 		}
 		if c.svc.settings.RetryBackoff > 0 {
-			ctx, _ := context.WithTimeout(ectx, time.Duration(c.svc.settings.RetryBackoff))
+			ctx, cancel := context.WithTimeout(ectx, time.Duration(c.svc.settings.RetryBackoff))
+			defer cancel()
 			<-ctx.Done()
 			if !errors.Is(ctx.Err(), context.DeadlineExceeded) {
 				c.mu.RUnlock()

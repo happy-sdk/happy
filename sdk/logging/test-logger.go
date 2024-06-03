@@ -119,9 +119,12 @@ func (l *TestLogger) Logger() *slog.Logger {
 	return l.log.log
 }
 
-func (l *TestLogger) ConsumeQueue(queue *QueueLogger) {
+func (l *TestLogger) ConsumeQueue(queue *QueueLogger) error {
 	records := queue.Consume()
 	for _, r := range records {
-		l.Handle(r.Record(l.log.tsloc))
+		if err := l.Handle(r.Record(l.log.tsloc)); err != nil {
+			return err
+		}
 	}
+	return nil
 }

@@ -388,7 +388,9 @@ SubCommands:
 	if c.subCommands != nil {
 		for _, cmd := range c.subCommands {
 			// Add subcommand loogs to parent command log queue
-			c.cnflog.ConsumeQueue(cmd.cnflog)
+			if err := c.cnflog.ConsumeQueue(cmd.cnflog); err != nil {
+				return err
+			}
 			cmd.parents = append(c.parents, name)
 			if err := cmd.verify(); err != nil {
 				return err

@@ -35,7 +35,6 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 
 type Instance struct {
 	id      ID
-	slug    string
 	sess    *session.Context
 	pidfile string
 }

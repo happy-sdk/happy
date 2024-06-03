@@ -5,7 +5,6 @@
 package varflag
 
 import (
-	"os"
 	"testing"
 
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
@@ -13,7 +12,7 @@ import (
 
 func TestFlagSet(t *testing.T) {
 	args := []string{
-		os.Args[0], "cmd1", "--flag1", "flag1-value", "--flag2", "flag2-value",
+		"testing", "cmd1", "--flag1", "flag1-value", "--flag2", "flag2-value",
 		"cmd-arg", "--flag3=on", "-v", // global flag can be any place
 		"subcmd", "--flag4", "val 4 flag", "arg2", "arg3", "-x", "on", // global flag can be any place
 	}
@@ -103,7 +102,7 @@ func TestFlagSet(t *testing.T) {
 
 	active := global.GetActiveSets()
 	testutils.Equal(t, 3, len(active), "active set len should be 3")
-	testutils.Equal(t, "/", active[0].Name(), "first set should be /")
+	testutils.Equal(t, "testing", active[0].Name(), "first set should be /")
 	testutils.Equal(t, "cmd1", active[1].Name(), "invalid set name for 2nd set")
 	testutils.Equal(t, "subcmd", active[2].Name(), "invalid set name for 3rd set")
 	testutils.Equal(t, 2, subcmd.Pos(), "expected subcmd pos to be 2")
@@ -134,7 +133,7 @@ func TestFlagSetName(t *testing.T) {
 
 func TestShaddowFlags(t *testing.T) {
 	args := []string{
-		os.Args[0], "cmd2", "--flag", "val2",
+		"testing", "cmd2", "--flag", "val2",
 	}
 
 	global, err := NewFlagSet(args[0], 0)

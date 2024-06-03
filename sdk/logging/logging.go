@@ -162,7 +162,7 @@ type Logger interface {
 
 	Logger() *slog.Logger
 
-	ConsumeQueue(queue *QueueLogger)
+	ConsumeQueue(queue *QueueLogger) error
 }
 
 type DefaultLogger struct {
@@ -327,11 +327,14 @@ func (l *DefaultLogger) Logger() *slog.Logger {
 	return l.log
 }
 
-func (l *DefaultLogger) ConsumeQueue(queue *QueueLogger) {
+func (l *DefaultLogger) ConsumeQueue(queue *QueueLogger) error {
 	records := queue.Consume()
 	for _, r := range records {
-		l.Handle(r.Record(l.tsloc))
+		if err := l.Handle(r.Record(l.tsloc)); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr) {

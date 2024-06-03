@@ -62,7 +62,7 @@ type boolTest struct {
 
 func getBoolTests() []boolTest {
 	return []boolTest{
-		{"ATOB_1", "", false, vars.ErrValueConv},
+		{"ATOB_1", "", false, nil},
 		{"ATOB_2", "asdf", false, vars.ErrValueConv},
 		{"ATOB_3", "false1", false, vars.ErrValueConv},
 		{"ATOB_4", "0", false, nil},

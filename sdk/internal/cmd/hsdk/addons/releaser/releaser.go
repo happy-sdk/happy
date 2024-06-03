@@ -34,7 +34,7 @@ func Addon() *addon.Addon {
 					return fmt.Errorf("invalid value for %s: %q", key, val)
 				}
 				if wd, err := os.Stat(val.String()); err != nil {
-					return fmt.Errorf("%s error: %w", key, err.Error())
+					return fmt.Errorf("%s error: %w", key, err)
 				} else if !wd.IsDir() {
 					return fmt.Errorf("%s is not a directory", val.String())
 				}

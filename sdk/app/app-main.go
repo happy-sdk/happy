@@ -151,7 +151,7 @@ func (m *Main) Run() {
 			if m.init != nil {
 				for _, r := range m.log.Consume() {
 					slogr := r.Record(time.Local)
-					slog.Default().Handler().Handle(context.Background(), slogr)
+					_ = slog.Default().Handler().Handle(context.Background(), slogr)
 				}
 			}
 		}

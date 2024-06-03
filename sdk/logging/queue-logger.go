@@ -135,13 +135,14 @@ func (l *QueueLogger) Logger() *slog.Logger {
 	return nil
 }
 
-func (l *QueueLogger) ConsumeQueue(queue *QueueLogger) {
+func (l *QueueLogger) ConsumeQueue(queue *QueueLogger) error {
 	if queue == nil || l == queue {
-		return
+		return nil
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.records = append(l.records, queue.Consume()...)
+	return nil
 }
 
 func (l *QueueLogger) Consume() []QueueRecord {

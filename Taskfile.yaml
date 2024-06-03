@@ -19,7 +19,7 @@ tasks:
       - ./.github/actions/go-test-monorepo-action/go-test-monorepo-action.sh
   release:
     desc: Run monorepo releaser
-    dir: internal/cmd/hap
+    dir: sdk/internal/cmd/hsdk
     silent: true
     cmds:
       - go run . release

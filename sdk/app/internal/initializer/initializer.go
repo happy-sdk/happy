@@ -73,7 +73,6 @@ type Initializer struct {
 	// and attemts to wait until logger becomes available
 	failed bool
 
-	debug     bool
 	pid       int
 	createdAt time.Time
 
@@ -422,7 +421,10 @@ func (init *Initializer) configureCli() error {
 	internal.LogInitDepth(init.log, 1, "configuring command line interface")
 
 	cmd, cmdlog, err := command.Compile(init.main)
-	init.log.ConsumeQueue(cmdlog)
+	logerr := init.log.ConsumeQueue(cmdlog)
+	if logerr != nil {
+		return fmt.Errorf("%w: failed to consume command log: %s", Error, logerr)
+	}
 	if err != nil {
 		return err
 	}
@@ -702,7 +704,9 @@ func (init *Initializer) configureLogger() (err error) {
 	slog.SetLogLoggerLevel(slog.Level(lvl))
 	if init.logger != nil {
 		init.logger.SetLevel(lvl)
-		init.logger.ConsumeQueue(init.log)
+		if err := init.logger.ConsumeQueue(init.log); err != nil {
+			return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
+		}
 		init.log = nil
 		if !noSlogDefault {
 			slog.SetDefault(init.logger.Logger())
@@ -726,7 +730,9 @@ func (init *Initializer) configureLogger() (err error) {
 	}
 
 	logger := logging.Console(logopts)
-	logger.ConsumeQueue(init.log)
+	if err := logger.ConsumeQueue(init.log); err != nil {
+		return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
+	}
 	init.log = nil
 
 	init.logger = logger

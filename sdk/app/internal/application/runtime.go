@@ -466,7 +466,6 @@ func (rt *Runtime) log(depth int, lvl logging.Level, msg string, attrs ...slog.A
 
 	// log with slog
 	slog.LogAttrs(context.Background(), slog.Level(lvl), msg, attrs...)
-	return
 }
 
 func (rt *Runtime) showHelp() error {
