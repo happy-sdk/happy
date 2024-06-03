@@ -5,7 +5,6 @@
 package services
 
 import (
-	"github.com/happy-sdk/happy/pkg/strings/slug"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/events"
@@ -14,8 +13,6 @@ import (
 
 type Service struct {
 	settings       service.Settings
-	slug           string
-	name           string
 	registerAction action.Action
 	startAction    action.Action
 	stopAction     action.WithPrevErr
@@ -41,19 +38,16 @@ func New(s service.Settings) *Service {
 		svc.errs = append(svc.errs, err)
 	}
 
-	svc.name = s.Name.String()
-	svc.slug = slug.Create(s.Name.String())
+	svc.settings = s
+
 	return svc
 }
 
 func (s *Service) Name() string {
-	if s.name == "" {
-		return "anonymous-service"
-	}
-	return s.name
+	return s.settings.Name.String()
 }
 func (s *Service) Slug() string {
-	return s.slug
+	return s.settings.Slug.String()
 }
 
 // OnRegister is called when app is preparing runtime and attaching services,

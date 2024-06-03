@@ -478,7 +478,7 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 	switch ev.Scope() {
 	case "services":
 		switch ev.Key() {
-		case "start.services":
+		case services.StartEvent.Key():
 			if e.state != engineRunning {
 				sess.Log().Warn("engine is not running, ignoring start.services event")
 				return
@@ -488,7 +488,7 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 				go e.serviceStart(sess, v.String())
 				return true
 			})
-		case "stop.services":
+		case services.StopEvent.Key():
 			payload := ev.Payload()
 			payload.Range(func(v vars.Variable) bool {
 				go e.serviceStop(sess, v.String(), nil)
@@ -587,8 +587,13 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 			slog.String("err", err.Error()),
 			sarg,
 		)
+		if e.state == engineRunning && svcc.CanRetry() {
+			sess.Log().Notice("retrying to start the service", sarg, slog.Int("retry", svcc.Retries()))
+			e.serviceStart(sess, svcurl)
+		}
 		return
 	}
+
 	go func(svcc *services.Container, svcurl string, sarg slog.Attr) {
 
 		if !svcc.HasTick() {
@@ -665,6 +670,15 @@ func (e *Engine) serviceStop(sess *session.Context, svcurl string, err error) {
 	internal.Log(sess.Log(), "stopping service", sarg)
 	if e := svcc.Stop(sess, err); e != nil {
 		sess.Log().Error("failed to stop service", slog.String("err", err.Error()), sarg)
+	}
+
+	if e.state == engineRunning && svcc.CanRetry() {
+		if err != nil {
+			sess.Log().Warn("retrying to skipped due service top error", sarg)
+			return
+		}
+		sess.Log().Notice("retrying to start the service", sarg, slog.Int("retry", svcc.Retries()))
+		go e.serviceStart(sess, svcurl)
 	}
 }
 

@@ -26,6 +26,7 @@ var (
 	Error = fmt.Errorf("services error")
 	// StartEvent starts services defined in payload
 	StartEvent = events.New("services", "start.services")
+	StopEvent  = events.New("services", "stop.services")
 )
 
 type Settings struct {

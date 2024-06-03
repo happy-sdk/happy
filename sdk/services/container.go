@@ -21,12 +21,13 @@ import (
 )
 
 type Container struct {
-	mu     sync.RWMutex
-	info   *service.Info
-	svc    *Service
-	cancel context.CancelCauseFunc
-	ctx    context.Context
-	cron   *serviceCron
+	mu      sync.RWMutex
+	info    *service.Info
+	svc     *Service
+	cancel  context.CancelCauseFunc
+	ctx     context.Context
+	cron    *serviceCron
+	retries int
 }
 
 func NewContainer(sess *session.Context, addr *address.Address, svc *Service) (*Container, error) {
@@ -53,7 +54,15 @@ func (c *Container) Info() *service.Info {
 	return c.info
 }
 
+func (c *Container) Settings() service.Settings {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.svc.settings
+}
+
 func (c *Container) Register(sess *session.Context) error {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	initerrs := errors.Join(c.svc.errs...)
 	if initerrs != nil {
 		return fmt.Errorf("%w(%s): service failed to initialize: %w", Error, c.info.Name(), initerrs)
@@ -75,7 +84,44 @@ func (c *Container) Register(sess *session.Context) error {
 	return nil
 }
 
+func (c *Container) CanRetry() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return bool(c.svc.settings.RetryOnError) &&
+		int(c.svc.settings.MaxRetries) > 0 &&
+		c.retries <= int(c.svc.settings.MaxRetries)
+}
+
+func (c *Container) Retries() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.retries
+}
+
 func (c *Container) Start(ectx context.Context, sess *session.Context) (err error) {
+	c.mu.RLock()
+	if c.svc.settings.RetryOnError && c.svc.settings.MaxRetries > 0 && c.retries > 0 {
+		if c.retries > int(c.svc.settings.MaxRetries) {
+			c.mu.RUnlock()
+			return fmt.Errorf("%w: service start cancelled: max retries reached", Error)
+		}
+		if c.svc.settings.RetryBackoff > 0 {
+			ctx, _ := context.WithTimeout(ectx, time.Duration(c.svc.settings.RetryBackoff))
+			<-ctx.Done()
+			if !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				c.mu.RUnlock()
+				return fmt.Errorf("%w: service start cancelled: %s", Error, ctx.Err())
+			}
+			c.mu.RUnlock()
+		}
+	} else {
+		c.mu.RUnlock()
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.retries++
 	if c.svc.startAction != nil {
 		if err := c.svc.startAction(sess); err != nil {
 			return err
@@ -88,9 +134,7 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 		}
 	}
 
-	c.mu.Lock()
 	c.ctx, c.cancel = context.WithCancelCause(ectx) // with engine context
-	c.mu.Unlock()
 
 	payload := new(vars.Map)
 
@@ -120,6 +164,9 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 }
 
 func (c *Container) Stop(sess *session.Context, e error) (err error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	if e != nil {
 		sess.Log().Error(e.Error(), slog.String("service", c.info.Addr().String()))
 	}
@@ -171,19 +218,20 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 }
 
 func (c *Container) Done() <-chan struct{} {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	done := c.ctx.Done()
-	return done
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.ctx.Done()
 }
 
 func (c *Container) HasTick() bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.svc.tickAction != nil
 }
 
 func (c *Container) Tick(sess *session.Context, ts time.Time, delta time.Duration) error {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.svc.tickAction == nil {
 		return nil
 	}
@@ -191,13 +239,29 @@ func (c *Container) Tick(sess *session.Context, ts time.Time, delta time.Duratio
 }
 
 func (c *Container) Tock(sess *session.Context, delta time.Duration, tps int) error {
+	c.mu.RLock()
 	if c.svc.tockAction == nil {
+		c.mu.RUnlock()
 		return nil
 	}
-	return c.svc.tockAction(sess, delta, tps)
+	if err := c.svc.tockAction(sess, delta, tps); err != nil {
+		c.mu.RUnlock()
+		return err
+	}
+	retries := c.retries
+	c.mu.RUnlock()
+
+	if retries > 0 {
+		c.mu.Lock()
+		c.retries = 0
+		c.mu.Unlock()
+	}
+	return nil
 }
 
 func (c *Container) HandleEvent(sess *session.Context, ev events.Event) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.svc.listeners == nil {
 		return
 	}
@@ -215,6 +279,8 @@ func (c *Container) HandleEvent(sess *session.Context, ev events.Event) {
 }
 
 func (c *Container) Listeners() []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.svc.listeners == nil {
 		return nil
 	}
@@ -226,5 +292,7 @@ func (c *Container) Listeners() []string {
 }
 
 func (c *Container) Cancel(err error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	c.cancel(err)
 }

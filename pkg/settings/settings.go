@@ -120,7 +120,7 @@ func New[S Settings](s S) (*Blueprint, error) {
 				// Use type assertion to ensure compatibility with the original field type
 				if setter, ok := originalField.Addr().Interface().(SettingField); ok {
 					if err := setter.UnmarshalSetting([]byte(spec.Value)); err != nil {
-						return nil, fmt.Errorf("22222 failed to set field %s: %w", field.Name, err)
+						return nil, fmt.Errorf("failed to set field %s: %w", field.Name, err)
 					}
 				} else if nested, ok := originalField.Addr().Interface().(Settings); ok {
 					// Handle nested settings
@@ -128,7 +128,7 @@ func New[S Settings](s S) (*Blueprint, error) {
 						return nil, fmt.Errorf("failed to set nested settings for field %s: %w", field.Name, err)
 					}
 				} else {
-					return nil, fmt.Errorf("33333 field %s does not implement SettingField interface", field.Name)
+					return nil, fmt.Errorf("field %s does not implement SettingField interface", field.Name)
 				}
 			}
 		}
@@ -171,7 +171,7 @@ func fieldImplementsSettings(field reflect.StructField) bool {
 	settingsType := reflect.TypeOf((*Settings)(nil)).Elem()
 
 	// Check if the field's type implements the Settings interface
-	return fieldType.Implements(settingsType) || reflect.PtrTo(fieldType).Implements(settingsType)
+	return fieldType.Implements(settingsType) || reflect.PointerTo(fieldType).Implements(settingsType)
 }
 
 // fieldImplementsSetting checks if a field implements the SettingField interface
@@ -187,7 +187,7 @@ func fieldImplementsSetting(field reflect.StructField) bool {
 	settingType := reflect.TypeOf((*SettingField)(nil)).Elem()
 
 	// Check if the field's type or pointer to field's type implements the Setting interface
-	implements := fieldType.Implements(settingType) || reflect.PtrTo(fieldType).Implements(settingType)
+	implements := fieldType.Implements(settingType) || reflect.PointerTo(fieldType).Implements(settingType)
 	return implements
 }
 
