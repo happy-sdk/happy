@@ -4,7 +4,9 @@
 
 package app
 
-func osmain(ch chan struct{}) {
+import "github.com/happy-sdk/happy/sdk/app/internal/application"
+
+func osmain(ch <-chan application.ShutDown) {
 	if ch != nil {
 		<-ch
 	} else {
