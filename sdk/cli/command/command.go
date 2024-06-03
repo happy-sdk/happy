@@ -23,7 +23,7 @@ var (
 	ErrHasNoParent = errors.New("command has no parent command")
 )
 
-type Settings struct {
+type Config struct {
 	Name        settings.String `key:"name"`
 	Usage       settings.String `key:"usage" mutation:"once"`
 	Category    settings.String `key:"category"`
@@ -41,7 +41,7 @@ type Settings struct {
 	SkipSharedBefore settings.Bool `key:"skip_shared_before" default:"false"`
 }
 
-func (s Settings) Blueprint() (*settings.Blueprint, error) {
+func (s Config) Blueprint() (*settings.Blueprint, error) {
 
 	b, err := settings.New(s)
 	if err != nil {
@@ -81,7 +81,7 @@ type Command struct {
 	extraUsage []string
 }
 
-func New(s Settings) *Command {
+func New(s Config) *Command {
 	c := &Command{
 		catdesc: make(map[string]string),
 		cnflog:  logging.NewQueueLogger(),
@@ -269,7 +269,7 @@ func (c *Command) tryLock(method string) bool {
 }
 
 // configure is called in New so defering outside of lock is ok.
-func (c *Command) configure(s *Settings) error {
+func (c *Command) configure(s *Config) error {
 	defer func() {
 		if c.cnf == nil {
 			// set empty profile when settings have failed to load

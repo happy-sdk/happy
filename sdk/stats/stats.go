@@ -181,7 +181,7 @@ func (s State) String() string {
 }
 
 func AsService(prof *Profiler) *services.Service {
-	svc := services.New(service.Settings{
+	svc := services.New(service.Config{
 		Name: "app-runtime-stats",
 	})
 

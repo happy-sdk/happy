@@ -17,7 +17,7 @@ var (
 	StoppedEvent = events.New("service", "stopped")
 )
 
-type Settings struct {
+type Config struct {
 	Name settings.String `key:",init" default:"Background" desc:"The name of the service."`
 	// Slug is the unique identifier of the service, if not provided it will be generated from the name.
 	Slug         settings.String   `key:",init" desc:"The slug of the service."`
@@ -27,7 +27,7 @@ type Settings struct {
 	RetryBackoff settings.Duration `key:",init" default:"5s" desc:"Duration to wait before each retry."`
 }
 
-func (s *Settings) Blueprint() (*settings.Blueprint, error) {
+func (s *Config) Blueprint() (*settings.Blueprint, error) {
 	if s.Slug == "" && s.Name != "" {
 		s.Slug = settings.String(slug.Create(s.Name.String()))
 	}

@@ -100,6 +100,9 @@ func (m *Manager) Events() []events.Event {
 
 func (m *Manager) Register(sess session.Register) error {
 	for _, addon := range m.addons {
+		if addon.registerAction == nil {
+			continue
+		}
 		if err := addon.registerAction(sess); err != nil {
 			return fmt.Errorf("%w: %s", Error, err)
 		}

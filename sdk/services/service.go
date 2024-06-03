@@ -12,7 +12,7 @@ import (
 )
 
 type Service struct {
-	settings       service.Settings
+	settings       service.Config
 	registerAction action.Action
 	startAction    action.Action
 	stopAction     action.WithPrevErr
@@ -30,7 +30,7 @@ type CronScheduler interface {
 
 // New cretes new draft service which you can compose
 // before passing it to applciation or providing it from addon.
-func New(s service.Settings) *Service {
+func New(s service.Config) *Service {
 	svc := &Service{}
 
 	_, err := s.Blueprint()

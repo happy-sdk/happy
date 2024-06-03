@@ -467,7 +467,7 @@ func (init *Initializer) initRootCommand() error {
 	os.Args = osargs
 
 	// Create root command
-	root := command.New(command.Settings{
+	root := command.New(command.Config{
 		Name:    settings.String(init.defaults.slug),
 		MinArgs: settings.Uint(init.defaults.cliMainMinArgs),
 		MaxArgs: settings.Uint(init.defaults.cliMainMaxArgs),

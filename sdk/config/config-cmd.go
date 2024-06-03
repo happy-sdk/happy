@@ -24,7 +24,7 @@ import (
 )
 
 func Command() *command.Command {
-	cmd := command.New(command.Settings{
+	cmd := command.New(command.Config{
 		Name:             "config",
 		Category:         "Configuration",
 		Description:      "Application configuration settings management",
@@ -45,7 +45,7 @@ func Command() *command.Command {
 }
 
 func configLs() *command.Command {
-	cmd := command.New(command.Settings{
+	cmd := command.New(command.Config{
 		Name:        "ls",
 		Description: "List settings for current profile",
 		Usage:       "[-a|--all]",
@@ -136,7 +136,7 @@ func configLs() *command.Command {
 }
 
 func configOpts() *command.Command {
-	cmd := command.New(command.Settings{
+	cmd := command.New(command.Config{
 		Name:        "opts",
 		Description: "List application session options for current profile",
 	})
@@ -157,7 +157,7 @@ func configOpts() *command.Command {
 }
 
 func configSet() *command.Command {
-	cmd := command.New(command.Settings{
+	cmd := command.New(command.Config{
 		Name:        "set",
 		Description: "Set a setting value",
 		MinArgs:     2,
@@ -221,7 +221,7 @@ func configSet() *command.Command {
 }
 
 func configGet() *command.Command {
-	cmd := command.New(command.Settings{
+	cmd := command.New(command.Config{
 		Name:        "get",
 		Description: "Get a setting or option value",
 		MinArgs:     1,
@@ -241,7 +241,7 @@ func configGet() *command.Command {
 }
 
 func configReset() *command.Command {
-	cmd := command.New(command.Settings{
+	cmd := command.New(command.Config{
 		Name:        "reset",
 		Description: "Reset a setting to its default value",
 		MinArgs:     1,
@@ -298,7 +298,7 @@ func configReset() *command.Command {
 }
 
 func configResetAll() *command.Command {
-	cmd := command.New(command.Settings{
+	cmd := command.New(command.Config{
 		Name:        "reset-all",
 		Description: "Reset all settings to their default values",
 	})

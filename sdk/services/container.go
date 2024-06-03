@@ -54,7 +54,7 @@ func (c *Container) Info() *service.Info {
 	return c.info
 }
 
-func (c *Container) Settings() service.Settings {
+func (c *Container) Settings() service.Config {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.svc.settings
