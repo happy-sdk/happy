@@ -4,7 +4,7 @@ github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+m
 github.com/happy-sdk/happy v0.19.0/go.mod h1:8pND3rDvQoP+zhm3Dd9qRzMGOWmMG3emRTAZv+rDjdU=
 github.com/happy-sdk/happy v0.23.0/go.mod h1:OjnEjUhw5mmRKDoMHRsi2JkukNWsABeM+4G87CbgtH0=
 github.com/happy-sdk/happy v0.24.0/go.mod h1:84kGSaM9COejEOwj62LUKc8afm5rH4hha8MKxGtB4jY=
-github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.1/go.mod h1:31cuN6nBnI7cWiNoJG951P6aZvDje0NACQHWbsszuhI=
+github.com/happy-sdk/happy/pkg/vars v0.11.0/go.mod h1:sDPlycMrTvyLHcUzFc+jx57JEmORoic0gfO1wRWRY0o=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/sahilm/fuzzy v0.1.1-0.20230530133925-c48e322e2a8f/go.mod h1:VFvziUEIMCrT6A6tw2RFIXPXXmzXbOsSHF0DOI8ZK9Y=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
