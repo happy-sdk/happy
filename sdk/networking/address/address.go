@@ -20,6 +20,7 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
+	"testing"
 	"unicode"
 )
 
@@ -197,6 +198,9 @@ func Current() (*Address, error) {
 	if err != nil {
 		return nil, err
 	}
+	if testing.Testing() && !strings.HasSuffix(name, "-test") {
+		name += "-test"
+	}
 
 	return FromModule(host, name)
 }
@@ -229,7 +233,9 @@ func CurrentForDepth(d int) (*Address, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if testing.Testing() && !strings.HasSuffix(name, "-test") {
+		name += "-test"
+	}
 	return FromModule(host, name)
 }
 

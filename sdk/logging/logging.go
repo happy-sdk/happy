@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/settings"
@@ -256,7 +257,10 @@ func (l *DefaultLogger) BUG(msg string, attrs ...slog.Attr) {
 }
 
 func (l *DefaultLogger) Println(line string, attrs ...slog.Attr) {
-	line = strings.TrimRight(line, "\n") + "\n"
+	line = strings.TrimRight(line, "\n")
+	if !testing.Testing() {
+		line += "\n"
+	}
 	l.logDepth(lvlAlways, line, attrs...)
 }
 

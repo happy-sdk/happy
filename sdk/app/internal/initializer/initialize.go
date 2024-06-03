@@ -175,6 +175,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	if err != nil {
 		return err
 	}
+
 	module = addr.Module()
 
 	if len(init.defaults.slug) == 0 {
@@ -183,10 +184,11 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 			if err != nil {
 				return err
 			}
-			init.defaults.slug = addr.Instance() + "-test"
+
+			init.defaults.slug = addr.Instance()
 
 			module = addr.Module()
-			init.defaults.identifier = addr.ReverseDNS() + ".test"
+			init.defaults.identifier = addr.ReverseDNS()
 		} else {
 			init.defaults.slug = addr.Instance()
 		}
@@ -204,6 +206,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 			return fmt.Errorf("could not find app.identifier")
 		}
 	}
+
 	if err := init.settingsb.SetDefault("app.identifier", init.defaults.identifier); err != nil {
 		return err
 	}
@@ -232,7 +235,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 			options.NoopValueValidator,
 		),
 		options.NewOption(
-			"app.fs.path.pwd",
+			"app.fs.path.wd",
 			"",
 			"Current working directory",
 			options.KindConfig|options.KindReadOnly,
@@ -355,7 +358,20 @@ func (init *Initializer) initBasePaths() error {
 	if err != nil {
 		return err
 	}
-	if err := init.opts.Set("app.fs.path.pwd", wd); err != nil {
+	if err := init.opts.Set("app.fs.path.wd", wd); err != nil {
+		return err
+	}
+
+	instanceID := instance.NewID()
+	if err := init.opts.Set("app.instance.id", instanceID); err != nil {
+		return err
+	}
+
+	tempDir := filepath.Join(os.TempDir(), init.defaults.slug, fmt.Sprintf("instance-%s", instanceID))
+	if err := init.utilMkdir("create tmp directory", tempDir, 0700); err != nil {
+		return err
+	}
+	if err := init.opts.Set("app.fs.path.tmp", tempDir); err != nil {
 		return err
 	}
 
@@ -365,7 +381,13 @@ func (init *Initializer) initBasePaths() error {
 		return err
 	}
 
-	appConfigDir := filepath.Join(userConfigDir, init.defaults.slug)
+	var appConfigDir string
+	if testing.Testing() {
+		appConfigDir = filepath.Join(init.opts.Get("app.fs.path.tmp").String(), "config")
+	} else {
+		appConfigDir = filepath.Join(userConfigDir, init.defaults.slug)
+	}
+
 	_, err = os.Stat(appConfigDir)
 	if errors.Is(err, fs.ErrNotExist) {
 		if err := init.utilMkdir("create config dir", appConfigDir, 0700); err != nil {
@@ -391,10 +413,6 @@ func (init *Initializer) initBasePaths() error {
 	if err := init.opts.Set("app.fs.path.pids", pidsDir); err != nil {
 		return err
 	}
-	instanceID := instance.NewID()
-	if err := init.opts.Set("app.instance.id", instanceID); err != nil {
-		return err
-	}
 
 	// Define default profile to load
 	deafaultProfileFile := filepath.Join(appConfigDir, ".default.profile")
@@ -415,13 +433,6 @@ func (init *Initializer) initBasePaths() error {
 		}
 	}
 
-	tempDir := filepath.Join(os.TempDir(), init.defaults.slug, fmt.Sprintf("instance-%s", instanceID))
-	if err := init.utilMkdir("create tmp directory", tempDir, 0700); err != nil {
-		return err
-	}
-	if err := init.opts.Set("app.fs.path.tmp", tempDir); err != nil {
-		return err
-	}
 	// Add an exit function to delete tmp dir
 	init.rt.WithExitFunc(func(sess *session.Context, code int) error {
 		if tempDir == "" {

@@ -460,14 +460,15 @@ func (init *Initializer) configureProfile() (err error) {
 		loadSlug           = init.defaults.configDefaultProfile
 
 		pref *settings.Preferences
-
-		profileExists = func(slug string) bool {
-			if _, err := os.Stat(filepath.Join(profilesDir, slug, prefFilename)); err == nil {
-				return true
-			}
-			return false
-		}
 	)
+
+	var profileExists = func(slug string) bool {
+		if _, err := os.Stat(filepath.Join(profilesDir, slug, prefFilename)); err == nil {
+			return true
+		}
+		return false
+	}
+
 	// Function check does given profile exists
 	if init.defaults.configDisabled {
 		loadProfileConfigDir := filepath.Join(profilesDir, loadSlug)
@@ -622,10 +623,11 @@ LoadProfile:
 		if err != nil {
 			return fmt.Errorf("%w: failed to get user cache dir %s", Error, err)
 		}
+		userCacheDir = filepath.Join(userCacheDir, init.defaults.slug)
 	}
 
 	// Set profile cache directory
-	profileCacheDir := filepath.Join(userCacheDir, init.defaults.slug, "profiles", loadSlug)
+	profileCacheDir := filepath.Join(userCacheDir, "profiles", loadSlug)
 	_, err = os.Stat(profileCacheDir)
 	if errors.Is(err, fs.ErrNotExist) {
 		if err := init.utilMkdir("create cache directory", profileCacheDir, 0700); err != nil {
