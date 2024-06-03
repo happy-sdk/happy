@@ -178,12 +178,12 @@ func (c *Command) Do(action action.WithArgs) *Command {
 
 func (c *Command) WithFlags(ffns ...varflag.FlagCreateFunc) *Command {
 	for _, fn := range ffns {
-		c.WithFlag(fn)
+		c.withFlag(fn)
 	}
 	return c
 }
 
-func (c *Command) WithFlag(ffn varflag.FlagCreateFunc) *Command {
+func (c *Command) withFlag(ffn varflag.FlagCreateFunc) *Command {
 	if !c.tryLock("WithFlag") {
 		return c
 	}
@@ -211,7 +211,14 @@ func (c *Command) AddInfo(paragraph string) *Command {
 	return c
 }
 
-func (c *Command) WithSubCommand(cmd *Command) *Command {
+func (c *Command) WithSubCommands(cmds ...*Command) *Command {
+	for _, cmd := range cmds {
+		c.withSubCommand(cmd)
+	}
+	return c
+}
+
+func (c *Command) withSubCommand(cmd *Command) *Command {
 	if !c.tryLock("WithSubCommand") {
 		return c
 	}

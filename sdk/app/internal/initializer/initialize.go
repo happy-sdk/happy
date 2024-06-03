@@ -484,19 +484,19 @@ func (init *Initializer) initRootCommand() error {
 		)
 
 		if !init.defaults.configDisabled {
-			root.WithFlag(varflag.StringFunc("profile", init.defaults.configDefaultProfile, "session profile to be used"))
+			root.WithFlags(varflag.StringFunc("profile", init.defaults.configDefaultProfile, "session profile to be used"))
 		}
 
 	}
 
 	if !init.defaults.cliWithoutGlobalFlags && init.defaults.develAllowProd {
 		if init.opts.Get("app.is_devel").Bool() {
-			root.WithFlag(devel.FlagXProd)
+			root.WithFlags(devel.FlagXProd)
 		}
 	}
 
 	if !init.defaults.cliWithoutConfigCmd {
-		root.WithSubCommand(config.Command())
+		root.WithSubCommands(config.Command())
 	}
 
 	init.main = root

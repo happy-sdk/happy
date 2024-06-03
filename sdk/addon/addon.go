@@ -110,24 +110,28 @@ func (addon *Addon) Emits(evs ...events.Event) {
 	}
 }
 
-func (addon *Addon) ProvideCommand(cmd *command.Command) {
+func (addon *Addon) ProvideCommands(cmds ...*command.Command) {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
-	if cmd == nil {
-		addon.perr(fmt.Errorf("%w: %s provided <nil> command", Error, addon.info.Name))
-		return
+	for _, cmd := range cmds {
+		if cmd == nil {
+			addon.perr(fmt.Errorf("%w: %s provided <nil> command", Error, addon.info.Name))
+			return
+		}
+		addon.cmds = append(addon.cmds, cmd)
 	}
-	addon.cmds = append(addon.cmds, cmd)
 }
 
-func (addon *Addon) ProvideService(svc *services.Service) {
+func (addon *Addon) ProvideServices(svcs ...*services.Service) {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
-	if svc == nil {
-		addon.perr(fmt.Errorf("%w: %s provided <nil> service", Error, addon.info.Name))
-		return
+	for _, svc := range svcs {
+		if svc == nil {
+			addon.perr(fmt.Errorf("%w: %s provided <nil> service", Error, addon.info.Name))
+			return
+		}
+		addon.svcs = append(addon.svcs, svc)
 	}
-	addon.svcs = append(addon.svcs, svc)
 }
 
 func (addon *Addon) ProvideAPI(api custom.API) {

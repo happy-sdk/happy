@@ -34,12 +34,14 @@ func Command() *command.Command {
 
 	cmd.AddInfo("This command allows you to manage the application configuration settings and settings profiles.")
 
-	cmd.WithSubCommand(configLs())
-	cmd.WithSubCommand(configOpts())
-	cmd.WithSubCommand(configSet())
-	cmd.WithSubCommand(configGet())
-	cmd.WithSubCommand(configReset())
-	cmd.WithSubCommand(configResetAll())
+	cmd.WithSubCommands(
+		configLs(),
+		configOpts(),
+		configSet(),
+		configGet(),
+		configReset(),
+		configResetAll(),
+	)
 
 	return cmd
 }
@@ -53,8 +55,10 @@ func configLs() *command.Command {
 
 	cmd.Usage("--profile=<profile-name> [flags]")
 
-	cmd.WithFlag(varflag.BoolFunc("all", false, "List all settings, including internal settings", "a"))
-	cmd.WithFlag(varflag.BoolFunc("describe", false, "Describe all displayed settings", "d"))
+	cmd.WithFlags(
+		varflag.BoolFunc("all", false, "List all settings, including internal settings", "a"),
+		varflag.BoolFunc("describe", false, "Describe all displayed settings", "d"),
+	)
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		var (

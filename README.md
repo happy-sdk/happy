@@ -19,18 +19,21 @@ Happy SDK is designed to simplify your development process without introducing a
 package main
 
 import (
-  "fmt"
+	"fmt"
 
-  "github.com/happy-sdk/happy"
-  "github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/sdk/action"
+	"github.com/happy-sdk/happy/sdk/app/session"
 )
 
-func ExampleNew() {
+func main() {
   app := happy.New(happy.Settings{})
-  app.Do(func(sess *happy.Session, args happy.Args) error {
+
+  app.Do(func(sess *session.Context, args action.Args) error {
     sess.Log().Println("Hello, world!")
     return nil
   })
+
   app.Run()
 }
 
@@ -40,21 +43,28 @@ For more examples, take a look at the [examples](#examples) section and the exam
 
 ### Application api
 
-More details of api read happy Godoc 
+More details of api read happy Godoc  
+ [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/app)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/app)
 
 ```go
+
 ...
-app.WithAddon(/* adds addon to app */)
-app.WithMigrations(/* use migration manager */)
-app.WithService(/* adds service to app */)
-app.WithCommand(/* adds command to app */)
-app.WithFlag(/* adds flag to app root command*/)
-app.WithLogger(/* uses provided logger */)
+app.AddInfo(/* add paragraph to app help */)
 app.WithOptions(/* adds allowed runtime option */)
+app.SetOptions(/* update default value for any application or addon option */) 
+app.Setup(/* optional setup action called only first time app is used */)
+app.WithAddon(/* adds addon to app */)
+app.WithBrand(/* customize branding of the app */)
+app.WithCommands(/* adds command(s) to app */)
+app.WithFlags(/* adds flag(s) to app root command */)
+app.WithLogger(/* uses provided logger */)
+app.WithMigrations(/* use migration manager */)
+app.WithServices(/* adds service(s) to app */)
+
 ...
 
 ...
-// All the following are optional 
+// Application root command actions
 app.BeforeAlways(/* called always before any command is invoked*/)
 app.Before(/* called before root command is invoked*/)
 app.Do(/* root command Do function */)
@@ -68,44 +78,48 @@ app.Tock(/* called after every tick*/)
 
 ### Commands
 
-`happy.Command` provides a universal API for attaching sub-commands directly to the application or providing them from an Addon.
+`command.Command` provides a universal API for attaching sub-commands directly to the application or providing them from an Addon.  
+ [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/cli/command)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/cli/command)
 
 
 ```go
+import "github.com/happy-sdk/happy/sdk/cli/command"
 ...
-cmd := happy.NewCommand(
-  "my-command",
-  happy.Option("usage", "My sub-command"),
-  happy.Option("argn.min", 1),
-  happy.Option("argn.max", 10),
-)
+cmd := command.New(command.Config{
+  Name: "my-command"
+})
 
 cmd.Do(/* Main function for the command */)
-
 // Optional:
-cmd.AddInfo(/* add long description paragraph for command*/)
-cmd.AddFlag(/* add flag to  command*/)
-
 cmd.Before(/* Called after app.Before and before cmd.Do */)
 cmd.AfterSuccess(/* Called when cmd.Do returns without errors */)
 cmd.AfterFailure(/* Called when cmd.Do returns with errors */)
 cmd.AfterAlways(/* Called always when cmd.Do returns */)
-cmd.AddSubCommand(/* Add a sub-command to the command */)
-cmd.AddFlag(/* Add a flag for the command */)
 
-cmd.AddSubCommand(/* add subcommand to command */)
+cmd.Usage(/* add attitional usage lines to help menu */)
+cmd.AddInfo(/* add long description paragraph for command */)
+cmd.WithSubCommands(/* Add a sub-command to the command */)
+cmd.WithFlags(/* add flag(s) to  command*/)
 ...
 ```
 
 ### Services
 
-The `happy.Service` API provides a flexible way to add runtime-controllable background services to your application.
+The `services.Service` API provides a flexible way to add runtime-controllable background services to your application.  
+ [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/services)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/services)
+
 
 ```go
+import (
+  "github.com/happy-sdk/happy/sdk/services"
+  "github.com/happy-sdk/happy/sdk/services/service"
+)
 ...
-svc := happy.NewService("my-service")
+svc := services.New(service.Config{
+  Name: "my-service",
+})
 
-svc.OnInitialize(/* Called when the app starts. */)
+svc.OnRegister(/* Called when the app starts. */)
 svc.OnStart(/* Called when the service is requested to start. */)
 svc.OnStop(/* Called when the service is requested to stop. */)
 svc.OnEvent(/* Called when a specific event is received. */)
@@ -114,13 +128,14 @@ svc.Cron(/* Scheduled cron jobs to run when the service is running. */)
 svc.Tick(/* Called every tick when the service is running. */)
 svc.Tock(/* Called after every tick when the service is running. */)
 
-app.RegisterService(svc)
+app.WithServices(svc)
 ...
 ```
 
 ## Addons
 
-Addons provide a simple way to bundle commands and services into a single Go package, allowing for easy sharing between projects.
+Addons provide a simple way to bundle commands and services into a single Go package, allowing for easy sharing between projects.  
+ [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/addon)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/addon)
 
 ```go
 // main.go
@@ -132,7 +147,7 @@ import (
 )
 
 func main() {
-  app := happy.New()
+  app := happy.New(happy.Settings{})
   app.WithAddons(helloworld.Addon())
   app.Main()
 }
@@ -143,36 +158,35 @@ func main() {
 // helloworld/addon.go
 package helloworld
 
-import "github.com/happy-sdk/happy"
+import (
+  "github.com/happy-sdk/happy/sdk/addon"
+  "github.com/happy-sdk/happy/sdk/custom"
+)
 
 type HelloWorldAPI struct {
-  happy.API
+  custom.API
 }
 
 func Addon() *happy.Addon {
-  addon := happy.NewAddon(
-    "hello-world",
-    happy.Option("description", "example addon"),
+  addon := addon.New(addon.Config{
+    Name: "Releaser",
+  }, 
+    addon.Option("my-opt", "default-val", "custom option", false, nil),
   )
 
-  // Optional: Set a custom setting
-  addon.Setting("greet.msg", "any value", "setting description", /* validation func */)
 
   // Optional: Register commands provided by the addon
-  addon.ProvidesCommand(/* provide command */)
+  addon.ProvidesCommands(/* provide command(s) */)
 
   // Optional: Register services provided by the addon
-  addon.ProvidesService(/* provide service */)
+  addon.ProvidesServices(/* provide service(s) */)
 
   // Optional: Make a custom API accessible across the application 
-  addon.ProvidesAPI(&HelloWorldAPI{}) 
+  addon.ProvideAPI(&HelloWorldAPI{}) 
 
   // Register all events that the addon may emit ()
-  addon.Emits("event scope", "event key" , "event description", /* example payload */)
-  addon.EmitsEvent(/* if you already have event */)
+  addon.Emits(/* events what addon emits */)
 
-  addon.Option("key", "value", "addon specific runtime option", /* optional validator*/)
-  
   // Optional callback to be called when the addon is registered
   addon.OnRegister(func(sess *happy.Session, opts *happy.Options) error {
     sess.Log().Notice("hello-world addon registered")

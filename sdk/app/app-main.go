@@ -227,11 +227,11 @@ func (m *Main) WithBrand(b *branding.Builder) *Main {
 	return m
 }
 
-func (m *Main) WithCommand(cmd *command.Command) *Main {
-	if m.canConfigure("add subcommand") {
+func (m *Main) WithCommands(cmd ...*command.Command) *Main {
+	if m.canConfigure("add subcommands") {
 		m.mu.Lock()
 		defer m.mu.Unlock()
-		m.init.MainAddCommand(cmd)
+		m.init.MainAddCommands(cmd)
 	}
 	return m
 }
@@ -268,11 +268,11 @@ func (m *Main) WithOptions(opts ...options.Spec) *Main {
 	return m
 }
 
-func (m *Main) WithService(svc *services.Service) *Main {
+func (m *Main) WithServices(svc ...*services.Service) *Main {
 	if m.canConfigure("setting service") {
 		m.mu.Lock()
 		defer m.mu.Unlock()
-		m.rt.AddService(svc)
+		m.rt.AddServices(svc)
 	}
 	return m
 }

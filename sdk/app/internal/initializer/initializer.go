@@ -240,10 +240,11 @@ func (init *Initializer) MainTock(a action.Tock) {
 	defer init.mu.Unlock()
 	init.rt.SetMainTock(a)
 }
-func (init *Initializer) MainAddCommand(cmd *command.Command) {
+
+func (init *Initializer) MainAddCommands(cmds []*command.Command) {
 	init.mu.RLock()
 	defer init.mu.RUnlock()
-	init.main.WithSubCommand(cmd)
+	init.main.WithSubCommands(cmds...)
 }
 
 func (init *Initializer) MainAddFlags(ffns []varflag.FlagCreateFunc) {
@@ -399,15 +400,10 @@ func (init *Initializer) configureAddons() error {
 	if err := init.addonm.ExtendOptions(init.opts); err != nil {
 		return err
 	}
-
 	commands := init.addonm.Commands()
-	for _, cmd := range commands {
-		init.main.WithSubCommand(cmd)
-	}
-	services := init.addonm.Services()
-	for _, svc := range services {
-		init.rt.AddService(svc)
-	}
+	init.main.WithSubCommands(commands...)
+
+	init.rt.AddServices(init.addonm.Services())
 
 	if len(commands) > 0 {
 		internal.Log(init.log, "added addons commands", slog.Int("count", len(commands)))

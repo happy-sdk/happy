@@ -72,7 +72,7 @@ func Addon() *addon.Addon {
 		addon.Option("github.token", "", "Github token for that repository with release permissions", false, nil),
 	)
 
-	addon.ProvideCommand(r.createReleaseCommand())
+	addon.ProvideCommands(r.createReleaseCommand())
 
 	return addon
 }
@@ -95,8 +95,10 @@ func (r *releaser) createReleaseCommand() *command.Command {
   hsdk release .
   hsdk release /path/to/app`)
 
-	cmd.WithFlag(varflag.OptionFunc("next", []string{"auto"}, []string{"auto", "major", "minor", "patch"}, "specify next version to release", "n"))
-	cmd.WithFlag(varflag.BoolFunc("dirty", false, "allow release from dirty git repository"))
+	cmd.WithFlags(
+		varflag.OptionFunc("next", []string{"auto"}, []string{"auto", "major", "minor", "patch"}, "specify next version to release", "n"),
+		varflag.BoolFunc("dirty", false, "allow release from dirty git repository"),
+	)
 
 	cmd.Before(func(sess *session.Context, args action.Args) error {
 		path, err := args.ArgDefault(0, ".")

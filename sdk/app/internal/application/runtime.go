@@ -122,8 +122,8 @@ func (rt *Runtime) InitStats(startedAt time.Time, took time.Duration) {
 	rt.initTook = took
 }
 
-func (rt *Runtime) AddService(svc *services.Service) {
-	rt.svcs = append(rt.svcs, svc)
+func (rt *Runtime) AddServices(svcs []*services.Service) {
+	rt.svcs = append(rt.svcs, svcs...)
 }
 
 func (rt *Runtime) boot() (err error) {
