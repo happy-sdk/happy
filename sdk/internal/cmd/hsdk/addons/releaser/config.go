@@ -5,59 +5,64 @@
 package releaser
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
+
+	"bytes"
+	"fmt"
+	"os/exec"
 	"strings"
+
+	"github.com/happy-sdk/happy/pkg/vars"
+	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/cli"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/pkg/vars"
-	"github.com/happy-sdk/happy/sdk/cli/oscmd"
 )
 
-type configuration struct {
-	WD string
-}
-
-func newConfiguration(sess *happy.Session, path string, allowDirty bool) (*configuration, error) {
-	c := &configuration{}
+func newConfiguration(sess *session.Context, path string, allowDirty bool) error {
 	if path == "" {
 		path = "."
 	}
-	if err := c.resolveProjectWD(sess, path); err != nil {
-		return nil, err
+
+	if err := resolveProjectWD(sess, path); err != nil {
+		return err
 	}
 
-	gitinfo, err := c.getGitInfo(sess)
+	gitinfo, err := getGitInfo(sess)
 	if err != nil {
-		return nil, err
+		return err
 	}
+
 	if gitinfo.dirty == "true" {
 		if !allowDirty {
-			return nil, fmt.Errorf("git repository is dirty - commit or stash changes before releasing")
+			return fmt.Errorf("git repository is dirty - commit or stash changes before releasing")
 		}
+
 		addCmd := exec.Command("git", "add", "-A")
-		addCmd.Dir = c.WD
-		if err := oscmd.Run(sess, addCmd); err != nil {
-			return nil, err
+		addCmd.Dir = sess.Get("releaser.wd").String()
+		if err := cli.Run(sess, addCmd); err != nil {
+			return err
 		}
+		// commitCmd := exec.Command("git", "commit", "--amend", "--no-edit")
+		// commitCmd.Dir = sess.Get("releaser.wd").String()
+		// if err := cli.Run(sess, commitCmd); err != nil {
+		// 	return err
+		// }
 		commitCmd := exec.Command("git", "commit", "-sm", "wip: prepare release")
-		commitCmd.Dir = c.WD
-		if err := oscmd.Run(sess, commitCmd); err != nil {
-			return nil, err
+		commitCmd.Dir = sess.Get("releaser.wd").String()
+		if err := cli.Run(sess, commitCmd); err != nil {
+			return err
 		}
 	}
 
 	totalmodules := 0
-	if err := filepath.Walk(c.WD, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(sess.Get("releaser.wd").String(), func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -71,16 +76,16 @@ func newConfiguration(sess *happy.Session, path string, allowDirty bool) (*confi
 		totalmodules++
 		return nil
 	}); err != nil {
-		return nil, err
+		return err
 	}
 
-	dotenvp := filepath.Join(c.WD, ".env")
+	dotenvp := filepath.Join(sess.Get("releaser.wd").String(), ".env")
 	dotenvb, err := os.ReadFile(dotenvp)
 	if err == nil {
 		sess.Log().Debug("loading .env file", slog.String("path", dotenvp))
 		env, err := vars.ParseMapFromBytes(dotenvb)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		env.Range(func(v vars.Variable) bool {
 			sess.Log().Debug("setting env var", slog.String("env", v.Name()))
@@ -92,30 +97,28 @@ func newConfiguration(sess *happy.Session, path string, allowDirty bool) (*confi
 	}
 
 	var opts map[string]string = map[string]string{
-		"releaser.working.directory": c.WD,
-		"releaser.git.branch":        gitinfo.branch,
-		"releaser.git.remote.url":    gitinfo.remoteURL,
-		"releaser.git.remote.name":   gitinfo.remoteName,
-		"releaser.git.dirty":         gitinfo.dirty,
-		"releaser.git.committer":     gitinfo.committer,
-		"releaser.git.email":         gitinfo.email,
-		"releaser.go.modules.count":  fmt.Sprint(totalmodules),
-		"releaser.go.monorepo":       fmt.Sprintf("%t", totalmodules > 1),
-		"releaser.github.token":      os.Getenv("GITHUB_TOKEN"),
-		"releaser.git.allow.dirty":   fmt.Sprintf("%t", allowDirty),
+		"releaser.git.branch":       gitinfo.branch,
+		"releaser.git.remote.url":   gitinfo.remoteURL,
+		"releaser.git.remote.name":  gitinfo.remoteName,
+		"releaser.git.dirty":        gitinfo.dirty,
+		"releaser.git.committer":    gitinfo.committer,
+		"releaser.git.email":        gitinfo.email,
+		"releaser.go.modules.count": fmt.Sprint(totalmodules),
+		"releaser.go.monorepo":      fmt.Sprintf("%t", totalmodules > 1),
+		"releaser.github.token":     os.Getenv("GITHUB_TOKEN"),
+		"releaser.git.allow.dirty":  fmt.Sprintf("%t", allowDirty),
 	}
-
 	for key, value := range opts {
-		if err := sess.Set(key, value); err != nil {
-			return nil, err
+		if err := sess.Opts().Set(key, value); err != nil {
+			return err
 		}
 	}
 
-	return c, nil
+	return nil
 }
 
 // resolveProjectWD resolves the working directory of the project.
-func (c *configuration) resolveProjectWD(sess *happy.Session, path string) error {
+func resolveProjectWD(sess *session.Context, path string) error {
 	currentPath, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -125,8 +128,7 @@ func (c *configuration) resolveProjectWD(sess *happy.Session, path string) error
 	for {
 		// Check if the current path is a Git repository
 		if isGitRepo(currentPath) {
-			c.WD = currentPath
-			return nil
+			return sess.Opts().Set("releaser.wd", currentPath)
 		}
 
 		parent := filepath.Dir(currentPath)
@@ -137,7 +139,14 @@ func (c *configuration) resolveProjectWD(sess *happy.Session, path string) error
 		currentPath = parent
 	}
 
-	return errors.New("Git repository not found in any parent directory")
+	return errors.New("git repository not found in any parent directory")
+}
+
+// isGitRepo checks if the given directory is a Git repository.
+func isGitRepo(path string) bool {
+	gitDir := filepath.Join(path, ".git")
+	_, err := os.Stat(gitDir)
+	return err == nil || !os.IsNotExist(err)
 }
 
 type gitinfo struct {
@@ -149,13 +158,13 @@ type gitinfo struct {
 	email      string // email of the committer
 }
 
-func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
+func getGitInfo(sess *session.Context) (*gitinfo, error) {
 	info := &gitinfo{}
 
 	// Get current branch
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-	branchCmd.Dir = c.WD
-	branch, err := oscmd.ExecRaw(sess, branchCmd)
+	branchCmd.Dir = sess.Get("releaser.wd").String()
+	branch, err := cli.ExecRaw(sess, branchCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +172,8 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 
 	// Get remote name
 	remoteCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "@{u}")
-	remoteCmd.Dir = c.WD
-	remote, err := oscmd.ExecRaw(sess, remoteCmd)
+	remoteCmd.Dir = sess.Get("releaser.wd").String()
+	remote, err := cli.ExecRaw(sess, remoteCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +184,8 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 
 	// Get origin URL
 	remoteURLCmd := exec.Command("git", "config", "--get", "remote."+info.remoteName+".url")
-	remoteURLCmd.Dir = c.WD
-	remoteURL, err := oscmd.ExecRaw(sess, remoteURLCmd)
+	remoteURLCmd.Dir = sess.Get("releaser.wd").String()
+	remoteURL, err := cli.ExecRaw(sess, remoteURLCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +193,8 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 
 	// Check for uncommitted changes
 	statusCmd := exec.Command("git", "status", "--porcelain")
-	statusCmd.Dir = c.WD
-	status, err := oscmd.ExecRaw(sess, statusCmd)
+	statusCmd.Dir = sess.Get("releaser.wd").String()
+	status, err := cli.ExecRaw(sess, statusCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -197,16 +206,16 @@ func (c *configuration) getGitInfo(sess *happy.Session) (*gitinfo, error) {
 
 	// Get committer name and email
 	committerCmd := exec.Command("git", "config", "user.name")
-	committerCmd.Dir = c.WD
-	committer, err := oscmd.ExecRaw(sess, committerCmd)
+	committerCmd.Dir = sess.Get("releaser.wd").String()
+	committer, err := cli.ExecRaw(sess, committerCmd)
 	if err != nil {
 		return nil, err
 	}
 	info.committer = strings.TrimSpace(string(committer))
 
 	emailCmd := exec.Command("git", "config", "user.email")
-	emailCmd.Dir = c.WD
-	email, err := oscmd.ExecRaw(sess, emailCmd)
+	emailCmd.Dir = sess.Get("releaser.wd").String()
+	email, err := cli.ExecRaw(sess, emailCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -221,8 +230,67 @@ type DescribedOption struct {
 	Value       string
 }
 
-// getConfirmConfigModel returns the model for the confirmation table.
-func (c *configuration) getConfirmConfigModel(sess *happy.Session) (configTable, error) {
+var statusMessageStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#f40202")).
+	Render
+
+var configTableStyle = lipgloss.NewStyle().
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderForeground(lipgloss.Color("#ffed56")).
+	Render
+
+type configTable struct {
+	answered bool
+	yes      bool
+	err      string
+	table    table.Model
+}
+
+func (m configTable) Init() tea.Cmd {
+	return nil
+}
+
+func (m configTable) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "y", "Y":
+			m.err = ""
+			m.yes = true
+			m.answered = true
+			return m, tea.Quit
+		case "n", "N":
+			m.err = ""
+			m.yes = false
+			m.answered = true
+			return m, tea.Quit
+		case "up", "down":
+			m.table, cmd = m.table.Update(msg)
+			return m, cmd
+		default:
+			m.err = fmt.Sprintf("invalid input %q", msg.String())
+		}
+	}
+
+	return m, nil
+}
+
+func (m configTable) View() string {
+	if m.answered {
+		return ""
+	}
+	view := "RELEASE SETTINGS\n\n"
+	view += "The following settings will be used to create the release.\n\n"
+	view += configTableStyle(m.table.View()) + "\n\n"
+	view += "Do you want to continue? [y/n]: \n"
+	if m.err != "" {
+		return view + "\n" + statusMessageStyle(m.err)
+	}
+	return view
+}
+
+func getConfirmConfigModel(sess *session.Context) (configTable, error) {
 	releaserOptions := sess.Opts().WithPrefix("releaser.")
 	// sort keys
 	var (
@@ -296,71 +364,4 @@ func (c *configuration) getConfirmConfigModel(sess *happy.Session) (configTable,
 		table: t,
 	}
 	return m, nil
-}
-
-var statusMessageStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#f40202")).
-	Render
-
-var configTableStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("#ffed56")).
-	Render
-
-type configTable struct {
-	answered bool
-	yes      bool
-	err      string
-	table    table.Model
-}
-
-func (m configTable) Init() tea.Cmd {
-	return nil
-}
-
-func (m configTable) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "y", "Y":
-			m.err = ""
-			m.yes = true
-			m.answered = true
-			return m, tea.Quit
-		case "n", "N":
-			m.err = ""
-			m.yes = false
-			m.answered = true
-			return m, tea.Quit
-		case "up", "down":
-			m.table, cmd = m.table.Update(msg)
-			return m, cmd
-		default:
-			m.err = fmt.Sprintf("invalid input %q", msg.String())
-		}
-	}
-
-	return m, nil
-}
-
-func (m configTable) View() string {
-	if m.answered {
-		return ""
-	}
-	view := "RELEASE SETTINGS\n\n"
-	view += "The following settings will be used to create the release.\n\n"
-	view += configTableStyle(m.table.View()) + "\n\n"
-	view += "Do you want to continue? [y/n]: \n"
-	if m.err != "" {
-		return view + "\n" + statusMessageStyle(m.err)
-	}
-	return view
-}
-
-// isGitRepo checks if the given directory is a Git repository.
-func isGitRepo(path string) bool {
-	gitDir := filepath.Join(path, ".git")
-	_, err := os.Stat(gitDir)
-	return err == nil || !os.IsNotExist(err)
 }

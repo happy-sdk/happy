@@ -5,6 +5,7 @@
 package addon
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/happy-sdk/happy/pkg/options"
@@ -100,6 +101,10 @@ func (m *Manager) Events() []events.Event {
 
 func (m *Manager) Register(sess session.Register) error {
 	for _, addon := range m.addons {
+		err := errors.Join(addon.errs...)
+		if err != nil {
+			return fmt.Errorf("%w(%s): %s", Error, addon.info.Slug, err.Error())
+		}
 		if addon.registerAction == nil {
 			continue
 		}

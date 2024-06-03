@@ -344,7 +344,7 @@ func (c *Command) verify() error {
 		withargs = append(withargs, fmt.Sprintf(
 			" // min %d max %d",
 			c.cnf.Get("min_args").Value().Int(),
-			c.cnf.Get("man_args").Value().Int(),
+			c.cnf.Get("max_args").Value().Int(),
 		))
 		c.usage = append(c.usage, strings.Join(withargs, " "))
 	}

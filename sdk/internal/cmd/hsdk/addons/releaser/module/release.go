@@ -11,12 +11,12 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser/git"
-	"github.com/happy-sdk/happy/sdk/cli/oscmd"
+	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/cli"
+	"github.com/happy-sdk/happy/sdk/internal/cmd/hsdk/addons/releaser/git"
 )
 
-func (p *Package) Release(sess *happy.Session) error {
+func (p *Package) Release(sess *session.Context) error {
 	if !p.NeedsRelease {
 		return nil
 	}
@@ -34,12 +34,12 @@ func (p *Package) Release(sess *happy.Session) error {
 
 	gomodtidy := exec.Command("go", "mod", "tidy")
 	gomodtidy.Dir = p.Dir
-	if err := oscmd.Run(sess, gomodtidy); err != nil {
+	if err := cli.Run(sess, gomodtidy); err != nil {
 		return err
 	}
 	localpath := strings.TrimSuffix(p.TagPrefix, "/")
 
-	if err := git.AddAndCommit(sess, sess.Get("releaser.working.directory").String(), "dep", localpath, "update go.mod deps"); err != nil {
+	if err := git.AddAndCommit(sess, sess.Get("releaser.wd").String(), "dep", localpath, "update go.mod deps"); err != nil {
 		return err
 	}
 
@@ -47,8 +47,8 @@ func (p *Package) Release(sess *happy.Session) error {
 	branch := sess.Get("releaser.git.branch").String()
 
 	gitpush := exec.Command("git", "push", origin, branch)
-	gitpush.Dir = sess.Get("releaser.working.directory").String()
-	if err := oscmd.Run(sess, gitpush); err != nil {
+	gitpush.Dir = sess.Get("releaser.wd").String()
+	if err := cli.Run(sess, gitpush); err != nil {
 		return err
 	}
 
@@ -58,14 +58,14 @@ func (p *Package) Release(sess *happy.Session) error {
 	}
 
 	gitag := exec.Command("git", "tag", "-sm", fmt.Sprintf("%q", p.NextRelease), p.NextRelease)
-	gitag.Dir = sess.Get("releaser.working.directory").String()
-	if err := oscmd.Run(sess, gitag); err != nil {
+	gitag.Dir = sess.Get("releaser.wd").String()
+	if err := cli.Run(sess, gitag); err != nil {
 		return err
 	}
 
 	gitpushtag := exec.Command("git", "push", origin, p.NextRelease)
-	gitpushtag.Dir = sess.Get("releaser.working.directory").String()
-	if err := oscmd.Run(sess, gitpushtag); err != nil {
+	gitpushtag.Dir = sess.Get("releaser.wd").String()
+	if err := cli.Run(sess, gitpushtag); err != nil {
 		return err
 	}
 

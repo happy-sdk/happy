@@ -5,29 +5,41 @@
 package releaser
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/internal/cmd/hap/addons/releaser/module"
+	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/custom"
+	"github.com/happy-sdk/happy/sdk/internal/cmd/hsdk/addons/releaser/module"
 	"golang.org/x/mod/semver"
 )
 
-func (r *releaser) Initialize(sess *happy.Session, path string, allowDirty bool) error {
-	config, err := newConfiguration(sess, path, allowDirty)
-	if err != nil {
+type releaser struct {
+	custom.API
+	mu       sync.RWMutex
+	sess     *session.Context
+	packages []*module.Package
+	queue    []string
+}
+
+func newReleaser() *releaser {
+	return &releaser{}
+}
+
+func (r *releaser) Initialize(sess *session.Context, path string, allowDirty bool) error {
+	if err := newConfiguration(sess, path, allowDirty); err != nil {
 		return err
 	}
-
 	r.mu.Lock()
-	r.config = *config
 	r.sess = sess
 	r.mu.Unlock()
-	sess.Log().Ok("releaser initialized", slog.String("wd", config.WD))
+	sess.Log().Ok("releaser initialized", slog.String("wd", sess.Get("releaser.wd").String()))
 	return nil
 }
 
@@ -43,75 +55,66 @@ func (r *releaser) Run(next string) error {
 	if err := r.releaseModules(); err != nil {
 		return err
 	}
-	sess, err := r.session()
-	if err != nil {
-		return err
-	}
-	sess.Log().Ok("releaser done")
+	r.sess.Log().Ok("releaser done")
 
 	return r.printChangelog()
 }
 
-func (r *releaser) session() (*happy.Session, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	if r.sess == nil {
-		return nil, fmt.Errorf("releaser not initialized with session")
+func (r *releaser) releaseModules() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.sess.Log().Info("releasing modules")
+
+	for _, q := range r.queue {
+		for _, pkg := range r.packages {
+			if pkg.Import == q {
+				if err := pkg.Release(r.sess); err != nil {
+					return err
+				}
+			}
+		}
 	}
-	return r.sess, nil
+	return nil
 }
 
 func (r *releaser) confirmConfig(next string) error {
-	sess, err := r.session()
-	if err != nil {
-		return err
-	}
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	if err := r.sess.Set("releaser.next", next); err != nil {
+	if err := r.sess.Opts().Set("releaser.next", next); err != nil {
 		return err
 	}
-	if sess.Get("releaser.go.modules.count").Int() == 0 {
+	if r.sess.Get("releaser.go.modules.count").Int() == 0 {
 		return fmt.Errorf("no modules to release")
 	}
-	m, err := r.config.getConfirmConfigModel(sess)
+	m, err := getConfirmConfigModel(r.sess)
 	if err != nil {
 		return err
 	}
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	var userSelectedYes bool
 	if model, err := p.Run(); err != nil {
-		return fmt.Errorf("Error running program: %w", err)
+		return fmt.Errorf("error running program: %w", err)
 	} else {
 		m, ok := model.(configTable)
 		if !ok {
-			return fmt.Errorf("Could not assert model type.")
+			return errors.New("could not assert model type")
 		}
 		userSelectedYes = m.yes
 	}
 	if !userSelectedYes {
-		return fmt.Errorf("release canceled by user.")
+		return errors.New("release canceled by user")
 	}
-
 	return nil
 }
 
 func (r *releaser) loadModules() error {
-	sess, err := r.session()
-	if err != nil {
-		return err
-	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	sess.Log().Info("loading modules")
-
-	if len(r.config.WD) < 5 {
-		return fmt.Errorf("invalid working directory: %s", r.config.WD)
-	}
+	r.sess.Log().Info("loading modules")
 
 	var pkgs []*module.Package
-	if err := filepath.Walk(r.config.WD, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(r.sess.Get("releaser.wd").String(), func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -133,15 +136,15 @@ func (r *releaser) loadModules() error {
 	}
 
 	if len(pkgs) == 0 {
-		return fmt.Errorf("no modules found in %s", r.config.WD)
+		return fmt.Errorf("no modules found in %s", r.sess.Get("releaser.wd").String())
 	}
 
 	for _, pkg := range pkgs {
-		sess.Log().Info("loading release info for", slog.String("pkg", pkg.Modfile.Module.Mod.Path))
-		tagPrefix := strings.TrimPrefix(pkg.Dir+"/", r.config.WD+"/")
+		r.sess.Log().Info("loading release info for", slog.String("pkg", pkg.Modfile.Module.Mod.Path))
+		tagPrefix := strings.TrimPrefix(pkg.Dir+"/", r.sess.Get("releaser.wd").String()+"/")
 		pkg.TagPrefix = tagPrefix
 
-		if err := pkg.LoadReleaseInfo(sess); err != nil {
+		if err := pkg.LoadReleaseInfo(r.sess); err != nil {
 			return err
 		}
 	}
@@ -152,7 +155,7 @@ func (r *releaser) loadModules() error {
 	}
 	for _, dep := range commonDeps {
 		if semver.Compare(dep.MinVersion, dep.MaxVersion) != 0 {
-			sess.Log().Info("common dep",
+			r.sess.Log().Info("common dep",
 				slog.String("dep", dep.Import),
 				slog.String("version.max", dep.MaxVersion),
 				slog.String("version.min", dep.MinVersion),
@@ -161,7 +164,7 @@ func (r *releaser) loadModules() error {
 			for _, imprt := range dep.UsedBy {
 				for _, pkg := range pkgs {
 					if pkg.Import == imprt {
-						sess.Log().Info("update dep",
+						r.sess.Log().Info("update dep",
 							slog.String("pkg", pkg.Import),
 							slog.String("dep", dep.Import),
 							slog.String("dep.version", dep.MaxVersion),
@@ -181,51 +184,30 @@ func (r *releaser) loadModules() error {
 		return err
 	}
 	for _, p := range queue {
-		sess.Log().Info("release queue", slog.String("pkg", p))
+		r.sess.Log().Info("release queue", slog.String("pkg", p))
 	}
 
-	m, err := module.GetConfirmReleasablesView(sess, pkgs, queue)
+	m, err := module.GetConfirmReleasablesView(r.sess, pkgs, queue)
 	if err != nil {
 		return err
 	}
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	var userSelectedYes bool
 	if model, err := p.Run(); err != nil {
-		return fmt.Errorf("Error running program: %w", err)
+		return fmt.Errorf("error running program: %w", err)
 	} else {
 		m, ok := model.(module.ReleasablesTableView)
 		if !ok {
-			return fmt.Errorf("Could not assert model type.")
+			return errors.New("could not assert model type")
 		}
 		userSelectedYes = m.Yes
 	}
 	if !userSelectedYes {
-		return fmt.Errorf("release canceled by user.")
+		return errors.New("release canceled by user")
 	}
 
 	r.queue = queue
 	r.packages = pkgs
-	return nil
-}
-
-func (r *releaser) releaseModules() error {
-	sess, err := r.session()
-	if err != nil {
-		return err
-	}
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	sess.Log().Info("releasing modules")
-
-	for _, q := range r.queue {
-		for _, pkg := range r.packages {
-			if pkg.Import == q {
-				if err := pkg.Release(sess); err != nil {
-					return err
-				}
-			}
-		}
-	}
 	return nil
 }
 
@@ -261,7 +243,7 @@ func (r *releaser) printChangelog() error {
 			clp.Changes = append(clp.Changes, change)
 		}
 
-		if pkg.Dir == r.config.WD {
+		if pkg.Dir == r.sess.Get("releaser.wd").String() {
 			cl.Root = clp
 		} else {
 			cl.Subpkgs = append(cl.Subpkgs, clp)

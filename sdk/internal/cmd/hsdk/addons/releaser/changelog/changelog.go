@@ -10,10 +10,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/sdk/app/session"
 )
 
-func ParseGitLog(sess *happy.Session, log string) (*Changelog, error) {
+func ParseGitLog(sess *session.Context, log string) (*Changelog, error) {
 	var commits []Commit
 	scanner := bufio.NewScanner(strings.NewReader(log))
 	var currentCommit Commit
@@ -54,7 +54,7 @@ func ParseGitLog(sess *happy.Session, log string) (*Changelog, error) {
 
 var commitRegex = regexp.MustCompile(`^(?P<Type>[^\(]+)(?:\((?P<Scope>[^\)]*)\))?: (?P<Subject>.+)$`)
 
-func FromCommits(sess *happy.Session, commits []Commit) (*Changelog, error) {
+func FromCommits(sess *session.Context, commits []Commit) (*Changelog, error) {
 	changelog := &Changelog{}
 
 	breakingChangePrefix := "BREAKING CHANGE:"
