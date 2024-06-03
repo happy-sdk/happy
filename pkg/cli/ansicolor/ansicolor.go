@@ -49,7 +49,7 @@ func New() Theme {
 		Info:           RGB(173, 216, 230),
 		Warning:        RGB(255, 152, 0),
 		Error:          RGB(213, 0, 0),
-		Debug:          RGB(96, 125, 139),
+		Debug:          RGB(177, 188, 199),
 		Notice:         RGB(33, 150, 243),
 		NotImplemented: RGB(156, 39, 176),
 		Deprecated:     RGB(150, 115, 19),

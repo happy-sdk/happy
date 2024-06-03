@@ -77,8 +77,8 @@ func Console(opts ConsoleOptions) *DefaultLogger {
 		styles: consoleTheme{
 			attrs:      ansicolor.Style{FG: opts.Theme.Secondary},
 			muted:      ansicolor.Style{FG: opts.Theme.Muted},
-			sysdebug:   ansicolor.Style{FG: opts.Theme.Debug},
-			debug:      ansicolor.Style{BG: opts.Theme.Debug},
+			sysdebug:   ansicolor.Style{FG: ansicolor.RGB(96, 125, 139)},
+			debug:      ansicolor.Style{FG: opts.Theme.Debug},
 			info:       ansicolor.Style{FG: opts.Theme.Info},
 			notice:     ansicolor.Style{FG: opts.Theme.Notice},
 			success:    ansicolor.Style{FG: opts.Theme.Success},
@@ -184,8 +184,10 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	timeStr := h.styles.muted.String(r.Time.Format(h.tsfmt))
 
-	if lvl <= LevelDebug {
+	if lvl < LevelDebug {
 		msg = h.styles.sysdebug.String(r.Message)
+	} else if lvl == LevelDebug {
+		msg = h.styles.debug.String(r.Message)
 	} else {
 		msg = h.styles.light.String(r.Message)
 	}

@@ -64,13 +64,13 @@ func (k Kind) valueFromPtr(ptr unsafe.Pointer) (val any) {
 //
 //nolint:all
 type kindinfo struct {
-	size       uintptr
-	ptrdata    uintptr // number of bytes in the kinde that can contain pointers
-	hash       uint32  // hash of type; avoids computation in hash tables
-	tflag      uint8   // extra type information flags
-	align      uint8   // alignment of variable with this type
-	fieldAlign uint8   // alignment of struct field with this type
-	kind       uint8   // enumeration for C
+	_    uintptr // size: number of bytes
+	_    uintptr // ptrdata: number of bytes in the kind that can contain pointers
+	_    uint32  // hash: hash of type; avoids computation in hash tables
+	_    uint8   // tflag: extra type information flags
+	_    uint8   // align: alignment of variable with this type
+	_    uint8   // fieldAlign:alignment of struct field with this type
+	kind uint8   // enumeration for C
 }
 
 // interface for the header of builtin value
