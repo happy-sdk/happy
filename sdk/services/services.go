@@ -282,7 +282,7 @@ func (cs *serviceCron) Start() error {
 		for _, id := range cs.jobIDs {
 			info, ok := cs.jobInfos[id]
 			if !ok {
-				cs.sess.Log().Error(fmt.Sprintf("%w:%w: failed to find job info", Error, cron.Error), slog.Int("id", int(id)))
+				cs.sess.Log().Error(fmt.Errorf("%w:%w: failed to find job info", Error, cron.Error).Error(), slog.Int("id", int(id)))
 				continue
 			}
 			internal.Log(cs.sess.Log(), "executing cron first time", slog.Int("job-id", int(id)), slog.String("name", info.Name), slog.String("expr", info.Expr))

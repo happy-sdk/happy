@@ -182,10 +182,6 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 		err = c.svc.stopAction(sess, e)
 	}
 
-	if e != nil {
-		err = errors.Join(err, e)
-	}
-
 	service.MarkStopped(c.info)
 
 	payload := new(vars.Map)
@@ -204,17 +200,13 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 
 	for k, v := range kv {
 		if errset := payload.Store(k, v); errset != nil {
-			err = errors.Join(errset, e)
+			err = errors.Join(err, errset)
 		}
 	}
 	sess.Dispatch(service.StoppedEvent.Create(c.info.Name(), payload))
 
-	if err != nil {
-		sess.Log().Error("service stopped", slog.String("service", c.info.Addr().String()), slog.String("err", err.Error()))
-	} else {
-		sess.Log().Debug("service stopped", slog.String("service", c.info.Addr().String()))
-	}
-	return nil
+	sess.Log().Debug("service stopped", slog.String("service", c.info.Addr().String()))
+	return err
 }
 
 func (c *Container) Done() <-chan struct{} {

@@ -222,7 +222,10 @@ func (m *Main) WithAddon(addon *addon.Addon) *Main {
 	return m
 }
 
-func (m *Main) WithBrand(b *branding.Builder) *Main { return m }
+func (m *Main) WithBrand(b *branding.Builder) *Main {
+	m.log.NotImplemented("WithBrand")
+	return m
+}
 
 func (m *Main) WithCommand(cmd *command.Command) *Main {
 	if m.canConfigure("add subcommand") {
@@ -251,7 +254,10 @@ func (m *Main) WithLogger(logger logging.Logger) *Main {
 	return m
 }
 
-func (m *Main) WithMigrations(mm *migration.Manager) *Main { return m }
+func (m *Main) WithMigrations(mm *migration.Manager) *Main {
+	m.log.NotImplemented("WithMigrations")
+	return m
+}
 
 func (m *Main) WithOptions(opts ...options.Spec) *Main {
 	if m.canConfigure("setting logger") {

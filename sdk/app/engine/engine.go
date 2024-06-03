@@ -668,18 +668,19 @@ func (e *Engine) serviceStop(sess *session.Context, svcurl string, err error) {
 		return
 	}
 	internal.Log(sess.Log(), "stopping service", sarg)
-	if e := svcc.Stop(sess, err); e != nil {
-		sess.Log().Error("failed to stop service", slog.String("err", err.Error()), sarg)
+	if stoperr := svcc.Stop(sess, err); stoperr != nil {
+		sess.Log().Error("failed to stop service", slog.String("err", stoperr.Error()), sarg)
+	} else {
+		if e.state == engineRunning && svcc.CanRetry() {
+			if stoperr != nil {
+				sess.Log().Warn("retrying to skipped due service stop error", sarg)
+				return
+			}
+			sess.Log().Notice("retrying to start the service", sarg, slog.Int("retry", svcc.Retries()))
+			go e.serviceStart(sess, svcurl)
+		}
 	}
 
-	if e.state == engineRunning && svcc.CanRetry() {
-		if err != nil {
-			sess.Log().Warn("retrying to skipped due service top error", sarg)
-			return
-		}
-		sess.Log().Notice("retrying to start the service", sarg, slog.Int("retry", svcc.Retries()))
-		go e.serviceStart(sess, svcurl)
-	}
 }
 
 var nooptock = func(*session.Context, time.Duration, int) error { return nil }
