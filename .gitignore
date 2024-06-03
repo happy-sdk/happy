@@ -13,6 +13,7 @@
 **/coverage.out
 import.sh
 .env
+sdk/internal/cmd/hsdk/hsdk
 
 ################################################################################
 # DIRECTORIES to ignore

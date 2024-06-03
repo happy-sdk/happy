@@ -2,7 +2,6 @@ go 1.22.3
 
 use (
 	.
-	// ./internal/cmd/hap
 	./pkg/branding
 	./pkg/cli/ansicolor
 	./pkg/devel/testutils
