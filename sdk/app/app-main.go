@@ -170,10 +170,12 @@ func (m *Main) Run() {
 		m.init = nil
 	}
 
+	exitCh := m.rt.ExitCh()
+
 	go func() {
 		m.rt.Start()
 	}()
-	osmain(m.rt.ExitCh())
+	osmain(exitCh)
 }
 
 func (m *Main) Do(a action.WithArgs) *Main {

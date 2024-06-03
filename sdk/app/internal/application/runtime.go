@@ -402,7 +402,7 @@ type ShutDown struct{}
 
 // ExitCh return blocking channel that will reveive a signal when the runtime exits
 func (rt *Runtime) ExitCh() <-chan ShutDown {
-	if testing.Testing() {
+	if testing.Testing() && rt.exitCh == nil {
 		rt.exitCh = make(chan ShutDown, 1)
 	}
 	return rt.exitCh
