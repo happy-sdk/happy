@@ -40,7 +40,6 @@ func Command() *command.Command {
 		configSet(),
 		configGet(),
 		configReset(),
-		configResetAll(),
 	)
 
 	return cmd
@@ -253,7 +252,29 @@ func configReset() *command.Command {
 
 	cmd.Usage("--profile=<profile-name>")
 
+	cmd.WithFlags(varflag.BoolFunc("all", false, "reset all settings", "a"))
+
 	cmd.Do(func(sess *session.Context, args action.Args) error {
+		if args.Flag("all").Present() {
+			profileFilePath := filepath.Join(sess.Get("app.fs.path.profile").String(), "profile.preferences")
+			internal.Log(sess.Log(), "profile.save",
+				slog.String("profile", sess.Get("app.profile.name").String()),
+				slog.String("file", profileFilePath),
+			)
+
+			if err := os.WriteFile(profileFilePath, []byte{}, 0600); err != nil {
+				return err
+			}
+
+			internal.Log(
+				sess.Log(),
+				"saved profile",
+				slog.String("profile", sess.Get("app.profile.name").String()),
+				slog.String("file", profileFilePath),
+			)
+			return nil
+		}
+
 		key := args.Arg(0).String()
 		if !sess.Settings().Has(key) {
 			return fmt.Errorf("setting %q does not exist", key)
@@ -286,38 +307,6 @@ func configReset() *command.Command {
 		}
 
 		if err := os.WriteFile(profileFilePath, dest.Bytes(), 0600); err != nil {
-			return err
-		}
-
-		internal.Log(
-			sess.Log(),
-			"saved profile",
-			slog.String("profile", sess.Get("app.profile.name").String()),
-			slog.String("file", profileFilePath),
-		)
-		return nil
-	})
-
-	return cmd
-}
-
-func configResetAll() *command.Command {
-	cmd := command.New(command.Config{
-		Name:        "reset-all",
-		Description: "Reset all settings to their default values",
-	})
-
-	cmd.Usage("--profile=<profile-name>")
-
-	cmd.Do(func(sess *session.Context, args action.Args) error {
-
-		profileFilePath := filepath.Join(sess.Get("app.fs.path.profile").String(), "profile.preferences")
-		internal.Log(sess.Log(), "profile.save",
-			slog.String("profile", sess.Get("app.profile.name").String()),
-			slog.String("file", profileFilePath),
-		)
-
-		if err := os.WriteFile(profileFilePath, []byte{}, 0600); err != nil {
 			return err
 		}
 
