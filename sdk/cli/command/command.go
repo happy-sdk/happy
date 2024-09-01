@@ -29,9 +29,11 @@ type Config struct {
 	Category    settings.String `key:"category"`
 	Description settings.String `key:"description"`
 	// MinArgs Minimum argument count for command
-	MinArgs settings.Uint `key:"min_args" default:"0" mutation:"once"`
+	MinArgs    settings.Uint `key:"min_args" default:"0" mutation:"once"`
+	MinArgsErr settings.String
 	// MaxArgs Maximum argument count for command
-	MaxArgs settings.Uint `key:"max_args" default:"0" mutation:"once"`
+	MaxArgs    settings.Uint `key:"max_args" default:"0" mutation:"once"`
+	MaxArgsErr settings.String
 	// SharedBeforeAction share Before action for all its subcommands
 	SharedBeforeAction settings.Bool `key:"shared_before_action" default:"false"`
 	// Indicates that the command should be executed immediately, without waiting for the full runtime setup.

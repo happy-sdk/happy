@@ -229,22 +229,12 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	args := action.NewArgs(c.flags)
-	argnmin := c.cnf.Get("min_args").Value().Uint()
-	argnmax := c.cnf.Get("max_args").Value().Uint()
+	args, err := c.getArgs()
+	if err != nil {
+		return err
+	}
+
 	name := c.cnf.Get("name").String()
-
-	if argnmin == 0 && argnmax == 0 && args.Argn() > 0 {
-		return fmt.Errorf("%w: %s does not accept arguments", Error, name)
-	}
-
-	if args.Argn() < argnmin {
-		return fmt.Errorf("%w: %s: requires min %d arguments, %d provided", Error, name, argnmin, args.Argn())
-	}
-
-	if args.Argn() > argnmax {
-		return fmt.Errorf("%w: %s: accepts max %d arguments, %d provided, extra %v", Error, name, argnmax, args.Argn(), args.Args()[argnmax:args.Argn()])
-	}
 
 	if c.parent != nil && !c.sharedCalled && !c.cnf.Get("skip_shared_before").Value().Bool() {
 		if err := c.parent.callSharedBeforeAction(sess); err != nil {
@@ -273,21 +263,9 @@ func (c *Cmd) ExecDo(sess *session.Context) (err error) {
 		return nil
 	}
 
-	args := action.NewArgs(c.flags)
-	argnmin := c.cnf.Get("min_args").Value().Uint()
-	argnmax := c.cnf.Get("max_args").Value().Uint()
-	name := c.cnf.Get("name").String()
-
-	if argnmin == 0 && argnmax == 0 && args.Argn() > 0 {
-		return fmt.Errorf("%w: %s does not accept arguments", Error, name)
-	}
-
-	if args.Argn() < argnmin {
-		return fmt.Errorf("%w: %s: requires min %d arguments, %d provided", Error, name, argnmin, args.Argn())
-	}
-
-	if args.Argn() > argnmax {
-		return fmt.Errorf("%w: %s: accepts max %d arguments, %d provided, extra %v", Error, name, argnmax, args.Argn(), args.Args()[argnmax:args.Argn()])
+	args, err := c.getArgs()
+	if err != nil {
+		return err
 	}
 
 	if err := c.doAction(sess, args); err != nil {
@@ -374,4 +352,30 @@ func (c *Cmd) SkipSharedBeforeAction() bool {
 
 func (c *Cmd) HasBefore() bool {
 	return c.beforeAction != nil
+}
+
+func (c *Cmd) getArgs() (action.Args, error) {
+	args := action.NewArgs(c.flags)
+	argnmin := c.cnf.Get("min_args").Value().Uint()
+	argnmax := c.cnf.Get("max_args").Value().Uint()
+	name := c.cnf.Get("name").String()
+
+	if argnmin == 0 && argnmax == 0 && args.Argn() > 0 {
+		return args, fmt.Errorf("%w: %s does not accept arguments", Error, name)
+	}
+
+	if args.Argn() < argnmin {
+		if err := c.cnf.Get("min_args_err").Value(); !err.Empty() {
+			return args, errors.New(err.String())
+		}
+		return args, fmt.Errorf("%w: %s: requires min %d arguments, %d provided", Error, name, argnmin, args.Argn())
+	}
+	if args.Argn() > argnmax {
+		if err := c.cnf.Get("max_args_err").Value(); !err.Empty() {
+			return args, errors.New(err.String())
+		}
+		return args, fmt.Errorf("%w: %s: accepts max %d arguments, %d provided, extra %v", Error, name, argnmax, args.Argn(), args.Args()[argnmax:args.Argn()])
+	}
+
+	return args, nil
 }
