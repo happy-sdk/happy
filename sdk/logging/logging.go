@@ -23,6 +23,7 @@ type Settings struct {
 	Level           Level           `key:"level,config" default:"info" mutation:"mutable" desc:"logging level"`
 	NoSource        settings.Bool   `key:"no_source,config" default:"false" mutation:"once" desc:"Hide source location from log messages"`
 	TimestampFormat settings.String `key:"timeestamp_format,config" default:"15:04:05.000" mutation:"once" desc:"Timestamp format for log messages"`
+	NoTimestamp     settings.Bool   `key:"no_timestamp,config" default:"false" mutation:"once" desc:"Do not show timestamps"`
 	NoSlogDefault   settings.Bool   `key:"no_slog_default" default:"false" mutation:"once" desc:"Do not set the default slog logger"`
 }
 

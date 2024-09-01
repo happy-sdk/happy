@@ -41,6 +41,7 @@ type ConsoleOptions struct {
 	AddSource       bool
 	TimeLocation    *time.Location
 	TimestampFormat string
+	NoTimestamp     bool
 }
 
 func ConsoleDefaultOptions() ConsoleOptions {
@@ -106,6 +107,7 @@ func Console(opts ConsoleOptions) *DefaultLogger {
 		}),
 		l:     log.New(os.Stdout, "", 0),
 		tsfmt: tsfmt,
+		nots:  opts.NoTimestamp,
 	}
 
 	l.log = slog.New(h)
@@ -118,6 +120,7 @@ type ConsoleHandler struct {
 	src    bool
 	l      *log.Logger
 	tsfmt  string
+	nots   bool
 }
 
 func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
@@ -182,7 +185,10 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	timeStr := h.styles.muted.String(r.Time.Format(h.tsfmt))
+	var timeStr string
+	if !h.nots {
+		timeStr = h.styles.muted.String(r.Time.Format(h.tsfmt))
+	}
 
 	if lvl < LevelDebug {
 		msg = h.styles.sysdebug.String(r.Message)

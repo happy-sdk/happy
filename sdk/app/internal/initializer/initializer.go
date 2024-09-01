@@ -664,6 +664,7 @@ func (init *Initializer) configureLogger() (err error) {
 		noSource        bool
 		tslocStr        string
 		timestampFormat string
+		noTimestamp     bool
 	)
 	if init.profile != nil {
 		lvl, err = logging.LevelFromString(init.profile.Get("app.logging.level").Value().String())
@@ -673,7 +674,8 @@ func (init *Initializer) configureLogger() (err error) {
 		noSlogDefault = init.profile.Get("app.logging.no_slog_default").Value().Bool()
 		noSource = init.profile.Get("app.logging.no_source").Value().Bool()
 		tslocStr = init.profile.Get("app.datetime.location").Value().String()
-		timestampFormat = init.profile.Get("app.datetime.format").Value().String()
+		timestampFormat = init.profile.Get("app.logging.timeestamp_format").Value().String()
+		noTimestamp = init.profile.Get("app.logging.no_timestamp").Value().Bool()
 	} else {
 		lvl = logging.LevelDebug
 		noSource = true
@@ -713,6 +715,7 @@ func (init *Initializer) configureLogger() (err error) {
 	logopts := logging.ConsoleDefaultOptions()
 	logopts.Level = lvl
 	logopts.AddSource = !noSource
+	logopts.NoTimestamp = noTimestamp
 
 	tsloc, err := time.LoadLocation(tslocStr)
 	if err != nil {
