@@ -307,10 +307,7 @@ func (rt *Runtime) recover(r any, msg string) {
 	}
 
 	stack := debug.Stack()
-	if len(stack) > 3 {
-		fmt.Println(len(stack))
-		// stack = stack[3:]
-	}
+
 	// Obtain and log the stack trace
 	stackTrace := string(stack)
 
