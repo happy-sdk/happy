@@ -24,10 +24,11 @@ var (
 )
 
 type Config struct {
-	Name        settings.String `key:"name"`
-	Usage       settings.String `key:"usage" mutation:"once"`
-	Category    settings.String `key:"category"`
-	Description settings.String `key:"description"`
+	Name             settings.String `key:"name"`
+	Usage            settings.String `key:"usage" mutation:"once"`
+	HideDefaultUsage settings.Bool   `key:"hide_default_usage" default:"false"`
+	Category         settings.String `key:"category"`
+	Description      settings.String `key:"description"`
 	// MinArgs Minimum argument count for command
 	MinArgs    settings.Uint `key:"min_args" default:"0" mutation:"once"`
 	MinArgsErr settings.String
@@ -364,7 +365,11 @@ func (c *Command) verify() error {
 		usage = append(usage, c.parents...)
 		usage = append(usage, name)
 		usage = append(usage, defineUsage)
-		c.usage = append(c.usage, strings.Join(usage, " "))
+		if c.cnf.Get("hide_default_usage").Value().Bool() {
+			c.usage = []string{strings.Join(usage, " ")}
+		} else {
+			c.usage = append(c.usage, strings.Join(usage, " "))
+		}
 	}
 
 	if len(c.extraUsage) > 0 {
