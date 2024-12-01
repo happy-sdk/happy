@@ -43,7 +43,8 @@ type Initializer struct {
 	log *logging.QueueLogger
 
 	// user defined logger or default logger for runtime
-	logger logging.Logger
+	logger  logging.Logger
+	execlvl logging.Level
 
 	opts      *options.Options
 	settings  settings.Settings
@@ -90,7 +91,9 @@ func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger)
 		createdAt: time.Now(),
 		rt:        rt,
 		defaults:  &defaults{},
+		execlvl:   logging.LevelQuiet,
 	}
+
 	init.log.LogDepth(3, logging.LevelDebug, "initializing", slog.String("pid", fmt.Sprint(init.pid)))
 	init.initialize()
 	return init
@@ -386,6 +389,8 @@ func (init *Initializer) Finalize() (err error) {
 	init.rt.InitStats(init.createdAt, took)
 
 	session.Log().LogDepth(1, logging.LevelDebug, "initialization completed", slog.String("took", took.String()))
+
+	init.rt.SetExecLogLevel(init.execlvl)
 	return nil
 }
 
@@ -682,13 +687,26 @@ func (init *Initializer) configureLogger() (err error) {
 		tslocStr = "Local"
 		timestampFormat = "15:04:05"
 	}
+
 	if init.cmd != nil {
 		if init.cmd.Flag("system-debug").Var().Bool() {
-			lvl = internal.LogLevelHappy
+			if init.cmd.Flag("system-debug").Global() {
+				lvl = internal.LogLevelHappy
+			} else {
+				init.execlvl = internal.LogLevelHappy
+			}
 		} else if init.cmd.Flag("debug").Var().Bool() {
-			lvl = logging.LevelDebug
+			if init.cmd.Flag("debug").Global() {
+				lvl = logging.LevelDebug
+			} else {
+				init.execlvl = logging.LevelDebug
+			}
 		} else if init.cmd.Flag("verbose").Var().Bool() {
-			lvl = logging.LevelInfo
+			if init.cmd.Flag("verbose").Global() {
+				lvl = logging.LevelInfo
+			} else {
+				init.execlvl = logging.LevelInfo
+			}
 		}
 	}
 

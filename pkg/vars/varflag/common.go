@@ -6,6 +6,8 @@ package varflag
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -145,7 +147,7 @@ func (f *Common) Hide() {
 	f.hidden = true
 }
 
-// IsGlobal reports whether this flag is global.
+// Global reports whether this flag is global.
 // By default all flags are global flags. You can mark flag non-global
 // by calling .BelongsTo(cmdname string).
 func (f *Common) Global() bool {
@@ -324,7 +326,8 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (err
 	// what was before the flag including flag it self
 
 	// default is global
-	f.global = f.command == "" || f.command == "/"
+
+	f.global = f.command == "" || f.command == "/" || f.command == filepath.Base(os.Args[0])
 	if len(pargs) < poses[0] {
 		return nil
 	}
@@ -342,6 +345,8 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (err
 			opts++
 			if opts > 1 {
 				cmd = arg
+				// Global flags have to be set before any cmnd args
+				f.global = false
 			}
 			// found portential command
 			if len(cmd) > 0 && (f.command == "*" || cmd == f.command) {

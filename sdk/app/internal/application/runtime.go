@@ -58,6 +58,7 @@ type Runtime struct {
 	engine            *engine.Engine
 
 	tmplogger logging.Logger
+	execlvl   logging.Level
 
 	initStartedAt time.Time
 	initTook      time.Duration
@@ -218,7 +219,9 @@ func (rt *Runtime) boot() (err error) {
 
 	rt.sess.Dispatch(rt.sessionReadyEvent)
 	rt.sessionReadyEvent = nil
-	rt.sess.Log().LogDepth(1, logging.LevelDebug, "application booted", slog.String("took", bootTook))
+	if rt.execlvl == logging.LevelQuiet || rt.execlvl < logging.LevelDebug {
+		rt.sess.Log().LogDepth(1, logging.LevelDebug, "application booted", slog.String("took", bootTook))
+	}
 	return nil
 }
 
@@ -234,7 +237,10 @@ func (rt *Runtime) Start() {
 	}
 
 	rt.startedAt = rt.sess.Time(time.Now())
-	rt.sess.Log().LogDepth(1, logging.LevelDebug, "starting application", slog.Time("started.at", rt.startedAt))
+	if rt.execlvl == logging.LevelQuiet || rt.execlvl < logging.LevelDebug {
+		rt.sess.Log().LogDepth(1, logging.LevelDebug, "starting application", slog.Time("started.at", rt.startedAt))
+	}
+
 	if rt.engine != nil {
 		if err := rt.engine.Stats().Set("app.started.at", rt.startedAt.Format(time.RFC3339)); err != nil {
 			rt.sess.Log().Error("failed to set app started at", slog.String("err", err.Error()))
@@ -289,6 +295,9 @@ func (rt *Runtime) Start() {
 		rt.Exit(1)
 		return
 	}
+	if rt.execlvl < logging.LevelQuiet {
+		rt.sess.Log().SetLevel(rt.execlvl)
+	}
 
 	if err != nil {
 		rt.Exit(1)
@@ -324,7 +333,14 @@ func (rt *Runtime) executeBeforeActions() error {
 			rt.recover(r, "before actions failed")
 		}
 	}()
+	if rt.execlvl < logging.LevelQuiet {
+		execlvl := rt.sess.Log().Level()
+		rt.sess.Log().SetLevel(rt.execlvl)
+		rt.execlvl = execlvl
+	}
+
 	internal.Log(rt.sess.Log(), "executing before actions")
+
 	if rt.sess.Log().Level() < logging.LevelDebug {
 		// Settings table
 		settingstbl := textfmt.Table{
@@ -403,6 +419,10 @@ func (rt *Runtime) ExitCh() <-chan ShutDown {
 		rt.exitCh = make(chan ShutDown, 1)
 	}
 	return rt.exitCh
+}
+
+func (rt *Runtime) SetExecLogLevel(lvl logging.Level) {
+	rt.execlvl = lvl
 }
 
 func (rt *Runtime) Exit(code int) {
