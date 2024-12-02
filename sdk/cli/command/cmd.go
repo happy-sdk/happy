@@ -7,6 +7,7 @@ package command
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 
@@ -234,8 +235,6 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 		return err
 	}
 
-	name := c.cnf.Get("name").String()
-
 	if c.parent != nil && !c.sharedCalled && !c.cnf.Get("skip_shared_before").Value().Bool() {
 		if err := c.parent.callSharedBeforeAction(sess); err != nil {
 			return err
@@ -248,7 +247,11 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 		return nil
 	}
 	if err := c.beforeAction(sess, args); err != nil {
-		return fmt.Errorf("%w: %s: %w", Error, name, err)
+		sess.Log().Debug("before action",
+			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("err", err.Error()),
+		)
+		return err
 	}
 	// dereference before action
 	c.beforeAction = nil
@@ -269,8 +272,13 @@ func (c *Cmd) ExecDo(sess *session.Context) (err error) {
 	}
 
 	if err := c.doAction(sess, args); err != nil {
-		return fmt.Errorf("%w: %s: %w", Error, c.Name(), err)
+		sess.Log().Debug("do action",
+			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("err", err.Error()),
+		)
+		return err
 	}
+
 	// dereference do action
 	c.doAction = nil
 	return err
@@ -284,7 +292,11 @@ func (c *Cmd) ExecAfterFailure(sess *session.Context, err error) error {
 	}
 
 	if err := c.afterFailureAction(sess, err); err != nil {
-		return fmt.Errorf("%w: %s: %w", Error, c.Name(), err)
+		sess.Log().Debug("after failure action",
+			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("err", err.Error()),
+		)
+		return err
 	}
 	// dereference after failure action
 	c.afterFailureAction = nil
@@ -299,7 +311,11 @@ func (c *Cmd) ExecAfterSuccess(sess *session.Context) error {
 	}
 
 	if err := c.afterSuccessAction(sess); err != nil {
-		return fmt.Errorf("%w: %s: %w", Error, c.Name(), err)
+		sess.Log().Debug("after success action",
+			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("err", err.Error()),
+		)
+		return err
 	}
 
 	// dereference after success action
@@ -316,7 +332,11 @@ func (c *Cmd) ExecAfterAlways(sess *session.Context, err error) error {
 	}
 
 	if err := c.afterAlwaysAction(sess, err); err != nil {
-		return fmt.Errorf("%w: %s: %w", Error, c.Name(), err)
+		sess.Log().Debug("after always action",
+			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("err", err.Error()),
+		)
+		return err
 	}
 
 	// dereference after always action
@@ -338,7 +358,11 @@ func (c *Cmd) callSharedBeforeAction(sess *session.Context) error {
 	if c.cnf.Get("shared_before_action").Value().Bool() {
 		c.sharedCalled = true
 		if err := c.beforeAction(sess, action.NewArgs(c.flags)); err != nil {
-			return fmt.Errorf("%w: %s: %w", Error, c.cnf.Get("name").String(), err)
+			sess.Log().Debug("shared before action",
+				slog.String("cmd", c.cnf.Get("name").String()),
+				slog.String("err", err.Error()),
+			)
+			return err
 		}
 		// dereference before action
 		c.beforeAction = nil

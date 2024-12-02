@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	Error          = errors.New("command error")
+	Error          = errors.New("command")
 	ErrFlags       = errors.New("command flags error")
 	ErrHasNoParent = errors.New("command has no parent command")
 )

@@ -105,7 +105,7 @@ func Console(opts ConsoleOptions) *DefaultLogger {
 			},
 			AddSource: opts.AddSource,
 		}),
-		l:     log.New(os.Stdout, "", 0),
+		l:     log.New(os.Stderr, "", 0),
 		tsfmt: tsfmt,
 		nots:  opts.NoTimestamp,
 	}

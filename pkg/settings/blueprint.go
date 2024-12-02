@@ -263,7 +263,7 @@ func (b *Blueprint) SetDefault(key string, value string) error {
 	if !ok {
 		return fmt.Errorf("%w: SetDefault key %s not found", ErrBlueprint, key)
 	}
-	spec.Value = value
+	spec.Default = value
 	b.specs[key] = spec
 
 	return nil
