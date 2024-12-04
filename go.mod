@@ -10,7 +10,7 @@ require (
 	github.com/happy-sdk/happy/pkg/devel/testutils v0.7.0
 	github.com/happy-sdk/happy/pkg/options v0.2.1
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.4.1
-	github.com/happy-sdk/happy/pkg/settings v0.3.2
+	github.com/happy-sdk/happy/pkg/settings v0.3.3
 	github.com/happy-sdk/happy/pkg/strings/humanize v0.2.0
 	github.com/happy-sdk/happy/pkg/strings/slug v0.1.0
 	github.com/happy-sdk/happy/pkg/strings/textfmt v0.3.2
