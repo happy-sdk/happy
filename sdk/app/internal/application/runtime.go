@@ -231,7 +231,9 @@ func (rt *Runtime) Start() {
 			rt.Exit(0)
 			return
 		}
-		rt.sess.Log().Error("failed to boot application", slog.String("err", err.Error()))
+
+		rt.sess.Log().Debug("failed to boot application", slog.String("err", err.Error()))
+		rt.sess.Log().Error(err.Error())
 		rt.Exit(1)
 		return
 	}
@@ -378,18 +380,18 @@ func (rt *Runtime) executeBeforeActions() error {
 		internal.Log(rt.sess.Log(), "executing before always")
 		args := action.NewArgs(rt.cmd.GetFlagSet())
 		if err := rt.beforeAlways(rt.sess, args); err != nil {
-			return fmt.Errorf("failed to execute before always action: %w", err)
+			internal.Log(rt.sess.Log(), "failed to execute before always action", slog.String("err", err.Error()))
+			return err
 		}
 		internal.Log(rt.sess.Log(), "before always action took", slog.String("took", time.Since(timer).String()))
 	}
 
-	if rt.cmd.HasBefore() {
-		timer := time.Now()
-		if err := rt.cmd.ExecBefore(rt.sess); err != nil {
-			return fmt.Errorf("failed to execute before action: %w", err)
-		}
-		internal.Log(rt.sess.Log(), "before action took", slog.String("took", time.Since(timer).String()))
+	timer := time.Now()
+	if err := rt.cmd.ExecBefore(rt.sess); err != nil {
+		internal.Log(rt.sess.Log(), "failed to execute before action", slog.String("err", err.Error()))
+		return err
 	}
+	internal.Log(rt.sess.Log(), "before action took", slog.String("took", time.Since(timer).String()))
 
 	return nil
 }

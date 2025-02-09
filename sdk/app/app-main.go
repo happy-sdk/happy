@@ -224,6 +224,13 @@ func (m *Main) WithAddon(addon *addon.Addon) *Main {
 	return m
 }
 
+func (m *Main) WithAddons(addons ...*addon.Addon) *Main {
+	for _, addon := range addons {
+		m.WithAddon(addon)
+	}
+	return m
+}
+
 func (m *Main) WithBrand(b *branding.Builder) *Main {
 	m.log.NotImplemented("WithBrand")
 	return m

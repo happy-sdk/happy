@@ -77,6 +77,10 @@ func New(sess *session.Context) (*Instance, error) {
 	}
 
 	if len(pidfiles) >= sess.Settings().Get("app.instance.max").Value().Int() {
+		sess.Log().Error("existing pid files")
+		for _, pidfile := range pidfiles {
+			sess.Log().Println(filepath.Join(pidsdir, pidfile.Name()))
+		}
 		return nil, fmt.Errorf("%w: max instances reached (%s)", Error, sess.Settings().Get("app.instance.max").String())
 	}
 
