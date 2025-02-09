@@ -35,8 +35,8 @@ func TestDefault(t *testing.T) {
 
 	app.BeforeAlways(func(sess *session.Context, args action.Args) error {
 		testutils.Equal(t, "Happy Prototype", sess.Get("app.name").String(), "app.name")
-		testutils.Equal(t, "com-github-happy-sdk-happy-sdk-app-internal-initializer-test", sess.Get("app.slug").String(), "app.slug")
-		testutils.Equal(t, "com.github.happy-sdk.happy.sdk.app.internal.initializer-test", sess.Get("app.identifier").String(), "app.identifier")
+		testutils.Equal(t, "com-github-happy-sdk-happy-sdk-app-internal-initializer-test-test", sess.Get("app.slug").String(), "app.slug")
+		testutils.Equal(t, "com.github.happy-sdk.happy.sdk.app.internal.initializer.test-test", sess.Get("app.identifier").String(), "app.identifier")
 		testutils.Equal(t, "This application is built using the Happy-SDK to provide enhanced functionality and features.", sess.Get("app.description").String(), "app.description")
 		testutils.Equal(t, "Anonymous", sess.Get("app.copyright_by").String(), "app.copyright_by")
 		testutils.Equal(t, time.Now().Year(), sess.Get("app.copyright_since").Int(), "app.year")
@@ -87,7 +87,7 @@ func TestDefaultOptions(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		addr := fmt.Sprintf("happy://%s/com-github-happy-sdk-happy-sdk-app-internal-initializer-test", host)
+		addr := fmt.Sprintf("happy://%s/com-github-happy-sdk-happy-sdk-app-internal-initializer-test-test", host)
 		testutils.Equal(t, addr, sess.Get("app.address").String(), "app.address")
 		// app.dosetup
 
@@ -116,19 +116,19 @@ func TestDefaultOptions(t *testing.T) {
 		testutils.Equal(t, tmpdir, sess.Get("app.fs.path.tmp").String(), "app.fs.path.tmp")
 
 		// app.instance.id
-		testutils.Equal(t, sess.Get("app.instance.id").Len(), 8, "app.instance.id length")
+		testutils.Equal(t, 8, sess.Get("app.instance.id").Len(), "app.instance.id length")
 		// app.is_devel
 		testutils.True(t, sess.Get("app.is_devel").Bool(), "app.is_devel")
 		// app.main.exec.x
 		testutils.False(t, sess.Get("app.main.exec.x").Bool(), "app.main.exec.x")
 		// app.module
-		testutils.Equal(t, sess.Get("app.module").String(), "github.com/happy-sdk/happy/sdk/app/internal/initializer-test", "app.module")
+		testutils.Equal(t, "github.com/happy-sdk/happy/sdk/app/internal/initializer.test-test", sess.Get("app.module").String(), "app.module")
 		// app.pid
-		testutils.Equal(t, sess.Get("app.pid").Int(), os.Getpid(), "app.pid")
+		testutils.Equal(t, os.Getpid(), sess.Get("app.pid").Int(), "app.pid")
 		// app.profile.name
-		testutils.Equal(t, sess.Get("app.profile.name").String(), "default", "app.profile.name")
+		testutils.Equal(t, "default", sess.Get("app.profile.name").String(), "app.profile.name")
 		// app.version
-		testutils.Equal(t, sess.Get("app.version").String(), "v1.0.0-0xDEV", "app.version")
+		testutils.Equal(t, "v1.0.0-0xDEV", sess.Get("app.version").String(), "app.version")
 		beforeAlwaysCalled = true
 		return nil
 	})
