@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"runtime/debug"
 	"strings"
 	"sync"
 
@@ -89,17 +90,66 @@ func New(s Config) *Command {
 		catdesc: make(map[string]string),
 		cnflog:  logging.NewQueueLogger(),
 	}
+
 	if err := c.configure(&s); err != nil {
 		c.err = fmt.Errorf("%w: %s", Error, err.Error())
-		return c
+		return c.toInvalid()
 	}
 
 	name := c.cnf.Get("name").String()
-	flags, err := varflag.NewFlagSet(name, c.cnf.Get("max_args").Value().Int())
-	if errors.Is(err, varflag.ErrInvalidFlagSetName) {
-		c.error(fmt.Errorf("%w: invalid command name %q", Error, name))
+	maxArgs := c.cnf.Get("max_args").Value().Int()
+
+	flags, err := varflag.NewFlagSet(name, maxArgs)
+	if err != nil {
+		if errors.Is(err, varflag.ErrInvalidFlagSetName) {
+			c.error(fmt.Errorf("%w: invalid command name %q", Error, name))
+		} else {
+			c.error(fmt.Errorf("%w: failed to create FlagSet: %v", Error, err))
+		}
+		return c.toInvalid()
 	}
-	c.flags = flags
+
+	c.flags = flags // Only assign if `flags` is valid
+	return c
+}
+
+func (c *Command) toInvalid() *Command {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	defer func() {
+		stackTrace := debug.Stack()
+		fmt.Println("HAPPY COMMAND")
+		fmt.Println("err: ", c.err.Error())
+		fmt.Println(string(stackTrace))
+	}()
+
+	// Ensure that the error field is set.
+	if c.err == nil {
+		c.err = fmt.Errorf("%w: command marked invalid", Error)
+	}
+
+	// Clear all actions to avoid any execution.
+	c.beforeAction = nil
+	c.doAction = nil
+	c.afterSuccessAction = nil
+	c.afterFailureAction = nil
+	c.afterAlwaysAction = nil
+
+	// Remove any subcommands.
+	c.subCommands = nil
+
+	// If flags is still nil, assign a dummy flag set to avoid nil dereference later.
+	if c.flags == nil {
+		// Use a dummy flag set. We assume that this call will succeed for a command marked as invalid.
+		if dummy, err := varflag.NewFlagSet("invalid", 0); err == nil {
+			c.flags = dummy
+		} else {
+			// If even this fails, log the error.
+			c.error(fmt.Errorf("failed to create dummy flag set for invalid command %q",
+				err.Error()))
+		}
+	}
 
 	return c
 }

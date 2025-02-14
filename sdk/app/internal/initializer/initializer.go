@@ -63,7 +63,8 @@ type Initializer struct {
 	mainOptSpecs []options.Spec
 	pendingOpts  []options.Arg
 
-	brand *branding.Brand
+	brand        *branding.Brand
+	brandBuilder *branding.Builder
 
 	sessionReadyEvent events.Event
 	evch              chan events.Event
@@ -260,6 +261,9 @@ func (init *Initializer) WithAddon(a *addon.Addon) {
 	if err := init.addonm.Add(a); err != nil {
 		init.bug(1, err.Error())
 	}
+}
+func (init *Initializer) WithBrand(b *branding.Builder) {
+	init.brandBuilder = b
 }
 
 func (init *Initializer) MainDo(a action.WithArgs) {
@@ -645,7 +649,16 @@ LoadProfile:
 }
 
 func (init *Initializer) configureBrand() error {
-	internal.LogInitDepth(init.log, 1, "configuring brand")
+	if init.brandBuilder != nil {
+		internal.LogInitDepth(init.log, 1, "configuring custom brand")
+		brand, err := init.brandBuilder.Build()
+		if err != nil {
+			return err
+		}
+		init.brand = brand
+		return nil
+	}
+	internal.LogInitDepth(init.log, 1, "configuring default brand")
 
 	builder := branding.New(branding.Info{
 		Name:    init.opts.Get("app.name").String(),

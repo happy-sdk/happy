@@ -27,7 +27,7 @@ func Command() *command.Command {
 	cmd := command.New(command.Config{
 		Name:             "config",
 		Category:         "Configuration",
-		Description:      "Application configuration settings management",
+		Description:      "Manage and configure application settings",
 		Immediate:        true,
 		SkipSharedBefore: true,
 	})

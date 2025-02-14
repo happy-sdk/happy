@@ -40,6 +40,7 @@ type defaults struct {
 	configAdditionalProfiles  []string
 	configAllowCustomProfiles bool
 	configEnableProfileDevel  bool
+	binName                   string
 	cliMainMinArgs            uint
 	cliMainMaxArgs            uint
 	cliWithoutConfigCmd       bool
@@ -145,9 +146,18 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	if err != nil {
 		return err
 	}
+	binNameSpec, err := init.settingsb.GetSpec("app.cli.name")
+	if err != nil {
+		return err
+	}
+	binName := binNameSpec.Value
+	if binName == "" {
+		binName = slugSpec.Value
+	}
 
 	init.defaults.configDisabled = configDisabledSpec.Value == "true"
 	init.defaults.slug = slugSpec.Value
+	init.defaults.binName = binName
 	init.defaults.identifier = identifierSpec.Value
 	init.defaults.cliMainMinArgs = uint(cliMainMinArgs)
 	init.defaults.cliMainMaxArgs = uint(cliMainMaxArgs)
@@ -200,6 +210,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 			return err
 		}
 	}
+
 	if len(init.defaults.identifier) == 0 {
 		init.defaults.identifier = addr.ReverseDNS()
 		if len(init.defaults.identifier) == 0 {
@@ -453,7 +464,7 @@ func (init *Initializer) initBasePaths() error {
 }
 
 func (init *Initializer) initRootCommand() error {
-	internal.LogInitDepth(init.log, 1, "initializing root command", slog.String("slug", init.defaults.slug))
+	internal.LogInitDepth(init.log, 1, "initializing root command", slog.String("bin", init.defaults.binName))
 
 	// Normalize os.Args
 	var osargs []string
@@ -463,12 +474,15 @@ func (init *Initializer) initRootCommand() error {
 		}
 		osargs = append(osargs, arg)
 	}
-	osargs[0] = init.defaults.slug
+	osargs[0] = init.defaults.binName
 	os.Args = osargs
 
+	if init.defaults.binName == "" {
+		return fmt.Errorf("%w: unable to detemone bin name", Error)
+	}
 	// Create root command
 	root := command.New(command.Config{
-		Name:    settings.String(init.defaults.slug),
+		Name:    settings.String(init.defaults.binName),
 		MinArgs: settings.Uint(init.defaults.cliMainMinArgs),
 		MaxArgs: settings.Uint(init.defaults.cliMainMaxArgs),
 	})

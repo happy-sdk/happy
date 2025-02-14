@@ -232,7 +232,10 @@ func (m *Main) WithAddons(addons ...*addon.Addon) *Main {
 }
 
 func (m *Main) WithBrand(b *branding.Builder) *Main {
-	m.log.NotImplemented("WithBrand")
+	if !m.canConfigure("set brand") {
+		return m
+	}
+	m.init.WithBrand(b)
 	return m
 }
 
