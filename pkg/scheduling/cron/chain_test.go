@@ -243,8 +243,9 @@ func TestChainSkipIfStillRunning(t *testing.T) {
 
 	t.Run("different jobs independent", func(t *testing.T) {
 		var j1, j2 countJob
-		j1.delay = 10 * time.Millisecond
-		j2.delay = 10 * time.Millisecond
+		const delay = 60 * time.Millisecond // enough not to reach second run
+		j1.delay = delay
+		j2.delay = delay
 		chain := NewChain(SkipIfStillRunning(DiscardLogger))
 		wrappedJob1 := chain.Then(&j1)
 		wrappedJob2 := chain.Then(&j2)
