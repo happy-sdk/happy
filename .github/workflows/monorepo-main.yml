@@ -76,7 +76,8 @@ jobs:
       - name: Upload per-module coverage using Coveralls CLI
         if: success() || github.event.inputs.loose == 'true'
         run: |
-          for module in ${{ fromJson(needs.list-modules.outputs.modules) }}; do
+          modules='${{ needs.list-modules.outputs.modules }}'
+          echo "$modules" | jq -r '.[]' | while read -r module; do
             coverage_file="$module/coverage.out"
             if [[ -f "$coverage_file" && $(wc -l < "$coverage_file") -gt 1 ]]; then
               clean_module_name="${module#./}"
