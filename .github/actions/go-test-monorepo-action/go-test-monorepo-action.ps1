@@ -22,7 +22,7 @@ Get-ChildItem -File -Recurse -Filter "go.mod" | ForEach-Object {
       # Set correct coverpkg value
       if ($module -eq (Get-Location).Path) {
         # Primary module: Cover only its own packages
-        $coverpkg = (go list ./... -f '{.}' -join ',')
+        $coverpkg = (go list ./...) -join ","
       } else {
         # Submodules: Cover all their own packages
         $coverpkg = "./..."
@@ -30,9 +30,9 @@ Get-ChildItem -File -Recurse -Filter "go.mod" | ForEach-Object {
 
       # Run tests with race condition check if enabled
       if ($GO_TEST_RACE -eq "true") {
-        go test -race -coverpkg=$coverpkg -coverprofile=coverage.out -timeout=1m ./...
+        go test -race -coverpkg="$coverpkg" -coverprofile=coverage.out -timeout=1m ./...
       } else {
-        go test -coverpkg=$coverpkg -coverprofile=coverage.out -timeout=1m ./...
+        go test -coverpkg="$coverpkg" -coverprofile=coverage.out -timeout=1m ./...
       }
 
       if ($LASTEXITCODE -ne 0) {
