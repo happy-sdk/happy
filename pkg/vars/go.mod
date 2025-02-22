@@ -1,6 +1,6 @@
 module github.com/happy-sdk/happy/pkg/vars
 
-go 1.22
+go 1.24
 
 require (
 	github.com/happy-sdk/happy/pkg/devel/testutils v0.7.0
