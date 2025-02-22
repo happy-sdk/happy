@@ -160,6 +160,7 @@ package helloworld
 
 import (
   "github.com/happy-sdk/happy/sdk/addon"
+  "github.com/happy-sdk/happy/sdk/app/session"
   "github.com/happy-sdk/happy/sdk/custom"
 )
 
@@ -176,10 +177,10 @@ func Addon() *happy.Addon {
 
 
   // Optional: Register commands provided by the addon
-  addon.ProvidesCommands(/* provide command(s) */)
+  addon.ProvideCommands(/* provide command(s) */)
 
   // Optional: Register services provided by the addon
-  addon.ProvidesServices(/* provide service(s) */)
+  addon.ProvideServices(/* provide service(s) */)
 
   // Optional: Make a custom API accessible across the application 
   addon.ProvideAPI(&HelloWorldAPI{}) 
@@ -188,7 +189,7 @@ func Addon() *happy.Addon {
   addon.Emits(/* events what addon emits */)
 
   // Optional callback to be called when the addon is registered
-  addon.OnRegister(func(sess *happy.Session, opts *happy.Options) error {
+  addon.OnRegister(func(sess session.Register) error {
     sess.Log().Notice("hello-world addon registered")
     return nil
   })
