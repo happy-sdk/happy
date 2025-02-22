@@ -82,6 +82,8 @@ jobs:
               clean_module_name="${module#./}"
               echo "Uploading coverage for module: $clean_module_name"
               coveralls report "$coverage_file" --job-flag="$clean_module_name"
+            else
+              echo "::warning title=Coverage Missing::No coverage file found for module '$module' at path '$coverage_file'"
             fi
           done
         shell: bash
