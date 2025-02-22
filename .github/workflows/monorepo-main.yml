@@ -49,14 +49,13 @@ jobs:
     needs: list-modules
     strategy:
       matrix:
-        module: ${{ fromJson(needs.list-modules.outputs.modules) }}
         platform: [ubuntu-latest, macos-latest, windows-latest]
       fail-fast: ${{ github.event.inputs.loose != 'true' }}
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
       - name: Run tests and generate coverage reports
-        id: modulelist
+        id: run-tests
         uses: ./.github/actions/go-test-monorepo-action
         with:
           go-version: '>=1.22.0'
@@ -64,42 +63,31 @@ jobs:
           fail-fast: ${{ github.event.inputs.loose != 'true' }}
           continue-on-error: ${{ github.event.inputs.loose == 'true' }}
 
-      - name: Check if coverage data exists
-        if: github.event.inputs.loose == 'true' || success()
-        id: check-coverage
-        working-directory: ${{ matrix.module }}
-        run: |
-          if [[ -f coverage.out && $(wc -l <coverage.out) -gt 1 ]]; then
-            echo "coverage_data_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "coverage_data_exists=false" >> $GITHUB_OUTPUT
-          fi
-        shell: bash
-
-      - name: Prepare flag name
-        id: prepare-flag
-        run: |
-          module_path="${{ matrix.module }}"
-          if [ "$module_path" == "." ]; then
-            clean_module_name="happy"
-          else
-            clean_module_name="${module_path#./}"
-          fi
-          echo "clean_module_name=$clean_module_name" >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: Upload coverage
-        if: steps.check-coverage.outputs.coverage_data_exists == 'true'
+      - name: Upload primary monorepo coverage file
+        if: success() || github.event.inputs.loose == 'true'
         uses: coverallsapp/github-action@v2
         with:
-          flag-name: ${{ steps.prepare-flag.outputs.clean_module_name }}
+          flag-name: monorepo-root
           parallel: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ matrix.module }}/coverage.out
+          file: coverage.out
+
+      - name: Upload per-module coverage using Coveralls CLI
+        if: success() || github.event.inputs.loose == 'true'
+        run: |
+          for module in ${{ fromJson(needs.list-modules.outputs.modules) }}; do
+            coverage_file="$module/coverage.out"
+            if [[ -f "$coverage_file" && $(wc -l < "$coverage_file") -gt 1 ]]; then
+              clean_module_name="${module#./}"
+              echo "Uploading coverage for module: $clean_module_name"
+              coveralls report "$coverage_file" --job-flag="$clean_module_name"
+            fi
+          done
+        shell: bash
 
   finish-coverage-report:
     needs: test-n-coverage
-    if: github.event.inputs.loose == 'true' || success()
+    if: success() || github.event.inputs.loose == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls Finish
