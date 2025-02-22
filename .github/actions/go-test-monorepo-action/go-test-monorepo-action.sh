@@ -13,12 +13,22 @@ while IFS= read -r module; do
 
   if [ "$ONLY_MODULE_LIST" != "true" ]; then
     echo "Testing and generating coverage for module: $module"
-    if [ "$GO_TEST_RACE" == "true" ]; then
-      (cd "$module" && go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
+
+    if [[ "$module" == "." ]]; then
+      # Primary module: Cover only its own packages, not the entire monorepo
+      coverpkg=$(go list ./... | tr '\n' ',')
     else
-      (cd "$module" && go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...)
+      # Submodules: Cover all their own packages
+      coverpkg="./..."
+    fi
+
+    if [ "$GO_TEST_RACE" == "true" ]; then
+      (cd "$module" && go test -race -coverpkg="$coverpkg" -coverprofile=coverage.out -timeout=1m ./...)
+    else
+      (cd "$module" && go test -coverpkg="$coverpkg" -coverprofile=coverage.out -timeout=1m ./...)
     fi
     test_exit_status=$?
+
     if [ $test_exit_status -ne 0 ]; then
       test_failed=1
       if [ "$FAIL_FAST" == "true" ]; then
