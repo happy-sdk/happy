@@ -150,14 +150,10 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	if err != nil {
 		return err
 	}
-	binName := binNameSpec.Value
-	if binName == "" {
-		binName = slugSpec.Value
-	}
 
 	init.defaults.configDisabled = configDisabledSpec.Value == "true"
 	init.defaults.slug = slugSpec.Value
-	init.defaults.binName = binName
+	init.defaults.binName = binNameSpec.Value
 	init.defaults.identifier = identifierSpec.Value
 	init.defaults.cliMainMinArgs = uint(cliMainMinArgs)
 	init.defaults.cliMainMaxArgs = uint(cliMainMaxArgs)
@@ -224,6 +220,11 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 
 	if err := slugSpec.ValidateValue(init.defaults.slug); err != nil {
 		return err
+	}
+
+	// Set binName from valid slug if not set.
+	if init.defaults.binName == "" {
+		init.defaults.binName = init.defaults.slug
 	}
 
 	if err := init.settingsb.SetDefault("app.copyright_since", fmt.Sprint(time.Now().Year())); err != nil {
@@ -474,12 +475,14 @@ func (init *Initializer) initRootCommand() error {
 		}
 		osargs = append(osargs, arg)
 	}
-	osargs[0] = init.defaults.binName
-	os.Args = osargs
 
 	if init.defaults.binName == "" {
 		return fmt.Errorf("%w: unable to detemone bin name", Error)
 	}
+
+	osargs[0] = init.defaults.binName
+	os.Args = osargs
+
 	// Create root command
 	root := command.New(command.Config{
 		Name:    settings.String(init.defaults.binName),
