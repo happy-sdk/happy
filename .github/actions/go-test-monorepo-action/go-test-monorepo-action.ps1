@@ -1,4 +1,4 @@
-# Read script arguments
+# Check if only module list should be outputted
 $ONLY_MODULE_LIST = $args[0]
 $GO_TEST_RACE = $args[1]
 $FAIL_FAST = $args[2]
@@ -13,28 +13,16 @@ Get-ChildItem -File -Recurse -Filter "go.mod" | ForEach-Object {
   $module = $_.DirectoryName
   $modules += $module
 
-  # Run tests only if ONLY_MODULE_LIST is not "true"
-  if ($ONLY_MODULE_LIST -ne "true") {
+  # Run tests only if ONLY_MODULE_LIST is not "true" and not null or empty
+  if (-not [string]::IsNullOrEmpty($ONLY_MODULE_LIST) -and $ONLY_MODULE_LIST -ne "true") {
     Write-Host "Testing and generating coverage for module: $module"
     Set-Location $module
-
     try {
-      # Set correct coverpkg value
-      if ($module -eq (Get-Location).Path) {
-        # Primary module: Cover only its own packages
-        $coverpkg = (go list ./...) -join ","
-      } else {
-        # Submodules: Cover all their own packages
-        $coverpkg = "./..."
-      }
-
-      # Run tests with race condition check if enabled
       if ($GO_TEST_RACE -eq "true") {
-        go test -race -coverpkg="$coverpkg" -coverprofile=coverage.out -timeout=1m ./...
+        go test -race -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...
       } else {
-        go test -coverpkg="$coverpkg" -coverprofile=coverage.out -timeout=1m ./...
+        go test -coverpkg=./... -coverprofile=coverage.out -timeout=1m ./...
       }
-
       if ($LASTEXITCODE -ne 0) {
         $testFailed = $true
         if ($FAIL_FAST -eq "true") {
@@ -51,7 +39,7 @@ Get-ChildItem -File -Recurse -Filter "go.mod" | ForEach-Object {
 }
 
 # Convert modules array to JSON array format
-$modules_json = $modules | ConvertTo-Json -Compress
+$modules_json = $modules | ConvertTo-Json
 
 # Output the modules for the matrix
 Write-Host "modules=$modules_json"
