@@ -2,8 +2,6 @@ module github.com/happy-sdk/happy
 
 go 1.24.0
 
-toolchain go1.24.0
-
 require (
 	github.com/happy-sdk/happy/pkg/branding v0.1.1
 	github.com/happy-sdk/happy/pkg/cli/ansicolor v0.2.1
