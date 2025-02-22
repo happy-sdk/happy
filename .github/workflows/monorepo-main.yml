@@ -49,8 +49,8 @@ jobs:
     needs: list-modules
     strategy:
       matrix:
-        platform: [ ubuntu-latest ]
-        # platform: [ubuntu-latest, macos-latest, windows-latest]
+        platform: [ ubuntu-latest, macos-latest ]
+        # platform: [ubuntu-latest, , windows-latest]
       fail-fast: false
     runs-on: ${{ matrix.platform }}
     steps:
