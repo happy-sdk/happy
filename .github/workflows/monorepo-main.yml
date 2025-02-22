@@ -49,7 +49,8 @@ jobs:
     needs: list-modules
     strategy:
       matrix:
-        platform: [ ubuntu-latest, macos-latest ]
+        # https://github.com/actions/runner-images?tab=readme-ov-file
+        platform: [ ubuntu-latest, macos-15 ]
         # platform: [ubuntu-latest, , windows-latest]
       fail-fast: false
     runs-on: ${{ matrix.platform }}
