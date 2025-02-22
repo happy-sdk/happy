@@ -28,7 +28,7 @@ jobs:
       - name: Lint all packages
         uses: ./.github/actions/golangci-lint-monorepo-action
         with:
-          go-version: '>=1.22.0'
+          go-version: '>=1.24.0'
           golangci-lint-version: latest
 
   list-modules:
@@ -42,7 +42,7 @@ jobs:
         id: modulelist
         uses: ./.github/actions/go-test-monorepo-action
         with:
-          go-version: '>=1.22.0'
+          go-version: '>=1.24.0'
           only-module-list: true
 
   test-n-coverage:
@@ -50,7 +50,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
-      fail-fast: ${{ github.event.inputs.loose != 'true' }}
+      fail-fast: false
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
         id: run-tests
         uses: ./.github/actions/go-test-monorepo-action
         with:
-          go-version: '>=1.22.0'
+          go-version: '>=1.24.0'
           race: ${{ github.event.inputs.loose != 'true' }}
           fail-fast: ${{ github.event.inputs.loose != 'true' }}
           continue-on-error: ${{ github.event.inputs.loose == 'true' }}
