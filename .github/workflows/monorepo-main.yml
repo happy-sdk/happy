@@ -80,6 +80,10 @@ jobs:
         run: |
           modules='${{ needs.list-modules.outputs.modules }}'
           echo "$modules" | jq -r '.[]' | while read -r module; do
+            # Skip the main module (".") since we already uploaded its coverage
+            if [[ "$module" == "." ]]; then
+              continue
+            fi
             coverage_file="$module/coverage.out"
             if [[ -f "$coverage_file" && $(wc -l < "$coverage_file") -gt 1 ]]; then
               clean_module_name="${module#./}"
