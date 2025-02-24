@@ -59,14 +59,28 @@ type ServiceLoader struct {
 	errs     []error
 	sess     *session.Context
 	hostaddr *address.Address
-	svcs     []*address.Address
+	svcAddrs map[string]string
 }
 
-// NewServiceLoader creates new service loader which can be used to load services.
+// NewLoader creates a new ServiceLoader instance that initializes and prepares services for loading.
+//
+// It accepts a session context and an optional list of service addresses. The loader will attempt
+// to resolve and store service addresses based on the provided session configuration.
+//
+// Example usage:
+//
+//	loader := NewLoader(sess, "serviceA", "serviceB")
+//	<-loader.Load()
+//	if err := loader.Err(); err != nil {
+//	    log.Fatal("Service loading failed:", err)
+//	}
+//
+// Returns a pointer to a ServiceLoader instance.
 func NewLoader(sess *session.Context, svcs ...string) *ServiceLoader {
 	loader := &ServiceLoader{
 		sess:     sess,
 		loaderCh: make(chan struct{}),
+		svcAddrs: make(map[string]string),
 	}
 	hostaddr, err := address.Parse(sess.Get("app.address").String())
 	if err != nil {
@@ -75,6 +89,7 @@ func NewLoader(sess *session.Context, svcs ...string) *ServiceLoader {
 			"%w: loader requires valid app.address",
 			Error,
 		))
+		return loader
 	}
 
 	loader.hostaddr = hostaddr
@@ -84,13 +99,27 @@ func NewLoader(sess *session.Context, svcs ...string) *ServiceLoader {
 		if err != nil {
 			loader.addErr(err)
 		} else {
-			loader.svcs = append(loader.svcs, svcaddr)
+			loader.svcAddrs[addr] = svcaddr.String()
 		}
 	}
 
 	return loader
 }
 
+// Load starts the service loading process and returns a channel that signals when the loading is complete.
+//
+// This function ensures that all requested services are either started or their failure is logged. If services
+// fail to start within a configured timeout, Load will cancel the process and return an error via Err().
+//
+// Example:
+//
+//	loader := NewLoader(sess, "serviceA", "serviceB")
+//	<-loader.Load()
+//	if err := loader.Err(); err != nil {
+//	    log.Fatal("Service loading failed:", err)
+//	}
+//
+// Returns a receive-only channel that signals completion when closed.
 func (sl *ServiceLoader) Load() <-chan struct{} {
 	if sl.loading {
 		return sl.loaderCh
@@ -117,31 +146,30 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 	queue := make(map[string]*service.Info)
 	var require []string
 
-	for _, svcaddr := range sl.svcs {
-		svcaddrstr := svcaddr.String()
-		info, err := sl.sess.ServiceInfo(svcaddrstr)
+	for _, svcaddr := range sl.svcAddrs {
+		info, err := sl.sess.ServiceInfo(svcaddr)
 		if err != nil {
 			sl.cancel(err)
 			return sl.loaderCh
 		}
-		if _, ok := queue[svcaddrstr]; ok {
+		if _, ok := queue[svcaddr]; ok {
 			sl.cancel(fmt.Errorf(
 				"%w: duplicated service request %s",
 				Error,
-				svcaddrstr,
+				svcaddr,
 			))
 			return sl.loaderCh
 		}
 		if info.Running() {
 			sl.sess.Log().NotImplemented(
 				"requested service is already running",
-				slog.String("service", svcaddrstr),
+				slog.String("service", svcaddr),
 			)
 			continue
 		}
-		internal.Log(sl.sess.Log(), "requesting service", slog.String("service", svcaddrstr))
-		queue[svcaddrstr] = info
-		require = append(require, svcaddrstr)
+		internal.Log(sl.sess.Log(), "requesting service", slog.String("service", svcaddr))
+		queue[svcaddr] = info
+		require = append(require, svcaddr)
 	}
 
 	sl.sess.Dispatch(startEvent(require...))
@@ -195,26 +223,52 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 	return sl.loaderCh
 }
 
-func startEvent(svcs ...string) events.Event {
-	payload := new(vars.Map)
-	var errs []error
-	for i, url := range svcs {
-		if err := payload.Store(fmt.Sprintf("service.%d", i), url); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if len(errs) > 0 {
-		_ = payload.Store("err", errors.Join(errs...).Error())
-	}
-
-	return StartEvent.Create(fmt.Sprintf("requested services (%d)", len(svcs)), payload)
-}
-
+// Err returns an aggregated error if any occurred during the service loading process.
+//
+// It should be called **after** the Load() channel unlocks to check whether loading was successful.
+//
+// Example:
+//
+//	loader := NewLoader(sess, "serviceA")
+//	<-loader.Load()
+//	if err := loader.Err(); err != nil {
+//	    log.Fatal("Failed to load services:", err)
+//	}
+//
+// Returns an error or nil if no errors occurred.
 func (sl *ServiceLoader) Err() error {
 	if sl.loading {
 		return fmt.Errorf("%w: service loader error checked before loader finished! did you wait for .Loaded?", Error)
 	}
 	return errors.Join(sl.errs...)
+}
+
+// ResolveAddress resolves the given service name or address `s` into a full service address
+// based on the current application’s configuration.
+//
+// It retrieves the base application address from the session context (`app.address`)
+// and attempts to resolve `s` into a complete service address.
+//
+// Example:
+//
+//	addr, err := ResolveAddress(sess, "serviceA")
+//	if err != nil {
+//	    log.Fatal("Failed to resolve service address:", err)
+//	}
+//	fmt.Println("Resolved address:", addr)
+//
+// Returns the resolved service address as a string or an error if resolution fails.
+func ResolveAddress(sess *session.Context, s string) (string, error) {
+	hostaddr, err := address.Parse(sess.Get("app.address").String())
+	if err != nil {
+		return "", err
+	}
+	return resolveAddress(hostaddr, s)
+}
+
+func resolveAddress(hostaddr *address.Address, s string) (string, error) {
+	addr, err := hostaddr.ResolveService(s)
+	return addr.String(), err
 }
 
 // cancel is used internally to cancel loading
@@ -236,6 +290,21 @@ func (sl *ServiceLoader) addErr(err error) {
 		return
 	}
 	sl.errs = append(sl.errs, err)
+}
+
+func startEvent(svcs ...string) events.Event {
+	payload := new(vars.Map)
+	var errs []error
+	for i, url := range svcs {
+		if err := payload.Store(fmt.Sprintf("service.%d", i), url); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		_ = payload.Store("err", errors.Join(errs...).Error())
+	}
+
+	return StartEvent.Create(fmt.Sprintf("requested services (%d)", len(svcs)), payload)
 }
 
 type serviceCron struct {
