@@ -344,6 +344,20 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 			options.KindConfig|options.KindReadOnly,
 			options.NoopValueValidator,
 		),
+		options.NewOption(
+			"app.os.user.uid",
+			os.Geteuid(),
+			"Geteuid returns the numeric effective user id of the caller running the app",
+			options.KindConfig|options.KindReadOnly,
+			options.NoopValueValidator,
+		),
+		options.NewOption(
+			"app.os.user.gid",
+			os.Getegid(),
+			"Getegid returns the numeric effective group id of the caller running the app",
+			options.KindConfig|options.KindReadOnly,
+			options.NoopValueValidator,
+		),
 	}
 
 	init.opts, err = options.New("app", optSpecs)
