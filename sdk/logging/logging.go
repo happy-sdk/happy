@@ -270,25 +270,15 @@ func (l *DefaultLogger) Printf(format string, v ...any) {
 }
 
 func (l *DefaultLogger) HTTP(status int, method, path string, attrs ...slog.Attr) {
-	switch status {
-	case 100, 200:
-		if l.log.Enabled(l.ctx, lvlInfo) {
-			l.http(status, method, path, attrs...)
-		}
-	case 300:
-		if l.log.Enabled(l.ctx, lvlWarn) {
-			l.http(status, method, path, attrs...)
-		}
-	case 400:
+
+	if status < 400 && l.log.Enabled(l.ctx, lvlInfo) {
+		l.http(status, method, path, attrs...)
+	} else if status < 500 && l.log.Enabled(l.ctx, lvlWarn) {
+		l.http(status, method, path, attrs...)
+	} else if status < 600 && l.log.Enabled(l.ctx, lvlError) {
+		l.http(status, method, path, attrs...)
+	} else {
 		if l.log.Enabled(l.ctx, lvlError) {
-			l.http(status, method, path, attrs...)
-		}
-	case 500:
-		if l.log.Enabled(l.ctx, lvlError) {
-			l.http(status, method, path, attrs...)
-		}
-	default:
-		if l.log.Enabled(l.ctx, lvlBUG) {
 			attrs = append(attrs, slog.String("err", "invalid status code"))
 			l.http(status, method, path, attrs...)
 		}
