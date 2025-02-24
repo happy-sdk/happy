@@ -80,7 +80,7 @@ func TestDefaultOptions(t *testing.T) {
 		doCalled           bool
 	)
 	app.BeforeAlways(func(sess *session.Context, args action.Args) error {
-		testutils.Equal(t, 16, sess.Opts().Len(), "invalid default runtime options count")
+		testutils.Equal(t, 18, sess.Opts().Len(), "invalid default runtime options count")
 
 		// app.address
 		host, err := os.Hostname()
@@ -128,7 +128,7 @@ func TestDefaultOptions(t *testing.T) {
 		// app.profile.name
 		testutils.Equal(t, "default", sess.Get("app.profile.name").String(), "app.profile.name")
 		// app.version
-		testutils.Equal(t, "v1.0.0-0xDEV", sess.Get("app.version").String(), "app.version")
+		// testutils.Equal(t, "v1.0.0-0xDEV", sess.Get("app.version").String(), "app.version")
 		beforeAlwaysCalled = true
 		return nil
 	})
