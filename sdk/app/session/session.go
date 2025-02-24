@@ -82,18 +82,21 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 // Wait allows user to cancel application by pressing Ctrl+C or sending
 // SIGINT or SIGTERM while application is running. By default this is not allowed.
 // It returns a Done channel which blocks until application is closed by user or signal is reveived.
-func (c *Context) Wait() <-chan struct{} {
+// Argument ctrlc=true will print to stdout "Press Ctrl+C to cancel"
+func (c *Context) Wait(ctrlc bool) <-chan struct{} {
 	c.mu.Lock()
 	c.allowUserCancel = true
 	c.mu.Unlock()
 	internal.Log(c.Log(), "waiting for user cancel or session termination")
-	fmt.Println("Press Ctrl+C to cancel")
+	if ctrlc {
+		fmt.Println("Press Ctrl+C to cancel")
+	}
 	return c.Done()
 }
 
 // Done enables you to hook into chan to know when application exits
 // however DO NOT use that for graceful shutdown actions.
-// Use Application.AddExitFunc or Cloesed instead.
+// Use Application.AddExitFunc or Wait instead.
 func (c *Context) Done() <-chan struct{} {
 	c.mu.Lock()
 	if c.done == nil {
