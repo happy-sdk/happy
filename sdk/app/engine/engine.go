@@ -397,9 +397,9 @@ func (e *Engine) servicesInit(sess *session.Context, init *sync.WaitGroup) {
 			defer init.Done()
 			if err := c.Register(sess); err != nil {
 				sess.Log().Error(
-					"failed to initialize service",
+					err.Error(),
 					slog.String("service", c.Info().Addr().String()),
-					slog.String("err", err.Error()))
+					slog.String("err", "failed to initialize service"))
 				return
 			}
 			// register events what service listens for
