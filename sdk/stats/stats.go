@@ -5,6 +5,7 @@
 package stats
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"runtime"
@@ -178,6 +179,50 @@ func (s State) String() string {
 		tbl.AddRow(s.vars[v].Name(), s.vars[v].String())
 	}
 	return tbl.String()
+}
+
+// stateJSON is an internal type for marshaling/unmarshaling.
+type stateJSON struct {
+	Title string            `json:"title"`
+	Time  string            `json:"time"`
+	Vars  map[string]string `json:"vars"`
+}
+
+// MarshalJSON customizes JSON serialization for State.
+func (s State) MarshalJSON() ([]byte, error) {
+	vars := make(map[string]string)
+	for key, v := range s.vars {
+		vars[key] = v.String()
+	}
+	return json.Marshal(stateJSON{
+		Title: s.title,
+		Time:  s.time.Format(time.RFC3339),
+		Vars:  vars,
+	})
+}
+
+// UnmarshalJSON customizes JSON deserialization for State.
+func (s *State) UnmarshalJSON(data []byte) error {
+	var temp stateJSON
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	// Convert fields
+	s.title = temp.Title
+	t, err := time.Parse(time.RFC3339, temp.Time)
+	if err != nil {
+		return err
+	}
+	s.time = t
+	s.vars = make(map[string]vars.Variable)
+	for key, v := range temp.Vars {
+		s.vars[key], err = vars.New(key, v, true)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func AsService(prof *Profiler) *services.Service {
