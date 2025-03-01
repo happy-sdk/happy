@@ -9,7 +9,7 @@ require (
 	github.com/happy-sdk/happy/pkg/options v0.3.0
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.5.0
 	github.com/happy-sdk/happy/pkg/settings v0.4.0
-	github.com/happy-sdk/happy/pkg/strings/humanize v0.3.0
+	github.com/happy-sdk/happy/pkg/strings/humanize v0.4.0
 	github.com/happy-sdk/happy/pkg/strings/slug v0.2.0
 	github.com/happy-sdk/happy/pkg/strings/textfmt v0.4.0
 	github.com/happy-sdk/happy/pkg/vars v0.14.0

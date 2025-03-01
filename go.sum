@@ -12,8 +12,8 @@ github.com/happy-sdk/happy/pkg/settings v0.4.0 h1:QH7HwZlwFrS5KFaOKNzklCdwdtwPtn
 github.com/happy-sdk/happy/pkg/settings v0.4.0/go.mod h1:AI1/pGwW7rI6eswvPHUv280Lqbr2NOUhyQjiw47oCPY=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.5.0 h1:ZdzT8XEFhcXbDVrqJsuq4V5QKW5O74v8EDIy7mPrUIU=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.5.0/go.mod h1:Q/qztKPhmXRHbjJHEHTkhHpUTb6s61e54ujEgABspV0=
-github.com/happy-sdk/happy/pkg/strings/humanize v0.3.0 h1:iqiTBuHlrho00IFrBUrMFxUf0QkLsZyPcy61j+F1G4s=
-github.com/happy-sdk/happy/pkg/strings/humanize v0.3.0/go.mod h1:VebLbxsdzy+suJzL7x0VAOHyyXHbpZj38wpPHeWefZU=
+github.com/happy-sdk/happy/pkg/strings/humanize v0.4.0 h1:ZoQRNE57GwZFPvsviEnZZSEaAmr7AUodASBWd+JD3CM=
+github.com/happy-sdk/happy/pkg/strings/humanize v0.4.0/go.mod h1:VebLbxsdzy+suJzL7x0VAOHyyXHbpZj38wpPHeWefZU=
 github.com/happy-sdk/happy/pkg/strings/slug v0.2.0 h1:/NmzYuNpHGe2Uo2F96UzHvjBfLmMszcsoZv/TN7c6oY=
 github.com/happy-sdk/happy/pkg/strings/slug v0.2.0/go.mod h1:NbUXsKWwR6Ccv4tc68s4qCSuNtQQNxoDsvUGoWD6FD8=
 github.com/happy-sdk/happy/pkg/strings/textfmt v0.4.0 h1:n+t4Bw3KL65Ac+DaE7+2y7GaVDbDXR1pdEb+PZR246A=
