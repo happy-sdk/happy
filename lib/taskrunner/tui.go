@@ -156,7 +156,7 @@ func (m tui) View() string {
 		return m.checkStatusFinalReport()
 	}
 
-	pkgCount := fmt.Sprintf(" %*d/%*d", w, m.executedTasks, w, m.totalTasks)
+	taskCount := fmt.Sprintf(" %*d/%*d", w, m.executedTasks, w, m.totalTasks)
 
 	spin := m.spinner.View() + " "
 	prog := m.progress.View()
@@ -169,7 +169,7 @@ func (m tui) View() string {
 	// cellsRemaining := max(0, m.width-lipgloss.Width(spin+info+prog+pkgCount))
 	// gap := strings.Repeat("", cellsRemaining)
 
-	return spin + info + "\n\n" + prog + pkgCount
+	return spin + info + "\n\n" + prog + taskCount
 }
 
 func (m tui) checkStatusFinalReport() string {

@@ -8,6 +8,7 @@ package taskrunner
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -60,40 +61,44 @@ var (
 
 	keyStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#AAAAAA")).
-			Width(32)
+			Width(48)
 
 	descStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#AAAAAA"))
 
 	valueStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFFFFF")).
-			Width(48)
+			Width(60)
 )
+
+func normalize(in string) (out string) {
+	return strings.ReplaceAll(in, "\n", "")
+}
 
 // Success utility function to create Result with state SUCCESS
 func Success(status, desc string) Result {
 	return Result{
-		Status:     status,
+		Status:     normalize(status),
 		State:      SUCCESS,
-		Decription: desc,
+		Decription: normalize(desc),
 	}
 }
 
 // Warn utility function to create Result with state WARNING
 func Warn(status, desc string) Result {
 	return Result{
-		Status:     status,
+		Status:     normalize(status),
 		State:      WARNING,
-		Decription: desc,
+		Decription: normalize(desc),
 	}
 }
 
 // Failure utility function to create Result with state FAILURE
 func Failure(status, desc string) Result {
 	return Result{
-		Status:     status,
+		Status:     normalize(status),
 		State:      FAILURE,
-		Decription: desc,
+		Decription: normalize(desc),
 	}
 }
 
