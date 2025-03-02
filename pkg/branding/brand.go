@@ -4,11 +4,14 @@
 
 package branding
 
-import "github.com/happy-sdk/happy/pkg/cli/ansicolor"
+import (
+	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
+)
 
 type Brand struct {
-	info Info
-	ansi ansicolor.Theme
+	info   Info
+	ansi   ansicolor.Theme
+	colors ColorPalette
 }
 
 type Info struct {
@@ -24,4 +27,23 @@ func (b *Brand) Info() Info {
 
 func (b *Brand) ANSI() ansicolor.Theme {
 	return b.ansi
+}
+
+func (b *Brand) Colors() ColorPalette {
+	return b.colors
+}
+
+// ColorPalette each Color specifies a color by hex or ANSI value. For example:
+//
+//	ansiColor := colorPalette.Primary = "21"
+//	hexColor := colorPalette.Primary = "#0000ff"
+type ColorPalette struct {
+	Primary   string
+	Secondary string
+	Accent    string
+	Highlight string
+	Info      string
+	Success   string
+	Warning   string
+	Danger    string
 }

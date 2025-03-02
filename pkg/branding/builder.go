@@ -18,3 +18,8 @@ func (b *Builder) WithANSI(ansi ansicolor.Theme) *Builder {
 	b.brand.ansi = ansi
 	return b
 }
+
+func (b *Builder) WithPalette(palette ColorPalette) *Builder {
+	b.brand.colors = palette
+	return b
+}
