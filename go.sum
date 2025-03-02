@@ -1,5 +1,5 @@
-github.com/happy-sdk/happy/pkg/branding v0.2.0 h1:mhe7kNupXMWF2U+copOXOrHomG1XSSd02GuhIPU0mXI=
-github.com/happy-sdk/happy/pkg/branding v0.2.0/go.mod h1:GRPscHL6VshHi85nFC6RIEy8L6ZmDmog60mQLUFr3RM=
+github.com/happy-sdk/happy/pkg/branding v0.3.0 h1:mAfsUGLvY23yayB2dJNy+fRSg0l5WmgfY8bNy18w6i4=
+github.com/happy-sdk/happy/pkg/branding v0.3.0/go.mod h1:GRPscHL6VshHi85nFC6RIEy8L6ZmDmog60mQLUFr3RM=
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.3.0 h1:QI8E63KgyU4WJt2w8qxoHDejGU5bJ4Gm59AK+6JBkDk=
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.3.0/go.mod h1:jqKfUpNe+iUe7KAMfLbILLxDYd8EB1cO5BO0CPliWQ8=
 github.com/happy-sdk/happy/pkg/devel/testutils v0.8.0 h1:0dQbo04YvrxLkqeDZTj4EyOzjjIXG3xv/qUtxDPfmB0=
