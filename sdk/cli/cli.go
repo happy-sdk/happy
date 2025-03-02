@@ -177,22 +177,40 @@ func execCommandRaw(sess *session.Context, cmd *exec.Cmd) ([]byte, error) {
 	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
 	scmd.Env = cmd.Env
 	scmd.Dir = cmd.Dir
-	scmd.Stdin = cmd.Stdin
-	scmd.Stdout = cmd.Stdout
-	scmd.Stderr = cmd.Stderr
+
+	// Create buffers to capture stdout and stderr separately
+	var stdoutBuf, stderrBuf bytes.Buffer
+
+	// Always redirect stdout and stderr to our buffers, ignoring any previously set values
+	// This ensures we don't write to the original stdout/stderr
+	scmd.Stdout = &stdoutBuf
+	scmd.Stderr = &stderrBuf
+
 	scmd.ExtraFiles = cmd.ExtraFiles
 	cmd = scmd
 
-	out, err := cmd.CombinedOutput()
+	// Execute command
+	err := cmd.Run()
+
+	// Get stdout content
+	stdoutBytes := stdoutBuf.Bytes()
+
+	// If no error, just return the stdout
 	if err == nil {
-		sess.Log().Debug(cmd.String(), slog.Int("exit", 0))
-		return out, nil
+		return stdoutBytes, nil
 	}
+
+	// On error, clean stderr by replacing newlines with spaces
+	cleanedStderr := strings.ReplaceAll(stderrBuf.String(), "\n", " ")
+
 	var ee *exec.ExitError
 	if errors.As(err, &ee) {
-		fmt.Println(string(ee.Stderr))
-		sess.Log().Error(ee.Error())
-		return out, err
+		// Create new error with original error and cleaned stderr appended
+		enhancedErr := fmt.Errorf("%w: %s", err, cleanedStderr)
+		return stdoutBytes, enhancedErr
 	}
-	return out, err
+
+	// For other types of errors, also append cleaned stderr
+	enhancedErr := fmt.Errorf("%w: %s", err, cleanedStderr)
+	return stdoutBytes, enhancedErr
 }
