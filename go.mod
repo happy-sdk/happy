@@ -3,7 +3,7 @@ module github.com/happy-sdk/happy
 go 1.24.0
 
 require (
-	github.com/happy-sdk/happy/pkg/branding v0.2.0
+	github.com/happy-sdk/happy/pkg/branding v0.3.0
 	github.com/happy-sdk/happy/pkg/cli/ansicolor v0.3.0
 	github.com/happy-sdk/happy/pkg/devel/testutils v0.8.0
 	github.com/happy-sdk/happy/pkg/options v0.3.0

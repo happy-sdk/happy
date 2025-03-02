@@ -5,7 +5,7 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/happy-sdk/happy v0.19.0/go.mod h1:8pND3rDvQoP+zhm3Dd9qRzMGOWmMG3emRTAZv+rDjdU=
 github.com/happy-sdk/happy v0.23.0/go.mod h1:OjnEjUhw5mmRKDoMHRsi2JkukNWsABeM+4G87CbgtH0=
 github.com/happy-sdk/happy v0.24.0/go.mod h1:84kGSaM9COejEOwj62LUKc8afm5rH4hha8MKxGtB4jY=
-github.com/happy-sdk/happy/pkg/strings/humanize v0.4.0/go.mod h1:VebLbxsdzy+suJzL7x0VAOHyyXHbpZj38wpPHeWefZU=
+github.com/happy-sdk/happy/pkg/branding v0.3.0/go.mod h1:GRPscHL6VshHi85nFC6RIEy8L6ZmDmog60mQLUFr3RM=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/sahilm/fuzzy v0.1.1-0.20230530133925-c48e322e2a8f/go.mod h1:VFvziUEIMCrT6A6tw2RFIXPXXmzXbOsSHF0DOI8ZK9Y=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
