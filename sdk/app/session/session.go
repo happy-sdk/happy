@@ -260,7 +260,7 @@ func (c *Context) Has(key string) bool {
 
 func (c *Context) Get(key string) vars.Variable {
 	if !c.Has(key) {
-		c.logger.LogDepth(3, logging.LevelWarn, "accessing non existing session option", slog.String("key", key))
+		// c.logger.LogDepth(3, logging.LevelWarn, "accessing non existing session option", slog.String("key", key))
 		return vars.EmptyVariable
 	}
 	if c.profile != nil && c.profile.Has(key) {

@@ -50,17 +50,15 @@ type Settings struct {
 	License        settings.String `key:"app.license" default:"NOASSERTION" desc:"Application license"`
 
 	// Application settings
-	Engine   engine.Settings   `key:"app.engine"`
-	CLI      cli.Settings      `key:"app.cli"`
-	Config   config.Settings   `key:"app.config"`
-	DateTime datetime.Settings `key:"app.datetime"`
-	Instance instance.Settings `key:"app.instance"`
-	Logging  logging.Settings  `key:"app.logging"`
-	Services services.Settings `key:"app.services"`
-	Stats    stats.Settings    `key:"app.stats"`
-
-	Devel devel.Settings `key:"app.devel"`
-
+	Engine     engine.Settings   `key:"app.engine"`
+	CLI        cli.Settings      `key:"app.cli"`
+	Config     config.Settings   `key:"app.config"`
+	DateTime   datetime.Settings `key:"app.datetime"`
+	Instance   instance.Settings `key:"app.instance"`
+	Logging    logging.Settings  `key:"app.logging"`
+	Services   services.Settings `key:"app.services"`
+	Stats      stats.Settings    `key:"app.stats"`
+	Devel      devel.Settings    `key:"app.devel"`
 	global     []settings.Settings
 	migrations map[string]string
 	errs       []error

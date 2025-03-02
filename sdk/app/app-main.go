@@ -289,6 +289,15 @@ func (m *Main) WithServices(svc ...*services.Service) *Main {
 	return m
 }
 
+func (m *Main) WithSettings(s settings.Settings) *Main {
+	if m.canConfigure("setting app settings") {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		m.init.WithSettings(s)
+	}
+	return m
+}
+
 func (m *Main) Setup(setup action.Action) *Main {
 	if m.canConfigure("set setup action") {
 		m.mu.Lock()

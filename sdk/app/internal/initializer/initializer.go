@@ -290,6 +290,15 @@ func (init *Initializer) WithSetup(action action.Action) {
 	init.rt.SetSetup(action)
 }
 
+func (init *Initializer) WithSettings(s settings.Settings) {
+	init.mu.Lock()
+	defer init.mu.Unlock()
+
+	if err := init.settingsb.Extend(init.defaults.slug, s); err != nil {
+		init.error(err)
+	}
+}
+
 func (init *Initializer) Configure() (err error) {
 	defer func() {
 		if init.logger != nil {
