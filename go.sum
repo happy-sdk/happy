@@ -18,8 +18,8 @@ github.com/happy-sdk/happy/pkg/strings/slug v0.2.0 h1:/NmzYuNpHGe2Uo2F96UzHvjBfL
 github.com/happy-sdk/happy/pkg/strings/slug v0.2.0/go.mod h1:NbUXsKWwR6Ccv4tc68s4qCSuNtQQNxoDsvUGoWD6FD8=
 github.com/happy-sdk/happy/pkg/strings/textfmt v0.4.0 h1:n+t4Bw3KL65Ac+DaE7+2y7GaVDbDXR1pdEb+PZR246A=
 github.com/happy-sdk/happy/pkg/strings/textfmt v0.4.0/go.mod h1:Gs5aymYTLnDfuv1NjipPjgaLdffjbEVUuyWyDGaQtBw=
-github.com/happy-sdk/happy/pkg/vars v0.14.0 h1:j9C/Os9MlXTT4JXQNfAAsa+6cY3EPllZuaOX5790wU8=
-github.com/happy-sdk/happy/pkg/vars v0.14.0/go.mod h1:CJxyhs2QjrFIqNHQ1PrKD53TZRcpKTtYcoepuEquUtc=
+github.com/happy-sdk/happy/pkg/vars v0.15.0 h1:qoP9UklgSjQ7OjVyzJR63KMeWMaca4ao32HQrB9Psq8=
+github.com/happy-sdk/happy/pkg/vars v0.15.0/go.mod h1:CJxyhs2QjrFIqNHQ1PrKD53TZRcpKTtYcoepuEquUtc=
 github.com/happy-sdk/happy/pkg/version v0.3.0 h1:Ixx+wAR/fu6VT5gitmitULHLIwEM3h0BzWr3/jNeDzA=
 github.com/happy-sdk/happy/pkg/version v0.3.0/go.mod h1:Sg6vXHELxEZw/dbhSp16W/yUe0qI6XoKauxGyeXcsBc=
 golang.org/x/mod v0.22.0 h1:D4nJWe9zXqHOmWqj4VMOJhvzj7bEZg4wEYa759z1pH4=
