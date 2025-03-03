@@ -481,6 +481,22 @@ func ParseMapFromSlice(kv []string) (*Map, error) {
 	return vars, nil
 }
 
+func ParseMapFromGoMap(m map[string]string) (*Map, error) {
+	mm := new(Map)
+
+	if m == nil {
+		return mm, nil
+	}
+
+	for k, v := range m {
+		if err := mm.Store(k, v); err != nil {
+			return nil, err
+		}
+	}
+
+	return mm, nil
+}
+
 func errorf(format string, a ...any) error {
 	return fmt.Errorf(format, a...)
 }

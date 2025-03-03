@@ -289,6 +289,15 @@ func (m *Map) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (m *Map) ToGoMap() map[string]string {
+	mm := make(map[string]string)
+	m.Range(func(v Variable) bool {
+		mm[v.Name()] = v.String()
+		return true
+	})
+	return mm
+}
+
 // Collection is collection of Variables safe for concurrent use.
 type ReadOnlyMap struct {
 	mu  sync.RWMutex
