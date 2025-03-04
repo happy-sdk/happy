@@ -14,8 +14,8 @@ require (
 	github.com/happy-sdk/happy/pkg/strings/textfmt v0.4.0
 	github.com/happy-sdk/happy/pkg/vars v0.15.0
 	github.com/happy-sdk/happy/pkg/version v0.3.0
-	golang.org/x/sys v0.27.0
-	golang.org/x/text v0.20.0
+	golang.org/x/sys v0.30.0
+	golang.org/x/text v0.22.0
 )
 
 require (
