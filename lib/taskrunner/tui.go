@@ -71,13 +71,15 @@ func (m tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case WARNING:
 			mark = warnMark.String()
 			m.warnings++
+			m.failedDeps[msg.uuid] = true
 		case FAILURE:
 			mark = failMark.String()
 			m.failures++
 			m.failedDeps[msg.uuid] = true
 		case SKIPPED:
+			mark = skipMark.String()
 			m.skipped++
-			hideOutput = true
+			// hideOutput = true
 			m.failedDeps[msg.uuid] = true
 		default:
 			mark = infoMark.String()
@@ -91,9 +93,7 @@ func (m tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.executedTasks >= m.totalTasks-1 {
-			// Everything's been installed. We're done!
 			m.done = true
-
 			return m, tea.Sequence(
 				tea.Println(res), // print the last success message
 				tea.Quit,         // exit the program
@@ -203,7 +203,8 @@ func (m tui) executeTask(task *Task, skip bool) tea.Cmd {
 	if task == nil {
 		return func() tea.Msg {
 			return Result{
-				State: INFO,
+				task:  "task is <nil>",
+				State: FAILURE,
 				uuid:  task.uuid.String(),
 			}
 		}
@@ -211,16 +212,19 @@ func (m tui) executeTask(task *Task, skip bool) tea.Cmd {
 	if skip {
 		return func() tea.Msg {
 			return Result{
-				State: SKIPPED,
+				uuid:   task.uuid.String(),
+				task:   task.name,
+				State:  SKIPPED,
+				Status: "skipped",
 			}
 		}
 	}
 	return func() tea.Msg {
 		var res Result
-		res.uuid = task.uuid.String()
 		if task.action != nil {
 			res = task.action()
 		}
+		res.uuid = task.uuid.String()
 		res.task = task.name
 		return res
 	}

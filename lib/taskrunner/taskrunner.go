@@ -164,7 +164,7 @@ func (r *Runner) Add(group *Group) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, g := range r.groups {
-		if group.title == g.title {
+		if group.id.String() == g.id.String() {
 			return fmt.Errorf("%w: group %s already registered", Error, group.title)
 		}
 	}
@@ -223,6 +223,7 @@ type Task struct {
 type Action func() (res Result)
 
 type Group struct {
+	id       uuid.UUID
 	title    string
 	tasks    []*Task
 	executed int
@@ -230,6 +231,7 @@ type Group struct {
 
 func NewGroup(title string) *Group {
 	return &Group{
+		id:    uuid.New(),
 		title: title,
 	}
 }
