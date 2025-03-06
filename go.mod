@@ -20,5 +20,5 @@ require (
 
 require (
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.5.0 // indirect
-	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/mod v0.23.0 // indirect
 )

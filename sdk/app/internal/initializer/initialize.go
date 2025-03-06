@@ -401,6 +401,19 @@ func (init *Initializer) initBasePaths() error {
 		return err
 	}
 
+	if init.defaults.configDisabled {
+		pidsDir := filepath.Join(tempDir, "pids")
+		_, err = os.Stat(pidsDir)
+		if errors.Is(err, fs.ErrNotExist) {
+			if err := init.utilMkdir("create tmp pids dir", pidsDir, 0700); err != nil {
+				return err
+			}
+		}
+		if err := init.opts.Set("app.fs.path.pids", pidsDir); err != nil {
+			return err
+		}
+	}
+
 	// config dir
 	userConfigDir, err := os.UserConfigDir()
 	if err != nil {
@@ -415,7 +428,7 @@ func (init *Initializer) initBasePaths() error {
 	}
 
 	_, err = os.Stat(appConfigDir)
-	if errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, fs.ErrNotExist) && !init.defaults.configDisabled {
 		if err := init.utilMkdir("create config dir", appConfigDir, 0700); err != nil {
 			return err
 		}
@@ -424,38 +437,38 @@ func (init *Initializer) initBasePaths() error {
 		}
 	}
 
-	if err := init.opts.Set("app.fs.path.config", appConfigDir); err != nil {
-		return err
-	}
-
-	pidsDir := filepath.Join(appConfigDir, "pids")
-	_, err = os.Stat(pidsDir)
-	if errors.Is(err, fs.ErrNotExist) {
-		if err := init.utilMkdir("create pids dir", pidsDir, 0700); err != nil {
+	if !init.defaults.configDisabled {
+		if err := init.opts.Set("app.fs.path.config", appConfigDir); err != nil {
 			return err
 		}
-	}
-
-	if err := init.opts.Set("app.fs.path.pids", pidsDir); err != nil {
-		return err
-	}
-
-	// Define default profile to load
-	deafaultProfileFile := filepath.Join(appConfigDir, ".default.profile")
-	if _, err = os.Stat(deafaultProfileFile); err == nil {
-		deafaultProfileData, err := os.ReadFile(deafaultProfileFile)
-		if err != nil {
-			return fmt.Errorf("failed to read default profile file: %w", err)
+		pidsDir := filepath.Join(appConfigDir, "pids")
+		_, err = os.Stat(pidsDir)
+		if errors.Is(err, fs.ErrNotExist) {
+			if err := init.utilMkdir("create pids dir", pidsDir, 0700); err != nil {
+				return err
+			}
 		}
-		profileName := strings.TrimSpace(string(deafaultProfileData))
-		if len(profileName) == 0 {
-			return fmt.Errorf("default profile file is empty")
-		}
-		if err := init.settingsb.SetDefault("app.default_profile", profileName); err != nil {
+
+		if err := init.opts.Set("app.fs.path.pids", pidsDir); err != nil {
 			return err
 		}
-		if err := init.opts.Set("app.profile.name", profileName); err != nil {
-			return fmt.Errorf("%w: unable to update default profile name %s %s", Error, profileName, err.Error())
+		// Define default profile to load
+		deafaultProfileFile := filepath.Join(appConfigDir, ".default.profile")
+		if _, err = os.Stat(deafaultProfileFile); err == nil {
+			deafaultProfileData, err := os.ReadFile(deafaultProfileFile)
+			if err != nil {
+				return fmt.Errorf("failed to read default profile file: %w", err)
+			}
+			profileName := strings.TrimSpace(string(deafaultProfileData))
+			if len(profileName) == 0 {
+				return fmt.Errorf("default profile file is empty")
+			}
+			if err := init.settingsb.SetDefault("app.default_profile", profileName); err != nil {
+				return err
+			}
+			if err := init.opts.Set("app.profile.name", profileName); err != nil {
+				return fmt.Errorf("%w: unable to update default profile name %s %s", Error, profileName, err.Error())
+			}
 		}
 	}
 
@@ -472,6 +485,7 @@ func (init *Initializer) initBasePaths() error {
 				internal.Log(sess.Log(), "successfully deleted temp dir", slog.String("tempdir", tempDir))
 			}
 		}
+
 		return nil
 	})
 

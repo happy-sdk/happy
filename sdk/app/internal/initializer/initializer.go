@@ -645,7 +645,7 @@ LoadProfile:
 	// Set profile cache directory
 	profileCacheDir := filepath.Join(userCacheDir, "profiles", loadSlug)
 	_, err = os.Stat(profileCacheDir)
-	if errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, fs.ErrNotExist) && !init.defaults.configDisabled {
 		if err := init.utilMkdir("create cache directory", profileCacheDir, 0700); err != nil {
 			return fmt.Errorf("%w: failed to create cache directory %s", Error, err)
 		}
