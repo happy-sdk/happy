@@ -70,7 +70,8 @@ type Addon struct {
 	svcs   []*services.Service
 	opts   *options.Options
 
-	errs []error
+	errs         []error
+	deprecations []string
 }
 
 func New(c Config, opts ...options.Spec) *Addon {
@@ -98,7 +99,7 @@ func (addon *Addon) OnRegister(action action.Register) {
 	addon.registerAction = action
 }
 
-func (addon *Addon) Emits(evs ...events.Event) {
+func (addon *Addon) Events(evs ...events.Event) {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
 	for _, ev := range evs {
@@ -108,6 +109,11 @@ func (addon *Addon) Emits(evs ...events.Event) {
 		}
 		addon.events = append(addon.events, ev)
 	}
+}
+
+func (addon *Addon) Emits(evs ...events.Event) {
+	addon.Events(evs...)
+	addon.deprecated("addon.Emits() is deprecated, use addon.Events() instead, this will be removed in future")
 }
 
 func (addon *Addon) ProvideCommands(cmds ...*command.Command) {
@@ -210,4 +216,8 @@ func (addon *Addon) loadPackageInfo() {
 // add pending error
 func (addon *Addon) perr(err error) {
 	addon.errs = append(addon.errs, err)
+}
+
+func (addon *Addon) deprecated(msg string) {
+	addon.deprecations = append(addon.deprecations, msg)
 }

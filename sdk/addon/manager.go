@@ -105,6 +105,9 @@ func (m *Manager) Register(sess session.Register) error {
 		if err != nil {
 			return fmt.Errorf("%w(%s): %s", Error, addon.info.Slug, err.Error())
 		}
+		for _, deprecation := range addon.deprecations {
+			sess.Log().Deprecated(deprecation)
+		}
 		if addon.registerAction == nil {
 			continue
 		}
