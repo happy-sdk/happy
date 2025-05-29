@@ -666,10 +666,10 @@ func (b *decimal) set(s string) (ok bool) {
 		bug("decimal.set")
 		return
 	}
-	switch {
-	case s[i] == '+':
+	switch s[i] {
+	case '+':
 		i++
-	case s[i] == '-':
+	case '-':
 		b.neg = true
 		i++
 	}
@@ -727,9 +727,10 @@ func (b *decimal) set(s string) (ok bool) {
 			return
 		}
 		esign := 1
-		if s[i] == '+' {
+		switch s[i] {
+		case '+':
 			i++
-		} else if s[i] == '-' {
+		case '-':
 			i++
 			esign = -1
 		}

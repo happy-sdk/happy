@@ -249,9 +249,10 @@ func parseIntFast(s string, base int, bitSize int) (i int64, err error) {
 	// Pick off leading sign.
 	s0 := s
 	neg := false
-	if s[0] == '+' {
+	switch s[0] {
+	case '+':
 		s = s[1:]
-	} else if s[0] == '-' {
+	case '-':
 		neg = true
 		s = s[1:]
 	}
@@ -2196,10 +2197,10 @@ func readFloat(s string) (mantissa uint64, exp int, neg, trunc, hex bool, i int,
 	if i >= len(s) {
 		return
 	}
-	switch {
-	case s[i] == '+':
+	switch s[i] {
+	case '+':
 		i++
-	case s[i] == '-':
+	case '-':
 		neg = true
 		i++
 	}
@@ -2288,9 +2289,10 @@ loop:
 			return
 		}
 		esign := 1
-		if s[i] == '+' {
+		switch s[i] {
+		case '+':
 			i++
-		} else if s[i] == '-' {
+		case '-':
 			i++
 			esign = -1
 		}
