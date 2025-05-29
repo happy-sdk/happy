@@ -270,7 +270,7 @@ import (
 
 func main() {
   const treeExp = "$MY_ROOT_DIR/dir{1..3}/{subdir1,subdir2}"
-  os.Setenv("MY_ROOT_DIR", "/my_root")
+  _ = os.Setenv("MY_ROOT_DIR", "/my_root")
   
   str := os.ExpandEnv(treeExp)
   fmt.Println("str := os.ExpandEnv(treeExp)")
