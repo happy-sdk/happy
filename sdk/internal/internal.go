@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math"
 
+	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/logging"
 )
 
@@ -32,3 +33,5 @@ func LogInit(l logging.Logger, msg string, attrs ...slog.Attr) {
 func LogInitDepth(l logging.Logger, depth int, msg string, attrs ...slog.Attr) {
 	l.LogDepth(depth+1, LogLevelHappyInit, msg, attrs...)
 }
+
+var TerminateSessionEvent = events.New("session", "terminate")

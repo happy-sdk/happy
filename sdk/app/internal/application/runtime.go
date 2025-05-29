@@ -270,9 +270,9 @@ func (rt *Runtime) Start() {
 		}
 	}
 
-	if rt.evch != nil {
-		close(rt.evch)
-	}
+	// Only clear the reference since session owns the channel
+	rt.evch = nil
+
 	canRecover := rt.sess.CanRecover(err)
 
 	if !canRecover {
@@ -454,6 +454,8 @@ func (rt *Runtime) Exit(code int) {
 			rt.log(0, logging.LevelError, "session", slog.String("err", err.Error()))
 			code = 1
 		}
+		// Final session cleanup, close channels
+		rt.sess.Dispatch(internal.TerminateSessionEvent)
 	}
 
 	if rt.exitCh != nil {

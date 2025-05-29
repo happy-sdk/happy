@@ -164,6 +164,7 @@ func (c *Context) Value(key any) any {
 	return nil
 }
 
+// Destroy can be called do destroy session.
 func (c *Context) Destroy(err error) {
 	if perr := c.Err(); perr != nil {
 		// prevent Destroy to be called multiple times
@@ -202,12 +203,18 @@ func (c *Context) Destroy(err error) {
 	}
 
 	c.mu.Lock()
-
 	if c.done != nil {
 		close(c.done)
 	}
-
 	c.mu.Unlock()
+}
+
+// Terminate is used to terminate session. and called only internally
+func (c *Context) terminateSession() {
+	if c.evch != nil {
+		close(c.evch)
+		c.evch = nil
+	}
 }
 
 func (c *Context) Log() logging.Logger {
@@ -294,6 +301,17 @@ func (c *Context) Dispatch(ev events.Event) {
 		c.readyCancel()
 		c.mu.Unlock()
 		internal.Log(c.Log(), "session is ready")
+		return
+	}
+	if c.evch == nil {
+		c.Log().Error("event channel is closed, dropping event", slog.String("event", ev.String()))
+		c.mu.Unlock()
+		return
+	}
+
+	if ev == internal.TerminateSessionEvent {
+		c.terminateSession()
+		c.mu.Unlock()
 		return
 	}
 	c.evch <- ev
