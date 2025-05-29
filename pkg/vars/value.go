@@ -97,17 +97,20 @@ func (v Value) Bool() (bool, error) {
 
 // Int returns int representation of the Value.
 func (v Value) Int() (int, error) {
-	if v.kind == KindInt {
+
+	switch v.kind {
+	case KindInt:
 		if vv, ok := v.raw.(int); ok {
 			return vv, nil
 		}
-	} else if v.kind == KindDuration {
+	case KindDuration:
 		vi, _ := v.raw.(time.Duration)
 		if vi > math.MaxInt {
 			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
 		}
 		return int(vi), nil
 	}
+
 	if v.isCustom {
 		vv, err := v.CloneAs(KindInt)
 		if err != nil {
@@ -121,17 +124,20 @@ func (v Value) Int() (int, error) {
 
 // Int8 returns int8 representation of the Value.
 func (v Value) Int8() (int8, error) {
-	if v.kind == KindInt8 {
+
+	switch v.kind {
+	case KindInt8:
 		if vv, ok := v.raw.(int8); ok {
 			return vv, nil
 		}
-	} else if v.kind == KindDuration {
+	case KindDuration:
 		vi, _ := v.raw.(time.Duration)
 		if vi > math.MaxInt8 {
 			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
 		}
 		return int8(vi), nil
 	}
+
 	if v.isCustom {
 		vv, err := v.CloneAs(KindInt8)
 		if err != nil {
@@ -279,14 +285,16 @@ func (v Value) Int64() (int64, error) {
 
 // Uint returns uint representation of the Value.
 func (v Value) Uint() (uint, error) {
-	if v.kind == KindUint {
+	switch v.kind {
+	case KindUint:
 		if vv, ok := v.raw.(uint); ok {
 			return vv, nil
 		}
-	} else if v.kind == KindDuration {
+	case KindDuration:
 		vi, _ := v.raw.(time.Duration)
 		return uint(vi), nil
 	}
+
 	if v.isCustom {
 		vv, err := v.CloneAs(KindUint)
 		if err != nil {
@@ -479,14 +487,16 @@ func (v Value) Float64() (float64, error) {
 			return vv, nil
 		}
 	}
-	if v.kind == KindFloat32 {
+	switch v.kind {
+	case KindFloat32:
 		if vv, ok := v.raw.(float32); ok {
 			return float64(vv), nil
 		}
-	} else if v.kind == KindDuration {
+	case KindDuration:
 		vi, _ := v.raw.(time.Duration)
 		return float64(vi), nil
 	}
+
 	if v.isCustom {
 		vv, err := v.CloneAs(KindFloat64)
 		if err != nil {
