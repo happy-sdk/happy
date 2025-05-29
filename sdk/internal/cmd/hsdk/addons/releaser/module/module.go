@@ -357,7 +357,7 @@ func (m ReleasablesTableView) View() string {
 
 func GetConfirmReleasablesView(sess *session.Context, pkgs []*Package, queue []string) (ReleasablesTableView, error) {
 	var (
-		longestPackage int = 10
+		longestPackage = 10
 	)
 
 	for _, pkg := range pkgs {

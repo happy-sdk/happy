@@ -96,7 +96,7 @@ func newConfiguration(sess *session.Context, path string, allowDirty bool) error
 		})
 	}
 
-	var opts map[string]string = map[string]string{
+	var opts = map[string]string{
 		"releaser.git.branch":       gitinfo.branch,
 		"releaser.git.remote.url":   gitinfo.remoteURL,
 		"releaser.git.remote.name":  gitinfo.remoteName,
@@ -294,9 +294,9 @@ func getConfirmConfigModel(sess *session.Context) (configTable, error) {
 	releaserOptions := sess.Opts().WithPrefix("releaser.")
 	// sort keys
 	var (
-		longestKey         int = 10
-		longestValue       int = 10
-		longestDescription int = 10
+		longestKey         = 10
+		longestValue       = 10
+		longestDescription = 10
 	)
 
 	var options []DescribedOption
