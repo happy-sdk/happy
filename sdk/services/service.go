@@ -105,3 +105,13 @@ func (s *Service) OnAnyEvent(cb events.ActionWithEvent[*session.Context]) {
 func (s *Service) Cron(setupFunc func(schedule CronScheduler)) {
 	s.cronsetup = setupFunc
 }
+
+// StopEvent returns the event to stop the service.
+func (s *Service) StopEvent() events.Event {
+	return StopEvent.Create(s.settings.Slug.String(), nil)
+}
+
+// StartEvent returns the event to start the service.
+func (s *Service) StartEvent() events.Event {
+	return StartEvent.Create(s.settings.Slug.String(), nil)
+}

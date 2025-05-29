@@ -110,6 +110,7 @@ func New(evch <-chan events.Event, tick action.Tick, tock action.Tock) *Engine {
 
 	var sysevs = []events.Event{
 		services.StartEvent,
+		services.StopEvent,
 		service.StartedEvent,
 		service.StoppedEvent,
 	}
@@ -479,21 +480,51 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 	case "services":
 		switch ev.Key() {
 		case services.StartEvent.Key():
-			if e.state != engineRunning {
-				sess.Log().Warn("engine is not running, ignoring start.services event")
+			payload := ev.Payload()
+			if payload != nil {
+				payload.Range(func(v vars.Variable) bool {
+					go e.serviceStart(sess, v.String())
+					return true
+				})
+			}
+			if ev.Value() == vars.NilValue {
+				sess.Log().Warn("start.services event has no payload, ignoring")
 				return
 			}
-			payload := ev.Payload()
-			payload.Range(func(v vars.Variable) bool {
-				go e.serviceStart(sess, v.String())
-				return true
-			})
+			hostaddr, err := address.Parse(sess.Get("app.address").String())
+			if err != nil {
+				sess.Log().Error("failed to parse app address", slog.String("err", err.Error()))
+				return
+			}
+			addr, err := hostaddr.ResolveService(ev.Value().String())
+			if err != nil {
+				sess.Log().Error("failed to resolve service address", slog.String("err", err.Error()))
+				return
+			}
+			go e.serviceStart(sess, addr.String())
 		case services.StopEvent.Key():
 			payload := ev.Payload()
-			payload.Range(func(v vars.Variable) bool {
-				go e.serviceStop(sess, v.String(), nil)
-				return true
-			})
+			if payload != nil {
+				payload.Range(func(v vars.Variable) bool {
+					go e.serviceStop(sess, v.String(), nil)
+					return true
+				})
+			}
+			if ev.Value() == vars.NilValue {
+				sess.Log().Warn("stop.services event has no payload, ignoring")
+				return
+			}
+			hostaddr, err := address.Parse(sess.Get("app.address").String())
+			if err != nil {
+				sess.Log().Error("failed to parse app address", slog.String("err", err.Error()))
+				return
+			}
+			addr, err := hostaddr.ResolveService(ev.Value().String())
+			if err != nil {
+				sess.Log().Error("failed to resolve service address", slog.String("err", err.Error()))
+				return
+			}
+			go e.serviceStop(sess, addr.String(), nil)
 		}
 	}
 	for _, svcc := range registry {
