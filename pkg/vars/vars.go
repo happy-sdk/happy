@@ -182,9 +182,10 @@ func convertInt64(val int64, to Kind) (Value, error) {
 	}
 	switch to {
 	case KindBool:
-		if val == 0 {
+		switch val {
+		case 0:
 			v.raw = false
-		} else if val == 1 {
+		case 1:
 			v.raw = true
 		}
 	case KindInt:
@@ -230,9 +231,10 @@ func convertUint64(val uint64, to Kind) (Value, error) {
 	}
 	switch to {
 	case KindBool:
-		if val == 0 {
+		switch val {
+		case 0:
 			v.raw = false
-		} else if val == 1 {
+		case 1:
 			v.raw = true
 		}
 	case KindInt:
@@ -278,9 +280,10 @@ func convertFloat64(val float64, to Kind) (Value, error) {
 	}
 	switch to {
 	case KindBool:
-		if val == 0 {
+		switch val {
+		case 0:
 			v.raw = false
-		} else if val == 1 {
+		case 1:
 			v.raw = true
 		}
 	case KindInt:
