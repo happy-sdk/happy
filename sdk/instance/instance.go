@@ -45,7 +45,7 @@ type ID string
 
 func NewID() ID {
 	hasher := sha1.New()
-	hasher.Write([]byte(fmt.Sprint(time.Now().UnixMilli())))
+	_, _ = fmt.Fprint(hasher, time.Now().UnixMilli())
 	hashSum := hasher.Sum(nil)
 	fullID := hex.EncodeToString(hashSum)
 	return ID(fullID[:8])

@@ -594,7 +594,11 @@ LoadPreferences:
 			if err != nil {
 				return err
 			}
-			defer prefFile.Close()
+			defer func() {
+				if err := prefFile.Close(); err != nil {
+					init.log.Error("failed to close profile preferences file", slog.String("path", loadPrefFilePath), slog.String("error", err.Error()))
+				}
+			}()
 			var (
 				data []string
 			)

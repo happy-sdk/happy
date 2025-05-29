@@ -24,7 +24,11 @@ func ExampleMkdirAll() {
 	if err := bexp.MkdirAll(treeExp, 0750); err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(rootdir)
+	defer func() {
+		if err := os.RemoveAll(rootdir); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	if err := bexp.MkdirAll(rootdir+"/path/unmodified", 0750); err != nil {
 		log.Println(err)

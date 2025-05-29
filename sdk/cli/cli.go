@@ -59,7 +59,7 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 // AskForConfirmation gets (y/Y)es or (n/N)o from cli input.
 func AskForConfirmation(q string) bool {
 	var response string
-	fmt.Fprintln(os.Stdout, q, "(y/Y)es or (n/N)o?")
+	_, _ = fmt.Fprintln(os.Stdout, q, "(y/Y)es or (n/N)o?")
 
 	if _, err := fmt.Scanln(&response); err != nil {
 		return false
@@ -71,7 +71,7 @@ func AskForConfirmation(q string) bool {
 	case "n", "N", "no":
 		return false
 	default:
-		fmt.Fprintln(
+		_, _ = fmt.Fprintln(
 			os.Stdout,
 			"I'm sorry but I didn't get what you meant, please type (y/Y)es or (n/N)o and then press enter:")
 
@@ -80,7 +80,7 @@ func AskForConfirmation(q string) bool {
 }
 
 func AskForInput(q string) string {
-	fmt.Fprintln(os.Stdout, q)
+	_, _ = fmt.Fprintln(os.Stdout, q)
 	reader := bufio.NewReader(os.Stdin)
 	response, err := reader.ReadString('\n')
 	if err != nil {
@@ -138,13 +138,13 @@ func run(sess *session.Context, cmd *exec.Cmd) error {
 	stdopipe := bufio.NewScanner(stdout)
 	go func() {
 		for stdopipe.Scan() {
-			fmt.Fprintln(os.Stdout, stdopipe.Text())
+			_, _ = fmt.Fprintln(os.Stdout, stdopipe.Text())
 		}
 	}()
 	stdepipe := bufio.NewScanner(stderr)
 	go func() {
 		for stdepipe.Scan() {
-			fmt.Fprintln(os.Stderr, stdepipe.Text())
+			_, _ = fmt.Fprintln(os.Stderr, stdepipe.Text())
 		}
 	}()
 
