@@ -79,7 +79,7 @@ func IBytes(s uint64) string {
 // It supports both decimal (SI) and binary (IEC) units and handles values with commas as well.
 func ParseBytes(s string) (uint64, error) {
 	lastDigit := strings.IndexFunc(s, func(r rune) bool {
-		return !(unicode.IsDigit(r) || r == '.' || r == ',')
+		return !unicode.IsDigit(r) && r != '.' && r != ','
 	})
 
 	if lastDigit == -1 {
