@@ -5,6 +5,7 @@
 package instance
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
@@ -12,6 +13,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/settings"
@@ -66,9 +69,9 @@ func New(sess *session.Context) (*Instance, error) {
 		return nil, fmt.Errorf("%w: pids directory not found: %s", Error, pidsdir)
 	}
 
-	pidfiles, err := os.ReadDir(pidsdir)
+	pidfiles, err := verifyPidFiles(sess, pidsdir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: failed to read pids directory: %s", Error, err.Error())
 	}
 
 	inst := &Instance{
@@ -109,4 +112,51 @@ func (inst *Instance) Dispose() error {
 		}
 	}
 	return nil
+}
+
+func verifyPidFiles(sess *session.Context, pidsdir string) ([]os.DirEntry, error) {
+
+	pidfiles, err := os.ReadDir(pidsdir)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []os.DirEntry
+	for _, pidfile := range pidfiles {
+		if pidfile.IsDir() {
+			continue
+		}
+		if ok, err := verifyPidFile(sess, pidfile); err != nil {
+			return nil, err
+		} else if ok {
+			res = append(res, pidfile)
+		}
+	}
+	return res, nil
+}
+
+func verifyPidFile(sess *session.Context, pidfile os.DirEntry) (ok bool, err error) {
+	pidfileAbs := filepath.Join(sess.Opts().Get("app.fs.path.pids").String(), pidfile.Name())
+	data, err := os.ReadFile(pidfileAbs)
+	if err != nil {
+		return false, err
+	}
+	pid := string(bytes.TrimSpace(data))
+	if pid == "" {
+		return false, nil
+	}
+	pidInt, err := strconv.Atoi(pid)
+	if err != nil {
+		return false, err
+	}
+
+	p, err := os.FindProcess(pidInt)
+	if err != nil {
+		return false, err
+	}
+	if err := p.Signal(syscall.Signal(0)); err != nil {
+		sess.Log().Notice(fmt.Sprintf("previous process %d: %s", pidInt, err.Error()))
+		return false, os.Remove(pidfileAbs)
+	}
+	return true, nil
 }
