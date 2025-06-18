@@ -304,7 +304,7 @@ func startEvent(svcs ...string) events.Event {
 		_ = payload.Store("err", errors.Join(errs...).Error())
 	}
 
-	return StartEvent.Create(fmt.Sprintf("requested services (%d)", len(svcs)), payload)
+	return StartEvent.Create("bundle", payload)
 }
 
 type serviceCron struct {

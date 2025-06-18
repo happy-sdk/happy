@@ -112,6 +112,7 @@ func (a *Address) Parse(ref string) (*Address, error) {
 // for the given network and instance address.
 // If the address cannot be resolved, it returns an error.
 func (a *Address) ResolveService(svc string) (*Address, error) {
+
 	if !strings.HasPrefix(svc, "happy://") {
 		svc = path.Join(a.instance, "service", svc)
 	}
@@ -123,6 +124,7 @@ func (a *Address) ResolveService(svc string) (*Address, error) {
 	if !strings.HasPrefix(svcaddr.url.Path, "/"+svcaddr.instance+"/service") {
 		return nil, fmt.Errorf("%w: not a service %s", ErrAddr, svcaddr.String())
 	}
+
 	return svcaddr, nil
 }
 

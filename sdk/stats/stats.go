@@ -96,7 +96,6 @@ func (r *Profiler) State() State {
 func (r *Profiler) Update() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-
 	// Goroutine statistics
 	numGoroutines := runtime.NumGoroutine()
 	if r.goroutines.min == 0 || r.goroutines.min > numGoroutines {
@@ -227,13 +226,17 @@ func (s *State) UnmarshalJSON(data []byte) error {
 
 func AsService(prof *Profiler) *services.Service {
 	svc := services.New(service.Config{
-		Name: "app-runtime-stats",
+		Name: "Stats",
+		Slug: "app-runtime-stats",
+	})
+
+	svc.Tick(func(sess *session.Context, ts time.Time, delta time.Duration) error {
+		prof.Update()
+		return nil
 	})
 
 	svc.Cron(func(schedule services.CronScheduler) {
 		schedule.Job("stats:update-uptime", "@every 5s", func(sess *session.Context) error {
-			prof.Update()
-
 			staprofedAt := prof.Get("app.started.at").String()
 			if staprofedAt != "" {
 				staprofed, err := time.Parse(time.RFC3339, staprofedAt)

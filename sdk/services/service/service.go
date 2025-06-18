@@ -21,7 +21,7 @@ type Config struct {
 	Name settings.String `key:",init" default:"Background" desc:"The name of the service."`
 	// Slug is the unique identifier of the service, if not provided it will be generated from the name.
 	Slug         settings.String   `key:",init" desc:"The slug of the service."`
-	Description  settings.String   `key:",init" default:"xxx" desc:"The name of the service."`
+	Description  settings.String   `key:",init" default:"-" desc:"The name of the service."`
 	RetryOnError settings.Bool     `key:",init" default:"false" desc:"Retry the service in case of an error."`
 	MaxRetries   settings.Int      `key:",init" default:"3" desc:"Maximum number of retries on error."`
 	RetryBackoff settings.Duration `key:",init" default:"5s" desc:"Duration to wait before each retry."`

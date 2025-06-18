@@ -483,9 +483,14 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 			payload := ev.Payload()
 			if payload != nil {
 				payload.Range(func(v vars.Variable) bool {
+
 					go e.serviceStart(sess, v.String())
 					return true
 				})
+			}
+			if ev.Value().Kind() != vars.KindString {
+				sess.Log().Warn(fmt.Sprintf("start.services event is not addressable, ignoring: %s", ev.Value().String()))
+				return
 			}
 			if ev.Value() == vars.NilValue {
 				sess.Log().Warn("start.services event has no payload, ignoring")
@@ -496,12 +501,16 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 				sess.Log().Error("failed to parse app address", slog.String("err", err.Error()))
 				return
 			}
-			addr, err := hostaddr.ResolveService(ev.Value().String())
-			if err != nil {
-				sess.Log().Error("failed to resolve service address", slog.String("err", err.Error()))
-				return
+			if ev.Value().String() != "bundle" {
+				addr, err := hostaddr.ResolveService(ev.Value().String())
+				if err != nil {
+					sess.Log().Error("failed to resolve service address", slog.String("err", err.Error()))
+					return
+				}
+				sess.Log().Debug("starting service", slog.String("service", addr.String()))
+				go e.serviceStart(sess, addr.String())
 			}
-			go e.serviceStart(sess, addr.String())
+
 		case services.StopEvent.Key():
 			payload := ev.Payload()
 			if payload != nil {
@@ -605,6 +614,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 		return
 	}
 	if svcc.Info().Running() {
+
 		sess.Log().Warn(
 			"failed to start service, service already running",
 			sarg,
