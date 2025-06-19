@@ -43,8 +43,8 @@ const (
 	lvlHappyInit      = slog.Level(lvlHappy + 1)
 	lvlDebug          = slog.LevelDebug
 	lvlInfo           = slog.LevelInfo
-	lvlOk             = slog.Level(1)
-	lvlNotice         = slog.Level(2)
+	lvlNotice         = slog.Level(1)
+	lvlOk             = slog.Level(2)
 	lvlNotImplemented = slog.Level(3)
 	lvlWarn           = slog.LevelWarn
 	lvlDeprecated     = slog.Level(5)
@@ -57,8 +57,8 @@ const (
 	levelInit           Level = Level(lvlHappyInit)
 	LevelDebug          Level = Level(lvlDebug)
 	LevelInfo           Level = Level(lvlInfo)
-	LevelOk             Level = Level(lvlOk)
 	LevelNotice         Level = Level(lvlNotice)
+	LevelOk             Level = Level(lvlOk)
 	LevelNotImplemented Level = Level(lvlNotImplemented)
 	LevelWarn           Level = Level(lvlWarn)
 	LevelDeprecated     Level = Level(lvlDeprecated)
@@ -71,8 +71,8 @@ const (
 	levelInitStr           = "happy:init"
 	levelDebugStr          = "debug"
 	levelInfoStr           = "info"
-	levelOkStr             = "ok"
 	levelNoticeStr         = "notice"
+	levelOkStr             = "ok"
 	levelNotImplementedStr = "notimpl"
 	levelWarnStr           = "warn"
 	levelDeprecatedStr     = "depr"
