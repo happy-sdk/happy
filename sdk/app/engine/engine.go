@@ -106,8 +106,6 @@ func New(evch <-chan events.Event, tick action.Tick, tock action.Tock) *Engine {
 		stats:    stats.New("app-stats"),
 	}
 
-	e.stats.Update()
-
 	var sysevs = []events.Event{
 		services.StartEvent,
 		services.StopEvent,
@@ -147,6 +145,9 @@ func (e *Engine) Start(sess *session.Context) error {
 		e.mu.Lock()
 		statsSvc := stats.AsService(e.stats)
 		e.mu.Unlock()
+		if err := sess.AttachAPI("app.stats", e.stats); err != nil {
+			return err
+		}
 		if err := e.RegisterService(sess, statsSvc); err != nil {
 			return err
 		}

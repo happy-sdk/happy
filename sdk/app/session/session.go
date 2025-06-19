@@ -350,6 +350,16 @@ func (c *Context) Describe(key string) string {
 	return c.opts.Describe(key)
 }
 
+func (c *Context) AttachAPI(slug string, api custom.API) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if _, ok := c.apis[slug]; ok {
+		return fmt.Errorf("%w: api %s already registered", Error, slug)
+	}
+	c.apis[slug] = api
+	return nil
+}
+
 func (c *Context) start() (err error) {
 	c.ready, c.readyCancel = context.WithCancel(context.Background())
 	c.terminate, c.terminateStop = signal.NotifyContext(c, os.Interrupt)

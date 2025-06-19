@@ -18,6 +18,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/custom"
 	"github.com/happy-sdk/happy/sdk/internal/fsutils"
 	"github.com/happy-sdk/happy/sdk/services"
 	"github.com/happy-sdk/happy/sdk/services/service"
@@ -37,6 +38,7 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 }
 
 type Profiler struct {
+	custom.API
 	title       string
 	mu          sync.RWMutex
 	db          *vars.Map
@@ -104,23 +106,27 @@ func (r *Profiler) Update() {
 	if r.goroutines.max < numGoroutines {
 		r.goroutines.max = numGoroutines
 	}
-	_ = r.db.Store("app.goroutines.current", numGoroutines)
-	_ = r.db.Store("app.goroutines.min", r.goroutines.min)
-	_ = r.db.Store("app.goroutines.max", r.goroutines.max)
+	_ = r.db.Store("goroutines.current", numGoroutines)
+	_ = r.db.Store("goroutines.min", r.goroutines.min)
+	_ = r.db.Store("goroutines.max", r.goroutines.max)
 
 	// Key memory statistics
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
-	_ = r.db.Store("mem.allocated", humanize.IBytes(mem.Alloc))
+	// _ = r.db.Store("mem.allocated", humanize.IBytes(mem.Alloc))
 	_ = r.db.Store("mem.total_allocated", humanize.IBytes(mem.TotalAlloc))
 	_ = r.db.Store("mem.sys", humanize.IBytes(mem.Sys))
 	_ = r.db.Store("mem.heap.alloc", humanize.IBytes(mem.HeapAlloc))
 	_ = r.db.Store("mem.heap.sys", humanize.IBytes(mem.HeapSys))
+	_ = r.db.Store("mem.heap.heap_objects", mem.HeapObjects)
+	_ = r.db.Store("mem.pointer.lookups", mem.Lookups)
+	_ = r.db.Store("mem.mallocs", mem.Mallocs)
 
 	// Critical GC metrics
 	_ = r.db.Store("mem.gc.next", humanize.IBytes(mem.NextGC))
 	_ = r.db.Store("mem.gc.num", mem.NumGC)
 	_ = r.db.Store("mem.gc.cpu_fraction", mem.GCCPUFraction)
+	_ = r.db.Store("mem.stack.inuse", humanize.IBytes(mem.StackInuse))
 	r.lastUpdated = time.Now().In(r.tsloc)
 }
 
@@ -188,6 +194,9 @@ type stateJSON struct {
 }
 
 // MarshalJSON customizes JSON serialization for State.
+func (s State) Vars() map[string]vars.Variable {
+	return s.vars
+}
 func (s State) MarshalJSON() ([]byte, error) {
 	vars := make(map[string]string)
 	for key, v := range s.vars {
@@ -231,27 +240,22 @@ func AsService(prof *Profiler) *services.Service {
 	})
 
 	svc.Tick(func(sess *session.Context, ts time.Time, delta time.Duration) error {
+		startedAt := prof.Get("app.started.at").String()
+		if startedAt != "" {
+			started, err := time.Parse(time.RFC3339, startedAt)
+			if err != nil {
+				return err
+			}
+			uptime := time.Since(started)
+			if err := prof.Set("app.uptime", uptime.String()); err != nil {
+				return err
+			}
+		}
 		prof.Update()
 		return nil
 	})
 
 	svc.Cron(func(schedule services.CronScheduler) {
-		schedule.Job("stats:update-uptime", "@every 5s", func(sess *session.Context) error {
-			staprofedAt := prof.Get("app.started.at").String()
-			if staprofedAt != "" {
-				staprofed, err := time.Parse(time.RFC3339, staprofedAt)
-				if err != nil {
-					return err
-				}
-				uptime := time.Since(staprofed)
-				if err := prof.Set("app.uptime", uptime.String()); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		})
-
 		schedule.Job("stats:collect-storage-info", "@every 15s", func(sess *session.Context) error {
 			cachePath := sess.Get("app.fs.path.cache").String()
 			tmpPath := sess.Get("app.fs.path.tmp").String()
@@ -259,19 +263,19 @@ func AsService(prof *Profiler) *services.Service {
 			if cacheSize, err := fsutils.DirSize(cachePath); err != nil {
 				sess.Log().Error("failed to get cache size", slog.String("err", err.Error()))
 			} else {
-				_ = prof.Set("app.fs.cache.size", humanize.Bytes(uint64(cacheSize)))
+				_ = prof.Set("fs.cache.size", humanize.Bytes(uint64(cacheSize)))
 			}
 
 			if tmpSize, err := fsutils.DirSize(tmpPath); err != nil {
 				sess.Log().Error("failed to get tmp size", slog.String("err", err.Error()))
 			} else {
-				_ = prof.Set("app.fs.tmp.size", humanize.Bytes(uint64(tmpSize)))
+				_ = prof.Set("fs.tmp.size", humanize.Bytes(uint64(tmpSize)))
 			}
 
 			if availableSpace, err := fsutils.AvailableSpace(cachePath); err != nil {
 				sess.Log().Error("failed to get available space", slog.String("err", err.Error()))
 			} else {
-				_ = prof.Set("app.fs.available", humanize.Bytes(uint64(availableSpace)))
+				_ = prof.Set("fs.available", humanize.Bytes(uint64(availableSpace)))
 			}
 
 			return nil
