@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 
 	"github.com/happy-sdk/happy/sdk/app/session"
@@ -57,7 +58,7 @@ func (p *Package) Release(sess *session.Context) error {
 		return nil
 	}
 
-	gitag := exec.Command("git", "tag", "-sm", fmt.Sprintf("%q", p.NextRelease), p.NextRelease)
+	gitag := exec.Command("git", "tag", "-sm", fmt.Sprintf("%q", p.NextRelease), path.Base(p.NextRelease))
 	gitag.Dir = sess.Get("releaser.wd").String()
 	if err := cli.Run(sess, gitag); err != nil {
 		return err
