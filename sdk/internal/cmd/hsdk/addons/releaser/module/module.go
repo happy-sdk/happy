@@ -361,7 +361,6 @@ func GetConfirmReleasablesView(sess *session.Context, pkgs []*Package, queue []s
 	)
 
 	for _, pkg := range pkgs {
-		fmt.Println(pkg.Import)
 		if len(pkg.Import) > longestPackage {
 			longestPackage = len(pkg.Import)
 		}
