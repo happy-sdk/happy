@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	_ "github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/slug"
 	"github.com/happy-sdk/happy/sdk/app"

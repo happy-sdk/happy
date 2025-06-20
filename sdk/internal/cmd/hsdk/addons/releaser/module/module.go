@@ -375,6 +375,7 @@ func GetConfirmReleasablesView(sess *session.Context, pkgs []*Package, queue []s
 	var rows []table.Row
 
 	for _, impr := range queue {
+		fmt.Println("impr: ", impr)
 		for _, pkg := range pkgs {
 			if pkg.Import == impr {
 				action := "skip"
