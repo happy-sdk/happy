@@ -2,12 +2,18 @@
 //
 // Copyright © 2023 The Happy Authors
 
-// Package oprions provides a way to define and manage options for application components.
+// Package options provides a flexible framework for defining and managing
+// configuration options for application components in the Happy SDK or custom libraries.
+// It supports type-safe option storage, validation, and sealing, with features like readonly
+// options, default values, and prefix-based extraction. Options are backed by
+// vars.Map for thread-safe access and integrate with application components via
+// named option sets.
 package options
 
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/happy-sdk/happy/pkg/vars"
 )
@@ -80,13 +86,14 @@ func NewOption(key string, dval any, desc string, kind Kind, vfunc ValueValidato
 // }
 
 // New returns new named options set.
+// *Options is quarantined to be not nil even when errors occur during initialization.
 func New(name string, specs []Spec) (*Options, error) {
 	opts := &Options{
 		name: name,
 	}
 	for _, spec := range specs {
 		if err := opts.Add(spec); err != nil {
-			return nil, err
+			return opts, err
 		}
 	}
 	return opts, nil
@@ -109,6 +116,11 @@ func (opts *Options) Name() string {
 	return opts.name
 }
 
+// String is alias for Name and to satisfy fmt.Stringer interface.
+func (opts *Options) String() string {
+	return opts.name
+}
+
 func (opts *Options) Describe(key string) string {
 	c, ok := opts.config[key]
 	if !ok {
@@ -126,8 +138,12 @@ func (opts *Options) Get(key string) vars.Variable {
 	return emptyStringVariable
 }
 
-func (opts *Options) Load(key string) (vars.Variable, bool) {
-	return opts.db.Load(key)
+// Load returns the vars.Variable stored in the Options for a key,
+// or vars.EmptyVar if no key is present.
+// The loaded result indicates whether Option by key was found in the Options.
+func (opts *Options) Load(key string) (v vars.Variable, loaded bool) {
+	v, loaded = opts.db.Load(key)
+	return
 }
 
 func (opts *Options) Range(fn func(opt Option) bool) {
@@ -172,11 +188,6 @@ func (opts *Options) set(key string, value any, override bool) error {
 		return err
 	}
 
-	// there is no validation required
-	if opts.config == nil {
-		return opts.db.StoreReadOnly(key, val, opts.db.Get(key).ReadOnly())
-	}
-
 	var cnf *Spec
 	if c, ok := opts.config[key]; ok {
 		cnf = &c
@@ -207,10 +218,13 @@ func (opts *Options) Has(key string) bool {
 	return opts.db.Has(key)
 }
 
+// Len reports the number of options in Options set
 func (opts *Options) Len() int {
 	return opts.db.Len()
 }
 
+// Add adds a new option to the Options set.
+// It returns an error if the option is already set or set is sealed.
 func (opts *Options) Add(spec Spec) error {
 	if opts.sealed {
 		return fmt.Errorf("%w: can not add %s to already sealed %s options", ErrOption, spec.key, opts.name)
@@ -229,6 +243,7 @@ func (opts *Options) Add(spec Spec) error {
 	return opts.Set(spec.key, spec.value)
 }
 
+// WithPrefix returns a new vars.Map with all options that have the given prefix.
 func (opts *Options) WithPrefix(prefix string) *vars.Map {
 	return opts.db.ExtractWithPrefix(prefix)
 }
@@ -259,6 +274,7 @@ var NoopValueValidator = func(key string, val vars.Value) error {
 	return nil
 }
 
+// OptionValidatorNotEmpty validates that option value is not empty.
 var OptionValidatorNotEmpty = func(key string, val vars.Value) error {
 	if val.Len() == 0 {
 		return fmt.Errorf("%w: %s value can not be empty", ErrOption, key)
@@ -266,10 +282,12 @@ var OptionValidatorNotEmpty = func(key string, val vars.Value) error {
 	return nil
 }
 
+// Key returns the key of the argument.
 func (a Arg) Key() string {
 	return a.key
 }
 
+// Value returns the value of the argument.
 func (a Arg) Value() any {
 	return a.value
 }
@@ -283,30 +301,44 @@ func NewArg(key string, value any) Arg {
 	}
 }
 
+// Name returns the name of the option.
 func (o Option) Name() string {
 	return o.val.Name()
 }
 
+// Value returns the value of the option.
 func (o Option) Value() vars.Value {
 	return o.val.Value()
 }
+
+// ReadOnly returns true if the option is read-only.
 func (o Option) ReadOnly() bool {
 	return o.val.ReadOnly()
 }
 
+// Kind returns the vars.Kind of the option Value.
 func (o Option) Kind() vars.Kind {
 	return o.val.Kind()
 }
 
-func MergeOptions(dest, src *Options) error {
+// MergeOptions merges options from one or multiplce sources to dest.
+func MergeOptions(dest *Options, srcs ...*Options) error {
 	if dest.sealed {
-		return fmt.Errorf("%w: can not add %s options to sealed destination %s", ErrOption, src.name, dest.name)
+		var sources []string
+		for _, src := range srcs {
+			sources = append(sources, src.name)
+		}
+		return fmt.Errorf("%w: can not add %s options to sealed destination %s", ErrOption, strings.Join(sources, ","), dest.name)
 	}
-	for _, spec := range src.config {
-		spec.key = src.name + "." + spec.key
-		if err := dest.Add(spec); err != nil {
-			return err
+
+	for _, src := range srcs {
+		for _, spec := range src.config {
+			spec.key = src.name + "." + spec.key
+			if err := dest.Add(spec); err != nil {
+				return err
+			}
 		}
 	}
+
 	return nil
 }
