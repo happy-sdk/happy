@@ -22,6 +22,7 @@ var (
 )
 
 var (
+	Error       = errors.New("vars")
 	ErrReadOnly = errors.New("vars.readonly")
 
 	// Key errors

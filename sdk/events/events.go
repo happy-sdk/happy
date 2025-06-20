@@ -6,6 +6,7 @@ package events
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -60,9 +61,15 @@ func (ev *event) Payload() *vars.ReadOnlyMap {
 }
 
 func (ev *event) Create(value any, payload *vars.Map) Event {
-	var pl *vars.ReadOnlyMap
+	var (
+		pl  *vars.ReadOnlyMap
+		err error
+	)
 	if payload != nil {
-		pl = vars.ReadOnlyMapFrom(payload)
+		pl, err = vars.ReadOnlyMapFrom(payload)
+		if err != nil {
+			slog.Error(err.Error())
+		}
 	}
 	val, err := vars.NewValue(value)
 	if err != nil {

@@ -5,6 +5,7 @@
 package vars_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -18,6 +19,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"slices"
 
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -61,7 +64,7 @@ func TestMapSet(t *testing.T) {
 		{"", "", 0},
 	}
 
-	collection := vars.Map{}
+	collection := vars.NewMap()
 	for _, tt := range tests {
 		if tt.wantLen == 0 {
 			continue
@@ -220,38 +223,6 @@ func TestMapParseFloat(t *testing.T) {
 	}
 }
 
-func genAtobTestBytes() []byte {
-	var out []byte
-	for _, data := range getBoolTests() {
-		line := fmt.Sprintf(`%s="%s"`+"\n", data.Key, data.In)
-		out = append(out, []byte(line)...)
-	}
-	return out
-}
-
-func TestMapParseBool(t *testing.T) {
-	collection, err := vars.ParseMapFromBytes(genAtobTestBytes())
-	testutils.NoError(t, err)
-	for _, test := range getBoolTests() {
-		val := collection.Get(test.Key)
-
-		if b := val.Bool(); b != test.Want {
-			t.Errorf("Value(%s).ParseBool(): = %t, want %t", test.Key, b, test.Want)
-		}
-	}
-}
-
-func genStringTestBytes() []byte {
-	var out []byte
-	for _, data := range getStringTests() {
-		line := fmt.Sprintf(`%s=%s`+"\n", data.Key, data.Val)
-		out = append(out, []byte(line)...)
-	}
-	// add empty line
-	out = append(out, []byte("")...)
-	return out
-}
-
 func TestMapGetWithPrefix(t *testing.T) {
 	collection, err := vars.ParseMapFromBytes(genStringTestBytes())
 	testutils.NoError(t, err)
@@ -288,11 +259,6 @@ func TestMapGetOrDefault(t *testing.T) {
 			t.Errorf("Map.GetOrDefaultTo(%q, %q) = %q, want %q", tt.k, tt.defVal, actual, tt.want)
 		}
 	}
-}
-
-func newUnsafeValue(val any) vars.Value {
-	v, _ := vars.NewValue(val)
-	return v
 }
 
 func TestMapGetOrDefaultValue(t *testing.T) {
@@ -547,4 +513,252 @@ func TestJSON(t *testing.T) {
 	testutils.NoError(t, err)
 	testutils.Equal(t, "value1", newmap.Get("key1").String())
 	testutils.Equal(t, "value2", newmap.Get("key2").String())
+}
+
+func genAtobTestBytes() []byte {
+	var out []byte
+	for _, data := range getBoolTests() {
+		line := fmt.Sprintf(`%s="%s"`+"\n", data.Key, data.In)
+		out = append(out, []byte(line)...)
+	}
+	return out
+}
+
+func TestMapParseBool(t *testing.T) {
+	collection, err := vars.ParseMapFromBytes(genAtobTestBytes())
+	testutils.NoError(t, err)
+	for _, test := range getBoolTests() {
+		val := collection.Get(test.Key)
+
+		if b := val.Bool(); b != test.Want {
+			t.Errorf("Value(%s).ParseBool(): = %t, want %t", test.Key, b, test.Want)
+		}
+	}
+}
+
+func TestMap_Range(t *testing.T) {
+	collection := vars.NewMap()
+	testutils.NoError(t, collection.Store("key1", "value1"))
+	testutils.NoError(t, collection.Store("key2", "value2"))
+
+	var keys []string
+	collection.Range(func(value vars.Variable) bool {
+		keys = append(keys, value.Name())
+		return true
+	})
+
+	testutils.Equal(t, 0, slices.Compare(keys, []string{"key1", "key2"}))
+}
+
+func TestMap_ToGoMap(t *testing.T) {
+	collection := vars.NewMap()
+	testutils.NoError(t, collection.Store("key1", "value1"))
+	testutils.NoError(t, collection.Store("key2", "value2"))
+
+	goMap := collection.ToGoMap()
+	testutils.Equal(t, "value1", goMap["key1"])
+	testutils.Equal(t, "value2", goMap["key2"])
+}
+
+func TestReadOnlyMap_From(t *testing.T) {
+	collection := vars.NewMap()
+	testutils.NoError(t, collection.Store("key1", "value1"))
+	testutils.NoError(t, collection.Store("key2", "value2"))
+
+	readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+	testutils.NoError(t, err)
+	testutils.Equal(t, "value1", readOnlyMap.Get("key1").String())
+	testutils.Equal(t, "value2", readOnlyMap.Get("key2").String())
+	testutils.True(t, readOnlyMap.Has("key1"))
+	testutils.True(t, readOnlyMap.Has("key2"))
+	testutils.False(t, readOnlyMap.Has("key3"))
+	testutils.Len(t, readOnlyMap, 2)
+}
+
+func TestReadOnlyMap_All(t *testing.T) {
+	collection := vars.NewMap()
+	testutils.NoError(t, collection.Store("key1", "value1"))
+	testutils.NoError(t, collection.Store("key2", "value2"))
+
+	readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+	testutils.NoError(t, err)
+	vals := readOnlyMap.All()
+	testutils.Len(t, vals, 2)
+	testutils.Equal(t, "key1", vals[0].Name())
+	testutils.Equal(t, "value1", vals[0].String())
+	testutils.Equal(t, "key2", vals[1].Name())
+	testutils.Equal(t, "value2", vals[1].String())
+}
+
+func TestReadOnlyMap_Load(t *testing.T) {
+	collection := vars.NewMap()
+	testutils.NoError(t, collection.Store("key1", "value1"))
+	testutils.NoError(t, collection.Store("key2", "value2"))
+
+	readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+	testutils.NoError(t, err)
+	testutils.Len(t, readOnlyMap, 2)
+	v1, ok := readOnlyMap.Load("key1")
+	testutils.True(t, ok)
+	testutils.Equal(t, "value1", v1.String())
+	v2, ok := readOnlyMap.Load("key2")
+	testutils.True(t, ok)
+	testutils.Equal(t, "value2", v2.String())
+	v3, ok := readOnlyMap.Load("key3")
+	testutils.False(t, ok)
+	testutils.Equal(t, vars.EmptyValue.String(), v3.String())
+}
+
+func TestReadOnlyMap_LoadOrDefault(t *testing.T) {
+	collection := vars.NewMap()
+	testutils.NoError(t, collection.Store("key1", "value1"))
+	testutils.NoError(t, collection.Store("key2", "value2"))
+
+	readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+	testutils.NoError(t, err)
+	testutils.Len(t, readOnlyMap, 2)
+	v1, ok := readOnlyMap.LoadOrDefault("key1", vars.EmptyValue)
+	testutils.True(t, ok)
+	testutils.Equal(t, "value1", v1.String())
+	v2, ok := readOnlyMap.LoadOrDefault("key2", vars.EmptyValue)
+	testutils.True(t, ok)
+	testutils.Equal(t, "value2", v2.String())
+	v3, ok := readOnlyMap.LoadOrDefault("key3", vars.EmptyValue)
+	testutils.False(t, ok)
+	testutils.Equal(t, vars.EmptyValue.String(), v3.String())
+	v4, ok := readOnlyMap.LoadOrDefault("key4", "default_val")
+	testutils.False(t, ok)
+	testutils.Equal(t, "default_val", v4.String())
+}
+
+func TestReadOnlyMap_WithPrefix(t *testing.T) {
+	t.Run("invalid", func(t *testing.T) {
+		collection := vars.NewMap()
+		testutils.NoError(t, collection.Store("key.1", "value1"))
+		testutils.NoError(t, collection.Store("key.2", "value2"))
+		testutils.NoError(t, collection.Store("other_key.1", "other_value1"))
+
+		testutils.Len(t, collection, 3)
+		readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+		testutils.NoError(t, err)
+		testutils.Len(t, readOnlyMap, 3)
+		invalidCollection, err := readOnlyMap.WithPrefix("key.")
+		testutils.Error(t, err)
+		testutils.Len(t, invalidCollection, 0)
+	})
+	t.Run("valid", func(t *testing.T) {
+		collection := vars.NewMap()
+		testutils.NoError(t, collection.Store("key.v1", "value1"))
+		testutils.NoError(t, collection.Store("key.v2", "value2"))
+		testutils.NoError(t, collection.Store("other_key.v1", "other_value1"))
+
+		testutils.Len(t, collection, 3)
+		readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+		testutils.NoError(t, err)
+		testutils.Len(t, readOnlyMap, 3)
+		validCollection, err := readOnlyMap.WithPrefix("key.")
+		testutils.NoError(t, err)
+		testutils.Len(t, validCollection, 2)
+	})
+}
+
+func TestReadOnlyMap_LoadWithPrefix(t *testing.T) {
+	t.Run("invalid", func(t *testing.T) {
+		collection := vars.NewMap()
+		testutils.NoError(t, collection.Store("key.1", "value1"))
+		testutils.NoError(t, collection.Store("key.2", "value2"))
+		testutils.NoError(t, collection.Store("other_key.1", "other_value1"))
+		readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+		testutils.NoError(t, err)
+		validCollection, ok := readOnlyMap.LoadWithPrefix("key.")
+		testutils.Len(t, validCollection, 0)
+		testutils.False(t, ok)
+	})
+	t.Run("valid", func(t *testing.T) {
+		collection := vars.NewMap()
+		testutils.NoError(t, collection.Store("key.v1", "value1"))
+		testutils.NoError(t, collection.Store("key.v2", "value2"))
+		testutils.NoError(t, collection.Store("other_key.v1", "other_value1"))
+		readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+		testutils.NoError(t, err)
+		validCollection, ok := readOnlyMap.LoadWithPrefix("key.")
+		testutils.Len(t, validCollection, 2)
+		testutils.True(t, ok)
+		testutils.Equal(t, "", readOnlyMap.Get("other_key.v").String())
+	})
+}
+
+func TestReadOnlyMap_ToBytes(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		collection := vars.NewMap()
+		readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+		testutils.NoError(t, err)
+		testutils.True(t, bytes.Equal(readOnlyMap.ToBytes(), []byte("")))
+	})
+	t.Run("valid", func(t *testing.T) {
+		collection := vars.NewMap()
+		testutils.NoError(t, collection.Store("key.v1", "value1"))
+		testutils.NoError(t, collection.Store("key.v2", "value2"))
+		testutils.NoError(t, collection.Store("other_key.v1", "other_value1"))
+		readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+		testutils.NoError(t, err)
+		testutils.True(t, bytes.Equal(readOnlyMap.ToBytes(), []byte("key.v1=value1\nkey.v2=value2\nother_key.v1=other_value1\n")))
+	})
+}
+
+func TestReadOnlyMap_MarshalJSON(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		collection := vars.NewMap()
+		readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+		testutils.NoError(t, err)
+		b, err := json.Marshal(readOnlyMap)
+		testutils.NoError(t, err)
+		testutils.True(t, bytes.Equal(b, []byte("null")))
+	})
+	t.Run("valid", func(t *testing.T) {
+		collection := vars.NewMap()
+		testutils.NoError(t, collection.Store("key.v1", "value1"))
+		testutils.NoError(t, collection.Store("key.v2", "value2"))
+		testutils.NoError(t, collection.Store("other_key.v1", "other_value1"))
+		readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+		testutils.NoError(t, err)
+		b, err := json.Marshal(readOnlyMap)
+		testutils.NoError(t, err)
+		testutils.True(t, bytes.Equal(b, []byte(`{"key.v1":"value1","key.v2":"value2","other_key.v1":"other_value1"}`)))
+	})
+}
+
+func TestReadOnlyMap_UnmarshalJSON(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		var readOnlyMap vars.ReadOnlyMap
+		err := json.Unmarshal([]byte("null"), &readOnlyMap)
+		testutils.NoError(t, err)
+		testutils.Equal(t, 0, readOnlyMap.Len())
+	})
+
+	t.Run("valid", func(t *testing.T) {
+		var readOnlyMap vars.ReadOnlyMap
+		err := json.Unmarshal([]byte(`{"key.v1":"value1","key.v2":"value2","other_key.v1":"other_value1"}`), &readOnlyMap)
+		testutils.NoError(t, err)
+		testutils.Equal(t, 3, readOnlyMap.Len())
+		testutils.Equal(t, "value1", readOnlyMap.Get("key.v1").String())
+		testutils.Equal(t, "value2", readOnlyMap.Get("key.v2").String())
+		testutils.Equal(t, "other_value1", readOnlyMap.Get("other_key.v1").String())
+	})
+}
+
+func genStringTestBytes() []byte {
+	var out []byte
+	for _, data := range getStringTests() {
+		line := fmt.Sprintf(`%s=%s`+"\n", data.Key, data.Val)
+		out = append(out, []byte(line)...)
+	}
+	// add empty line
+	out = append(out, []byte("")...)
+	return out
+}
+
+func newUnsafeValue(val any) vars.Value {
+	v, _ := vars.NewValue(val)
+	return v
 }

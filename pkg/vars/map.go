@@ -6,6 +6,7 @@ package vars
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -312,13 +313,13 @@ type ReadOnlyMap struct {
 	db  map[string]Variable
 }
 
-func ReadOnlyMapFrom(m *Map) *ReadOnlyMap {
-	r := new(ReadOnlyMap)
+func ReadOnlyMapFrom(m *Map) (rom *ReadOnlyMap, err error) {
+	rom = new(ReadOnlyMap)
 	m.Range(func(v Variable) bool {
-		_ = r.storeReadOnly(v.Name(), v, true)
-		return true
+		err = rom.storeReadOnly(v.Name(), v, true)
+		return err == nil
 	})
-	return r
+	return
 }
 
 // Get retrieves the value of the variable named by the key.
@@ -407,15 +408,13 @@ func (m *ReadOnlyMap) Range(f func(v Variable) bool) {
 	sort.Strings(keys)
 
 	m.mu.RLock()
+	defer m.mu.RUnlock()
 	for _, key := range keys {
 		v := m.db[key]
-		m.mu.RUnlock()
 		if !f(v) {
 			break
 		}
-		m.mu.RLock()
 	}
-	m.mu.RUnlock()
 }
 
 // ToBytes returns []byte containing
@@ -453,30 +452,29 @@ func (m *ReadOnlyMap) Len() int {
 
 // GetWithPrefix return all variables with prefix if any as new Map
 // and strip prefix from keys.
-func (m *ReadOnlyMap) ExtractWithPrefix(prfx string) *ReadOnlyMap {
-	vars := new(ReadOnlyMap)
-	m.Range(func(v Variable) bool {
+func (m *ReadOnlyMap) WithPrefix(prefix string) (rmap *ReadOnlyMap, err error) {
+	rmap = new(ReadOnlyMap)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for _, v := range m.db {
 		key := v.Name()
-		if len(key) >= len(prfx) && key[0:len(prfx)] == prfx {
-			_ = vars.storeReadOnly(key[len(prfx):], v, true)
+
+		if len(key) >= len(prefix) && key[0:len(prefix)] == prefix {
+			err = rmap.storeReadOnly(key[len(prefix):], v, true)
+			if err != nil {
+				return
+			}
 		}
-		return true
-	})
-	return vars
+	}
+	return
 }
 
 // LoadWithPrefix return all variables with prefix if any as new Map.
-func (m *ReadOnlyMap) LoadWithPrefix(prfx string) (set *ReadOnlyMap, loaded bool) {
-	set = new(ReadOnlyMap)
-	m.Range(func(v Variable) bool {
-		key := v.Name()
-		if len(key) >= len(prfx) && key[0:len(prfx)] == prfx {
-			_ = set.storeReadOnly(key, v, true)
-			loaded = true
-		}
-		return true
-	})
-	return set, loaded
+func (m *ReadOnlyMap) LoadWithPrefix(prefix string) (set *ReadOnlyMap, loaded bool) {
+	set, _ = m.WithPrefix(prefix)
+	loaded = set.Len() > 0
+	return
 }
 
 func (m *ReadOnlyMap) MarshalJSON() ([]byte, error) {
@@ -489,8 +487,17 @@ func (m *ReadOnlyMap) MarshalJSON() ([]byte, error) {
 		return true
 	})
 
+	if len(objMap) == 0 {
+		return []byte("null"), nil
+	}
+
 	// Use json.Marshal to convert the map to JSON
-	return json.Marshal(objMap)
+	b, err := json.Marshal(objMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 func (m *ReadOnlyMap) UnmarshalJSON(data []byte) error {
@@ -535,16 +542,7 @@ func (m *ReadOnlyMap) store(key string, value any) error {
 		}
 		return nil
 	}
-
-	v, err := New(key, value, false)
-	if err != nil {
-		return err
-	}
-	m.db[key] = v
-	if !has {
-		atomic.AddInt64(&m.len, 1)
-	}
-	return err
+	return fmt.Errorf("%w: %s", Error, key)
 }
 
 func (m *ReadOnlyMap) storeReadOnly(key string, value any, ro bool) error {
