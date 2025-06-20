@@ -6,6 +6,7 @@ require (
 	github.com/happy-sdk/happy/pkg/branding v0.3.0
 	github.com/happy-sdk/happy/pkg/cli/ansicolor v0.3.0
 	github.com/happy-sdk/happy/pkg/devel/testutils v0.8.0
+	github.com/happy-sdk/happy/pkg/i18n v0.0.0-20250620122148-177961d6ea51
 	github.com/happy-sdk/happy/pkg/options v0.4.0
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.5.1
 	github.com/happy-sdk/happy/pkg/settings v0.5.0
