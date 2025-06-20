@@ -33,4 +33,4 @@ tasks:
     dir: sdk/internal/cmd/hsdk
     silent: true
     cmds:
-      - go run . release
+      - go run . release --dirty

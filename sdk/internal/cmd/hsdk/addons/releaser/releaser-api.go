@@ -125,6 +125,7 @@ func (r *releaser) loadModules() error {
 		if _, err := os.Stat(goModPath); err != nil {
 			return nil
 		}
+		fmt.Println(goModPath)
 		pkg, err := module.Load(goModPath)
 		if err != nil {
 			return err
