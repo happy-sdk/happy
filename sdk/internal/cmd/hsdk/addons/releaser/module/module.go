@@ -361,6 +361,7 @@ func GetConfirmReleasablesView(sess *session.Context, pkgs []*Package, queue []s
 	)
 
 	for _, pkg := range pkgs {
+		fmt.Println(pkg.Import)
 		if len(pkg.Import) > longestPackage {
 			longestPackage = len(pkg.Import)
 		}
@@ -376,17 +377,15 @@ func GetConfirmReleasablesView(sess *session.Context, pkgs []*Package, queue []s
 
 	for _, impr := range queue {
 		for _, pkg := range pkgs {
-			fmt.Println("ROW: ", pkg.Import, impr)
 			if pkg.Import == impr {
 				action := "skip"
 				if pkg.NeedsRelease {
 					action = "release"
-				} else if pkg.FirstRelease {
-					action = "initial_release"
-				} else {
-					action = "what"
 				}
-				fmt.Println("ROW: ", pkg.Import)
+				if pkg.FirstRelease {
+					action = "initial"
+				}
+
 				rows = append(rows, table.Row{pkg.Import, action, path.Base(pkg.LastRelease), path.Base(pkg.NextRelease), fmt.Sprint(pkg.UpdateDeps)})
 			}
 		}
