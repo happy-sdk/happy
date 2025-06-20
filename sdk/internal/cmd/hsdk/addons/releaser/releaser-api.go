@@ -130,7 +130,6 @@ func (r *releaser) loadModules() error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(goModPath)
 		pkgs = append(pkgs, pkg)
 		return nil
 	}); err != nil {
