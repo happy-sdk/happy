@@ -18,6 +18,13 @@ type Map struct {
 	db  map[string]Variable
 }
 
+// NewMap creates a new Map instance.
+func NewMap() *Map {
+	return &Map{
+		db: make(map[string]Variable),
+	}
+}
+
 // Store sets the value for a key.
 // Error is returned when key or value parsing fails
 // or variable is already set and is readonly.
