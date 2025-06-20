@@ -14,7 +14,7 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/happy-sdk/happy v0.19.0/go.mod h1:8pND3rDvQoP+zhm3Dd9qRzMGOWmMG3emRTAZv+rDjdU=
 github.com/happy-sdk/happy v0.23.0/go.mod h1:OjnEjUhw5mmRKDoMHRsi2JkukNWsABeM+4G87CbgtH0=
 github.com/happy-sdk/happy v0.24.0/go.mod h1:84kGSaM9COejEOwj62LUKc8afm5rH4hha8MKxGtB4jY=
-github.com/happy-sdk/happy/pkg/version v0.3.1/go.mod h1:QllHtKF1cKK15XhXYK9ZGlFqmOQ3TvwFPkFWNZaiQu0=
+github.com/happy-sdk/happy/pkg/vars v0.17.0/go.mod h1:RxlM1TMCQYpebhpYedG/0djGYyrccNHrl+2oBNyMaHk=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-runewidth v0.0.16/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
