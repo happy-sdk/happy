@@ -108,9 +108,8 @@ func containsSubstring(s, substr string) bool {
 }
 
 var (
-	redColor   = RGB(255, 0, 0)
-	greenColor = RGB(0, 255, 0)
-	blueColor  = RGB(0, 0, 255)
+	redColor  = RGB(255, 0, 0)
+	blueColor = RGB(0, 0, 255)
 )
 
 func BenchmarkText_ShortString(b *testing.B) {
