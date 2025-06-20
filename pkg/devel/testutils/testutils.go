@@ -181,6 +181,39 @@ func Nil(tt TestingIface, value any, msgAndArgs ...any) bool {
 	return true
 }
 
+type length interface {
+	Len() int
+}
+
+// Len asserts that the specified value has the expected length.
+func Len(tt TestingIface, value any, expected int, msgAndArgs ...any) bool {
+	tt.Helper()
+
+	if value == nil {
+		return fail(tt, "Value should not be nil", msgAndArgs...)
+	}
+
+	var got int
+	switch v := value.(type) {
+	case length:
+		got = v.Len()
+	default:
+		// Use reflection to check if value is a slice, map, string, or array
+		val := reflect.ValueOf(v)
+		switch val.Kind() {
+		case reflect.Slice, reflect.Map, reflect.String, reflect.Array:
+			got = val.Len()
+		default:
+			return fail(tt, fmt.Sprintf("Type %T does not support length checking", value), msgAndArgs...)
+		}
+	}
+
+	if expected != got {
+		return fail(tt, fmt.Sprintf("Expected length %d, got %d", expected, got), msgAndArgs...)
+	}
+	return true
+}
+
 func KeyValErrorMsg(key string, val any) string {
 	return fmt.Sprintf("key(%v) = val(%v)", key, val)
 }
