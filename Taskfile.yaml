@@ -1,9 +1,12 @@
 # https://taskfile.dev
 
-version: '3'
+version: "3"
 
-dotenv: ['.env']
+dotenv: [".env"]
 
+# Coverage
+# Single package coverage
+# - go test -coverprofile=coverage.out . && go tool cover -html=coverage.out -o coverage.html
 tasks:
   lint:
     desc: Lint the project

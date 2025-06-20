@@ -5,6 +5,7 @@ use (
 	./pkg/branding
 	./pkg/cli/ansicolor
 	./pkg/devel/testutils
+	./pkg/i18n
 	./pkg/options
 	./pkg/scheduling/cron
 	./pkg/settings
