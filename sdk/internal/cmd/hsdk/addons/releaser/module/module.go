@@ -377,7 +377,6 @@ func GetConfirmReleasablesView(sess *session.Context, pkgs []*Package, queue []s
 	for _, impr := range queue {
 		for _, pkg := range pkgs {
 			if pkg.Import == impr {
-				fmt.Println("pkg.Import: ", pkg.Import)
 				action := "skip"
 				if pkg.NeedsRelease {
 					action = "release"
@@ -385,7 +384,10 @@ func GetConfirmReleasablesView(sess *session.Context, pkgs []*Package, queue []s
 				if pkg.FirstRelease {
 					action = "initial"
 				}
+				if pkg.Import == "github.com/happy-sdk/happy/pkg/i18n" {
 
+					fmt.Println("pkg.Import: ", pkg.Import)
+				}
 				rows = append(rows, table.Row{pkg.Import, action, path.Base(pkg.LastRelease), path.Base(pkg.NextRelease), fmt.Sprint(pkg.UpdateDeps)})
 			}
 		}
