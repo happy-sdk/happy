@@ -378,12 +378,13 @@ func GetConfirmReleasablesView(sess *session.Context, pkgs []*Package, queue []s
 		for _, pkg := range pkgs {
 			if pkg.Import == impr {
 				action := "skipsssssss"
-				// if pkg.NeedsRelease {
-				// 	action = "release"
-				// }
-				// if pkg.FirstRelease {
-				// 	action = "initial"
-				// }
+				if pkg.NeedsRelease {
+					action = "release"
+				}
+				if pkg.FirstRelease {
+					panic("First release")
+					action = "initial"
+				}
 
 				rows = append(rows, table.Row{pkg.Import, action, path.Base(pkg.LastRelease), path.Base(pkg.NextRelease), fmt.Sprint(pkg.UpdateDeps)})
 			}
