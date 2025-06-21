@@ -6,11 +6,13 @@ package help
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
+	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 )
 
@@ -103,9 +105,7 @@ func (h *Help) AddCommandFlags(flags []varflag.Flag) {
 	}
 }
 func (h *Help) AddCategoryDescriptions(catdescs map[string]string) {
-	for category, desc := range catdescs {
-		h.catdesc[category] = desc
-	}
+	maps.Copy(catdescs, h.catdesc)
 }
 
 func (h *Help) Print() error {
@@ -331,7 +331,8 @@ func (h *Help) printInfo() error {
 	if len(h.info.Info) > 0 {
 		fmt.Println("")
 		for _, info := range h.info.Info {
-			fmt.Println(" ", h.style.Info.String(info))
+
+			fmt.Println(textfmt.WordWrapWithPrefixes(h.style.Info.String(info), 72, "    ", "  "))
 		}
 	}
 	return nil
