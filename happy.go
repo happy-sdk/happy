@@ -20,12 +20,12 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/slug"
+	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/app"
 	"github.com/happy-sdk/happy/sdk/app/engine"
 	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/config"
-	"github.com/happy-sdk/happy/sdk/custom"
 	"github.com/happy-sdk/happy/sdk/datetime"
 	"github.com/happy-sdk/happy/sdk/devel"
 	"github.com/happy-sdk/happy/sdk/instance"
@@ -107,6 +107,6 @@ func (s *Settings) Extend(ss settings.Settings) {
 }
 
 // API returns the API for the given addon slug if addon has given API registered.
-func API[API custom.API](sess *session.Context, addonSlug string) (api API, err error) {
+func API[API api.Provider](sess *session.Context, addonSlug string) (api API, err error) {
 	return session.API[API](sess, addonSlug)
 }

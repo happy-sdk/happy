@@ -23,8 +23,8 @@ import (
 	"github.com/happy-sdk/happy/pkg/strings/slug"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/action"
+	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/cli/command"
-	"github.com/happy-sdk/happy/sdk/custom"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/services"
 )
@@ -34,12 +34,14 @@ var (
 )
 
 type Config struct {
-	Name string
-	// DiscardEvents tells application to discard all events this addon emits
-	DiscardEvents   bool
+	// Slug is the unique identifier for this addon.
+	Slug string
+	// DiscardEvents tells application to discard all events this addon emits.
+	DiscardEvents bool
+	// WithoutCommands tells application to discard all commands this addon registers.
 	WithoutCommands bool
+	// WithoutServices tells application to discard all services this addon registers.
 	WithoutServices bool
-	Settings        settings.Settings
 }
 
 type Info struct {
@@ -62,46 +64,100 @@ type Addon struct {
 	mu             sync.Mutex
 	info           Info
 	config         Config
-	api            custom.API
+	settings       settings.Settings
+	api            api.Provider
 	registerAction action.Register
 
-	events []events.Event
-	cmds   []*command.Command
-	svcs   []*services.Service
-	opts   *options.Options
+	events      []events.Event
+	cmds        []*command.Command
+	svcs        []*services.Service
+	pendingOpts []options.Spec
+	opts        *options.Options
 
 	errs         []error
 	deprecations []string
+	attached     bool
 }
 
-func New(c Config, opts ...options.Spec) *Addon {
+func New(name string) *Addon {
 	addon := &Addon{
-		config: c,
 		info: Info{
-			Name: c.Name,
+			Name: name,
 		},
 	}
-
-	if c.Settings != nil && reflect.TypeOf(c.Settings).Kind() == reflect.Ptr {
-		addon.perr(fmt.Errorf("%w: %s.Settings must not be a pointer - provide a struct or nil", Error, c.Name))
-	}
 	addon.loadPackageInfo()
-
-	var err error
-	addon.opts, err = options.New(addon.info.Slug, opts)
-	addon.perr(err)
 	return addon
 }
 
-func (addon *Addon) OnRegister(action action.Register) {
+func (addon *Addon) WithConfig(cfg Config) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
-	addon.registerAction = action
+
+	if addon.tryConfigureAttached() {
+		return addon
+	}
+	addon.config = cfg
+	if cfg.Slug != "" {
+		addon.info.Slug = cfg.Slug
+	}
+	return addon
 }
 
-func (addon *Addon) Events(evs ...events.Event) {
+func (addon *Addon) WithSettings(s settings.Settings) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
+
+	if addon.tryConfigureAttached() {
+		return addon
+	}
+	if s != nil && reflect.TypeOf(s).Kind() == reflect.Ptr {
+		addon.perr(fmt.Errorf("%w: %s.Settings must not be a pointer - provide a struct or nil", Error, addon.info.Name))
+	} else {
+		addon.settings = s
+	}
+	return addon
+}
+
+func (addon *Addon) WithOptions(opts ...options.Spec) *Addon {
+	addon.mu.Lock()
+	defer addon.mu.Unlock()
+
+	if addon.tryConfigureAttached() {
+		return addon
+	}
+	addon.pendingOpts = opts
+	return addon
+}
+
+func (addon *Addon) WithAPI(api api.Provider) *Addon {
+	addon.mu.Lock()
+	defer addon.mu.Unlock()
+
+	if addon.tryConfigureAttached() {
+		return addon
+	}
+
+	if api == nil {
+		addon.perr(fmt.Errorf("%w: %s provided <nil> API", Error, addon.info.Name))
+		return addon
+	}
+
+	if addon.api != nil {
+		addon.perr(fmt.Errorf("%w: %s already has an API", Error, addon.info.Name))
+		return addon
+	}
+	addon.api = api
+	return addon
+}
+
+func (addon *Addon) WithEvents(evs ...events.Event) *Addon {
+	addon.mu.Lock()
+	defer addon.mu.Unlock()
+
+	if addon.tryConfigureAttached() {
+		return addon
+	}
+
 	for _, ev := range evs {
 		if ev == nil {
 			addon.perr(fmt.Errorf("%w: %s provided <nil> event", Error, addon.info.Name))
@@ -109,11 +165,13 @@ func (addon *Addon) Events(evs ...events.Event) {
 		}
 		addon.events = append(addon.events, ev)
 	}
+	return addon
 }
 
-func (addon *Addon) Emits(evs ...events.Event) {
-	addon.Events(evs...)
-	addon.deprecated("addon.Emits() is deprecated, use addon.Events() instead, this will be removed in future")
+func (addon *Addon) OnRegister(action action.Register) {
+	addon.mu.Lock()
+	defer addon.mu.Unlock()
+	addon.registerAction = action
 }
 
 func (addon *Addon) ProvideCommands(cmds ...*command.Command) {
@@ -140,14 +198,12 @@ func (addon *Addon) ProvideServices(svcs ...*services.Service) {
 	}
 }
 
-func (addon *Addon) ProvideAPI(api custom.API) {
-	addon.mu.Lock()
-	defer addon.mu.Unlock()
-	if api == nil {
-		addon.perr(fmt.Errorf("%w: %s provided <nil> API", Error, addon.info.Name))
-		return
+func (addon *Addon) tryConfigureAttached() bool {
+	if addon.attached {
+		addon.perr(fmt.Errorf("%w: %s already attached", Error, addon.info.Name))
+		return addon.attached
 	}
-	addon.api = api
+	return addon.attached
 }
 
 func (addon *Addon) loadPackageInfo() {

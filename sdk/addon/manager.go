@@ -11,9 +11,9 @@ import (
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/slug"
+	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/cli/command"
-	"github.com/happy-sdk/happy/sdk/custom"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/services"
 )
@@ -40,14 +40,20 @@ func (m *Manager) Add(addon *Addon) error {
 	if _, ok := m.addons[addon.info.Slug]; ok {
 		return fmt.Errorf("%w: %sq addon already attached", Error, addon.info.Slug)
 	}
+	addon.attached = true
 	m.addons[addon.info.Slug] = addon
+	var err error
+	addon.opts, err = options.New(addon.info.Slug, addon.pendingOpts)
+	addon.pendingOpts = nil
+	addon.perr(err)
+
 	return nil
 }
 
 func (m *Manager) ExtendSettings(sb *settings.Blueprint) error {
 	for _, addon := range m.addons {
-		if addon.config.Settings != nil {
-			if err := sb.Extend(addon.info.Slug, addon.config.Settings); err != nil {
+		if addon.settings != nil {
+			if err := sb.Extend(addon.info.Slug, addon.settings); err != nil {
 				return fmt.Errorf("%w: %s", Error, err)
 			}
 		}
@@ -118,8 +124,8 @@ func (m *Manager) Register(sess session.Register) error {
 	return nil
 }
 
-func (m *Manager) GetAPIs() map[string]custom.API {
-	apis := make(map[string]custom.API)
+func (m *Manager) GetAPIs() map[string]api.Provider {
+	apis := make(map[string]api.Provider)
 	for _, addon := range m.addons {
 		if addon.api == nil {
 			continue

@@ -17,7 +17,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
-	"github.com/happy-sdk/happy/sdk/custom"
+	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/logging"
@@ -69,7 +69,7 @@ type Context struct {
 	terminateStop context.CancelFunc
 
 	svss map[string]*service.Info
-	apis map[string]custom.API
+	apis map[string]api.Provider
 }
 
 // Deadline returns the time when work done on behalf of this context
@@ -267,7 +267,6 @@ func (c *Context) Has(key string) bool {
 
 func (c *Context) Get(key string) vars.Variable {
 	if !c.Has(key) {
-		// c.logger.LogDepth(3, logging.LevelWarn, "accessing non existing session option", slog.String("key", key))
 		return vars.EmptyVariable
 	}
 	if c.profile != nil && c.profile.Has(key) {
@@ -350,7 +349,7 @@ func (c *Context) Describe(key string) string {
 	return c.opts.Describe(key)
 }
 
-func (c *Context) AttachAPI(slug string, api custom.API) error {
+func (c *Context) AttachAPI(slug string, api api.Provider) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if _, ok := c.apis[slug]; ok {
@@ -376,10 +375,10 @@ func (c *Context) start() (err error) {
 	return err
 }
 
-func API[API custom.API](sess *Context, addonSlug string) (api API, err error) {
+func API[API api.Provider](sess *Context, addonSlug string) (api API, err error) {
 	capi, ok := sess.apis[addonSlug]
 	if !ok {
-		return api, fmt.Errorf("%w: %s addon does not provide custom api", Error, addonSlug)
+		return api, fmt.Errorf("%w: %s addon not registered or does not provide custom api", Error, addonSlug)
 	}
 	if aa, ok := capi.(API); ok {
 		return aa, nil
@@ -418,7 +417,7 @@ type Config struct {
 	TimeLocation *time.Location
 	ReadyEvent   events.Event
 	EventCh      chan<- events.Event
-	APIs         map[string]custom.API
+	APIs         map[string]api.Provider
 }
 
 func (c *Config) Init() (*Context, error) {

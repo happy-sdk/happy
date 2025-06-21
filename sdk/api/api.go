@@ -2,8 +2,8 @@
 //
 // Copyright © 2024 The Happy Authors
 
-package custom
+package api
 
-type API interface {
+type Provider interface {
 	happy() bool
 }
