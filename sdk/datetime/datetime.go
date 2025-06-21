@@ -6,11 +6,10 @@ package datetime
 
 import (
 	"github.com/happy-sdk/happy/pkg/settings"
-	"golang.org/x/text/language"
 )
 
 type Settings struct {
-	Location settings.String `key:"location,config" default:"Local" mutation:"once" desc:"The location to use for time operations."`
+	Location settings.String `key:"location,save" default:"Local" mutation:"once" desc:"The location to use for time operations."`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
@@ -18,7 +17,5 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 	if err != nil {
 		return nil, err
 	}
-	en := language.English
-	b.Describe("location", en, "The location to use for time operations.")
 	return b, nil
 }

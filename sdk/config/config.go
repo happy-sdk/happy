@@ -11,7 +11,7 @@ type Settings struct {
 	// system is disabled and single runtime profile is used. This is useful when the application does not
 	// require user configuration and only uses the default settings.
 	// All settings below are ignored and set to default values when Disabled is set to true.
-	Disabled            settings.Bool        `default:"false" desc:"Enabled presistent user configuration"`
+	Disabled            settings.Bool        `default:"false" desc:"Disabled presistent user configuration"`
 	AdditionalProfiles  settings.StringSlice `desc:"Additional profiles provided by default."`
 	DefaultProfile      settings.String      `default:"default" mutation:"once" desc:"Default profile to use when no profile is specified."`
 	AllowCustomProfiles settings.Bool        `desc:"Are creation of custom profiles allowed."`

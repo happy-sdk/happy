@@ -191,6 +191,15 @@ type validator struct {
 func (b *Blueprint) AddValidator(key, desc string, fn func(s Setting) error) {
 	spec, ok := b.specs[key]
 	if !ok {
+		gname, skey, found := strings.Cut(key, ".")
+		if found {
+			group, ok := b.groups[gname]
+			if ok {
+				group.AddValidator(skey, desc, fn)
+				return
+			}
+		}
+
 		b.errs = append(b.errs, fmt.Errorf("%w: %s not found to add validator", ErrBlueprint, key))
 		return
 	}
@@ -205,8 +214,17 @@ func (b *Blueprint) AddValidator(key, desc string, fn func(s Setting) error) {
 }
 
 func (b *Blueprint) Describe(key string, lang language.Tag, description string) {
+
 	spec, ok := b.specs[key]
 	if !ok {
+		gname, skey, found := strings.Cut(key, ".")
+		if found {
+			group, ok := b.groups[gname]
+			if ok {
+				group.Describe(skey, lang, description)
+				return
+			}
+		}
 		b.errs = append(b.errs, fmt.Errorf("%w: %s not found to add description", ErrBlueprint, key))
 		return
 	}
@@ -220,7 +238,6 @@ func (b *Blueprint) Describe(key string, lang language.Tag, description string) 
 		b.errs = append(b.errs, fmt.Errorf("%w: %s already described in %s: %s", ErrBlueprint, key, lang, v))
 		return
 	}
-
 	spec.i18n[lang] = description
 	b.specs[key] = spec
 }
@@ -321,6 +338,10 @@ func (b *Blueprint) Extend(group string, ext Settings) (err error) {
 }
 
 func (b *Blueprint) Schema(module, version string) (Schema, error) {
+
+	if b.errs != nil {
+		return Schema{}, fmt.Errorf("%w: %s", ErrBlueprint, errors.Join(b.errs...))
+	}
 	s := Schema{
 		version:    version,
 		mode:       b.mode,

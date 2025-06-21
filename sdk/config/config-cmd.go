@@ -101,7 +101,7 @@ func configLs() *command.Command {
 		table.AddRow("KEY", "KIND", "IS SET", "MUTABILITY", "VALUE", "DEFAULT")
 		for _, s := range profileSettings {
 			var defval string
-			if s.Mutability() != settings.SettingImmutable && s.Default().String() != s.Value().String() {
+			if s.Default().String() != s.Value().String() {
 				defval = s.Default().String()
 			}
 			table.AddRow(s.Key(), s.Kind().String(), fmt.Sprint(s.IsSet()), fmt.Sprint(s.Mutability()), s.Value().String(), defval)

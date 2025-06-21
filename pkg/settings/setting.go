@@ -78,6 +78,9 @@ func (s SettingSpec) Setting(lang language.Tag) (Setting, error) {
 	if err != nil {
 		return setting, err
 	}
+	if err != nil {
+		return setting, err
+	}
 	if s.i18n != nil {
 
 		if desc, ok := s.i18n[lang]; ok {
@@ -95,6 +98,7 @@ func (s SettingSpec) setting() (Setting, error) {
 		mutability:  s.Mutability,
 		persistent:  s.Persistent,
 		userDefined: s.UserDefined,
+		desc:        s.i18n[language.English],
 	}
 
 	var err error

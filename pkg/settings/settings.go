@@ -93,7 +93,7 @@ func New[S Settings](s S) (*Blueprint, error) {
 	b.pkg = b.setPKG()
 
 	// Iterate over the struct fields
-	for i := 0; i < val.NumField(); i++ {
+	for i := range val.NumField() {
 		field := typ.Field(i)
 		// Skip the embedded field
 		if field.Anonymous || !field.IsExported() {
@@ -106,9 +106,6 @@ func New[S Settings](s S) (*Blueprint, error) {
 		}
 
 		// handle short syntax group keys
-		if err := b.AddSpec(spec); err != nil {
-			return nil, err
-		}
 
 		// Update the field value if needed
 		if isPointer {
@@ -124,13 +121,18 @@ func New[S Settings](s S) (*Blueprint, error) {
 					}
 				} else if nested, ok := originalField.Addr().Interface().(Settings); ok {
 					// Handle nested settings
-					if _, err := New(nested); err != nil {
+
+					if spec.Settings, err = nested.Blueprint(); err != nil {
 						return nil, fmt.Errorf("failed to set nested settings for field %s: %w", field.Name, err)
 					}
 				} else {
 					return nil, fmt.Errorf("field %s does not implement SettingField interface", field.Name)
 				}
 			}
+		}
+
+		if err := b.AddSpec(spec); err != nil {
+			return nil, err
 		}
 	}
 
