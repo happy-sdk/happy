@@ -6,9 +6,9 @@ package services
 
 import (
 	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/services/service"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 type Service struct {

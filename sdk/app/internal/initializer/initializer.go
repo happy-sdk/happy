@@ -27,13 +27,13 @@ import (
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/addon"
 	"github.com/happy-sdk/happy/sdk/app/internal/application"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/cli/help"
 	"github.com/happy-sdk/happy/sdk/devel"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 var Error = errors.New("initialization error")

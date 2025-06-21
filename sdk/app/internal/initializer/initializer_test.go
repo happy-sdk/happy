@@ -15,8 +15,8 @@ import (
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/app"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 func TestDefault(t *testing.T) {

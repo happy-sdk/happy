@@ -23,7 +23,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/addon"
 	"github.com/happy-sdk/happy/sdk/app/engine"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/cli/help"
 	"github.com/happy-sdk/happy/sdk/events"
@@ -31,6 +30,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/services"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 var (
@@ -506,7 +506,7 @@ func (rt *Runtime) showHelp() error {
 		},
 		help.Style{
 			Primary:     ansicolor.Style{FG: theme.Primary, Format: ansicolor.Bold},
-			Info:        ansicolor.Style{FG: theme.Info},
+			Info:        ansicolor.Style{FG: theme.Light},
 			Version:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
 			Credits:     ansicolor.Style{FG: theme.Secondary},
 			License:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},

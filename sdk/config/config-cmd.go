@@ -18,9 +18,9 @@ import (
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/internal"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 func Command() *command.Command {

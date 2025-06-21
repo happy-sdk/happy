@@ -23,7 +23,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/app"
 	"github.com/happy-sdk/happy/sdk/app/engine"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/config"
 	"github.com/happy-sdk/happy/sdk/datetime"
@@ -31,6 +30,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/services"
+	"github.com/happy-sdk/happy/sdk/session"
 	"github.com/happy-sdk/happy/sdk/stats"
 	"golang.org/x/text/language"
 )

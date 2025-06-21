@@ -14,8 +14,8 @@ import (
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 // Command is building command chain from provided root command.

@@ -12,10 +12,10 @@ import (
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/slug"
 	"github.com/happy-sdk/happy/sdk/api"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/services"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 var (

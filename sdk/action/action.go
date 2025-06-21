@@ -10,7 +10,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
-	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 type Action func(sess *session.Context) error

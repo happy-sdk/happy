@@ -20,7 +20,6 @@ import (
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/pkg/version"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/config"
@@ -28,6 +27,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/networking/address"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 // defaults holds the default values for the application.
@@ -250,7 +250,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 			"app.fs.path.wd",
 			"",
 			"Current working directory",
-			options.KindConfig|options.KindReadOnly,
+			options.KindConfig,
 			options.NoopValueValidator,
 		),
 		options.NewOption(

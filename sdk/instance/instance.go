@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/settings"
-	"github.com/happy-sdk/happy/sdk/app/session"
 	"github.com/happy-sdk/happy/sdk/internal"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 type Settings struct {
