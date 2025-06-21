@@ -1,0 +1,15 @@
+{
+  "i18n": {
+    "name": "English",
+    "set_default": "Set default language to %s"
+  },
+  "happy": {
+    "initializing": "initializing",
+    "unknown": "unknown",
+    "varflag": {
+      "errors": {
+        "invalid_arguments": "Invalid arguments"
+      }
+    }
+  }
+}
