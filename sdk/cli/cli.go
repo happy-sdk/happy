@@ -40,11 +40,11 @@ var (
 )
 
 type Settings struct {
-	Name               settings.String `default:"" desc:"Name of executable file"`
-	MainMinArgs        settings.Uint   `default:"0" desc:"Minimum number of arguments for a application main"`
-	MainMaxArgs        settings.Uint   `default:"0" desc:"Maximum number of arguments for a application main"`
-	WithoutConfigCmd   settings.Bool   `default:"false" desc:"Do not include the config command in the CLI"`
-	WithoutGlobalFlags settings.Bool   `default:"false" desc:"Do not include the global flags automatically in the CLI"`
+	Name            settings.String `default:"" desc:"Name of executable file"`
+	MainMinArgs     settings.Uint   `default:"0" desc:"Minimum number of arguments for a application main"`
+	MainMaxArgs     settings.Uint   `default:"0" desc:"Maximum number of arguments for a application main"`
+	WithConfigCmd   settings.Bool   `default:"false" desc:"Add the config command in the CLI"`
+	WithGlobalFlags settings.Bool   `default:"false" desc:"Add the default global flags automatically in the CLI"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
