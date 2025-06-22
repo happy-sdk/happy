@@ -144,7 +144,7 @@ func (m *Main) Run() {
 			m.rt.Exit(0)
 			return
 		}
-		m.log.Error("app configuration failed", slog.String("error", err.Error()))
+		m.log.Errors(err)
 		{
 			// rare case where logger is not available, then use slog
 			// to consume the log queue if it is not already consumed.

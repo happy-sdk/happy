@@ -11,13 +11,13 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/scheduling/cron"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/internal"
-	"github.com/happy-sdk/happy/sdk/networking/address"
 	"github.com/happy-sdk/happy/sdk/services/service"
 	"github.com/happy-sdk/happy/sdk/session"
 )

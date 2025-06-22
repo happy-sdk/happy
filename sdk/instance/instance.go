@@ -108,7 +108,7 @@ func (inst *Instance) Dispose() error {
 			return fmt.Errorf("failed to delete pidfile %s: %w", inst.pidfile, err)
 		}
 		if inst.sess != nil {
-			internal.Log(inst.sess.Log(), "successfully deleted pidfile", slog.String("pidfile", inst.pidfile))
+			internal.Log(inst.sess.Log(), "successfully deleted pidfile", slog.String("file", inst.pidfile))
 		}
 	}
 	return nil

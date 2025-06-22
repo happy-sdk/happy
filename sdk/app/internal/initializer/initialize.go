@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
@@ -26,7 +27,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/devel"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/internal"
-	"github.com/happy-sdk/happy/sdk/networking/address"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
@@ -58,8 +58,7 @@ func (init *Initializer) initialize() {
 	}
 
 	internal.LogInit(init.log, init.defaults.slug,
-		slog.String("version", init.opts.Get("app.version").String()),
-		slog.Int("pid", init.pid))
+		slog.String("version", init.opts.Get("app.version").String()))
 
 	// Set the application process id
 	if err := init.opts.Set("app.pid", init.pid); err != nil {
@@ -482,7 +481,7 @@ func (init *Initializer) initBasePaths() error {
 				return fmt.Errorf("failed to delete temp dir %s: %w", tempDir, err)
 			}
 			if sess != nil {
-				internal.Log(sess.Log(), "successfully deleted temp dir", slog.String("tempdir", tempDir))
+				internal.Log(sess.Log(), "successfully deleted temp dir", slog.String("dir", tempDir))
 			}
 		}
 

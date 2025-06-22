@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/happy-sdk/happy/sdk/networking/address"
+	"github.com/happy-sdk/happy/pkg/networking/address"
 )
 
 type Info struct {

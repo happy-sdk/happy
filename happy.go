@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/slug"
 	"github.com/happy-sdk/happy/sdk/api"
@@ -32,7 +33,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/services"
 	"github.com/happy-sdk/happy/sdk/session"
 	"github.com/happy-sdk/happy/sdk/stats"
-	"golang.org/x/text/language"
 )
 
 func New(s Settings) *app.Main {
@@ -59,6 +59,7 @@ type Settings struct {
 	Services   services.Settings `key:"app.services"`
 	Stats      stats.Settings    `key:"app.stats"`
 	Devel      devel.Settings    `key:"app.devel"`
+	I18n       i18n.Settings     `key:"app.i18n"`
 	global     []settings.Settings
 	migrations map[string]string
 	errs       []error
@@ -72,7 +73,6 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 		return nil, err
 	}
 	const appSlug = "app.slug"
-	b.Describe(appSlug, language.English, "Application slug")
 	b.AddValidator(appSlug, "", func(s settings.Setting) error {
 		if s.Value().Empty() {
 			return fmt.Errorf("%w: empty application slug", settings.ErrSetting)
