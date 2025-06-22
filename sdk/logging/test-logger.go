@@ -7,6 +7,7 @@ package logging
 import (
 	"bytes"
 	"context"
+	"errors"
 	"log/slog"
 	"sync"
 	"time"
@@ -87,6 +88,29 @@ func (l *TestLogger) Error(msg string, attrs ...slog.Attr) {
 	l.log.Error(msg, attrs...)
 }
 
+func (l *TestLogger) Errors(err error, attrs ...slog.Attr) {
+	var errs []error
+	// Use errors.Unwrap to iterate through wrapped errors.
+	for e := err; e != nil; {
+		// Check if e is a joined error or a single error.
+		if unwrapped, ok := e.(interface{ Unwrap() []error }); ok {
+			// If it supports Unwrap() []error, append all errors.
+			errs = append(errs, unwrapped.Unwrap()...)
+			break
+		}
+		// Try unwrapping single error.
+		if next := errors.Unwrap(e); next != nil {
+			errs = append(errs, e)
+			e = next
+		} else {
+			errs = append(errs, e)
+			break
+		}
+	}
+	for _, err := range errs {
+		l.log.Error(err.Error(), attrs...)
+	}
+}
 func (l *TestLogger) BUG(msg string, attrs ...slog.Attr) {
 	l.log.BUG(msg, attrs...)
 }

@@ -5,6 +5,7 @@
 package logging
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"runtime"
@@ -13,8 +14,9 @@ import (
 )
 
 type QueueLogger struct {
-	mu      sync.Mutex
-	records []QueueRecord
+	mu       sync.RWMutex
+	records  []QueueRecord
+	consumed bool
 }
 
 func NewQueueLogger() *QueueLogger {
@@ -67,6 +69,36 @@ func (l *QueueLogger) Error(msg string, attrs ...slog.Attr) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.records = append(l.records, NewQueueRecord(LevelError, msg, 3, attrs...))
+}
+
+func (l *QueueLogger) Errors(err error, attrs ...slog.Attr) {
+	if err == nil {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	var errs []error
+	// Use errors.Unwrap to iterate through wrapped errors.
+	for e := err; e != nil; {
+		// Check if e is a joined error or a single error.
+		if unwrapped, ok := e.(interface{ Unwrap() []error }); ok {
+			// If it supports Unwrap() []error, append all errors.
+			errs = append(errs, unwrapped.Unwrap()...)
+			break
+		}
+		// Try unwrapping single error.
+		if next := errors.Unwrap(e); next != nil {
+			errs = append(errs, e)
+			e = next
+		} else {
+			errs = append(errs, e)
+			break
+		}
+	}
+	for _, err := range errs {
+		l.records = append(l.records, NewQueueRecord(LevelError, err.Error(), 3, attrs...))
+	}
 }
 
 func (l *QueueLogger) BUG(msg string, attrs ...slog.Attr) {
@@ -151,7 +183,14 @@ func (l *QueueLogger) Consume() []QueueRecord {
 
 	records := l.records
 	l.records = nil
+	l.consumed = true
 	return records
+}
+
+func (l *QueueLogger) Consumed() bool {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.consumed
 }
 
 type QueueRecord struct {

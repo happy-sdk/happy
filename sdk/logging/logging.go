@@ -6,6 +6,7 @@ package logging
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -149,6 +150,7 @@ type Logger interface {
 	Warn(msg string, attrs ...slog.Attr)
 	Deprecated(msg string, attrs ...slog.Attr)
 	Error(msg string, attrs ...slog.Attr)
+	Errors(err error, attrs ...slog.Attr)
 	BUG(msg string, attrs ...slog.Attr)
 	Println(msg string, attrs ...slog.Attr)
 	Printf(format string, v ...any)
@@ -251,6 +253,29 @@ func (l *DefaultLogger) Deprecated(msg string, attrs ...slog.Attr) {
 
 func (l *DefaultLogger) Error(msg string, attrs ...slog.Attr) {
 	l.logDepth(lvlError, msg, attrs...)
+}
+func (l *DefaultLogger) Errors(err error, attrs ...slog.Attr) {
+	var errs []error
+	// Use errors.Unwrap to iterate through wrapped errors.
+	for e := err; e != nil; {
+		// Check if e is a joined error or a single error.
+		if unwrapped, ok := e.(interface{ Unwrap() []error }); ok {
+			// If it supports Unwrap() []error, append all errors.
+			errs = append(errs, unwrapped.Unwrap()...)
+			break
+		}
+		// Try unwrapping single error.
+		if next := errors.Unwrap(e); next != nil {
+			errs = append(errs, e)
+			e = next
+		} else {
+			errs = append(errs, e)
+			break
+		}
+	}
+	for _, err := range errs {
+		l.logDepth(lvlError, err.Error(), attrs...)
+	}
 }
 
 func (l *DefaultLogger) BUG(msg string, attrs ...slog.Attr) {
