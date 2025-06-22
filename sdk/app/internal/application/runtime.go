@@ -17,6 +17,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
+	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
@@ -37,6 +38,8 @@ var (
 	Error          = errors.New("runtime error")
 	ErrExitSuccess = errors.New("exit success")
 )
+
+const i18np = "com.github.happy-sdk.happy.sdk.app.internal.application"
 
 type Runtime struct {
 	startedAt time.Time
@@ -128,6 +131,9 @@ func (rt *Runtime) AddServices(svcs []*services.Service) {
 }
 
 func (rt *Runtime) boot() (err error) {
+	// Boot the application
+	bootedAt := time.Now()
+
 	defer func() {
 		if r := recover(); r != nil {
 			rt.recover(r, "panic at application boot")
@@ -151,9 +157,7 @@ func (rt *Runtime) boot() (err error) {
 		return nil
 	}
 
-	// Boot the application
-	bootedAt := time.Now()
-	rt.sess.Log().LogDepth(1, logging.LevelDebug, "booting application")
+	rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "booting_application", "booting application"))
 
 	// Create a new instance
 	if rt.inst, err = instance.New(rt.sess); err != nil {
@@ -220,7 +224,7 @@ func (rt *Runtime) boot() (err error) {
 	rt.sess.Dispatch(rt.sessionReadyEvent)
 	rt.sessionReadyEvent = nil
 	if rt.execlvl == logging.LevelQuiet || rt.execlvl < logging.LevelDebug {
-		rt.sess.Log().LogDepth(1, logging.LevelDebug, "application booted", slog.String("took", bootTook))
+		rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "application_booted", "application booted"), slog.String("took", bootTook))
 	}
 	return nil
 }
@@ -240,7 +244,7 @@ func (rt *Runtime) Start() {
 
 	rt.startedAt = rt.sess.Time(time.Now())
 	if rt.execlvl == logging.LevelQuiet || rt.execlvl < logging.LevelDebug {
-		rt.sess.Log().LogDepth(1, logging.LevelDebug, "starting application", slog.Time("started.at", rt.startedAt))
+		rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "starting_application", "starting application"), slog.Time("started.at", rt.startedAt))
 	}
 
 	if rt.engine != nil {
@@ -463,9 +467,9 @@ func (rt *Runtime) Exit(code int) {
 	}
 
 	if !rt.startedAt.IsZero() {
-		rt.log(1, logging.LevelDebug, "shutdown complete", slog.String("uptime", time.Since(rt.startedAt).String()), slog.Int("exit.code", code))
+		rt.log(1, logging.LevelDebug, i18n.PTD(i18np, "shutdown_complete", "shutdown complete"), slog.String("uptime", time.Since(rt.startedAt).String()), slog.Int("exit.code", code))
 	} else {
-		rt.log(1, logging.LevelDebug, "shutdown complete", slog.Int("exit.code", code))
+		rt.log(1, logging.LevelDebug, i18n.PTD(i18np, "shutdown_complete", "shutdown complete"), slog.Int("exit.code", code))
 	}
 
 	// If we are not testing, exit the main process

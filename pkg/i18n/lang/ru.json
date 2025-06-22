@@ -1,0 +1,6 @@
+{
+  "com.github.happy-sdk.happy.pkg.i18n": {
+    "name": "Русский",
+    "set_default": "язык установлен на %s"
+  }
+}

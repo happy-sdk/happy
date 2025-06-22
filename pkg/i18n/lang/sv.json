@@ -1,0 +1,6 @@
+{
+  "com.github.happy-sdk.happy.pkg.i18n": {
+    "name": "Svenska",
+    "set_default": "språk inställt till %s"
+  }
+}

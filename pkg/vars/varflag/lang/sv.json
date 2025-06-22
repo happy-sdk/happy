@@ -1,0 +1,6 @@
+{
+  "com.github.happy-sdk.happy.pkg.vars.varflag": {
+    "ErrInvalidArguments": "ogiltiga argument",
+    "ErrInvalidCommandOrArgs": "%s accepterar inte kommando eller argument %s"
+  }
+}

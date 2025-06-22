@@ -14,6 +14,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
+	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -247,7 +248,9 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 		return nil
 	}
 	if err := c.beforeAction(sess, args); err != nil {
-		sess.Log().Debug("before action",
+		internal.Log(
+			sess.Log(),
+			"before action",
 			slog.String("cmd", c.cnf.Get("name").String()),
 			slog.String("err", err.Error()),
 		)
@@ -272,7 +275,9 @@ func (c *Cmd) ExecDo(sess *session.Context) (err error) {
 	}
 
 	if err := c.doAction(sess, args); err != nil {
-		sess.Log().Debug("do action",
+		internal.Log(
+			sess.Log(),
+			"do action",
 			slog.String("cmd", c.cnf.Get("name").String()),
 			slog.String("err", err.Error()),
 		)
@@ -292,7 +297,9 @@ func (c *Cmd) ExecAfterFailure(sess *session.Context, err error) error {
 	}
 
 	if err := c.afterFailureAction(sess, err); err != nil {
-		sess.Log().Debug("after failure action",
+		internal.Log(
+			sess.Log(),
+			"after failure action",
 			slog.String("cmd", c.cnf.Get("name").String()),
 			slog.String("err", err.Error()),
 		)
@@ -311,7 +318,7 @@ func (c *Cmd) ExecAfterSuccess(sess *session.Context) error {
 	}
 
 	if err := c.afterSuccessAction(sess); err != nil {
-		sess.Log().Debug("after success action",
+		internal.Log(sess.Log(), "after success action",
 			slog.String("cmd", c.cnf.Get("name").String()),
 			slog.String("err", err.Error()),
 		)
@@ -332,7 +339,7 @@ func (c *Cmd) ExecAfterAlways(sess *session.Context, err error) error {
 	}
 
 	if err := c.afterAlwaysAction(sess, err); err != nil {
-		sess.Log().Debug("after always action",
+		internal.Log(sess.Log(), "after always action",
 			slog.String("cmd", c.cnf.Get("name").String()),
 			slog.String("err", err.Error()),
 		)
@@ -358,10 +365,9 @@ func (c *Cmd) callSharedBeforeAction(sess *session.Context) error {
 	if c.cnf.Get("shared_before_action").Value().Bool() {
 		c.sharedCalled = true
 		if err := c.beforeAction(sess, action.NewArgs(c.flags)); err != nil {
-			sess.Log().Debug("shared before action",
+			internal.Log(sess.Log(), "shared before action",
 				slog.String("cmd", c.cnf.Get("name").String()),
-				slog.String("err", err.Error()),
-			)
+				slog.String("err", err.Error()))
 			return err
 		}
 		// dereference before action

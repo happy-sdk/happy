@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"path/filepath"
 	"slices"
 	"sync"
 
@@ -39,6 +38,8 @@ func init() {
 	mngr = newManager()
 }
 
+const Enabled = true
+
 func initialize(fallback language.Tag, logger logging.Logger) {
 	initOnce.Do(func() {
 		if logger == nil {
@@ -54,6 +55,8 @@ func initialize(fallback language.Tag, logger logging.Logger) {
 		mngr.logger = logger
 		mngr.loggerDisposed = false
 		mngr.initialized = true
+		mngr.fallbackLang = fallback
+		mngr.currentLang = fallback
 
 		if err := RegisterTranslationsFS(NewFS(translations)); err != nil {
 			logger.Error(err.Error())
@@ -296,8 +299,8 @@ func (m *manager) queueTranslation(lang language.Tag, key string, value any) err
 	if !ok {
 		dictionary = make(map[string]any)
 	}
-	if key, ok := dictionary[key]; ok {
-		return fmt.Errorf("translation key %q already exists", key)
+	if _, ok := dictionary[key]; ok {
+		return fmt.Errorf("%s: translation key %q already exists in dictionary", lang.String(), key)
 	}
 	if m.queue == nil {
 		mngr.queue = make(map[language.Tag]map[string]any)
@@ -307,8 +310,8 @@ func (m *manager) queueTranslation(lang language.Tag, key string, value any) err
 		queuedict = make(map[string]any)
 		mngr.queue[lang] = queuedict
 	}
-	if key, ok := queuedict[key]; ok {
-		return fmt.Errorf("translation key %q already exists in queue", key)
+	if _, ok := queuedict[key]; ok {
+		return fmt.Errorf("%s: translation key %q already exists in queue", lang.String(), key)
 	}
 	queuedict[key] = value
 	return nil
@@ -322,8 +325,7 @@ func (m *manager) addToDictionary(lang language.Tag, key string, value any) {
 	if !ok {
 		dictionary = make(map[string]any)
 	}
-	if key, ok := dictionary[key]; ok {
-		m.log(logging.LevelError, fmt.Sprintf("translation key %q already exists", key))
+	if _, ok := dictionary[key]; ok {
 		return
 	}
 	dictionary[key] = value
@@ -369,7 +371,7 @@ func setLanguage(lang language.Tag) error {
 	if err := mngr.setCurrentLanguage(lang); err != nil {
 		return err
 	}
-	mngr.log(logging.LevelDebug, T("language.set_default", lang.String()))
+	mngr.log(logging.LevelDebug, T("com.github.happy-sdk.happy.pkg.i18n.set_default", lang.String()))
 	return nil
 }
 
@@ -416,28 +418,6 @@ func getPrinterFor(lang language.Tag) (p *message.Printer, err error) {
 
 func getFallbackPrinter() (p *message.Printer) {
 	return mngr.getFallbackPrinter()
-}
-
-func registerTranslationsFS(fs *FS) error {
-	langDirs, err := fs.readRoot()
-	if err != nil {
-		return fmt.Errorf("i18n loading translations from fs failed: %s", err.Error())
-	}
-	for _, dir := range langDirs {
-		if dir.IsDir() {
-			lang, err := language.Parse(dir.Name())
-			if err != nil {
-				return fmt.Errorf("i18n parsing language tag from dir %s failed: %s", dir.Name(), err.Error())
-			}
-			if err := fs.load(lang, filepath.Join(fs.prefix, dir.Name())); err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("i18n expected language directory at root of fs got: %s", dir.Name())
-		}
-	}
-
-	return nil
 }
 
 func reload() {

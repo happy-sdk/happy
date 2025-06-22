@@ -14,6 +14,8 @@ import (
 	"golang.org/x/text/message"
 )
 
+const Enabled = false
+
 func initialize(fallback language.Tag, logger logging.Logger) {}
 
 func registerTranslations(lang language.Tag, translations map[string]any) error {

@@ -1,0 +1,6 @@
+{
+  "com.github.happy-sdk.happy.pkg.i18n": {
+    "name": "English",
+    "set_default": "set language to %s"
+  }
+}

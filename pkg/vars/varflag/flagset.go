@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -335,7 +336,11 @@ includessubset:
 	sargs := slicediff(args, used)
 
 	if s.argn == 0 && len(sargs) > 0 {
-		return fmt.Errorf("%w: %s does not accept arg %s", ErrInvalidArguments, s.name, sargs[0])
+		if strings.HasPrefix(sargs[0], "-") {
+			return fmt.Errorf("%w: %s does not accept flag %s", ErrInvalidArguments, s.name, sargs[0])
+		}
+
+		return errors.Join(ErrInvalidArguments, ErrInvalidCommandOrArgs.WithArgs(s.name, sargs[0]))
 	}
 
 	for _, arg := range sargs {

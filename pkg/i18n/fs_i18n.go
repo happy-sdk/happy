@@ -11,7 +11,9 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"strings"
 
+	"github.com/happy-sdk/happy/sdk/logging"
 	"golang.org/x/text/language"
 )
 
@@ -29,18 +31,71 @@ func (f *FS) load(lang language.Tag, dir string) error {
 		if file.IsDir() {
 			return fmt.Errorf("i18n(%s): expected translation file in lang dir got directory: %s", lang.String(), file.Name())
 		}
-		content, err := f.content.ReadFile(filepath.Join(dir, file.Name()))
-		if err != nil {
-			return fmt.Errorf("i18n(%s): reading translation file %s failed: %s", lang.String(), file.Name(), err.Error())
-		}
-
-		var translations map[string]any
-		if err := json.Unmarshal(content, &translations); err != nil {
-			return fmt.Errorf("i18n(%s): could not parse translation file %s: %s", lang.String(), file.Name(), err.Error())
-		}
-		if err := RegisterTranslations(lang, translations); err != nil {
+		if err := f.loadFile(lang, filepath.Join(dir, file.Name())); err != nil {
 			return err
 		}
+
 	}
+	return nil
+}
+
+func (f *FS) loadFile(lang language.Tag, fpath string) error {
+	content, err := f.content.ReadFile(fpath)
+	name := filepath.Base(fpath)
+	if err != nil {
+		return fmt.Errorf("i18n(%s): reading translation file %s failed: %s", lang.String(), name, err.Error())
+	}
+
+	var translations map[string]any
+	if err := json.Unmarshal(content, &translations); err != nil {
+		return fmt.Errorf("i18n(%s): could not parse translation file %s: %s", lang.String(), name, err.Error())
+	}
+	if err := RegisterTranslations(lang, translations); err != nil {
+		return err
+	}
+	return nil
+}
+
+func registerTranslationsFS(fs *FS) (res error) {
+	defer func() {
+		if res != nil {
+			mngr.log(logging.LevelWarn, res.Error())
+		}
+	}()
+	langDirs, err := fs.readRoot()
+	if err != nil {
+		res = fmt.Errorf("i18n loading translations from fs failed: %s", err.Error())
+		return
+	}
+	for _, entry := range langDirs {
+		name := entry.Name()
+		if !entry.IsDir() {
+			if filepath.Ext(name) != ".json" {
+				continue
+			}
+			langStr := strings.TrimSuffix(filepath.Base(name), ".json")
+			lang, err := language.Parse(langStr)
+			if err != nil {
+				res = fmt.Errorf("i18n parsing language tag from file %s failed: %s", name, err.Error())
+				return
+			}
+
+			if err := fs.loadFile(lang, filepath.Join(fs.prefix, name)); err != nil {
+				res = err
+				return
+			}
+			continue
+		}
+		lang, err := language.Parse(name)
+		if err != nil {
+			res = fmt.Errorf("i18n parsing language tag from dir %s failed: %s", name, err.Error())
+			return
+		}
+		if err := fs.load(lang, filepath.Join(fs.prefix, name)); err != nil {
+			res = err
+			return
+		}
+	}
+
 	return nil
 }

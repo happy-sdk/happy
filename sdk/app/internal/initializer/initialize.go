@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -43,8 +44,9 @@ type defaults struct {
 	binName                   string
 	cliMainMinArgs            uint
 	cliMainMaxArgs            uint
-	cliWithoutConfigCmd       bool
-	cliWithoutGlobalFlags     bool
+	cliWithConfigCmd          bool
+	cliWithGlobalFlags        bool
+	cliWithoutFlags           []string
 	develAllowProd            bool
 }
 
@@ -57,7 +59,7 @@ func (init *Initializer) initialize() {
 		return
 	}
 
-	internal.LogInit(init.log, init.defaults.slug,
+	init.log.Debug(init.defaults.slug,
 		slog.String("version", init.opts.Get("app.version").String()))
 
 	// Set the application process id
@@ -133,11 +135,11 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	if err != nil {
 		return err
 	}
-	cliWithoutConfigCmdSpec, err := init.settingsb.GetSpec("app.cli.without_config_cmd")
+	cliWithConfigCmdSpec, err := init.settingsb.GetSpec("app.cli.with_config_cmd")
 	if err != nil {
 		return err
 	}
-	cliWithoutGlobalFlagsSpec, err := init.settingsb.GetSpec("app.cli.without_global_flags")
+	cliWithGlobalFlagsSpec, err := init.settingsb.GetSpec("app.cli.with_global_flags")
 	if err != nil {
 		return err
 	}
@@ -156,16 +158,20 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	init.defaults.identifier = identifierSpec.Value
 	init.defaults.cliMainMinArgs = uint(cliMainMinArgs)
 	init.defaults.cliMainMaxArgs = uint(cliMainMaxArgs)
-	init.defaults.cliWithoutConfigCmd = cliWithoutConfigCmdSpec.Value == "true"
-	init.defaults.cliWithoutGlobalFlags = cliWithoutGlobalFlagsSpec.Value == "true"
+	init.defaults.cliWithConfigCmd = cliWithConfigCmdSpec.Value == "true"
+	init.defaults.cliWithGlobalFlags = cliWithGlobalFlagsSpec.Value == "true"
 	init.defaults.develAllowProd = develAllowProdSpec.Value == "true"
 
 	if init.defaults.configDisabled {
 		init.defaults.configDefaultProfile = configDefaultProfileSpec.Default
-		init.defaults.configAdditionalProfiles = strings.Split(configAdditionalProfilesSpec.Default, "|")
+		if len(configAdditionalProfilesSpec.Default) > 0 {
+			init.defaults.configAdditionalProfiles = strings.Split(configAdditionalProfilesSpec.Default, "|")
+		}
 	} else {
 		init.defaults.configDefaultProfile = configDefaultProfileSpec.Value
-		init.defaults.configAdditionalProfiles = strings.Split(configAdditionalProfilesSpec.Value, "|")
+		if len(configAdditionalProfilesSpec.Value) > 0 {
+			init.defaults.configAdditionalProfiles = strings.Split(configAdditionalProfilesSpec.Value, "|")
+		}
 		init.defaults.configAllowCustomProfiles = configAllowCustomProfilesSpec.Value == "true"
 		init.defaults.configEnableProfileDevel = configEnableProfileDevelSpec.Value == "true"
 	}
@@ -195,7 +201,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 			module = addr.Module()
 			init.defaults.identifier = addr.ReverseDNS()
 		} else {
-			init.defaults.slug = addr.Instance()
+			init.defaults.slug = path.Base(module)
 		}
 		if err := init.settingsb.SetDefault("app.slug", init.defaults.slug); err != nil {
 			return err
@@ -517,7 +523,7 @@ func (init *Initializer) initRootCommand() error {
 		MaxArgs: settings.Uint(init.defaults.cliMainMaxArgs),
 	})
 
-	if !init.defaults.cliWithoutGlobalFlags {
+	if init.defaults.cliWithGlobalFlags {
 		root.WithFlags(
 			cli.FlagVersion,
 			cli.FlagHelp,
@@ -526,20 +532,20 @@ func (init *Initializer) initRootCommand() error {
 			cli.FlagDebug,
 			cli.FlagVerbose,
 		)
-
-		if !init.defaults.configDisabled {
-			root.WithFlags(varflag.StringFunc("profile", init.defaults.configDefaultProfile, "session profile to be used"))
-		}
-
 	}
 
-	if !init.defaults.cliWithoutGlobalFlags && init.defaults.develAllowProd {
+	if !init.defaults.configDisabled &&
+		(init.defaults.configAllowCustomProfiles || len(init.defaults.configAdditionalProfiles) > 0) {
+		root.WithFlags(varflag.StringFunc("profile", init.defaults.configDefaultProfile, "session profile to be used"))
+	}
+
+	if !init.defaults.cliWithGlobalFlags && init.defaults.develAllowProd {
 		if init.opts.Get("app.is_devel").Bool() {
 			root.WithFlags(devel.FlagXProd)
 		}
 	}
 
-	if !init.defaults.cliWithoutConfigCmd {
+	if init.defaults.cliWithConfigCmd {
 		root.WithSubCommands(config.Command())
 	}
 

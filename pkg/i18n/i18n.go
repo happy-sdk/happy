@@ -9,6 +9,7 @@ package i18n
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/happy-sdk/happy/sdk/logging"
 	"golang.org/x/text/language"
@@ -22,6 +23,7 @@ const (
 )
 
 var ErrDisabled = errors.New("i18n: disabled")
+var ErrLanguageNotSupported = errors.New("i18n: language not supported")
 
 func Initialize(fallback language.Tag, logger logging.Logger) {
 	initialize(fallback, logger)
@@ -124,6 +126,25 @@ func Reload() {
 // Fallback to English if key is not found on current language.
 func T(key string, args ...any) string {
 	return t(key, args...)
+}
+
+func TD(key string, fallback string, args ...any) string {
+	if !Enabled {
+		return fallback
+	}
+	return t(key, args...)
+}
+
+func PT(prefix, localKey string, args ...any) string {
+	return t(fmt.Sprintf("%s.%s", prefix, localKey), args...)
+}
+
+func PTD(prefix, localKey, fallback string, args ...any) string {
+	if !Enabled {
+		return fallback
+	}
+	// 	fmt.Println(i18n.GetPackagePrefix())
+	return t(fmt.Sprintf("%s.%s", prefix, localKey), args...)
 }
 
 func GetPackagePrefix() string {

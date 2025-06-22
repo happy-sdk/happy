@@ -106,6 +106,10 @@ func (s *Settings) Extend(ss settings.Settings) {
 	s.global = append(s.global, ss)
 }
 
+func (s Settings) GetFallbackLanguage() string {
+	return s.I18n.Language.String()
+}
+
 // API returns the API for the given addon slug if addon has given API registered.
 func API[API api.Provider](sess *session.Context, addonSlug string) (api API, err error) {
 	return session.API[API](sess, addonSlug)

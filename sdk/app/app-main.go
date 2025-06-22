@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/branding"
+	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
@@ -35,7 +36,7 @@ type Main struct {
 	booted bool
 }
 
-func New[S settings.Settings](s S) *Main {
+func New(s settings.Settings) *Main {
 	m := &Main{
 		log: logging.NewQueueLogger(),
 	}
@@ -109,12 +110,12 @@ func (m *Main) Run() {
 	defer m.mu.Unlock()
 
 	if m.booted {
-		m.log.LogDepth(1, logging.LevelWarn, "application already booted")
+		m.log.LogDepth(1, logging.LevelWarn, i18n.PTD(i18np, "application_already_booted", "application already booted"))
 		m.mu.Unlock()
 		return
 	}
 	m.booted = true
-	m.log.LogDepth(1, logging.LevelDebug, "preparing runtime")
+	m.log.LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "preparing_runtime", "preparing runtime"))
 
 	defer func() {
 		if r := recover(); r != nil {

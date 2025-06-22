@@ -18,7 +18,9 @@ import (
 	"sync"
 	"unicode"
 
+	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/vars"
+	_ "github.com/happy-sdk/happy/pkg/vars/varflag/lang"
 )
 
 const (
@@ -28,24 +30,26 @@ const (
 
 var (
 	// ErrFlag is returned when flag fails to initialize.
-	ErrFlag = errors.New("flag error")
+	ErrFlag = i18n.NewError("ErrFlag", "flag error")
 	// ErrFlag is returned when flag fails to initialize.
-	ErrFlagExists = errors.New("flag already exists")
+	ErrFlagExists = i18n.NewError("ErrFlagExists", "flag already exists")
 	// ErrParse is used to indicate parse errors.
-	ErrParse = errors.New("flag parse error")
+	ErrParse = i18n.NewError("ErrParse", "flag parse error")
 	// ErrMissingValue is used when flag value was not in parsed args.
-	ErrMissingValue = errors.New("missing value for flag")
+	ErrMissingValue = i18n.NewError("ErrMissingValue", "missing value for flag")
 	// ErrInvalidValue is used when invalid value was provided.
-	ErrInvalidValue = errors.New("invalid value for flag")
+	ErrInvalidValue = i18n.NewError("ErrInvalidValue", "invalid value for flag")
 	// ErrFlagAlreadyParsed is returned when this flag was already parsed.
-	ErrFlagAlreadyParsed = errors.New("flag is already parsed")
+	ErrFlagAlreadyParsed = i18n.NewError("ErrFlagAlreadyParsed", "flag is already parsed")
 	// ErrMissingRequired indicates that required flag was not in argument set.
-	ErrMissingRequired = errors.New("missing required flag")
+	ErrMissingRequired = i18n.NewError("ErrMissingRequired", "missing required flag")
 	// ErrMissingOptions is returned when option flag parser does not find options.
-	ErrMissingOptions = errors.New("missing options")
+	ErrMissingOptions = i18n.NewError("ErrMissingOptions", "missing options")
 	// ErrNoNamedFlag is returned when flag lookup can not find named flag.
-	ErrNoNamedFlag      = errors.New("no such flag")
-	ErrInvalidArguments = errors.New("invalid arguments")
+	ErrNoNamedFlag = i18n.NewError("ErrNoNamedFlag", "no such flag")
+
+	ErrInvalidArguments     = i18n.NewError("ErrInvalidArguments", "Invalid arguments")
+	ErrInvalidCommandOrArgs = i18n.NewError("ErrInvalidCommandOrArgs", "%s does not accept command or argument %s")
 )
 
 type (

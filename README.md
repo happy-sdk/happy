@@ -2,9 +2,9 @@
 
 # Happy Prototyping Framework and SDK
 
-Package happy is a powerful tool for developers looking to bring their ideas to life through rapid prototyping. With its comprehensive set of resources and modular design, it's easy to create working prototypes or MVPs with minimal technical knowledge or infrastructure planning. Plus, its flexible design allows it to seamlessly integrate into projects with components written in different programming languages. So why wait? Let Happy help you achieve your goals and bring a smile to your face along the way.
+Happy SDK is an open-source Go framework designed to make building applications simple and fast. Its clear, modular structure and addon system promote code reuse, enabling anyone—coders or non-coders—to create prototypes or full projects efficiently. It integrates smoothly with projects using multiple programming languages, helping teams bring ideas to life with ease.
 
-:warning: *Happy is very early in development phase and is not intended for production use.*  
+:warning: *Until v1.0.0, API changes may break compatibility, so pin your Happy version and update cautiously.*  
 
 ![GitHub Release](https://img.shields.io/github/v/release/happy-sdk/happy) [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy)](https://pkg.go.dev/github.com/happy-sdk/happy) [![Coverage Status](https://coveralls.io/repos/github/happy-sdk/happy/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/happy?branch=main) ![GitHub License](https://img.shields.io/github/license/happy-sdk/happy)
 
@@ -23,7 +23,7 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 func main() {
@@ -160,7 +160,7 @@ package helloworld
 
 import (
   "github.com/happy-sdk/happy/sdk/addon"
-  "github.com/happy-sdk/happy/sdk/app/session"
+  "github.com/happy-sdk/happy/sdk/session"
   "github.com/happy-sdk/happy/sdk/custom"
 )
 

@@ -20,6 +20,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
+	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -34,9 +35,12 @@ import (
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/session"
+	"golang.org/x/text/language"
 )
 
 var Error = errors.New("initialization error")
+
+const i18np = "com.github.happy-sdk.happy.sdk.app.internal.initializer"
 
 type Initializer struct {
 	mu  sync.RWMutex
@@ -83,6 +87,10 @@ type Initializer struct {
 	defaults *defaults
 }
 
+type fallbackLanguageGetter interface {
+	GetFallbackLanguage() string
+}
+
 func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger) *Initializer {
 	init := &Initializer{
 		log:       log,
@@ -95,7 +103,15 @@ func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger)
 		execlvl:   logging.LevelQuiet,
 	}
 
-	init.log.LogDepth(3, logging.LevelDebug, "initializing", slog.String("pid", fmt.Sprint(init.pid)))
+	fallbackLang := language.English
+	if langGetter, ok := s.(fallbackLanguageGetter); ok {
+		lang, err := language.Parse(langGetter.GetFallbackLanguage())
+		if err == nil {
+			fallbackLang = lang
+		}
+	}
+	i18n.Initialize(fallbackLang, init.log)
+	init.log.LogDepth(3, logging.LevelDebug, i18n.PTD(i18np, "initializing", "initializing"), slog.String("pid", fmt.Sprint(init.pid)))
 	init.initialize()
 	return init
 }
@@ -400,10 +416,10 @@ func (init *Initializer) Finalize() (err error) {
 
 	took := time.Since(init.createdAt)
 	init.rt.InitStats(init.createdAt, took)
-
-	session.Log().LogDepth(1, logging.LevelDebug, "initialization completed", slog.String("took", took.String()))
-
 	init.rt.SetExecLogLevel(init.execlvl)
+
+	session.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "initialization_completed", "initialization completed"), slog.String("took", took.String()))
+
 	return nil
 }
 
@@ -506,7 +522,7 @@ func (init *Initializer) configureProfile() (err error) {
 			// Check if loading other than default profile
 			if currentProfileName != defaultProfileName {
 				// When custom profiles are not allowed check if current profile is allowed
-				if !init.defaults.configAllowCustomProfiles {
+				if init.defaults.configAllowCustomProfiles {
 					if !slices.Contains(init.defaults.configAdditionalProfiles, currentProfileName) {
 						return fmt.Errorf("%w: profile %q is not allowed", Error, currentProfileName)
 					}
@@ -692,7 +708,7 @@ func (init *Initializer) configureLogger() (err error) {
 	var (
 		lvl             logging.Level
 		noSlogDefault   bool
-		noSource        bool
+		withSource      bool
 		tslocStr        string
 		timestampFormat string
 		noTimestamp     bool
@@ -703,13 +719,13 @@ func (init *Initializer) configureLogger() (err error) {
 			return err
 		}
 		noSlogDefault = init.profile.Get("app.logging.no_slog_default").Value().Bool()
-		noSource = init.profile.Get("app.logging.no_source").Value().Bool()
+		withSource = init.profile.Get("app.logging.with_source").Value().Bool()
 		tslocStr = init.profile.Get("app.datetime.location").Value().String()
 		timestampFormat = init.profile.Get("app.logging.timeestamp_format").Value().String()
 		noTimestamp = init.profile.Get("app.logging.no_timestamp").Value().Bool()
 	} else {
 		lvl = logging.LevelDebug
-		noSource = true
+		withSource = false
 		tslocStr = "Local"
 		timestampFormat = "15:04:05"
 	}
@@ -758,7 +774,7 @@ func (init *Initializer) configureLogger() (err error) {
 
 	logopts := logging.ConsoleDefaultOptions()
 	logopts.Level = lvl
-	logopts.AddSource = !noSource
+	logopts.AddSource = withSource
 	logopts.NoTimestamp = noTimestamp
 
 	tsloc, err := time.LoadLocation(tslocStr)

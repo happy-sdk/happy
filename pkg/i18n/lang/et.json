@@ -1,0 +1,6 @@
+{
+  "com.github.happy-sdk.happy.pkg.i18n": {
+    "name": "Eesti",
+    "set_default": "keel määratud: %s"
+  }
+}
