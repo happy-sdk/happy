@@ -198,6 +198,13 @@ func (addon *Addon) ProvideServices(svcs ...*services.Service) {
 	}
 }
 
+// Deprecated allows developers to mark an addon or some of its as deprecated.
+func (addon *Addon) Deprecated(msg string) {
+	addon.mu.Lock()
+	defer addon.mu.Unlock()
+	addon.deprecations = append(addon.deprecations, msg)
+}
+
 func (addon *Addon) tryConfigureAttached() bool {
 	if addon.attached {
 		addon.perr(fmt.Errorf("%w: %s already attached", Error, addon.info.Name))
@@ -272,8 +279,4 @@ func (addon *Addon) loadPackageInfo() {
 // add pending error
 func (addon *Addon) perr(err error) {
 	addon.errs = append(addon.errs, err)
-}
-
-func (addon *Addon) deprecated(msg string) {
-	addon.deprecations = append(addon.deprecations, msg)
 }
