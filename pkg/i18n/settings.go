@@ -5,6 +5,8 @@
 package i18n
 
 import (
+	"errors"
+
 	"github.com/happy-sdk/happy/pkg/settings"
 	"golang.org/x/text/language"
 )
@@ -32,7 +34,7 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 		if err != nil {
 			return err
 		}
-		if err := SetLanguage(lang); err != nil {
+		if err := SetLanguage(lang); err != nil && !errors.Is(err, ErrDisabled) {
 			return err
 		}
 		return nil

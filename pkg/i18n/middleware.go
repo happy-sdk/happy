@@ -35,5 +35,5 @@ func extractLanguage(r *http.Request) language.Tag {
 		return ParseLanguage(cookie.Value)
 	}
 
-	return mngr.getDefault()
+	return getLanguage()
 }
