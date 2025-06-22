@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/happy-sdk/happy/sdk/app/session"
+	"github.com/happy-sdk/happy/sdk/session"
 )
 
 func ParseGitLog(sess *session.Context, log string) (*Changelog, error) {
