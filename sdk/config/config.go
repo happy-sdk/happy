@@ -14,7 +14,7 @@ type Settings struct {
 	Disabled            settings.Bool        `default:"false" desc:"Disabled presistent user configuration"`
 	AdditionalProfiles  settings.StringSlice `desc:"Additional profiles provided by default."`
 	DefaultProfile      settings.String      `default:"default" mutation:"once" desc:"Default profile to use when no profile is specified."`
-	AllowCustomProfiles settings.Bool        `desc:"Are creation of custom profiles allowed."`
+	AllowCustomProfiles settings.Bool        `default:"false" desc:"Are creation of custom profiles allowed."`
 
 	// EnableProfileDevel enables profile development mode. This mode allows different settings
 	// for development and release versions for a named profile. When this flag is set to true,

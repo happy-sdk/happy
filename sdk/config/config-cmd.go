@@ -180,10 +180,6 @@ func configSet() *command.Command {
 		}
 
 		profileFilePath := filepath.Join(sess.Get("app.fs.path.profile").String(), "profile.preferences")
-		internal.Log(sess.Log(), "profile.save",
-			slog.String("profile", sess.Get("app.profile.name").String()),
-			slog.String("file", profileFilePath),
-		)
 
 		profile := sess.Settings().All()
 		pd := vars.Map{}
@@ -207,6 +203,10 @@ func configSet() *command.Command {
 			return err
 		}
 
+		internal.Log(sess.Log(), "profile.save",
+			slog.String("profile", sess.Get("app.profile.name").String()),
+			slog.String("file", profileFilePath),
+		)
 		if err := os.WriteFile(profileFilePath, dest.Bytes(), 0600); err != nil {
 			return err
 		}

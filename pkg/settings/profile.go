@@ -135,6 +135,13 @@ func (p *Profile) Validate(key string, val any) (err error) {
 	defer p.mu.RUnlock()
 	setting := p.settings[key]
 
+	if setting.Mutability() == SettingImmutable {
+		return fmt.Errorf("setting is immutable %s", key)
+	}
+	if !setting.Persistent() {
+		return fmt.Errorf("setting is not persistent %s", key)
+	}
+
 	setting.vv, err = vars.NewAs(key, val, true, vars.Kind(setting.kind))
 	if err != nil {
 		return fmt.Errorf("%w: key(%s) %s", ErrProfile, key, err.Error())
