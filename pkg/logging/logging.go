@@ -16,26 +16,7 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/happy-sdk/happy/pkg/settings"
 )
-
-type Settings struct {
-	Level           Level           `key:"level,config" default:"ok" mutation:"mutable" desc:"logging level"`
-	WithSource      settings.Bool   `key:"with_source,config" default:"false" mutation:"once" desc:"Show source location in log messages"`
-	TimestampFormat settings.String `key:"timeestamp_format,config" default:"15:04:05.000" mutation:"once" desc:"Timestamp format for log messages"`
-	NoTimestamp     settings.Bool   `key:"no_timestamp,config" default:"false" mutation:"once" desc:"Do not show timestamps"`
-	NoSlogDefault   settings.Bool   `key:"no_slog_default" default:"false" mutation:"once" desc:"Do not set the default slog logger"`
-}
-
-func (s Settings) Blueprint() (*settings.Blueprint, error) {
-	b, err := settings.New(s)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
 
 type Level int
 
@@ -137,10 +118,6 @@ func (l *Level) UnmarshalSetting(data []byte) error {
 	return nil
 }
 
-func (l Level) SettingKind() settings.Kind {
-	return settings.KindString
-}
-
 type Logger interface {
 	Debug(msg string, attrs ...slog.Attr)
 	Info(msg string, attrs ...slog.Attr)
@@ -168,6 +145,28 @@ type Logger interface {
 	ConsumeQueue(queue *QueueLogger) error
 }
 
+type Options struct {
+	LevelVar        *slog.LevelVar
+	Level           Level
+	ReplaceAttr     func(groups []string, a slog.Attr) slog.Attr
+	AddSource       bool
+	TimeLocation    *time.Location
+	TimestampFormat string
+	NoTimestamp     bool
+}
+
+func DefaultOptions() *Options {
+	return &Options{
+		LevelVar:        new(slog.LevelVar),
+		Level:           LevelInfo,
+		ReplaceAttr:     nil,
+		AddSource:       true,
+		TimeLocation:    time.Local,
+		TimestampFormat: "15:04:05.000",
+		NoTimestamp:     false,
+	}
+}
+
 type DefaultLogger struct {
 	tsloc *time.Location
 	lvl   *slog.LevelVar
@@ -175,52 +174,66 @@ type DefaultLogger struct {
 	ctx   context.Context
 }
 
-func New(w io.Writer, lvl Level) *DefaultLogger {
-	l := &DefaultLogger{
-		lvl:   new(slog.LevelVar),
-		ctx:   context.Background(),
-		tsloc: time.Local,
+func New(ctx context.Context, h slog.Handler, opts *Options) *DefaultLogger {
+	var tsloc *time.Location
+	if opts.TimeLocation != nil {
+		tsloc = opts.TimeLocation
+	} else {
+		tsloc = time.Local
 	}
 
-	l.lvl.Set(slog.Level(lvl))
-
-	h := slog.NewTextHandler(w, &slog.HandlerOptions{
-		Level: l.lvl,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.LevelKey {
-				level := a.Value.Any().(slog.Level)
-				a.Value = slog.StringValue(Level(level).String())
-			}
-			return a
-		},
-		AddSource: true,
-	})
+	l := &DefaultLogger{
+		lvl:   new(slog.LevelVar),
+		ctx:   ctx,
+		tsloc: tsloc,
+	}
+	l.lvl.Set(slog.Level(opts.Level))
 	l.log = slog.New(h)
 	return l
 }
 
-func NewDefault(lvl Level) *DefaultLogger {
-	l := &DefaultLogger{
-		lvl:   new(slog.LevelVar),
-		ctx:   context.Background(),
-		tsloc: time.Local,
+func NewTextHandler(w io.Writer, opts *Options) slog.Handler {
+	if opts.LevelVar == nil {
+		opts.LevelVar = new(slog.LevelVar)
 	}
 
-	l.lvl.Set(slog.Level(lvl))
+	replaceAttr := opts.ReplaceAttr
+	tsfmt := "15:04:05.000"
+	if opts.TimestampFormat != "" {
+		tsfmt = opts.TimestampFormat
+	}
 
-	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: l.lvl,
+	return slog.NewTextHandler(w, &slog.HandlerOptions{
+		Level: opts.LevelVar,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.LevelKey {
 				level := a.Value.Any().(slog.Level)
 				a.Value = slog.StringValue(Level(level).String())
+				return a
+			}
+			if a.Key == slog.TimeKey {
+				// Format the timestamp however you want
+				return slog.String(slog.TimeKey, a.Value.Time().Format(tsfmt))
+			}
+			if replaceAttr != nil {
+				a = replaceAttr(groups, a)
 			}
 			return a
 		},
-		AddSource: true,
+		AddSource: opts.AddSource,
 	})
-	l.log = slog.New(h)
-	return l
+}
+
+func NewDefaultWithWriter(w io.Writer, opts *Options) *DefaultLogger {
+	return New(
+		context.Background(),
+		NewTextHandler(w, opts),
+		opts,
+	)
+}
+
+func NewDefault(opts *Options) *DefaultLogger {
+	return NewDefaultWithWriter(os.Stdout, opts)
 }
 
 func (l *DefaultLogger) Debug(msg string, attrs ...slog.Attr) {
@@ -353,8 +366,12 @@ func (l *DefaultLogger) ConsumeQueue(queue *QueueLogger) error {
 	return nil
 }
 
+type httpHandler interface {
+	http(status int, method, path string, attrs ...slog.Attr)
+}
+
 func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr) {
-	if ch, ok := l.log.Handler().(*ConsoleHandler); ok {
+	if ch, ok := l.log.Handler().(httpHandler); ok {
 		ch.http(status, method, path, attrs...)
 		return
 	}

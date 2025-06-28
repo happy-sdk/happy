@@ -2,7 +2,7 @@
 //
 // Copyright © 2022 The Happy Authors
 
-package logging
+package cli
 
 import (
 	"context"
@@ -15,7 +15,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
+	"github.com/happy-sdk/happy/pkg/logging"
+	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
 )
 
 type consoleTheme struct {
@@ -34,69 +35,38 @@ type consoleTheme struct {
 	light      ansicolor.Style
 }
 
-type ConsoleOptions struct {
-	Level           Level
-	Theme           ansicolor.Theme
-	ReplaceAttr     func(groups []string, a slog.Attr) slog.Attr
-	AddSource       bool
-	TimeLocation    *time.Location
-	TimestampFormat string
-	NoTimestamp     bool
-}
-
-func ConsoleDefaultOptions() ConsoleOptions {
-	return ConsoleOptions{
-		Level:       LevelInfo,
-		Theme:       ansicolor.New(),
-		ReplaceAttr: nil,
-		AddSource:   true,
+func NewLogger(opts *logging.Options, theme ansicolor.Theme) *logging.DefaultLogger {
+	if opts.LevelVar == nil {
+		opts.LevelVar = new(slog.LevelVar)
 	}
-}
-
-func Console(opts ConsoleOptions) *DefaultLogger {
-	var tsloc *time.Location
-	if opts.TimeLocation != nil {
-		tsloc = opts.TimeLocation
-	} else {
-		tsloc = time.Local
-	}
-
-	l := &DefaultLogger{
-		lvl:   new(slog.LevelVar),
-		ctx:   context.Background(),
-		tsloc: tsloc,
-	}
-	l.lvl.Set(slog.Level(opts.Level))
-
 	replaceAttr := opts.ReplaceAttr
-
 	tsfmt := "15:04:05.000"
 	if opts.TimestampFormat != "" {
 		tsfmt = opts.TimestampFormat
 	}
 	h := &ConsoleHandler{
 		styles: consoleTheme{
-			attrs:      ansicolor.Style{FG: opts.Theme.Secondary},
-			muted:      ansicolor.Style{FG: opts.Theme.Muted},
+			attrs:      ansicolor.Style{FG: theme.Secondary},
+			muted:      ansicolor.Style{FG: theme.Muted},
 			sysdebug:   ansicolor.Style{FG: ansicolor.RGB(96, 125, 139)},
-			debug:      ansicolor.Style{FG: opts.Theme.Debug},
-			info:       ansicolor.Style{FG: opts.Theme.Info},
-			notice:     ansicolor.Style{FG: opts.Theme.Notice},
-			success:    ansicolor.Style{FG: opts.Theme.Success},
-			warn:       ansicolor.Style{FG: opts.Theme.Warning},
-			notimpl:    ansicolor.Style{FG: opts.Theme.NotImplemented},
-			deprecated: ansicolor.Style{FG: opts.Theme.Deprecated},
-			error:      ansicolor.Style{FG: opts.Theme.Error},
-			bug:        ansicolor.Style{BG: opts.Theme.BUG},
-			light:      ansicolor.Style{FG: opts.Theme.Light},
+			debug:      ansicolor.Style{FG: theme.Debug},
+			info:       ansicolor.Style{FG: theme.Info},
+			notice:     ansicolor.Style{FG: theme.Notice},
+			success:    ansicolor.Style{FG: theme.Success},
+			warn:       ansicolor.Style{FG: theme.Warning},
+			notimpl:    ansicolor.Style{FG: theme.NotImplemented},
+			deprecated: ansicolor.Style{FG: theme.Deprecated},
+			error:      ansicolor.Style{FG: theme.Error},
+			bug:        ansicolor.Style{BG: theme.BUG},
+			light:      ansicolor.Style{FG: theme.Light},
 		},
 		src: opts.AddSource,
 		Handler: slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: l.lvl,
+			Level: opts.LevelVar,
 			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.LevelKey {
 					level := a.Value.Any().(slog.Level)
-					a.Value = slog.StringValue(Level(level).String())
+					a.Value = slog.StringValue(logging.Level(level).String())
 				}
 				if replaceAttr != nil {
 					a = replaceAttr(groups, a)
@@ -110,8 +80,11 @@ func Console(opts ConsoleOptions) *DefaultLogger {
 		nots:  opts.NoTimestamp,
 	}
 
-	l.log = slog.New(h)
-	return l
+	return logging.New(
+		context.Background(),
+		h,
+		opts,
+	)
 }
 
 type ConsoleHandler struct {
@@ -124,44 +97,42 @@ type ConsoleHandler struct {
 }
 
 func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
-	l := Level(lvl)
-	if l == LevelQuiet {
+	l := logging.Level(lvl)
+	if l == logging.LevelQuiet {
 		return ""
 	}
 
 	var c ansicolor.Style
 	switch l {
-	case levelHappy, levelInit:
-		c = h.styles.sysdebug
-	case LevelDebug:
+	case logging.LevelDebug:
 		c = h.styles.debug
-	case LevelInfo:
+	case logging.LevelInfo:
 		c = h.styles.info
-	case LevelOk:
+	case logging.LevelOk:
 		c = h.styles.success
-	case LevelNotice:
+	case logging.LevelNotice:
 		c = h.styles.notice
-	case LevelWarn:
+	case logging.LevelWarn:
 		c = h.styles.warn
-	case LevelNotImplemented:
+	case logging.LevelNotImplemented:
 		c = h.styles.notimpl
-	case LevelDeprecated:
+	case logging.LevelDeprecated:
 		c = h.styles.deprecated
-	case LevelError:
+	case logging.LevelError:
 		c = h.styles.error
-	case LevelAlways:
+	case logging.LevelAlways:
 		return ""
-		// case LevelBUG:
-	// 	c = h.styles.bug
-	default:
+	case logging.LevelBUG:
 		c = h.styles.bug
+	default:
+		c = h.styles.sysdebug
 	}
 	return c.String(fmt.Sprintf(" %-11s", l.String()))
 }
 
 func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	lvlstr := h.getLevelStr(r.Level)
-	lvl := Level(r.Level)
+	lvl := logging.Level(r.Level)
 
 	var (
 		msg,
@@ -178,7 +149,7 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		if err != nil {
 			return err
 		}
-		if lvl >= LevelDebug {
+		if lvl >= logging.LevelDebug {
 			payload = h.styles.attrs.String(string(b))
 		} else {
 			payload = string(b)
@@ -190,9 +161,9 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		timeStr = h.styles.muted.String(r.Time.Format(h.tsfmt))
 	}
 
-	if lvl < LevelDebug {
+	if lvl < logging.LevelDebug {
 		msg = h.styles.sysdebug.String(r.Message)
-	} else if lvl == LevelDebug {
+	} else if lvl == logging.LevelDebug {
 		msg = h.styles.debug.String(r.Message)
 	} else {
 		msg = h.styles.light.String(r.Message)
@@ -205,7 +176,7 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 			payload += " " + h.styles.muted.String(f.File+":"+strconv.Itoa(f.Line))
 		}
 	}
-	if lvl == LevelAlways {
+	if lvl == logging.LevelAlways {
 		h.l.Println(msg, payload)
 	} else {
 		h.l.Println(lvlstr, timeStr, msg, payload)
