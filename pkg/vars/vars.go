@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	EmptyVariable = Variable{}
+	EmptyVariable = Variable{ro: true}
 	EmptyValue    = Value{}
 	NilValue      = Value{
 		kind: KindInvalid,

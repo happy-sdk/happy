@@ -960,3 +960,7 @@ func TestValueKinds(t *testing.T) {
 		// testutils.Equal(t, test.runes, v.Runes(), test.key)
 	}
 }
+
+func TestInvalidKindString(t *testing.T) {
+	testutils.Equal(t, "Kind(100)", vars.Kind(100).String())
+}

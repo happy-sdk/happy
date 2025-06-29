@@ -37,6 +37,12 @@ func Bexp(name string, value string, usage string, aliases ...string) (flag *Bex
 	return flag, err
 }
 
+func BexpFunc(name string, value string, usage string, aliases ...string) FlagCreateFunc {
+	return func() (Flag, error) {
+		return Bexp(name, value, usage, aliases...)
+	}
+}
+
 // Parse BexpFlag.
 func (f *BexpFlag) Parse(args []string) (ok bool, err error) {
 	defaults := bexp.Parse(f.defval.String())

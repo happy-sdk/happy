@@ -44,6 +44,13 @@ const (
 func (k Kind) String() (str string) {
 	if uint(k) < uint(len(kindNames)) {
 		str = kindNames[uint(k)]
+	} else {
+		p := getParser()
+		defer p.free()
+		p.fmt.string("Kind(")
+		p.fmt.integer(uint64(k), unsigned, udigits)
+		p.fmt.string(")")
+		str = string(p.buf)
 	}
 	return
 }

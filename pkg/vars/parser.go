@@ -279,37 +279,37 @@ func (p *parser) parseValue(val any) (typ Kind, err error) {
 		p.fmt.boolean(v)
 	case int:
 		typ = KindInt
-		p.fmt.integer(uint64(v), 10, signed, sdigits)
+		p.fmt.integer(uint64(v), signed, sdigits)
 	case int8:
 		typ = KindInt8
-		p.fmt.integer(uint64(v), 10, signed, sdigits)
+		p.fmt.integer(uint64(v), signed, sdigits)
 	case int16:
 		typ = KindInt16
-		p.fmt.integer(uint64(v), 10, signed, sdigits)
+		p.fmt.integer(uint64(v), signed, sdigits)
 	case int32:
 		typ = KindInt32
-		p.fmt.integer(uint64(v), 10, signed, sdigits)
+		p.fmt.integer(uint64(v), signed, sdigits)
 	case int64:
 		typ = KindInt64
-		p.fmt.integer(uint64(v), 10, signed, sdigits)
+		p.fmt.integer(uint64(v), signed, sdigits)
 	case uint:
 		typ = KindUint
-		p.fmt.integer(uint64(v), 10, unsigned, udigits)
+		p.fmt.integer(uint64(v), unsigned, udigits)
 	case uint8:
 		typ = KindUint8
-		p.fmt.integer(uint64(v), 10, unsigned, udigits)
+		p.fmt.integer(uint64(v), unsigned, udigits)
 	case uint16:
 		typ = KindUint16
-		p.fmt.integer(uint64(v), 10, unsigned, udigits)
+		p.fmt.integer(uint64(v), unsigned, udigits)
 	case uint32:
 		typ = KindUint32
-		p.fmt.integer(uint64(v), 10, unsigned, udigits)
+		p.fmt.integer(uint64(v), unsigned, udigits)
 	case uint64:
 		typ = KindUint64
-		p.fmt.integer(v, 10, unsigned, udigits)
+		p.fmt.integer(v, unsigned, udigits)
 	case uintptr:
 		typ = KindUintptr
-		p.fmt.integer(uint64(v), 10, unsigned, udigits)
+		p.fmt.integer(uint64(v), unsigned, udigits)
 	case float32:
 		typ = KindFloat32
 		p.fmt.float(float64(v), 32, 'g', -1)
@@ -359,7 +359,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+				p.fmt.integer(uint64(*v), signed, sdigits)
 			}
 		}
 	case *int8:
@@ -367,7 +367,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+				p.fmt.integer(uint64(*v), signed, sdigits)
 			}
 		}
 	case *int16:
@@ -375,7 +375,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+				p.fmt.integer(uint64(*v), signed, sdigits)
 			}
 		}
 	case *int32:
@@ -383,7 +383,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+				p.fmt.integer(uint64(*v), signed, sdigits)
 			}
 		}
 	case *int64:
@@ -391,7 +391,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, signed, sdigits)
+				p.fmt.integer(uint64(*v), signed, sdigits)
 			}
 		}
 	case *uint:
@@ -399,7 +399,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+				p.fmt.integer(uint64(*v), unsigned, udigits)
 			}
 		}
 	case *uint8:
@@ -407,7 +407,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+				p.fmt.integer(uint64(*v), unsigned, udigits)
 			}
 		}
 	case *uint16:
@@ -415,7 +415,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+				p.fmt.integer(uint64(*v), unsigned, udigits)
 			}
 		}
 	case *uint32:
@@ -423,7 +423,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+				p.fmt.integer(uint64(*v), unsigned, udigits)
 			}
 		}
 	case *uint64:
@@ -431,7 +431,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+				p.fmt.integer(uint64(*v), unsigned, udigits)
 			}
 		}
 	case *uintptr:
@@ -439,7 +439,7 @@ func (p *parser) parseUnderlyingAsKindFromPointer(val any) (Kind, error) {
 		if v != nil {
 			underlying = *v
 			if !implStringer {
-				p.fmt.integer(uint64(*v), 10, unsigned, udigits)
+				p.fmt.integer(uint64(*v), unsigned, udigits)
 			}
 		}
 	case *float32:
@@ -533,67 +533,67 @@ func (p *parser) parseUnderlyingAsKind(val any) (Kind, error) {
 		underlying = v
 		localtype = KindInt
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, signed, sdigits)
+			p.fmt.integer(uint64(v), signed, sdigits)
 		}
 	case int8:
 		underlying = v
 		localtype = KindInt8
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, signed, sdigits)
+			p.fmt.integer(uint64(v), signed, sdigits)
 		}
 	case int16:
 		underlying = v
 		localtype = KindInt16
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, signed, sdigits)
+			p.fmt.integer(uint64(v), signed, sdigits)
 		}
 	case int32:
 		underlying = v
 		localtype = KindInt32
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, signed, sdigits)
+			p.fmt.integer(uint64(v), signed, sdigits)
 		}
 	case int64:
 		underlying = v
 		localtype = KindInt64
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, signed, sdigits)
+			p.fmt.integer(uint64(v), signed, sdigits)
 		}
 	case uint:
 		underlying = v
 		localtype = KindUint
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, unsigned, udigits)
+			p.fmt.integer(uint64(v), unsigned, udigits)
 		}
 	case uint8:
 		underlying = v
 		localtype = KindUint8
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, unsigned, udigits)
+			p.fmt.integer(uint64(v), unsigned, udigits)
 		}
 	case uint16:
 		underlying = v
 		localtype = KindUint16
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, unsigned, udigits)
+			p.fmt.integer(uint64(v), unsigned, udigits)
 		}
 	case uint32:
 		underlying = v
 		localtype = KindUint32
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, unsigned, udigits)
+			p.fmt.integer(uint64(v), unsigned, udigits)
 		}
 	case uint64:
 		underlying = v
 		localtype = KindUint64
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, unsigned, udigits)
+			p.fmt.integer(uint64(v), unsigned, udigits)
 		}
 	case uintptr:
 		underlying = v
 		localtype = KindUintptr
 		if !implStringer {
-			p.fmt.integer(uint64(v), 10, unsigned, udigits)
+			p.fmt.integer(uint64(v), unsigned, udigits)
 		}
 	case float32:
 		underlying = v
@@ -663,7 +663,7 @@ func (f *parserFmt) boolean(v bool) {
 }
 
 // integer formats signed and unsigned integers.
-func (f *parserFmt) integer(u uint64, base int, isSigned bool, digits string) {
+func (f *parserFmt) integer(u uint64, isSigned bool, digits string) {
 	negative := isSigned && int64(u) < 0
 	if negative {
 		u = -u

@@ -159,6 +159,11 @@ func (v Variable) Fields() []string {
 	return v.val.Fields()
 }
 
+// WithName returns a copy of Variable with the given name.
+func (v Variable) WithName(key string) (Variable, error) {
+	return New(key, v.val, v.ro)
+}
+
 type VariableIface[V ValueIface] interface {
 	Value() V
 	Name() string

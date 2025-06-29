@@ -86,7 +86,7 @@ func TestVariableIFields(t *testing.T) {
 func TestVariableIface(t *testing.T) {
 	v := vars.AsVariable[vars.VariableIface[vars.Value], vars.Value](vars.EmptyVariable)
 	testutils.Equal(t, "", v.Name())
-	testutils.Equal(t, false, v.ReadOnly())
+	testutils.Equal(t, true, v.ReadOnly())
 	testutils.Equal(t, "", v.String())
 	testutils.Equal(t, "", v.Value().String())
 
