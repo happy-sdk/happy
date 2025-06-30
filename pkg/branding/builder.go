@@ -4,7 +4,7 @@
 
 package branding
 
-import "github.com/happy-sdk/happy/pkg/cli/ansicolor"
+import "github.com/happy-sdk/happy/pkg/tui/ansicolor"
 
 type Builder struct {
 	brand *Brand

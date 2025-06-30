@@ -4,7 +4,7 @@
 
 package branding
 
-import "github.com/happy-sdk/happy/pkg/cli/ansicolor"
+import "github.com/happy-sdk/happy/pkg/tui/ansicolor"
 
 // New returns a new Brand Builder with the given slug.
 func New(info Info) *Builder {
