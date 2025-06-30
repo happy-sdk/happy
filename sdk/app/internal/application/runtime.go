@@ -22,6 +22,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
+	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/addon"
 	"github.com/happy-sdk/happy/sdk/app/engine"
@@ -395,7 +396,7 @@ func (rt *Runtime) executeBeforeActions() error {
 
 	if rt.cmd.Flag("help").Present() || rt.cmd.IsWrapper() {
 		if err := rt.showHelp(); err != nil {
-			return fmt.Errorf("%w: failed to print help %w", Error, err)
+			return err
 		}
 		return ErrExitSuccess
 	}
@@ -405,6 +406,8 @@ func (rt *Runtime) executeBeforeActions() error {
 
 func (rt *Runtime) showHelp() error {
 	theme := rt.brand.ANSI()
+
+	hideDisabled := rt.sess.Get("app.cli.hide_disabled_commands").Bool()
 
 	helpInfo := help.Info{
 		Name:           rt.sess.Get("app.name").String(),
@@ -419,23 +422,42 @@ func (rt *Runtime) showHelp() error {
 	}
 
 	if rt.cmd.Disabled() {
-		err := rt.cmd.Err()
-		if err == nil {
-			err = fmt.Errorf("command disabled in current context")
+		if !hideDisabled {
+			err := rt.cmd.Err()
+			if err == nil {
+				err = fmt.Errorf("command disabled in current context")
+			}
+			helpInfo.Usage = []string{
+				ansicolor.Format(helpInfo.Usage[0], ansicolor.Strike),
+				ansicolor.Text(
+					err.Error(),
+					theme.Warning,
+					ansicolor.Color{},
+					0,
+				),
+			}
+		} else {
+			parent := rt.cmd.Parent()
+			var parrentName string
+			if parent != nil {
+				parrentName = parent.Name()
+				if parent.Disabled() {
+					parrentName = rt.sess.Get("app.slug").String()
+				}
+			} else {
+				parrentName = rt.sess.Get("app.slug").String()
+			}
+			rt.sess.Log().Error(varflag.ErrInvalidArguments.Error())
+			return varflag.ErrInvalidCommandOrArgs.WithArgs(
+				parrentName,
+				rt.cmd.Name(),
+			)
 		}
-		helpInfo.Usage = []string{
-			ansicolor.Format(helpInfo.Usage[0], ansicolor.Strike),
-			ansicolor.Text(
-				err.Error(),
-				theme.Warning,
-				ansicolor.Color{},
-				0,
-			),
-		}
+
 	}
 
 	desc := rt.cmd.Config().Get("description").String()
-	if desc != "" {
+	if desc != "" && !hideDisabled {
 		helpInfo.Usage = append(
 			helpInfo.Usage,
 			"",
@@ -456,17 +478,18 @@ func (rt *Runtime) showHelp() error {
 		},
 	)
 
-	// if !rt.cmd.Hidden() {
 	for _, scmd := range rt.cmd.SubCommands() {
 		name := scmd.Name
 		desc := scmd.Description
 		if scmd.Disabled {
+			if hideDisabled {
+				continue
+			}
 			name = ansicolor.Format(name, ansicolor.Strike)
 			desc += ansicolor.Text(" (disabled)", theme.Warning, ansicolor.Color{}, 0)
 		}
 		h.AddCommand(scmd.Category, name, desc)
 	}
-	// }
 
 	h.AddCategoryDescriptions(rt.cmd.Categories())
 
@@ -476,7 +499,11 @@ func (rt *Runtime) showHelp() error {
 	}
 
 	h.AddGlobalFlags(rt.cmd.GlobalFlags())
-	return h.Print()
+
+	if err := h.Print(); err != nil {
+		return fmt.Errorf("%w: failed to print help %w", Error, err)
+	}
+	return nil
 }
 
 func (rt *Runtime) executeDoAction() error {

@@ -42,7 +42,7 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 	}
 
 	cmd := &Cmd{
-		name: root.name,
+		name: acmd.name,
 	}
 
 	if acmd == root {
@@ -184,6 +184,10 @@ func (c *Cmd) Name() string {
 	return c.name
 }
 
+func (c *Cmd) Parent() *Cmd {
+	return c.parent
+}
+
 func (c *Cmd) Usage() []string {
 	return c.usage
 }
@@ -193,6 +197,9 @@ func (c *Cmd) Disabled() bool {
 }
 
 func (c *Cmd) CheckDisabled(sess *session.Context) bool {
+	if c.cnf.Get("disabled").Value().Bool() {
+		return true
+	}
 	if c.disableAction != nil {
 		var disabled bool
 		if err := c.disableAction(sess); err != nil {
@@ -269,12 +276,16 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.parent != nil && !c.sharedCalled && !c.cnf.Get("skip_shared_before").Value().Bool() {
-		if err := c.parent.callSharedBeforeAction(sess); err != nil {
-			return err
+	if c.parent != nil {
+		disabledParent := c.parent.CheckDisabled(sess)
+		if disabledParent {
+			_ = c.cnf.Set("disabled", true)
 		}
-		// dereference parent
-		c.parent = nil
+		if !disabledParent && !c.sharedCalled && !c.cnf.Get("skip_shared_before").Value().Bool() {
+			if err := c.parent.callSharedBeforeAction(sess); err != nil {
+				return err
+			}
+		}
 	}
 
 	if c.CheckDisabled(sess) {
@@ -288,6 +299,9 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 			return nil
 		}
 	}
+	// dereference parent
+	c.parent = nil
+
 	if c.beforeAction == nil {
 		return nil
 	}
@@ -418,7 +432,6 @@ func (c *Cmd) callSharedBeforeAction(sess *session.Context) error {
 		// Check is caller parent disabled and should fail.
 		// Even if caller parent is disabled but fail_disabled for this parent
 		// is not set the call it.
-		fmt.Printf("%q.shared_before_action\n", c.name)
 		if c.cnf.Get("fail_disabled").Value().Bool() && c.CheckDisabled(sess) {
 			if c.err != nil {
 				return c.err

@@ -34,7 +34,7 @@ func (api *API) OpenProject(sess *session.Context, wd string, load bool) (prj *p
 	if api.currentPrj != nil {
 		if api.currentPrj.WD() != wd {
 			return nil, fmt.Errorf(
-				"%w: can not load project from %s already deleted or loaded at %s",
+				"%w: can not load project from %s already detected or loaded at %s",
 				Error, wd, api.currentPrj.WD())
 		}
 

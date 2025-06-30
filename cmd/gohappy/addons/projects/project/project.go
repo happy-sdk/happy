@@ -34,7 +34,6 @@ type Project struct {
 }
 
 func Open(sess *session.Context, wd string) (*Project, error) {
-
 	config, err := newConfig()
 	if err != nil {
 		return nil, err
@@ -126,7 +125,8 @@ func (p *Project) Detected() bool {
 func (p *Project) WD() string {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	return p.config.Get("local.wd").String()
+	wd := p.config.Get("local.wd").String()
+	return wd
 }
 
 func (p *Project) GoModules(sess *session.Context, fresh bool) ([]*module.Package, error) {

@@ -14,14 +14,14 @@ import (
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
-func cmdProject() *happy.Command {
+func cmdProject() *command.Command {
 	return command.New("project",
 		command.Config{
 			Description:        "Manage current project",
 			SharedBeforeAction: true,
-			FailHidden:         true,
+			FailDisabled:       true,
 		}).
-		Hide(func(sess *session.Context) error {
+		Disable(func(sess *session.Context) error {
 			api, err := happy.API[*API](sess)
 			if err != nil {
 				return err
@@ -30,6 +30,29 @@ func cmdProject() *happy.Command {
 				return fmt.Errorf("%w: no project detected", project.Error)
 			}
 			return nil
+		}).
+		Do(func(sess *session.Context, args action.Args) error {
+			api, err := happy.API[*API](sess)
+			if err != nil {
+				return err
+			}
+			prj, err := api.Project()
+			if err != nil {
+				return err
+			}
+			if err := prj.Load(sess); err != nil {
+				return err
+			}
+			return api.ProjectInfoPrint(sess)
+		}).WithSubCommands(
+		cmdProjectRelease(),
+	)
+}
+
+func cmdProjectRelease() *command.Command {
+	return command.New("release",
+		command.Config{
+			Description: "Release current project",
 		}).
 		Do(func(sess *session.Context, args action.Args) error {
 			api, err := happy.API[*API](sess)

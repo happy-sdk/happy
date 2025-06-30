@@ -41,7 +41,7 @@ func addConfigSpecsLocal(config *options.Spec) error {
 		options.NewOption("wd", ".").
 			Description("Local working directory").
 			Parser(func(opt options.Option, newval options.Value) (parsed options.Value, err error) {
-				currentPath, err := filepath.Abs(opt.Value().String())
+				currentPath, err := filepath.Abs(newval.String())
 				if err != nil {
 					return opt.Default(), err
 				}
