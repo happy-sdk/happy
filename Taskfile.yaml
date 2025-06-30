@@ -8,12 +8,6 @@ dotenv: [".env"]
 # Single package coverage
 # - go test -coverprofile=coverage.out . && go tool cover -html=coverage.out -o coverage.html
 tasks:
-  lint:
-    desc: Lint the project
-    dir: .
-    silent: true
-    cmds:
-      - bash ./.github/actions/golangci-lint-monorepo-action/golangci-lint-monorepo-action.sh
   test:
     desc: Test all project modules
     dir: .

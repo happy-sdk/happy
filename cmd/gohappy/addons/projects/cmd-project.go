@@ -45,6 +45,7 @@ func cmdProject() *command.Command {
 			}
 			return api.ProjectInfoPrint(sess)
 		}).WithSubCommands(
+		cmdProjectLint(),
 		cmdProjectRelease(),
 	)
 }
