@@ -97,7 +97,7 @@ jobs:
         shell: bash
 
   finish-coverage-report:
-    needs: test-n-coverage
+    needs: test-and-coverage
     if: success() || github.event.inputs.loose == 'true'
     runs-on: ubuntu-latest
     steps:
