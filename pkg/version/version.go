@@ -324,8 +324,8 @@ func fallbackVersion() Version {
 	return Version(fmt.Sprintf("v0.0.1-devel+%d", time.Now().UnixMilli()))
 }
 
-// isGoRun detects if the program is running via 'go run'
-func isGoRun() bool {
+// IsGoRun detects if the program is running via 'go run'
+func IsGoRun() bool {
 	executable, err := os.Executable()
 	if err != nil {
 		return false

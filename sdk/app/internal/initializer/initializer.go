@@ -84,8 +84,6 @@ type Initializer struct {
 	rt *application.Runtime
 
 	defaults *defaults
-
-	showHelp *sync.Cond
 }
 
 type fallbackLanguageGetter interface {
@@ -845,12 +843,6 @@ func (init *Initializer) configureSession() error {
 	init.profile = nil
 	init.logger = nil
 	init.opts = nil
-	return nil
-}
-
-func (init *Initializer) helpCondCommands() error {
-	internal.LogInitDepth(init.session.Log(), 1, "checking conditional commands for help menu")
-	init.showHelp = sync.NewCond(&init.mu)
 	return nil
 }
 

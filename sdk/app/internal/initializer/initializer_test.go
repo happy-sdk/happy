@@ -21,7 +21,7 @@ import (
 
 func TestDefault(t *testing.T) {
 	log := logging.NewTestLogger(logging.LevelError)
-	app := app.New(happy.Settings{})
+	app := app.New(&happy.Settings{})
 	app.WithLogger(log)
 	testutils.NotNil(t, app, "app must never be nil")
 
@@ -72,7 +72,7 @@ func TestDefault(t *testing.T) {
 
 func TestDefaultOptions(t *testing.T) {
 	log := logging.NewTestLogger(logging.LevelError)
-	app := app.New(happy.Settings{})
+	app := app.New(&happy.Settings{})
 	app.WithLogger(log)
 
 	var (

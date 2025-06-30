@@ -68,7 +68,9 @@ func (s *Settings) Blueprint() (*settings.Blueprint, error) {
 	})
 
 	for _, ext := range s.global {
-		b.Extend("", ext)
+		if err := b.Extend("", ext); err != nil {
+			return nil, err
+		}
 	}
 
 	for keyfrom, keyto := range s.migrations {

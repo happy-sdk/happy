@@ -14,7 +14,7 @@ import (
 )
 
 func ExampleNew() {
-	app := happy.New(happy.Settings{})
+	app := happy.New(nil)
 
 	// Create a new test logger
 	log := logging.NewTestLogger(logging.LevelError)

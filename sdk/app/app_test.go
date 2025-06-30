@@ -15,7 +15,7 @@ import (
 
 func TestNew(t *testing.T) {
 	log := logging.NewTestLogger(logging.LevelError)
-	app := app.New(happy.Settings{})
+	app := app.New(&happy.Settings{})
 	app.WithLogger(log)
 	testutils.NotNil(t, app, "app must never be nil")
 }

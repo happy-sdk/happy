@@ -36,9 +36,5 @@ func IsValid(slug string) bool {
 
 	// Regular expression to check for invalid characters
 	invalidRe := regexp.MustCompile(`[^a-z0-9-_]`)
-	if invalidRe.MatchString(slug) {
-		return false
-	}
-
-	return true
+	return !invalidRe.MatchString(slug)
 }

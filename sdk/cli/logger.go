@@ -185,6 +185,7 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	return nil
 }
 
+//nolint:unused
 func (h *ConsoleHandler) http(status int, method, p string, attrs ...slog.Attr) {
 
 	var (

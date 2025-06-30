@@ -144,7 +144,9 @@ func (spec *Spec) add(opt *OptionSpec) error {
 		parser := opt.parser
 		spec.opts.parsers[key] = parser
 		value, err = parser(*option, value)
-
+		if err != nil {
+			return err
+		}
 		variable, err = vars.New(key, value, opt.flags&ReadOnly != 0)
 		if err != nil {
 			return fmt.Errorf("%w(%s): failed to create default parsed variable for key %s: %s", ErrOption, spec.opts.name, key, err.Error())
@@ -168,10 +170,6 @@ func (spec *Spec) add(opt *OptionSpec) error {
 func (spec *Spec) Extend(others ...*Spec) error {
 	spec.mu.Lock()
 	defer spec.mu.Unlock()
-	if spec == nil {
-		return fmt.Errorf("%w: spec not initialized correctly", ErrOptions)
-	}
-
 	if spec.sealed {
 		return fmt.Errorf("%w: %s already sealed", ErrOptions, spec.opts.name)
 	}
@@ -431,6 +429,12 @@ func (opts *Options) Set(key string, val any) error {
 	return nil
 }
 
+func (opts *Options) Len() int {
+	opts.mu.RLock()
+	defer opts.mu.RUnlock()
+	return len(opts.db)
+}
+
 func newOption(v vars.Variable, def vars.Variable, set bool, flags Flags, desc string) *Option {
 	if flags == 0 {
 		flags = Mutable
@@ -517,7 +521,6 @@ type OptionSpec struct {
 	flags     Flags
 	validator ValueValidator
 	parser    ValueParser
-	err       error
 }
 
 func NewOption(key string, defval any) *OptionSpec {

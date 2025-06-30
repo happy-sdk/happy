@@ -4,6 +4,7 @@ use (
 	.
 	./cmd/gohappy
 	./pkg/branding
+	./pkg/devel/bug
 	./pkg/devel/testutils
 	./pkg/i18n
 	./pkg/logging

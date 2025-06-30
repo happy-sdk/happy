@@ -229,7 +229,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	}
 
 	optSpecs := []*options.OptionSpec{
-		options.NewOption("app.is_devel", version.IsDev(ver.String())).
+		options.NewOption("app.is_devel", version.IsGoRun()).
 			Description("Is application in development mode").
 			Flags(options.ReadOnly),
 		options.NewOption("app.version", ver.String()).
@@ -352,9 +352,6 @@ func (init *Initializer) initBasePaths() error {
 	_, err = os.Stat(appConfigDir)
 	if errors.Is(err, fs.ErrNotExist) && !init.defaults.configDisabled {
 		if err := init.utilMkdir("create config dir", appConfigDir, 0700); err != nil {
-			return err
-		}
-		if err := init.opts.Set("app.firstrun", true); err != nil {
 			return err
 		}
 	}
