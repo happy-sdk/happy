@@ -25,7 +25,6 @@ func (t *Table) AddRow(cols ...string) {
 		t.rows = append(t.rows, make([]string, t.cols))
 		return
 	}
-
 	t.rows = append(t.rows, cols)
 	if len(cols) > t.cols {
 		t.cols = len(cols)
@@ -43,6 +42,7 @@ func (t *Table) String() string {
 	if len(t.rows) == 0 || (t.WithHeader && len(t.rows) == 1) {
 		return ""
 	}
+
 	var b strings.Builder
 	maxColWidth, tableWidth := t.calculateMaxColumnWidths()
 
@@ -50,7 +50,6 @@ func (t *Table) String() string {
 		title := fmt.Sprint(t.Title)
 		b.WriteString(t.buildBorder('┌', '─', '┐', maxColWidth))
 		suffixlen := tableWidth - utf8.RuneCountInString(title) - 4
-
 		suffix := ""
 		if suffixlen > 0 {
 			suffix = strings.Repeat(" ", suffixlen)
@@ -60,6 +59,7 @@ func (t *Table) String() string {
 	} else {
 		b.WriteString(t.buildBorder('┌', '┬', '┐', maxColWidth))
 	}
+
 	for i, row := range t.rows {
 		// divider
 		if t.dividers != nil {
@@ -72,9 +72,7 @@ func (t *Table) String() string {
 		if i == 0 && t.WithHeader {
 			b.WriteString(t.buildBorder('├', '┼', '┤', maxColWidth))
 		}
-
 	}
-
 	b.WriteString(t.buildBorder('└', '┴', '┘', maxColWidth))
 	b.WriteRune('\n')
 	return b.String()
@@ -83,18 +81,44 @@ func (t *Table) String() string {
 func (t *Table) calculateMaxColumnWidths() (cw []int, total int) {
 	maxColWidth := make([]int, t.cols)
 
+	// Calculate initial column widths based on content
 	for _, row := range t.rows {
 		for i, col := range row {
-			colLen := utf8.RuneCountInString(col) + 2
+			colLen := utf8.RuneCountInString(col) + 2 // +2 for padding spaces
 			if colLen > maxColWidth[i] {
 				maxColWidth[i] = colLen
 			}
 		}
 	}
 
-	totalWidthOfCols := 1
-	for _, w := range maxColWidth {
-		totalWidthOfCols += w + 1
+	// Ensure minimum column width of 3 (1 char + 2 spaces)
+	for i := range maxColWidth {
+		if maxColWidth[i] < 3 {
+			maxColWidth[i] = 3
+		}
+	}
+
+	// Calculate total width: borders + column separators + column content
+	totalWidthOfCols := 1 // left border
+	for i, w := range maxColWidth {
+		totalWidthOfCols += w
+		if i < len(maxColWidth)-1 {
+			totalWidthOfCols += 1 // column separator
+		}
+	}
+	totalWidthOfCols += 1 // right border
+
+	// If we have a title, ensure table is wide enough
+	if t.Title != "" && t.cols > 0 {
+		titleLen := utf8.RuneCountInString(t.Title)
+		minRequiredWidth := titleLen + 4 // title + "│ " + " │"
+
+		if totalWidthOfCols < minRequiredWidth {
+			// Extend the last column to accommodate the title
+			deficit := minRequiredWidth - totalWidthOfCols
+			maxColWidth[len(maxColWidth)-1] += deficit
+			totalWidthOfCols = minRequiredWidth
+		}
 	}
 
 	return maxColWidth, totalWidthOfCols
