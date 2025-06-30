@@ -139,20 +139,29 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		payload string
 	)
 
+	var src string
+
 	if r.NumAttrs() > 0 {
 		fields := make(map[string]any, r.NumAttrs())
 		r.Attrs(func(a slog.Attr) bool {
+			if a.Key == slog.SourceKey && a.Value.Kind() == slog.KindString {
+				src = a.Value.String()
+				return true
+			}
 			fields[a.Key] = a.Value.Any()
 			return true
 		})
-		b, err := json.Marshal(fields)
-		if err != nil {
-			return err
-		}
-		if lvl >= logging.LevelDebug {
-			payload = h.styles.attrs.String(string(b))
-		} else {
-			payload = string(b)
+
+		if len(fields) > 0 {
+			b, err := json.Marshal(fields)
+			if err != nil {
+				return err
+			}
+			if lvl >= logging.LevelDebug {
+				payload = h.styles.attrs.String(string(b))
+			} else {
+				payload = string(b)
+			}
 		}
 	}
 
@@ -169,11 +178,15 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		msg = h.styles.light.String(r.Message)
 	}
 
-	if h.src && r.PC != 0 {
-		fs := runtime.CallersFrames([]uintptr{r.PC})
-		f, _ := fs.Next()
-		if f.File != "" {
-			payload += " " + h.styles.muted.String(f.File+":"+strconv.Itoa(f.Line))
+	if h.src {
+		if src != "" {
+			payload += " " + h.styles.muted.String(src)
+		} else if r.PC != 0 {
+			fs := runtime.CallersFrames([]uintptr{r.PC})
+			f, _ := fs.Next()
+			if f.File != "" {
+				payload += " " + h.styles.muted.String(f.File+":"+strconv.Itoa(f.Line))
+			}
 		}
 	}
 	if lvl == logging.LevelAlways {

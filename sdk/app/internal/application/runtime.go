@@ -514,11 +514,15 @@ func (rt *Runtime) executeDoAction() error {
 	}()
 	doTimer := time.Now()
 	internal.Log(rt.sess.Log(), "executing command", slog.String("args", strings.Join(os.Args, " ")))
-	err := rt.cmd.ExecDo(rt.sess)
+	src, err := rt.cmd.ExecDo(rt.sess)
 	if err != nil {
-		rt.sess.Log().Error(err.Error())
+		var source []slog.Attr
+		if src != "" {
+			source = append(source, slog.String(slog.SourceKey, src))
+		}
+		rt.sess.Log().Error(err.Error(), source...)
 	}
-	// fmt.Println("") // to separate the command output from the prompt
+
 	internal.Log(rt.sess.Log(), "command took", slog.String("took", time.Since(doTimer).String()))
 	return err
 }

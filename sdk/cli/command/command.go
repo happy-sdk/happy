@@ -16,6 +16,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
+	"github.com/happy-sdk/happy/sdk/internal"
 )
 
 var (
@@ -61,6 +62,14 @@ func (s Config) Blueprint() (*settings.Blueprint, error) {
 	return b, nil
 }
 
+type originalSource struct {
+	Before       string
+	Do           string
+	AfterSuccess string
+	AfterFailure string
+	AfterAlways  string
+}
+
 type Command struct {
 	mu    sync.Mutex
 	name  string
@@ -90,6 +99,8 @@ type Command struct {
 	cnflog *logging.QueueLogger
 
 	extraUsage []string
+
+	sources originalSource
 }
 
 func New(name string, cnf Config) *Command {
@@ -195,9 +206,11 @@ func (c *Command) Do(action action.WithArgs) *Command {
 	}
 	defer c.mu.Unlock()
 	if c.doAction != nil {
-		c.error(fmt.Errorf("%w: attempt to override Before action for %s", Error, c.name))
+		c.error(fmt.Errorf("%w: attempt to override Do action for %s", Error, c.name))
 		return c
 	}
+	src, _ := internal.RuntimeCallerStr(2)
+	c.sources.Do = src
 	c.doAction = action
 	return c
 }

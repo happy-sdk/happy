@@ -42,7 +42,8 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 	}
 
 	cmd := &Cmd{
-		name: acmd.name,
+		name:    acmd.name,
+		sources: acmd.sources,
 	}
 
 	if acmd == root {
@@ -122,6 +123,7 @@ func compileParent(cmd *Command) *Cmd {
 		info:             cmd.info,
 		catdesc:          cmd.catdesc,
 		flags:            cmd.flags,
+		sources:          cmd.sources,
 	}
 
 	if c.cnf.Get("shared_before_action").Value().Bool() {
@@ -173,7 +175,8 @@ type Cmd struct {
 
 	subcmds []*SubCmdInfo
 
-	err error
+	err     error
+	sources originalSource
 }
 
 func (c *Cmd) IsRoot() bool {
@@ -325,17 +328,17 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 	return nil
 }
 
-func (c *Cmd) ExecDo(sess *session.Context) (err error) {
+func (c *Cmd) ExecDo(sess *session.Context) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.doAction == nil {
-		return nil
+		return "", nil
 	}
 
 	args, err := c.getArgs()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if err := c.doAction(sess, args); err != nil {
@@ -345,12 +348,13 @@ func (c *Cmd) ExecDo(sess *session.Context) (err error) {
 			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
 		)
-		return err
+
+		return c.sources.Do, err
 	}
 
 	// dereference do action
 	c.doAction = nil
-	return err
+	return "", nil
 }
 
 func (c *Cmd) ExecAfterFailure(sess *session.Context, err error) error {
