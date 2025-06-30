@@ -27,18 +27,18 @@ func Create(input string) string {
 
 // IsValid checks if the provided slug is valid based on the rules
 func IsValid(slug string) bool {
+	if slug == "" ||
+		strings.HasPrefix(slug, "-") || strings.HasSuffix(slug, "-") ||
+		strings.HasPrefix(slug, "_") || strings.HasSuffix(slug, "_") ||
+		strings.Contains(slug, "--") || strings.Contains(slug, "__") {
+		return false
+	}
+
 	// Regular expression to check for invalid characters
 	invalidRe := regexp.MustCompile(`[^a-z0-9-_]`)
 	if invalidRe.MatchString(slug) {
 		return false
 	}
 
-	if strings.Contains(slug, "--") || strings.Contains(slug, "__") {
-		return false
-	}
-	if strings.HasPrefix(slug, "-") || strings.HasSuffix(slug, "-") ||
-		strings.HasPrefix(slug, "_") || strings.HasSuffix(slug, "_") {
-		return false
-	}
 	return true
 }
