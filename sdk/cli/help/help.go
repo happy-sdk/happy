@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
+	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 )
 

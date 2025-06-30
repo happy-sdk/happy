@@ -14,11 +14,11 @@ require (
 	github.com/happy-sdk/happy/pkg/strings/textfmt v0.4.0
 	github.com/happy-sdk/happy/pkg/vars v0.17.0
 	github.com/happy-sdk/happy/pkg/version v0.3.1
-	golang.org/x/sys v0.30.0
-	golang.org/x/text v0.22.0
+	golang.org/x/sys v0.33.0
+	golang.org/x/text v0.26.0
 )
 
 require (
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.5.1 // indirect
-	golang.org/x/mod v0.23.0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
 )

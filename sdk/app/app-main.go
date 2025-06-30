@@ -15,6 +15,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/i18n"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
@@ -23,11 +24,11 @@ import (
 	"github.com/happy-sdk/happy/sdk/app/internal/application"
 	"github.com/happy-sdk/happy/sdk/app/internal/initializer"
 	"github.com/happy-sdk/happy/sdk/cli/command"
-	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/migration"
 	"github.com/happy-sdk/happy/sdk/services"
 )
 
+// Main of application
 type Main struct {
 	mu     sync.RWMutex
 	init   *initializer.Initializer
@@ -141,7 +142,7 @@ func (m *Main) Run() {
 	}
 
 	if err := m.init.Configure(); err != nil {
-		if errors.Is(err, initializer.ErrExitWithSuccess) {
+		if errors.Is(err, application.ErrExitSuccess) {
 			m.rt.Exit(0)
 			return
 		}
@@ -272,7 +273,7 @@ func (m *Main) WithMigrations(mm *migration.Manager) *Main {
 	return m
 }
 
-func (m *Main) WithOptions(opts ...options.Spec) *Main {
+func (m *Main) WithOptions(opts ...*options.OptionSpec) *Main {
 	if m.canConfigure("setting logger") {
 		m.mu.Lock()
 		defer m.mu.Unlock()

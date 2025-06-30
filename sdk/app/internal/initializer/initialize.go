@@ -25,7 +25,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/config"
-	"github.com/happy-sdk/happy/sdk/devel"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -46,7 +45,6 @@ type defaults struct {
 	cliMainMaxArgs            uint
 	cliWithConfigCmd          bool
 	cliWithGlobalFlags        bool
-	cliWithoutFlags           []string
 	develAllowProd            bool
 }
 
@@ -61,12 +59,6 @@ func (init *Initializer) initialize() {
 
 	init.log.Debug(init.defaults.slug,
 		slog.String("version", init.opts.Get("app.version").String()))
-
-	// Set the application process id
-	if err := init.opts.Set("app.pid", init.pid); err != nil {
-		init.error(err)
-		return
-	}
 
 	// Set the application paths
 	if err := init.initBasePaths(); err != nil {
@@ -91,7 +83,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	}
 
 	// Load defaults before profile is loaded
-	configDisabledSpec, err := init.settingsb.GetSpec("app.config.disabled")
+	configDisabledSpec, err := init.settingsb.GetSpec("app.profiles.disabled")
 	if err != nil {
 		return err
 	}
@@ -103,19 +95,19 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	if err != nil {
 		return err
 	}
-	configDefaultProfileSpec, err := init.settingsb.GetSpec("app.config.default_profile")
+	configDefaultProfileSpec, err := init.settingsb.GetSpec("app.profiles.default")
 	if err != nil {
 		return err
 	}
-	configAdditionalProfilesSpec, err := init.settingsb.GetSpec("app.config.additional_profiles")
+	configAdditionalProfilesSpec, err := init.settingsb.GetSpec("app.profiles.additional")
 	if err != nil {
 		return err
 	}
-	configAllowCustomProfilesSpec, err := init.settingsb.GetSpec("app.config.allow_custom_profiles")
+	configAllowCustomProfilesSpec, err := init.settingsb.GetSpec("app.profiles.allow_custom")
 	if err != nil {
 		return err
 	}
-	configEnableProfileDevelSpec, err := init.settingsb.GetSpec("app.config.enable_profile_devel")
+	configEnableProfileDevelSpec, err := init.settingsb.GetSpec("app.profiles.enable_devel")
 	if err != nil {
 		return err
 	}
@@ -236,136 +228,64 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		return err
 	}
 
-	optSpecs := []options.Spec{
-		options.NewOption(
-			"app.is_devel",
-			version.IsDev(ver.String()),
-			"Is application in development mode",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.version",
-			ver.String(),
-			"Application version",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.fs.path.wd",
-			"",
-			"Current working directory",
-			options.KindConfig,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.fs.path.home",
-			"",
-			"Current user home directory",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.fs.path.tmp",
-			"",
-			"Runtime tmp directory",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.fs.path.cache",
-			"",
-			"Application cache directory",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.fs.path.config",
-			"",
-			"Application configuration directory",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.fs.path.pids",
-			"",
-			"Application pids directory",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.fs.path.profile",
-			"",
-			"Base directory of loaded profile",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.main.exec.x",
-			"",
-			"-x flag is set to print all commands as executed",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.profile.name",
-			init.defaults.configDefaultProfile,
-			"Name of current settings profile",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.dosetup",
-			false,
-			"Application setup will be executed if true",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.module",
-			module,
-			"Application module",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.address",
-			addr.String(),
-			"Application address",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.pid",
-			0,
-			"Application process id",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.instance.id",
-			"xxxxxxxx",
-			"Application instance id",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.os.user.uid",
-			os.Geteuid(),
-			"Geteuid returns the numeric effective user id of the caller running the app",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
-		options.NewOption(
-			"app.os.user.gid",
-			os.Getegid(),
-			"Getegid returns the numeric effective group id of the caller running the app",
-			options.KindConfig|options.KindReadOnly,
-			options.NoopValueValidator,
-		),
+	optSpecs := []*options.OptionSpec{
+		options.NewOption("app.is_devel", version.IsDev(ver.String())).
+			Description("Is application in development mode").
+			Flags(options.ReadOnly),
+		options.NewOption("app.version", ver.String()).
+			Description("Application version").
+			Flags(options.ReadOnly),
+		options.NewOption("app.module", module).
+			Description("Application module").
+			Flags(options.ReadOnly),
+		options.NewOption("app.address", addr.String()).
+			Description("Application address").
+			Flags(options.ReadOnly),
+		options.NewOption("app.pid", init.pid).
+			Description("Application process id").
+			Flags(options.ReadOnly),
+		options.NewOption("app.instance.id", instance.NewID()).
+			Description("Application instance id").
+			Flags(options.ReadOnly),
+		options.NewOption("app.fs.path.wd", "").
+			Description("Current working directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.home", "").
+			Description("Current user home directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.tmp", "").
+			Description("Runtime tmp directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.cache", "").
+			Description("Application cache directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.config", "").
+			Description("Application configuration directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.pids", "").
+			Description("Application pids directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.profile", "").
+			Description("Base directory of loaded profile").
+			Flags(options.Once),
+		options.NewOption("app.main.exec.x", "").
+			Description("-x flag is set to print all commands as executed").
+			Flags(options.Once),
+		options.NewOption("app.profile.name", init.defaults.configDefaultProfile).
+			Description("Name of current settings profile").
+			Flags(options.Once),
+		options.NewOption("app.firstrun", false).
+			Description("Application first run detected").
+			Flags(options.Once),
+		options.NewOption("app.os.user.uid", os.Geteuid()).
+			Description("Geteuid returns the numeric effective user id of the caller running the app").
+			Flags(options.ReadOnly),
+		options.NewOption("app.os.user.gid", os.Getegid()).
+			Description("Getegid returns the numeric effective group id of the caller running the app").
+			Flags(options.ReadOnly),
 	}
 
-	init.opts, err = options.New("app", optSpecs)
+	init.opts, err = options.New("app", optSpecs...)
 	return err
 }
 
@@ -393,10 +313,7 @@ func (init *Initializer) initBasePaths() error {
 		return err
 	}
 
-	instanceID := instance.NewID()
-	if err := init.opts.Set("app.instance.id", instanceID); err != nil {
-		return err
-	}
+	instanceID := init.opts.Get("app.instance.id").String()
 
 	tempDir := filepath.Join(os.TempDir(), init.defaults.slug, fmt.Sprintf("instance-%s", instanceID))
 	if err := init.utilMkdir("create tmp directory", tempDir, 0700); err != nil {
@@ -437,7 +354,7 @@ func (init *Initializer) initBasePaths() error {
 		if err := init.utilMkdir("create config dir", appConfigDir, 0700); err != nil {
 			return err
 		}
-		if err := init.opts.Set("app.dosetup", true); err != nil {
+		if err := init.opts.Set("app.firstrun", true); err != nil {
 			return err
 		}
 	}
@@ -457,6 +374,7 @@ func (init *Initializer) initBasePaths() error {
 		if err := init.opts.Set("app.fs.path.pids", pidsDir); err != nil {
 			return err
 		}
+
 		// Define default profile to load
 		deafaultProfileFile := filepath.Join(appConfigDir, ".default.profile")
 		if _, err = os.Stat(deafaultProfileFile); err == nil {
@@ -517,11 +435,11 @@ func (init *Initializer) initRootCommand() error {
 	os.Args = osargs
 
 	// Create root command
-	root := command.New(command.Config{
-		Name:    settings.String(init.defaults.binName),
-		MinArgs: settings.Uint(init.defaults.cliMainMinArgs),
-		MaxArgs: settings.Uint(init.defaults.cliMainMaxArgs),
-	})
+	root := command.New(init.defaults.binName,
+		command.Config{
+			MinArgs: settings.Uint(init.defaults.cliMainMinArgs),
+			MaxArgs: settings.Uint(init.defaults.cliMainMaxArgs),
+		})
 
 	if init.defaults.cliWithGlobalFlags {
 		root.WithFlags(
@@ -540,8 +458,9 @@ func (init *Initializer) initRootCommand() error {
 	}
 
 	if !init.defaults.cliWithGlobalFlags && init.defaults.develAllowProd {
-		if init.opts.Get("app.is_devel").Bool() {
-			root.WithFlags(devel.FlagXProd)
+		if isDevel, err := init.opts.Get("app.is_devel").Value().Bool(); err != nil {
+		} else if isDevel {
+			root.WithFlags(cli.FlagXProd)
 		}
 	}
 

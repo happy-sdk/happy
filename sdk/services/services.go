@@ -13,7 +13,6 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/scheduling/cron"
-	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/events"
@@ -28,20 +27,6 @@ var (
 	StartEvent = events.New("services", "start.services")
 	StopEvent  = events.New("services", "stop.services")
 )
-
-type Settings struct {
-	LoaderTimeout  settings.Duration `key:"loader_timeout,save" default:"30s" mutation:"once" desc:"Service loader timeout"`
-	RunCronOnStart settings.Bool     `key:"cron_on_service_start,save" default:"false" mutation:"once" desc:"Run cron jobs on service start"`
-}
-
-func (s Settings) Blueprint() (*settings.Blueprint, error) {
-	b, err := settings.New(s)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
 
 type Info interface {
 	Running() bool

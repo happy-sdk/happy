@@ -19,21 +19,20 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/branding"
-	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
 	"github.com/happy-sdk/happy/pkg/i18n"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
+	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/addon"
 	"github.com/happy-sdk/happy/sdk/app/internal/application"
+	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/command"
-	"github.com/happy-sdk/happy/sdk/cli/help"
-	"github.com/happy-sdk/happy/sdk/devel"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/internal"
-	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/session"
 	"golang.org/x/text/language"
 )
@@ -50,7 +49,7 @@ type Initializer struct {
 	logger  logging.Logger
 	execlvl logging.Level
 
-	opts      *options.Options
+	opts      *options.Spec
 	settings  settings.Settings
 	settingsb *settings.Blueprint
 	profile   *settings.Profile
@@ -64,7 +63,7 @@ type Initializer struct {
 	// parsed active command
 	cmd *command.Cmd
 
-	mainOptSpecs []options.Spec
+	mainOptSpecs []*options.OptionSpec
 	pendingOpts  []options.Arg
 
 	brand        *branding.Brand
@@ -85,6 +84,8 @@ type Initializer struct {
 	rt *application.Runtime
 
 	defaults *defaults
+
+	showHelp *sync.Cond
 }
 
 type fallbackLanguageGetter interface {
@@ -103,14 +104,18 @@ func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger)
 		execlvl:   logging.LevelQuiet,
 	}
 
-	fallbackLang := language.English
-	if langGetter, ok := s.(fallbackLanguageGetter); ok {
-		lang, err := language.Parse(langGetter.GetFallbackLanguage())
-		if err == nil {
-			fallbackLang = lang
+	if i18n.Enabled {
+		fallbackLang := language.English
+		if langGetter, ok := s.(fallbackLanguageGetter); ok {
+			lang, err := language.Parse(langGetter.GetFallbackLanguage())
+			if err == nil {
+				fallbackLang = lang
+			}
 		}
+		internal.Log(log, "loading i18n")
+		i18n.Initialize(fallbackLang)
 	}
-	i18n.Initialize(fallbackLang, init.log)
+
 	init.log.LogDepth(3, logging.LevelDebug, i18n.PTD(i18np, "initializing", "initializing"), slog.String("pid", fmt.Sprint(init.pid)))
 	init.initialize()
 	return init
@@ -151,7 +156,7 @@ func (init *Initializer) MainAfterAlways(a action.WithPrevErr) {
 
 	init.main.AfterAlways(a)
 	var ok bool
-	init.mw.mainAfterAlways, ok = devel.RuntimeCallerStr(3)
+	init.mw.mainAfterAlways, ok = internal.RuntimeCallerStr(3)
 	if !ok {
 		init.bug(2, "MainAfterAlways: failed to get runtime caller")
 	}
@@ -172,7 +177,7 @@ func (init *Initializer) MainAfterFailure(a action.WithPrevErr) {
 
 	init.main.AfterFailure(a)
 	var ok bool
-	init.mw.mainAfterFailure, ok = devel.RuntimeCallerStr(3)
+	init.mw.mainAfterFailure, ok = internal.RuntimeCallerStr(3)
 	if !ok {
 		init.bug(2, "MainAfterFailure: failed to get runtime caller")
 	}
@@ -194,7 +199,7 @@ func (init *Initializer) MainAfterSuccess(a action.Action) {
 
 	init.main.AfterSuccess(a)
 	var ok bool
-	init.mw.mainAfterSuccess, ok = devel.RuntimeCallerStr(3)
+	init.mw.mainAfterSuccess, ok = internal.RuntimeCallerStr(3)
 	if !ok {
 		init.bug(2, "attachRootAfterSuccess: failed to get runtime caller")
 	}
@@ -216,7 +221,7 @@ func (init *Initializer) MainBefore(a action.WithArgs) {
 
 	init.main.Before(a)
 	var ok bool
-	init.mw.mainBefore, ok = devel.RuntimeCallerStr(3)
+	init.mw.mainBefore, ok = internal.RuntimeCallerStr(3)
 	if !ok {
 		init.bug(2, "attachRootBefore: failed to get runtime caller")
 	}
@@ -237,7 +242,7 @@ func (init *Initializer) MainBeforeAlways(rt *application.Runtime, a action.With
 		init.error(err)
 	}
 	var ok bool
-	init.mw.beforeAlways, ok = devel.RuntimeCallerStr(3)
+	init.mw.beforeAlways, ok = internal.RuntimeCallerStr(3)
 	if !ok {
 		init.bug(1, "MainBeforeAlways: failed to get runtime caller")
 	}
@@ -294,7 +299,7 @@ func (init *Initializer) SetLogger(logger logging.Logger) {
 	init.logger = logger
 }
 
-func (init *Initializer) WithOptions(opts []options.Spec) {
+func (init *Initializer) WithOptions(opts []*options.OptionSpec) {
 	init.mu.Lock()
 	defer init.mu.Unlock()
 	init.mainOptSpecs = append(init.mainOptSpecs, opts...)
@@ -365,13 +370,6 @@ func (init *Initializer) Configure() (err error) {
 		return err
 	}
 
-	if init.cmd.Flag("help").Present() {
-		if err := init.utilShowHelp(); err != nil {
-			return fmt.Errorf("%w: failed to print help %w", Error, err)
-		}
-		return ErrExitWithSuccess
-	}
-
 	errs = errors.Join(init.errs...)
 	if errs != nil {
 		return errs
@@ -380,15 +378,12 @@ func (init *Initializer) Configure() (err error) {
 	if err := init.configureSession(); err != nil {
 		return err
 	}
+
 	internal.LogInit(init.session.Log(), "configuration completed")
 	return
 }
 
 func (init *Initializer) Finalize() (err error) {
-	if err := init.session.Opts().Seal(); err != nil {
-		return err
-	}
-
 	for _, opt := range init.pendingOpts {
 		init.session.Log().Warn("option not used",
 			slog.String("key", opt.Key()),
@@ -445,8 +440,6 @@ func (init *Initializer) configureAddons() error {
 	return nil
 }
 
-var ErrExitWithSuccess = errors.New("exit with success")
-
 func (init *Initializer) configureCli() error {
 	internal.LogInitDepth(init.log, 1, "configuring command line interface")
 
@@ -474,7 +467,7 @@ func (init *Initializer) configureCli() error {
 
 	if cmd.Flag("version").Present() {
 		fmt.Println(init.opts.Get("app.version").String())
-		return ErrExitWithSuccess
+		return application.ErrExitSuccess
 	}
 
 	return nil
@@ -483,8 +476,11 @@ func (init *Initializer) configureCli() error {
 func (init *Initializer) configureProfile() (err error) {
 	internal.LogInitDepth(init.log, 1, "configuring profile")
 	const prefFilename = "profile.preferences"
+	if init.opts.Get("app.fs.path.config").Value().Empty() {
+		return fmt.Errorf("%w: config path is empty", Error)
+	}
 	var (
-		isDevel     = init.opts.Get("app.is_devel").Bool()
+		isDevel     = init.opts.Get("app.is_devel").Variable().Bool()
 		profilesDir = filepath.Join(init.opts.Get("app.fs.path.config").String(), "profiles")
 
 		currentProfileName = init.opts.Get("app.profile.name").String()
@@ -571,7 +567,7 @@ func (init *Initializer) configureProfile() (err error) {
 						return fmt.Errorf("%w: failed to write default profile preferences %s", Error, err)
 					}
 					internal.LogInit(init.log, "created default profile", slog.String("profile", dp))
-					if err := init.opts.Set("app.dosetup", true); err != nil {
+					if err := init.opts.Set("app.firstrun", true); err != nil {
 						return err
 					}
 				}
@@ -772,7 +768,7 @@ func (init *Initializer) configureLogger() (err error) {
 		return nil
 	}
 
-	logopts := logging.ConsoleDefaultOptions()
+	logopts := logging.DefaultOptions()
 	logopts.Level = lvl
 	logopts.AddSource = withSource
 	logopts.NoTimestamp = noTimestamp
@@ -784,11 +780,14 @@ func (init *Initializer) configureLogger() (err error) {
 	logopts.TimeLocation = tsloc
 	logopts.TimestampFormat = timestampFormat
 
+	var theme ansicolor.Theme
 	if init.brand != nil {
-		logopts.Theme = init.brand.ANSI()
+		theme = init.brand.ANSI()
+	} else {
+		theme = ansicolor.New()
 	}
 
-	logger := logging.Console(logopts)
+	logger := cli.NewLogger(logopts, theme)
 	if err := logger.ConsumeQueue(init.log); err != nil {
 		return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
 	}
@@ -823,10 +822,14 @@ func (init *Initializer) configureSession() error {
 	init.sessionReadyEvent = session.ReadyEvent()
 	init.evch = make(chan events.Event, 1000)
 
+	opts, err := init.opts.Seal()
+	if err != nil {
+		return err
+	}
 	sessconfig := session.Config{
 		Profile:    init.profile,
 		Logger:     init.logger,
-		Opts:       init.opts,
+		Opts:       opts,
 		ReadyEvent: init.sessionReadyEvent,
 		EventCh:    init.evch,
 		APIs:       init.addonm.GetAPIs(),
@@ -842,6 +845,12 @@ func (init *Initializer) configureSession() error {
 	init.profile = nil
 	init.logger = nil
 	init.opts = nil
+	return nil
+}
+
+func (init *Initializer) helpCondCommands() error {
+	internal.LogInitDepth(init.session.Log(), 1, "checking conditional commands for help menu")
+	init.showHelp = sync.NewCond(&init.mu)
 	return nil
 }
 
@@ -871,47 +880,6 @@ func (init *Initializer) utilWriteFile(msg, name string, data []byte, perm fs.Fi
 	return nil
 }
 
-func (init *Initializer) utilShowHelp() error {
-	theme := init.brand.ANSI()
-
-	h := help.New(
-		help.Info{
-			Name:           init.profile.Get("app.name").String(),
-			Description:    init.profile.Get("app.description").String(),
-			Version:        init.opts.Get("app.version").String(),
-			CopyrightBy:    init.profile.Get("app.copyright_by").String(),
-			CopyrightSince: init.profile.Get("app.copyright_since").Value().Int(),
-			License:        init.profile.Get("app.license").String(),
-			Address:        init.profile.Get("app.address").String(),
-			Usage:          init.cmd.Usage(),
-			Info:           init.cmd.Info(),
-		},
-		help.Style{
-			Primary:     ansicolor.Style{FG: theme.Primary, Format: ansicolor.Bold},
-			Info:        ansicolor.Style{FG: theme.Info},
-			Version:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
-			Credits:     ansicolor.Style{FG: theme.Secondary},
-			License:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
-			Description: ansicolor.Style{FG: theme.Secondary},
-			Category:    ansicolor.Style{FG: theme.Accent, Format: ansicolor.Bold},
-		},
-	)
-
-	for _, scmd := range init.cmd.SubCommands() {
-		h.AddCommand(scmd.Category, scmd.Name, scmd.Description)
-	}
-
-	h.AddCategoryDescriptions(init.cmd.Categories())
-
-	if !init.cmd.IsRoot() {
-		h.AddCommandFlags(init.cmd.Flags())
-		h.AddSharedFlags(init.cmd.SharedFlags())
-	}
-
-	h.AddGlobalFlags(init.cmd.GlobalFlags())
-	return h.Print()
-}
-
 func (init *Initializer) error(err error) {
 	// skip lock if called by internal functions
 	// which have already locked the mutex
@@ -938,7 +906,7 @@ func (init *Initializer) errAllowedOnce(msg string, prevcaller string) {
 }
 
 func (init *Initializer) errAllowedOnceDepth(depth int, msg string, prevcaller string) {
-	current, _ := devel.RuntimeCallerStr(depth)
+	current, _ := internal.RuntimeCallerStr(depth)
 	init.bug(6,
 		msg,
 		slog.String("previous", prevcaller),

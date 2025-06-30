@@ -9,8 +9,8 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/app"
-	"github.com/happy-sdk/happy/sdk/logging"
 )
 
 func TestNew(t *testing.T) {

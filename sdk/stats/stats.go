@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/humanize"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -23,19 +22,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/services/service"
 	"github.com/happy-sdk/happy/sdk/session"
 )
-
-type Settings struct {
-	Enabled settings.Bool `key:"enabled,save" default:"false" mutation:"once"  desc:"Enable runtime statistics"`
-}
-
-func (s Settings) Blueprint() (*settings.Blueprint, error) {
-	b, err := settings.New(s)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
 
 type Profiler struct {
 	api.Provider

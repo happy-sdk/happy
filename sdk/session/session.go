@@ -14,13 +14,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/internal"
-	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/services/service"
 )
 
@@ -262,7 +262,7 @@ func (c *Context) Has(key string) bool {
 	if c.profile != nil && c.profile.Has(key) {
 		return true
 	}
-	return c.opts.Has(key)
+	return c.opts.Accepts(key)
 }
 
 func (c *Context) Get(key string) vars.Variable {
@@ -272,7 +272,7 @@ func (c *Context) Get(key string) vars.Variable {
 	if c.profile != nil && c.profile.Has(key) {
 		return c.profile.Get(key).Value()
 	}
-	return c.opts.Get(key)
+	return c.opts.Get(key).Variable()
 }
 
 // Ready returns channel which blocks until session considers application to be ready.
@@ -375,15 +375,25 @@ func (c *Context) start() (err error) {
 	return err
 }
 
-func API[API api.Provider](sess *Context, addonSlug string) (api API, err error) {
-	capi, ok := sess.apis[addonSlug]
+func APIBySlug[API api.Provider](sess *Context, apiSlug string) (api API, err error) {
+	capi, ok := sess.apis[apiSlug]
 	if !ok {
-		return api, fmt.Errorf("%w: %s addon not registered or does not provide custom api", Error, addonSlug)
+		return api, fmt.Errorf("%w: %s named api not registered", Error, apiSlug)
 	}
 	if aa, ok := capi.(API); ok {
 		return aa, nil
 	}
-	return api, fmt.Errorf("%w: unable to cast %s API to given type", Error, addonSlug)
+	return api, fmt.Errorf("%w: unable to cast %s API to given type", Error, apiSlug)
+}
+
+func API[API api.Provider](sess *Context, api *API) error {
+	for _, lapi := range sess.apis {
+		if fapi, ok := lapi.(API); ok {
+			*api = fapi
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: unable to find API for given type", Error)
 }
 
 func AttachServiceInfo(c *Context, svcinfo *service.Info) error {

@@ -12,20 +12,20 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/logging"
 )
 
 var (
-	Error          = errors.New("command")
-	ErrFlags       = errors.New("command flags error")
-	ErrHasNoParent = errors.New("command has no parent command")
+	Error                = errors.New("command")
+	ErrFlags             = fmt.Errorf("%w flags error", Error)
+	ErrHasNoParent       = fmt.Errorf("%w has no parent command", Error)
+	ErrCommandNotAllowed = fmt.Errorf("%w not allowed", Error)
 )
 
 type Config struct {
-	Name             settings.String `key:"name"`
 	Usage            settings.String `key:"usage" mutation:"once"`
 	HideDefaultUsage settings.Bool   `key:"hide_default_usage" default:"false"`
 	Category         settings.String `key:"category"`
@@ -43,6 +43,12 @@ type Config struct {
 	// SkipSharedBefore indicates that the BeforeAlways any shared before actions provided
 	// by parent commands should be skipped.
 	SkipSharedBefore settings.Bool `key:"skip_shared_before" default:"false"`
+	// Hidden indicates that the command should be hidden from the command list.
+	Hidden settings.Bool `key:"hidden" default:"false" mutation:"once"`
+	// FailHidden indicates that the command should fail when hidden.
+	// If Hide action is set, the command will fail with an error message returned by action.
+	// If Hide action is not set, but Hidden is true, the command will fail with an error message ErrCommandNotAllowed.
+	FailHidden settings.Bool `key:"fail_hidden" default:"false"`
 }
 
 func (s Config) Blueprint() (*settings.Blueprint, error) {
@@ -57,6 +63,7 @@ func (s Config) Blueprint() (*settings.Blueprint, error) {
 
 type Command struct {
 	mu    sync.Mutex
+	name  string
 	cnf   *settings.Profile
 	info  []string
 	usage []string
@@ -66,6 +73,7 @@ type Command struct {
 	subCommands map[string]*Command
 
 	beforeAction       action.WithArgs
+	hideAction         action.Action
 	doAction           action.WithArgs
 	afterSuccessAction action.Action
 	afterFailureAction action.WithPrevErr
@@ -77,133 +85,39 @@ type Command struct {
 
 	catdesc map[string]string
 
-	logName string
-	err     error
+	err error
 
 	cnflog *logging.QueueLogger
 
 	extraUsage []string
 }
 
-func New(s Config) *Command {
+func New(name string, cnf Config) *Command {
 	c := &Command{
+		name:    name,
 		catdesc: make(map[string]string),
 		cnflog:  logging.NewQueueLogger(),
 	}
 
-	if err := c.configure(&s); err != nil {
-		c.err = fmt.Errorf("%w: %s", Error, err.Error())
+	if err := c.configure(&cnf); err != nil {
+		c.error(fmt.Errorf("%w: %s", Error, err.Error()))
 		return c.toInvalid()
 	}
 
-	name := c.cnf.Get("name").String()
 	maxArgs := c.cnf.Get("max_args").Value().Int()
 
-	flags, err := varflag.NewFlagSet(name, maxArgs)
+	flags, err := varflag.NewFlagSet(c.name, maxArgs)
 	if err != nil {
 		if errors.Is(err, varflag.ErrInvalidFlagSetName) {
-			c.error(fmt.Errorf("%w: invalid command name %q", Error, name))
+			c.error(fmt.Errorf("%w: invalid command name %q", Error, c.name))
 		} else {
 			c.error(fmt.Errorf("%w: failed to create FlagSet: %v", Error, err))
 		}
 		return c.toInvalid()
 	}
 
-	c.flags = flags // Only assign if `flags` is valid
-	return c
-}
+	c.flags = flags
 
-func (c *Command) toInvalid() *Command {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	defer func() {
-		stackTrace := debug.Stack()
-		fmt.Println("HAPPY COMMAND")
-		fmt.Println("err: ", c.err.Error())
-		fmt.Println(string(stackTrace))
-	}()
-
-	// Ensure that the error field is set.
-	if c.err == nil {
-		c.err = fmt.Errorf("%w: command marked invalid", Error)
-	}
-
-	// Clear all actions to avoid any execution.
-	c.beforeAction = nil
-	c.doAction = nil
-	c.afterSuccessAction = nil
-	c.afterFailureAction = nil
-	c.afterAlwaysAction = nil
-
-	// Remove any subcommands.
-	c.subCommands = nil
-
-	// If flags is still nil, assign a dummy flag set to avoid nil dereference later.
-	if c.flags == nil {
-		// Use a dummy flag set. We assume that this call will succeed for a command marked as invalid.
-		if dummy, err := varflag.NewFlagSet("invalid", 0); err == nil {
-			c.flags = dummy
-		} else {
-			// If even this fails, log the error.
-			c.error(fmt.Errorf("failed to create dummy flag set for invalid command %q",
-				err.Error()))
-		}
-	}
-
-	return c
-}
-
-func (c *Command) AfterAlways(a action.WithPrevErr) *Command {
-	if !c.tryLock("AfterAlways") {
-		return c
-	}
-	defer c.mu.Unlock()
-	if c.afterAlwaysAction != nil {
-		c.error(fmt.Errorf("%w: attempt to override AfterAlways action for %s", Error, c.cnf.Get("name").String()))
-		return c
-	}
-	c.afterAlwaysAction = a
-	return c
-}
-
-func (c *Command) AfterFailure(a action.WithPrevErr) *Command {
-	if !c.tryLock("AfterFailure") {
-		return c
-	}
-	defer c.mu.Unlock()
-	if c.afterFailureAction != nil {
-		c.error(fmt.Errorf("%w: attempt to override AfterFailure action for %s", Error, c.cnf.Get("name").String()))
-		return c
-	}
-	c.afterFailureAction = a
-	return c
-}
-
-func (c *Command) AfterSuccess(a action.Action) *Command {
-	if !c.tryLock("AfterSuccess") {
-		return c
-	}
-	defer c.mu.Unlock()
-	if c.afterSuccessAction != nil {
-		c.error(fmt.Errorf("%w: attempt to override AfterSuccess action for %s", Error, c.cnf.Get("name").String()))
-		return c
-	}
-	c.afterSuccessAction = a
-	return c
-}
-
-func (c *Command) Before(a action.WithArgs) *Command {
-	if !c.tryLock("Before") {
-		return c
-	}
-	defer c.mu.Unlock()
-
-	if c.beforeAction != nil {
-		c.error(fmt.Errorf("%w: attempt to override Before action for %s", Error, c.cnf.Get("name").String()))
-		return c
-	}
-	c.beforeAction = a
 	return c
 }
 
@@ -216,40 +130,9 @@ func (c *Command) DescribeCategory(cat, desc string) *Command {
 	return c
 }
 
-func (c *Command) Do(action action.WithArgs) *Command {
-	if !c.tryLock("Do") {
-		return c
-	}
-	defer c.mu.Unlock()
-	if c.doAction != nil {
-		c.err = fmt.Errorf("%w: attempt to override Before action for %s", Error, c.cnf.Get("name").String())
-		return c
-	}
-	c.doAction = action
-	return c
-}
-
 func (c *Command) WithFlags(ffns ...varflag.FlagCreateFunc) *Command {
 	for _, fn := range ffns {
 		c.withFlag(fn)
-	}
-	return c
-}
-
-func (c *Command) withFlag(ffn varflag.FlagCreateFunc) *Command {
-	if !c.tryLock("WithFlag") {
-		return c
-	}
-	defer c.mu.Unlock()
-
-	f, cerr := ffn()
-	if cerr != nil {
-		c.error(fmt.Errorf("%w: %s", ErrFlags, cerr.Error()))
-		return c
-	}
-
-	if err := c.flags.Add(f); err != nil {
-		c.error(fmt.Errorf("%w: %s", ErrFlags, err.Error()))
 	}
 	return c
 }
@@ -268,6 +151,93 @@ func (c *Command) WithSubCommands(cmds ...*Command) *Command {
 	for _, cmd := range cmds {
 		c.withSubCommand(cmd)
 	}
+	return c
+}
+
+func (c *Command) AddUsage(usage string) {
+	if !c.tryLock("Usage") {
+		return
+	}
+	defer c.mu.Unlock()
+	c.extraUsage = append(c.extraUsage, usage)
+}
+
+func (c *Command) Hide(a action.Action) *Command {
+	if !c.tryLock("Hide") {
+		return c
+	}
+	defer c.mu.Unlock()
+
+	if c.hideAction != nil {
+		c.error(fmt.Errorf("%w: attempt to override Hide action for %s", Error, c.name))
+		return c
+	}
+	c.hideAction = a
+	return c
+}
+func (c *Command) Before(a action.WithArgs) *Command {
+	if !c.tryLock("Before") {
+		return c
+	}
+	defer c.mu.Unlock()
+
+	if c.beforeAction != nil {
+		c.error(fmt.Errorf("%w: attempt to override Before action for %s", Error, c.name))
+		return c
+	}
+	c.beforeAction = a
+	return c
+}
+
+func (c *Command) Do(action action.WithArgs) *Command {
+	if !c.tryLock("Do") {
+		return c
+	}
+	defer c.mu.Unlock()
+	if c.doAction != nil {
+		c.error(fmt.Errorf("%w: attempt to override Before action for %s", Error, c.name))
+		return c
+	}
+	c.doAction = action
+	return c
+}
+
+func (c *Command) AfterSuccess(a action.Action) *Command {
+	if !c.tryLock("AfterSuccess") {
+		return c
+	}
+	defer c.mu.Unlock()
+	if c.afterSuccessAction != nil {
+		c.error(fmt.Errorf("%w: attempt to override AfterSuccess action for %s", Error, c.name))
+		return c
+	}
+	c.afterSuccessAction = a
+	return c
+}
+
+func (c *Command) AfterFailure(a action.WithPrevErr) *Command {
+	if !c.tryLock("AfterFailure") {
+		return c
+	}
+	defer c.mu.Unlock()
+	if c.afterFailureAction != nil {
+		c.error(fmt.Errorf("%w: attempt to override AfterFailure action for %s", Error, c.name))
+		return c
+	}
+	c.afterFailureAction = a
+	return c
+}
+
+func (c *Command) AfterAlways(a action.WithPrevErr) *Command {
+	if !c.tryLock("AfterAlways") {
+		return c
+	}
+	defer c.mu.Unlock()
+	if c.afterAlwaysAction != nil {
+		c.error(fmt.Errorf("%w: attempt to override AfterAlways action for %s", Error, c.name))
+		return c
+	}
+	c.afterAlwaysAction = a
 	return c
 }
 
@@ -291,14 +261,14 @@ func (c *Command) withSubCommand(cmd *Command) *Command {
 		c.error(fmt.Errorf(
 			"%w: failed to attach subcommand %s flags to %s",
 			Error,
-			cmd.cnf.Get("name").String(),
-			c.cnf.Get("name").String(),
+			cmd.name,
+			c.name,
 		))
 		return c
 	}
 	cmd.parent = c
 
-	c.subCommands[cmd.cnf.Get("name").String()] = cmd
+	c.subCommands[cmd.name] = cmd
 	return c
 }
 
@@ -316,11 +286,29 @@ func (c *Command) Err() error {
 	return nil
 }
 
+func (c *Command) withFlag(ffn varflag.FlagCreateFunc) *Command {
+	if !c.tryLock("WithFlag") {
+		return c
+	}
+	defer c.mu.Unlock()
+
+	f, cerr := ffn()
+	if cerr != nil {
+		c.error(fmt.Errorf("%w: %s", ErrFlags, cerr.Error()))
+		return c
+	}
+
+	if err := c.flags.Add(f); err != nil {
+		c.error(fmt.Errorf("%w: %s", ErrFlags, err.Error()))
+	}
+	return c
+}
+
 func (c *Command) tryLock(method string) bool {
 	if !c.mu.TryLock() {
 		c.cnflog.BUG(
 			"command configuration failed",
-			slog.String("command", c.logName),
+			slog.String("command", c.name),
 			slog.String("method", method),
 		)
 		return false
@@ -342,13 +330,6 @@ func (c *Command) configure(s *Config) error {
 	bp, err := s.Blueprint()
 	if err != nil {
 		return err
-	}
-
-	// logName is used for logging purposes, when command configuration fails.
-	logName, _ := bp.GetSpec("name")
-	c.logName = logName.Value
-	if len(c.logName) == 0 {
-		c.logName = "command"
 	}
 
 	schema, err := bp.Schema("cmd", "v1")
@@ -376,18 +357,17 @@ func (c *Command) configure(s *Config) error {
 //   - verify that subcommand do not shadow flags of any parent command
 func (c *Command) verify() error {
 	if !c.tryLock("verify") {
-		return fmt.Errorf("%w: failed to obtain lock to verify command (%s)", Error, c.logName)
+		return fmt.Errorf("%w: failed to obtain lock to verify command (%s)", Error, c.name)
 	}
 	defer c.mu.Unlock()
 
 	if c.err != nil {
 		return c.err
 	}
-	name := c.cnf.Get("name").String()
 
 	var usage []string
 	usage = append(usage, c.parents...)
-	usage = append(usage, name)
+	usage = append(usage, c.name)
 	if c.flags.Len() > 0 {
 		usage = append(usage, "[flags]")
 	}
@@ -399,7 +379,7 @@ func (c *Command) verify() error {
 	if c.flags.AcceptsArgs() {
 		var withargs []string
 		withargs = append(withargs, c.parents...)
-		withargs = append(withargs, name)
+		withargs = append(withargs, c.name)
 		withargs = append(withargs, "[args...]")
 		withargs = append(withargs, fmt.Sprintf(
 			" // min %d max %d",
@@ -413,7 +393,7 @@ func (c *Command) verify() error {
 	if defineUsage != "" {
 		var usage []string
 		usage = append(usage, c.parents...)
-		usage = append(usage, name)
+		usage = append(usage, c.name)
 		usage = append(usage, defineUsage)
 		if c.cnf.Get("hide_default_usage").Value().Bool() {
 			c.usage = []string{strings.Join(usage, " ")}
@@ -426,7 +406,7 @@ func (c *Command) verify() error {
 		for _, u := range c.extraUsage {
 			var usage []string
 			usage = append(usage, c.parents...)
-			usage = append(usage, name)
+			usage = append(usage, c.name)
 			usage = append(usage, u)
 			c.usage = append(c.usage, strings.Join(usage, " "))
 		}
@@ -444,7 +424,7 @@ func (c *Command) verify() error {
 		if c.subCommands != nil {
 			goto SubCommands
 		} else {
-			return fmt.Errorf("%w: command (%s) must have Do action or atleeast one subcommand", Error, name)
+			return fmt.Errorf("%w: command (%s) must have Do action or atleeast one subcommand", Error, c.name)
 		}
 	}
 
@@ -455,21 +435,13 @@ SubCommands:
 			if err := c.cnflog.ConsumeQueue(cmd.cnflog); err != nil {
 				return err
 			}
-			cmd.parents = append(c.parents, name)
+			cmd.parents = append(c.parents, c.name)
 			if err := cmd.verify(); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
-}
-
-func (c *Command) Usage(usage string) {
-	if !c.tryLock("Usage") {
-		return
-	}
-	defer c.mu.Unlock()
-	c.extraUsage = append(c.extraUsage, usage)
 }
 
 func (c *Command) getActiveCommand() (*Command, error) {
@@ -485,7 +457,7 @@ func (c *Command) getActiveCommand() (*Command, error) {
 
 	args := c.flags.Args()
 	if !c.flags.AcceptsArgs() && len(args) > 0 {
-		return nil, fmt.Errorf("%w: unknown subcommand: %s for %s", Error, args[0].String(), c.logName)
+		return nil, fmt.Errorf("%w: unknown subcommand: %s for %s", Error, args[0].String(), c.name)
 	}
 
 	return c, nil
@@ -508,7 +480,7 @@ func (c *Command) getGlobalFlags() varflag.Flags {
 func (c *Command) getSharedFlags() (varflag.Flags, error) {
 	// ignore global flags
 	if c.parent == nil || c.parent.parent == nil {
-		flags, err := varflag.NewFlagSet("x-"+c.cnf.Get("name").String()+"-noparent", 0)
+		flags, err := varflag.NewFlagSet("x-"+c.name+"-noparent", 0)
 		if err != nil {
 			return nil, err
 		}
@@ -517,7 +489,7 @@ func (c *Command) getSharedFlags() (varflag.Flags, error) {
 
 	flags := c.parent.getFlags()
 	if flags == nil {
-		flags, _ = varflag.NewFlagSet(c.parent.cnf.Get("name").String(), 0)
+		flags, _ = varflag.NewFlagSet(c.parent.name, 0)
 	}
 	parentFlags, err := c.parent.getSharedFlags()
 	if err != nil && !errors.Is(err, ErrHasNoParent) {
@@ -542,9 +514,53 @@ func (c *Command) getFlags() varflag.Flags {
 	return c.flags
 }
 
-func (c *Command) error(e error) {
-	if c.err != nil {
-		return
+func (c *Command) toInvalid() *Command {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	defer func() {
+		stackTrace := debug.Stack()
+		fmt.Println("HAPPY COMMAND")
+		fmt.Println("err: ", c.err.Error())
+		fmt.Println(string(stackTrace))
+	}()
+
+	// Ensure that the error field is set.
+	if c.err == nil {
+		c.error(fmt.Errorf("%w: command marked invalid", Error))
 	}
-	c.err = e
+
+	// Clear all actions to avoid any execution.
+	c.beforeAction = nil
+	c.doAction = nil
+	c.afterSuccessAction = nil
+	c.afterFailureAction = nil
+	c.afterAlwaysAction = nil
+
+	// Remove any subcommands.
+	for _, subCommand := range c.subCommands {
+		subCommand.toInvalid()
+	}
+	c.subCommands = nil
+
+	// If flags is still nil, assign a dummy flag set to avoid nil dereference later.
+	if c.flags == nil {
+		// Use a dummy flag set. We assume that this call will succeed for a command marked as invalid.
+		if dummy, err := varflag.NewFlagSet("invalid", 0); err == nil {
+			c.flags = dummy
+		} else {
+			// If even this fails, log the error.
+			c.error(fmt.Errorf("failed to create dummy flag set for invalid command %q",
+				err.Error()))
+		}
+	}
+
+	return c
+}
+
+func (c *Command) error(err error) {
+	if c.cnflog != nil {
+		c.cnflog.Error(err.Error())
+	}
+	c.err = err
 }

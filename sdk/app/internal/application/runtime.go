@@ -16,11 +16,12 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/branding"
-	"github.com/happy-sdk/happy/pkg/cli/ansicolor"
 	"github.com/happy-sdk/happy/pkg/i18n"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
+	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/addon"
 	"github.com/happy-sdk/happy/sdk/app/engine"
@@ -29,7 +30,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/internal"
-	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/services"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -140,7 +140,7 @@ func (rt *Runtime) boot() (err error) {
 		}
 	}()
 	// Run setup action?
-	if rt.sess.Get("app.dosetup").Bool() && rt.setupAction != nil {
+	if rt.sess.Get("app.firstrun").Bool() && rt.setupAction != nil {
 		if err := rt.setupAction(rt.sess); err != nil {
 			return fmt.Errorf("failed to setup application: %w", err)
 		}
@@ -206,6 +206,7 @@ func (rt *Runtime) boot() (err error) {
 	if err := rt.executeBeforeActions(); err != nil {
 		return err
 	}
+
 	if err := rt.engine.Stats().Set("init.at", rt.sess.Time(rt.initStartedAt).Format(time.RFC3339Nano)); err != nil {
 		return fmt.Errorf("failed to set app initialized at: %w", err)
 	}
@@ -366,17 +367,10 @@ func (rt *Runtime) executeBeforeActions() error {
 		// Options
 		optstbl := textfmt.Table{}
 		rt.sess.Opts().Range(func(opt options.Option) bool {
-			optstbl.AddRow(opt.Name(), opt.Value().String())
+			optstbl.AddRow(opt.Key(), opt.Value().String())
 			return true
 		})
 		rt.sess.Log().Println(optstbl.String())
-	}
-
-	if rt.cmd.IsWrapper() {
-		if err := rt.showHelp(); err != nil {
-			return err
-		}
-		return ErrExitSuccess
 	}
 
 	if rt.beforeAlways != nil && !rt.cmd.SkipSharedBeforeAction() {
@@ -393,11 +387,66 @@ func (rt *Runtime) executeBeforeActions() error {
 	timer := time.Now()
 	if err := rt.cmd.ExecBefore(rt.sess); err != nil {
 		internal.Log(rt.sess.Log(), "failed to execute before action", slog.String("err", err.Error()))
-		return err
+		if !rt.cmd.Flag("help").Present() {
+			return err
+		}
 	}
 	internal.Log(rt.sess.Log(), "before action took", slog.String("took", time.Since(timer).String()))
 
+	if rt.cmd.Flag("help").Present() || rt.cmd.IsWrapper() {
+		if err := rt.showHelp(); err != nil {
+			return fmt.Errorf("%w: failed to print help %w", Error, err)
+		}
+		return ErrExitSuccess
+	}
+
 	return nil
+}
+
+func (rt *Runtime) showHelp() error {
+	theme := rt.brand.ANSI()
+
+	h := help.New(
+		help.Info{
+			Name:           rt.sess.Get("app.name").String(),
+			Description:    rt.sess.Get("app.description").String(),
+			Version:        rt.sess.Get("app.version").String(),
+			CopyrightBy:    rt.sess.Get("app.copyright_by").String(),
+			CopyrightSince: rt.sess.Get("app.copyright_since").Int(),
+			License:        rt.sess.Get("app.license").String(),
+			Address:        rt.sess.Get("app.address").String(),
+			Usage:          rt.cmd.Usage(),
+			Info:           rt.cmd.Info(),
+		},
+		help.Style{
+			Primary:     ansicolor.Style{FG: theme.Primary, Format: ansicolor.Bold},
+			Info:        ansicolor.Style{FG: theme.Info},
+			Version:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
+			Credits:     ansicolor.Style{FG: theme.Secondary},
+			License:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
+			Description: ansicolor.Style{FG: theme.Secondary},
+			Category:    ansicolor.Style{FG: theme.Accent, Format: ansicolor.Bold},
+		},
+	)
+
+	if !rt.cmd.Hidden() {
+		for _, scmd := range rt.cmd.SubCommands() {
+			if scmd.Hidden {
+				continue
+			}
+			h.AddCommand(scmd.Category, scmd.Name, scmd.Description)
+		}
+	}
+
+	h.AddCategoryDescriptions(rt.cmd.Categories())
+
+	if !rt.cmd.IsRoot() && !rt.cmd.Hidden() {
+		h.AddCommandFlags(rt.cmd.Flags())
+		h.AddSharedFlags(rt.cmd.SharedFlags())
+	}
+
+	h.AddGlobalFlags(rt.cmd.GlobalFlags())
+	return h.Print()
 }
 
 func (rt *Runtime) executeDoAction() error {
@@ -491,45 +540,4 @@ func (rt *Runtime) log(depth int, lvl logging.Level, msg string, attrs ...slog.A
 
 	// log with slog
 	slog.LogAttrs(context.Background(), slog.Level(lvl), msg, attrs...)
-}
-
-func (rt *Runtime) showHelp() error {
-	theme := rt.brand.ANSI()
-
-	h := help.New(
-		help.Info{
-			Name:           rt.sess.Get("app.name").String(),
-			Description:    rt.sess.Get("app.description").String(),
-			Version:        rt.sess.Get("app.version").String(),
-			CopyrightBy:    rt.sess.Get("app.copyright_by").String(),
-			CopyrightSince: rt.sess.Get("app.copyright_since").Int(),
-			License:        rt.sess.Get("app.license").String(),
-			Address:        rt.sess.Get("app.address").String(),
-			Usage:          rt.cmd.Usage(),
-			Info:           rt.cmd.Info(),
-		},
-		help.Style{
-			Primary:     ansicolor.Style{FG: theme.Primary, Format: ansicolor.Bold},
-			Info:        ansicolor.Style{FG: theme.Light},
-			Version:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
-			Credits:     ansicolor.Style{FG: theme.Secondary},
-			License:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
-			Description: ansicolor.Style{FG: theme.Secondary},
-			Category:    ansicolor.Style{FG: theme.Accent, Format: ansicolor.Bold},
-		},
-	)
-
-	for _, scmd := range rt.cmd.SubCommands() {
-		h.AddCommand(scmd.Category, scmd.Name, scmd.Description)
-	}
-
-	h.AddCategoryDescriptions(rt.cmd.Categories())
-
-	if !rt.cmd.IsRoot() {
-		h.AddCommandFlags(rt.cmd.Flags())
-		h.AddSharedFlags(rt.cmd.SharedFlags())
-	}
-
-	h.AddGlobalFlags(rt.cmd.GlobalFlags())
-	return h.Print()
 }

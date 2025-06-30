@@ -52,12 +52,8 @@ type Info struct {
 	Module      string
 }
 
-func Option(key string, dval any, desc string, ro bool, vfunc options.ValueValidator) options.Spec {
-	kind := options.KindRuntime
-	if ro {
-		kind |= options.KindReadOnly
-	}
-	return options.NewOption(key, dval, desc, kind, vfunc)
+func Option(key string, dval any) *options.OptionSpec {
+	return options.NewOption(key, dval)
 }
 
 type Addon struct {
@@ -71,8 +67,8 @@ type Addon struct {
 	events      []events.Event
 	cmds        []*command.Command
 	svcs        []*services.Service
-	pendingOpts []options.Spec
-	opts        *options.Options
+	pendingOpts []*options.OptionSpec
+	opts        *options.Spec
 
 	errs         []error
 	deprecations []string
@@ -118,7 +114,7 @@ func (addon *Addon) WithSettings(s settings.Settings) *Addon {
 	return addon
 }
 
-func (addon *Addon) WithOptions(opts ...options.Spec) *Addon {
+func (addon *Addon) WithOptions(opts ...*options.OptionSpec) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
 
@@ -126,27 +122,6 @@ func (addon *Addon) WithOptions(opts ...options.Spec) *Addon {
 		return addon
 	}
 	addon.pendingOpts = opts
-	return addon
-}
-
-func (addon *Addon) WithAPI(api api.Provider) *Addon {
-	addon.mu.Lock()
-	defer addon.mu.Unlock()
-
-	if addon.tryConfigureAttached() {
-		return addon
-	}
-
-	if api == nil {
-		addon.perr(fmt.Errorf("%w: %s provided <nil> API", Error, addon.info.Name))
-		return addon
-	}
-
-	if addon.api != nil {
-		addon.perr(fmt.Errorf("%w: %s already has an API", Error, addon.info.Name))
-		return addon
-	}
-	addon.api = api
 	return addon
 }
 
@@ -168,41 +143,66 @@ func (addon *Addon) WithEvents(evs ...events.Event) *Addon {
 	return addon
 }
 
-func (addon *Addon) OnRegister(action action.Register) {
+func (addon *Addon) ProvideAPI(api api.Provider) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
-	addon.registerAction = action
+
+	if addon.tryConfigureAttached() {
+		return addon
+	}
+
+	if api == nil {
+		addon.perr(fmt.Errorf("%w: %s provided <nil> API", Error, addon.info.Name))
+		return addon
+	}
+
+	if addon.api != nil {
+		addon.perr(fmt.Errorf("%w: %s already has an API", Error, addon.info.Name))
+		return addon
+	}
+	addon.api = api
+	return addon
 }
 
-func (addon *Addon) ProvideCommands(cmds ...*command.Command) {
+func (addon *Addon) ProvideCommands(cmds ...*command.Command) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
 	for _, cmd := range cmds {
 		if cmd == nil {
 			addon.perr(fmt.Errorf("%w: %s provided <nil> command", Error, addon.info.Name))
-			return
+			return addon
 		}
 		addon.cmds = append(addon.cmds, cmd)
 	}
+	return addon
 }
 
-func (addon *Addon) ProvideServices(svcs ...*services.Service) {
+func (addon *Addon) ProvideServices(svcs ...*services.Service) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
 	for _, svc := range svcs {
 		if svc == nil {
 			addon.perr(fmt.Errorf("%w: %s provided <nil> service", Error, addon.info.Name))
-			return
+			return addon
 		}
 		addon.svcs = append(addon.svcs, svc)
 	}
+	return addon
+}
+
+func (addon *Addon) OnRegister(action action.Register) *Addon {
+	addon.mu.Lock()
+	defer addon.mu.Unlock()
+	addon.registerAction = action
+	return addon
 }
 
 // Deprecated allows developers to mark an addon or some of its as deprecated.
-func (addon *Addon) Deprecated(msg string) {
+func (addon *Addon) Deprecated(msg string) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
 	addon.deprecations = append(addon.deprecations, msg)
+	return addon
 }
 
 func (addon *Addon) tryConfigureAttached() bool {

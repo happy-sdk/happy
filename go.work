@@ -1,11 +1,13 @@
-go 1.24.0
+go 1.24.4
 
 use (
 	.
+	./cmd/gohappy
 	./pkg/branding
-	./pkg/cli/ansicolor
 	./pkg/devel/testutils
 	./pkg/i18n
+	./pkg/logging
+	./pkg/networking
 	./pkg/options
 	./pkg/scheduling/cron
 	./pkg/settings
@@ -13,7 +15,7 @@ use (
 	./pkg/strings/humanize
 	./pkg/strings/slug
 	./pkg/strings/textfmt
+	./pkg/tui
 	./pkg/vars
 	./pkg/version
-	./sdk/internal/cmd/hsdk
 )

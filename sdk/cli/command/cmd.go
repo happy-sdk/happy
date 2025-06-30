@@ -8,14 +8,15 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"sync"
 
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/internal"
-	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
@@ -27,7 +28,7 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 	}
 
 	if !root.tryLock("Compile") {
-		return nil, root.cnflog, fmt.Errorf("%w: failed to compile the command %s", Error, root.logName)
+		return nil, root.cnflog, fmt.Errorf("%w: failed to compile the command %s", Error, root.name)
 	}
 	defer root.mu.Unlock()
 
@@ -51,17 +52,17 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 
 		for _, flag := range cmd.globalFlags {
 			if err := acmd.flags.Add(flag); err != nil {
-				return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.cnf.Get("name").String(), err.Error())
+				return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.name, err.Error())
 			}
 		}
 		sharedf, err := acmd.getSharedFlags()
 		if err != nil && !errors.Is(err, ErrHasNoParent) {
-			return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.cnf.Get("name").String(), err.Error())
+			return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.name, err.Error())
 		}
 		cmd.sharedFlags = sharedf.Flags()
 		for _, flag := range cmd.sharedFlags {
 			if err := acmd.flags.Add(flag); err != nil {
-				return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.cnf.Get("name").String(), err.Error())
+				return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.name, err.Error())
 			}
 		}
 		acmd.mu.Lock()
@@ -77,6 +78,7 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 	cmd.usage = acmd.usage
 	cmd.info = acmd.info
 
+	cmd.hideAction = acmd.hideAction
 	cmd.beforeAction = acmd.beforeAction
 	cmd.doAction = acmd.doAction
 	cmd.afterSuccessAction = acmd.afterSuccessAction
@@ -87,24 +89,21 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 	if acmd.parent != nil {
 		cmd.parent = compileParent(acmd.parent)
 		if acmd.parent.catdesc != nil {
-			for k, v := range acmd.parent.catdesc {
-				catdesc[k] = v
-			}
+			maps.Copy(catdesc, acmd.parent.catdesc)
 		}
 	}
 
-	for k, v := range cmd.catdesc {
-		catdesc[k] = v
-	}
+	maps.Copy(catdesc, cmd.catdesc)
+
 	for _, scmd := range acmd.subCommands {
-		cmd.subcmds = append(cmd.subcmds, SubCmdInfo{
-			Name:        scmd.cnf.Get("name").String(),
+		cmd.subcmds = append(cmd.subcmds, &SubCmdInfo{
+			Name:        scmd.name,
 			Description: scmd.cnf.Get("description").String(),
 			Category:    scmd.cnf.Get("category").String(),
+			Hidden:      scmd.cnf.Get("hidden").Value().Bool(),
+			hideAction:  scmd.hideAction,
 		})
-		for k, v := range scmd.catdesc {
-			catdesc[k] = v
-		}
+		maps.Copy(catdesc, scmd.catdesc)
 	}
 	cmd.catdesc = catdesc
 
@@ -113,6 +112,7 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 
 func compileParent(cmd *Command) *Cmd {
 	c := &Cmd{
+		name:             cmd.name,
 		cnf:              cmd.cnf,
 		parents:          cmd.parents,
 		isWrapperCommand: cmd.isWrapperCommand,
@@ -123,6 +123,7 @@ func compileParent(cmd *Command) *Cmd {
 	}
 
 	if c.cnf.Get("shared_before_action").Value().Bool() {
+		c.hideAction = cmd.hideAction
 		c.beforeAction = cmd.beforeAction
 	}
 
@@ -136,10 +137,13 @@ type SubCmdInfo struct {
 	Name        string
 	Description string
 	Category    string
+	Hidden      bool
+	hideAction  action.Action
 }
 
 type Cmd struct {
 	mu    sync.Mutex
+	name  string
 	cnf   *settings.Profile
 	flags varflag.Flags
 
@@ -151,6 +155,7 @@ type Cmd struct {
 	usage            []string
 	info             []string
 
+	hideAction         action.Action
 	beforeAction       action.WithArgs
 	doAction           action.WithArgs
 	afterSuccessAction action.Action
@@ -164,7 +169,9 @@ type Cmd struct {
 	sharedFlags []varflag.Flag
 	ownFlags    []varflag.Flag
 
-	subcmds []SubCmdInfo
+	subcmds []*SubCmdInfo
+
+	err error
 }
 
 func (c *Cmd) IsRoot() bool {
@@ -172,11 +179,39 @@ func (c *Cmd) IsRoot() bool {
 }
 
 func (c *Cmd) Name() string {
-	return c.cnf.Get("name").String()
+	return c.name
 }
 
 func (c *Cmd) Usage() []string {
 	return c.usage
+}
+func (c *Cmd) Hidden() bool {
+	return c.cnf.Get("hidden").Value().Bool()
+}
+
+func (c *Cmd) CheckHidden(sess *session.Context) bool {
+	if c.hideAction != nil {
+		var hidden bool
+		if err := c.hideAction(sess); err != nil {
+			internal.LogInit(sess.Log(), fmt.Sprintf("hide(%s): %s", c.name, err.Error()))
+			hidden = true
+			c.err = err
+		}
+		if err := c.cnf.Set("hidden", hidden); err != nil {
+			sess.Log().Error(err.Error())
+		}
+	}
+
+	for _, scmd := range c.subcmds {
+		if scmd.hideAction != nil {
+
+			if err := scmd.hideAction(sess); err != nil {
+				internal.LogInit(sess.Log(), fmt.Sprintf("hide-cmd(%s): %s", scmd.Name, err.Error()))
+				scmd.Hidden = true
+			}
+		}
+	}
+	return c.Hidden()
 }
 
 func (c *Cmd) Info() []string {
@@ -211,7 +246,7 @@ func (c *Cmd) GlobalFlags() []varflag.Flag {
 	return c.globalFlags
 }
 
-func (c *Cmd) SubCommands() []SubCmdInfo {
+func (c *Cmd) SubCommands() []*SubCmdInfo {
 	return c.subcmds
 }
 
@@ -231,11 +266,6 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	args, err := c.getArgs()
-	if err != nil {
-		return err
-	}
-
 	if c.parent != nil && !c.sharedCalled && !c.cnf.Get("skip_shared_before").Value().Bool() {
 		if err := c.parent.callSharedBeforeAction(sess); err != nil {
 			return err
@@ -244,14 +274,31 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 		c.parent = nil
 	}
 
+	if c.CheckHidden(sess) {
+		if c.cnf.Get("fail_hidden").Value().Bool() {
+			if c.err != nil {
+				return c.err
+			}
+			return fmt.Errorf("%w: %s", ErrCommandNotAllowed, c.name)
+		} else {
+			internal.Log(sess.Log(), fmt.Sprintf("%s: %s", ErrCommandNotAllowed, c.name))
+			return nil
+		}
+	}
 	if c.beforeAction == nil {
 		return nil
 	}
+
+	args, err := c.getArgs()
+	if err != nil {
+		return err
+	}
+
 	if err := c.beforeAction(sess, args); err != nil {
 		internal.Log(
 			sess.Log(),
 			"before action",
-			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
 		)
 		return err
@@ -278,7 +325,7 @@ func (c *Cmd) ExecDo(sess *session.Context) (err error) {
 		internal.Log(
 			sess.Log(),
 			"do action",
-			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
 		)
 		return err
@@ -300,7 +347,7 @@ func (c *Cmd) ExecAfterFailure(sess *session.Context, err error) error {
 		internal.Log(
 			sess.Log(),
 			"after failure action",
-			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
 		)
 		return err
@@ -319,7 +366,7 @@ func (c *Cmd) ExecAfterSuccess(sess *session.Context) error {
 
 	if err := c.afterSuccessAction(sess); err != nil {
 		internal.Log(sess.Log(), "after success action",
-			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
 		)
 		return err
@@ -340,7 +387,7 @@ func (c *Cmd) ExecAfterAlways(sess *session.Context, err error) error {
 
 	if err := c.afterAlwaysAction(sess, err); err != nil {
 		internal.Log(sess.Log(), "after always action",
-			slog.String("cmd", c.cnf.Get("name").String()),
+			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
 		)
 		return err
@@ -362,11 +409,23 @@ func (c *Cmd) callSharedBeforeAction(sess *session.Context) error {
 	if c.beforeAction == nil {
 		return nil
 	}
+
+	// Is before action shared with sub commands
 	if c.cnf.Get("shared_before_action").Value().Bool() {
+		// Check is caller parent hidden and should fail.
+		// Even if caller parent is hidden but fail_hidden for this parent
+		// is not set the call it.
+		fmt.Printf("%q.shared_before_action\n", c.name)
+		if c.cnf.Get("fail_hidden").Value().Bool() && c.CheckHidden(sess) {
+			if c.err != nil {
+				return c.err
+			}
+			return fmt.Errorf("%w: %s", ErrCommandNotAllowed, c.name)
+		}
 		c.sharedCalled = true
 		if err := c.beforeAction(sess, action.NewArgs(c.flags)); err != nil {
 			internal.Log(sess.Log(), "shared before action",
-				slog.String("cmd", c.cnf.Get("name").String()),
+				slog.String("cmd", c.name),
 				slog.String("err", err.Error()))
 			return err
 		}
@@ -388,7 +447,7 @@ func (c *Cmd) getArgs() (action.Args, error) {
 	args := action.NewArgs(c.flags)
 	argnmin := c.cnf.Get("min_args").Value().Uint()
 	argnmax := c.cnf.Get("max_args").Value().Uint()
-	name := c.cnf.Get("name").String()
+	name := c.name
 
 	if argnmin == 0 && argnmax == 0 && args.Argn() > 0 {
 		return args, fmt.Errorf("%w: %s does not accept arguments", Error, name)

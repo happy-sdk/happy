@@ -17,24 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/session"
 )
-
-type Settings struct {
-	// How many instances of the applications can be booted at the same time.
-	Max settings.Uint `key:"max" default:"1" desc:"Maximum number of instances of the application that can be booted at the same time"`
-}
-
-func (s Settings) Blueprint() (*settings.Blueprint, error) {
-	b, err := settings.New(s)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
 
 type Instance struct {
 	id      ID
@@ -75,7 +60,7 @@ func New(sess *session.Context) (*Instance, error) {
 	}
 
 	inst := &Instance{
-		id:   ID(sess.Opts().Get("app.instance.id").String()),
+		id:   ID(sess.Opts().Get("app.instance.id").Value().String()),
 		sess: sess,
 	}
 
@@ -93,7 +78,7 @@ func New(sess *session.Context) (*Instance, error) {
 	)
 	internal.Log(sess.Log(), "create pid lock file", slog.String("file", inst.pidfile))
 
-	if err := os.WriteFile(inst.pidfile, []byte(inst.sess.Opts().Get("app.pid").String()), 0644); err != nil {
+	if err := os.WriteFile(inst.pidfile, []byte(inst.sess.Opts().Get("app.pid").Value().String()), 0644); err != nil {
 		return nil, fmt.Errorf("%w: failed to write intance PID file: %s", Error, err.Error())
 	}
 
@@ -136,7 +121,7 @@ func verifyPidFiles(sess *session.Context, pidsdir string) ([]os.DirEntry, error
 }
 
 func verifyPidFile(sess *session.Context, pidfile os.DirEntry) (ok bool, err error) {
-	pidfileAbs := filepath.Join(sess.Opts().Get("app.fs.path.pids").String(), pidfile.Name())
+	pidfileAbs := filepath.Join(sess.Opts().Get("app.fs.path.pids").Value().String(), pidfile.Name())
 	data, err := os.ReadFile(pidfileAbs)
 	if err != nil {
 		return false, err

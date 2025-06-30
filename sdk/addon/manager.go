@@ -43,7 +43,7 @@ func (m *Manager) Add(addon *Addon) error {
 	addon.attached = true
 	m.addons[addon.info.Slug] = addon
 	var err error
-	addon.opts, err = options.New(addon.info.Slug, addon.pendingOpts)
+	addon.opts, err = options.New(addon.info.Slug, addon.pendingOpts...)
 	addon.pendingOpts = nil
 	addon.perr(err)
 
@@ -61,10 +61,10 @@ func (m *Manager) ExtendSettings(sb *settings.Blueprint) error {
 	return nil
 }
 
-func (m *Manager) ExtendOptions(opts *options.Options) error {
+func (m *Manager) ExtendOptions(opts *options.Spec) error {
 	for _, addon := range m.addons {
 		if addon.opts != nil {
-			if err := options.MergeOptions(opts, addon.opts); err != nil {
+			if err := opts.Extend(addon.opts); err != nil {
 				return fmt.Errorf("%w: %s", Error, err)
 			}
 		}

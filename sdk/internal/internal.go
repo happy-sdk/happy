@@ -5,11 +5,13 @@
 package internal
 
 import (
+	"fmt"
 	"log/slog"
 	"math"
+	"runtime"
 
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/events"
-	"github.com/happy-sdk/happy/sdk/logging"
 )
 
 const (
@@ -35,3 +37,14 @@ func LogInitDepth(l logging.Logger, depth int, msg string, attrs ...slog.Attr) {
 }
 
 var TerminateSessionEvent = events.New("session", "terminate")
+
+// RuntimeCallerStr is utility function to get the caller information.
+// It returns the file and line number of the caller in form of string.
+// e.g. /path/to/file.go:123
+func RuntimeCallerStr(depth int) (string, bool) {
+	_, file, line, ok := runtime.Caller(depth)
+	if !ok {
+		return "", false
+	}
+	return fmt.Sprintf("%s:%d", file, line), true
+}

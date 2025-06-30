@@ -15,9 +15,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/happy-sdk/happy/pkg/settings"
-	"github.com/happy-sdk/happy/pkg/vars/varflag"
-	"github.com/happy-sdk/happy/sdk/logging"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
@@ -27,34 +25,6 @@ var (
 	ErrCommandFlags   = errors.New("command flags error")
 	ErrPanic          = errors.New("there was panic, check logs for more info")
 )
-
-// Common CLI flags which are automatically attached to the CLI ubnless disabled ins settings.
-// You still can manually add them to your CLI if you want to.
-var (
-	FlagVersion     = varflag.BoolFunc("version", false, "print application version")
-	FlagHelp        = varflag.BoolFunc("help", false, "display help or help for the command. [...command --help]", "h")
-	FlagX           = varflag.BoolFunc("x", false, "the -x flag prints all the cli commands as they are executed.")
-	FlagSystemDebug = varflag.BoolFunc("system-debug", false, "enable system debug log level (very verbose)")
-	FlagDebug       = varflag.BoolFunc("debug", false, "enable debug log level")
-	FlagVerbose     = varflag.BoolFunc("verbose", false, "enable verbose log level", "v")
-)
-
-type Settings struct {
-	Name            settings.String `default:"" desc:"Name of executable file"`
-	MainMinArgs     settings.Uint   `default:"0" desc:"Minimum number of arguments for a application main"`
-	MainMaxArgs     settings.Uint   `default:"0" desc:"Maximum number of arguments for a application main"`
-	WithConfigCmd   settings.Bool   `default:"false" desc:"Add the config command in the CLI"`
-	WithGlobalFlags settings.Bool   `default:"false" desc:"Add the default global flags automatically in the CLI"`
-}
-
-func (s Settings) Blueprint() (*settings.Blueprint, error) {
-	b, err := settings.New(s)
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
 
 // AskForConfirmation gets (y/Y)es or (n/N)o from cli input.
 func AskForConfirmation(q string) bool {

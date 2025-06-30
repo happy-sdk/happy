@@ -13,9 +13,9 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/app"
-	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
@@ -89,7 +89,6 @@ func TestDefaultOptions(t *testing.T) {
 		}
 		addr := fmt.Sprintf("happy://%s/com-github-happy-sdk-happy-sdk-app-internal-initializer-test-test", host)
 		testutils.Equal(t, addr, sess.Get("app.address").String(), "app.address")
-		// app.dosetup
 
 		tmpdir := filepath.Join(os.TempDir(), sess.Get("app.slug").String(), fmt.Sprintf("instance-%s", sess.Get("app.instance.id").String()))
 		// app.fs.path.cache

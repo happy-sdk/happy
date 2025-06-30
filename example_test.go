@@ -8,8 +8,8 @@ import (
 	"fmt"
 
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/logging"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
