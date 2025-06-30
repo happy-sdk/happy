@@ -7,7 +7,6 @@
 package i18n
 
 import (
-	"context"
 	"embed"
 	"fmt"
 	"log/slog"
@@ -15,7 +14,6 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/happy-sdk/happy/sdk/logging"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"golang.org/x/text/message/catalog"
@@ -40,26 +38,18 @@ func init() {
 
 const Enabled = true
 
-func initialize(fallback language.Tag, logger logging.Logger) {
+func initialize(fallback language.Tag) {
 	initOnce.Do(func() {
-		if logger == nil {
-			logopts := logging.ConsoleDefaultOptions()
-			logopts.Level = logging.Level(loglevel)
-			logger = logging.Console(logopts)
-		}
-		logger.LogDepth(0, logging.Level(loglevel), "loading i18n")
 		globalCatalog = catalog.NewBuilder(
 			catalog.Fallback(fallback),
 		)
 
-		mngr.logger = logger
-		mngr.loggerDisposed = false
 		mngr.initialized = true
 		mngr.fallbackLang = fallback
 		mngr.currentLang = fallback
 
 		if err := RegisterTranslationsFS(NewFS(translations)); err != nil {
-			logger.Error(err.Error())
+			slog.Error(err.Error())
 		}
 	})
 }
@@ -69,11 +59,10 @@ func newManager() *manager {
 		langs: []language.Tag{
 			language.English,
 		},
-		printerCache:   make(map[language.Tag]*message.Printer),
-		fallbackLang:   language.English,
-		currentLang:    language.English,
-		loggerDisposed: true,
-		dictionaries:   make(map[language.Tag]map[string]any),
+		printerCache: make(map[language.Tag]*message.Printer),
+		fallbackLang: language.English,
+		currentLang:  language.English,
+		dictionaries: make(map[language.Tag]map[string]any),
 	}
 }
 
@@ -87,8 +76,6 @@ type manager struct {
 	printerCache    map[language.Tag]*message.Printer
 	dictionaries    map[language.Tag]map[string]any
 	queue           map[language.Tag]map[string]any
-	logger          logging.Logger
-	loggerDisposed  bool
 	initialized     bool
 }
 
@@ -142,21 +129,6 @@ func (m *manager) usingFallbackLanguage() bool {
 	return m.currentLang == m.fallbackLang
 }
 
-func (m *manager) log(level logging.Level, msg string) {
-	if m.loggerDisposed {
-		slog.Log(context.Background(), slog.Level(level), msg)
-		return
-	}
-
-	m.logger.LogDepth(0, level, msg)
-
-	ql, ok := m.logger.(*logging.QueueLogger)
-	if ok && ql.Consumed() {
-		m.logger = nil
-		m.loggerDisposed = true
-	}
-}
-
 func (m *manager) getSupported() []language.Tag {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -181,9 +153,7 @@ func (m *manager) reload() {
 			}
 			for key, value := range dict {
 				if err := m.registerTranslation(lang, "", key, value); err != nil {
-					m.mu.RLock()
-					m.log(logging.LevelError, err.Error())
-					m.mu.RUnlock()
+					slog.Error(err.Error())
 				}
 			}
 		}
@@ -371,7 +341,7 @@ func setLanguage(lang language.Tag) error {
 	if err := mngr.setCurrentLanguage(lang); err != nil {
 		return err
 	}
-	mngr.log(logging.LevelDebug, T("com.github.happy-sdk.happy.pkg.i18n.set_default", lang.String()))
+	slog.Debug(T("com.github.happy-sdk.happy.pkg.i18n.set_default", lang.String()))
 	return nil
 }
 

@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/happy-sdk/happy/sdk/logging"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -25,8 +24,8 @@ const (
 var ErrDisabled = errors.New("i18n: disabled")
 var ErrLanguageNotSupported = errors.New("i18n: language not supported")
 
-func Initialize(fallback language.Tag, logger logging.Logger) {
-	initialize(fallback, logger)
+func Initialize(fallback language.Tag) {
+	initialize(fallback)
 }
 
 func RegisterTranslationsFS(fs *FS) error {

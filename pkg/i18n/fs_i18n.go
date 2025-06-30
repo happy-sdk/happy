@@ -10,10 +10,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"path/filepath"
 	"strings"
 
-	"github.com/happy-sdk/happy/sdk/logging"
 	"golang.org/x/text/language"
 )
 
@@ -59,7 +59,7 @@ func (f *FS) loadFile(lang language.Tag, fpath string) error {
 func registerTranslationsFS(fs *FS) (res error) {
 	defer func() {
 		if res != nil {
-			mngr.log(logging.LevelWarn, res.Error())
+			slog.Warn(res.Error())
 		}
 	}()
 	langDirs, err := fs.readRoot()

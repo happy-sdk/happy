@@ -9,14 +9,13 @@ package i18n
 import (
 	"fmt"
 
-	"github.com/happy-sdk/happy/sdk/logging"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
 const Enabled = false
 
-func initialize(fallback language.Tag, logger logging.Logger) {}
+func initialize(fallback language.Tag) {}
 
 func registerTranslations(lang language.Tag, translations map[string]any) error {
 	return ErrDisabled
