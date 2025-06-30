@@ -165,7 +165,7 @@ func False(tt TestingIface, value bool, msgAndArgs ...any) bool {
 //
 //	testutils.NotNil(t, &val)
 func NotNil(tt TestingIface, value any, msgAndArgs ...any) bool {
-	if value == nil {
+	if isNil(value) {
 		tt.Helper()
 		return fail(tt, "Should not be <nil>", msgAndArgs...)
 	}
@@ -174,11 +174,26 @@ func NotNil(tt TestingIface, value any, msgAndArgs ...any) bool {
 
 // Nil asserts that the specified value is nil.
 func Nil(tt TestingIface, value any, msgAndArgs ...any) bool {
-	if value != nil {
+	if !isNil(value) {
 		tt.Helper()
 		return fail(tt, "Should be <nil>", msgAndArgs...)
 	}
 	return true
+}
+
+// isNil checks if a value is nil, handling both untyped nil and typed nil pointers/interfaces
+func isNil(value any) bool {
+	if value == nil {
+		return true
+	}
+
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
 }
 
 type length interface {
