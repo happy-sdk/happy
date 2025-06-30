@@ -6,16 +6,19 @@ package git
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/happy-sdk/happy/pkg/vars"
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/session"
 )
+
+var Error = errors.New("git")
 
 // IsGitRepo checks if the given directory is a Git repository.
 func IsGitRepo(path string) bool {
@@ -24,18 +27,45 @@ func IsGitRepo(path string) bool {
 	return err == nil || !os.IsNotExist(err)
 }
 
-func LoadInfo(sess *session.Context, m *vars.Map, dir string) error {
+func NewConfig() (*options.Spec, error) {
+	return options.New("git",
+		options.NewOption("repo.found", false),
+		options.NewOption("repo.root", "").
+			Validator(func(opt options.Option) error {
+				repoRoot := opt.Value().String()
+				if repoRoot == "" {
+					return nil
+				}
+				if !IsGitRepo(repoRoot) {
+					return fmt.Errorf("not a valid Git repository: %s", repoRoot)
+				}
+				return nil
+			}),
+		options.NewOption("repo.branch", ""),
+		options.NewOption("repo.remote.name", ""),
+		options.NewOption("repo.remote.url", ""),
+		options.NewOption("repo.dirty", ""),
+		options.NewOption("committer.name", ""),
+		options.NewOption("committer.email", ""),
+	)
+}
+
+func DetectGitRepo(sess *session.Context, config *options.Options) error {
+	if !config.Get("local.wd").IsSet() {
+		return fmt.Errorf("%w: local.wd is not set", Error)
+	}
+	dir := config.Get("local.wd").String()
 	for {
 		// Check if the current path is a Git repository
 		if IsGitRepo(dir) {
-			if err := m.Store("git.repo.found", true); err != nil {
+			if err := config.Set("git.repo.found", true); err != nil {
 				return err
 			}
-			if err := m.Store("git.repo.root", dir); err != nil {
+			if err := config.Set("git.repo.root", dir); err != nil {
 				return err
 			}
+			break
 		}
-
 		parent := filepath.Dir(dir)
 		// Check if we've reached the root directory
 		if parent == dir {
@@ -43,12 +73,16 @@ func LoadInfo(sess *session.Context, m *vars.Map, dir string) error {
 		}
 		dir = parent
 	}
+	return nil
+}
 
-	if !m.Get("git.repo.found").Bool() {
+func LoadInfo(sess *session.Context, config *options.Options) error {
+
+	if !config.Get("git.repo.found").Variable().Bool() {
 		return nil
 	}
 
-	repoRoot := m.Get("git.repo.root").String()
+	repoRoot := config.Get("git.repo.root").String()
 
 	// Get current branch
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
@@ -57,7 +91,7 @@ func LoadInfo(sess *session.Context, m *vars.Map, dir string) error {
 	if err != nil {
 		return err
 	}
-	if err := m.Store("git.repo.branch", strings.TrimSpace(string(branch))); err != nil {
+	if err := config.Set("git.repo.branch", strings.TrimSpace(string(branch))); err != nil {
 		return err
 	}
 
@@ -70,20 +104,20 @@ func LoadInfo(sess *session.Context, m *vars.Map, dir string) error {
 	}
 	remoteParts := strings.SplitN(strings.TrimSpace(string(remote)), "/", 2)
 	if len(remoteParts) > 0 {
-		if err := m.Store("git.repo.remote.name", strings.TrimSpace(remoteParts[0])); err != nil {
+		if err := config.Set("git.repo.remote.name", strings.TrimSpace(remoteParts[0])); err != nil {
 			return err
 		}
 	}
 
 	// Get origin URL
-	remoteConfigKey := fmt.Sprintf("remote.%s.url", m.Get("git.repo.remote.name").String())
+	remoteConfigKey := fmt.Sprintf("remote.%s.url", config.Get("git.repo.remote.name").String())
 	remoteURLCmd := exec.Command("git", "config", "--get", remoteConfigKey)
 	remoteURLCmd.Dir = repoRoot
 	remoteURL, err := cli.ExecRaw(sess, remoteURLCmd)
 	if err != nil {
 		return err
 	}
-	if err := m.Store("git.repo.remote.url", strings.TrimSpace(string(remoteURL))); err != nil {
+	if err := config.Set("git.repo.remote.url", strings.TrimSpace(string(remoteURL))); err != nil {
 		return err
 	}
 
@@ -95,7 +129,7 @@ func LoadInfo(sess *session.Context, m *vars.Map, dir string) error {
 		return err
 	}
 	dirty := bytes.TrimSpace(status) != nil
-	if err := m.Store("git.repo.dirty", dirty); err != nil {
+	if err := config.Set("git.repo.dirty", dirty); err != nil {
 		return err
 	}
 
@@ -106,7 +140,7 @@ func LoadInfo(sess *session.Context, m *vars.Map, dir string) error {
 	if err != nil {
 		return err
 	}
-	if err := m.Store("git.committer.name", strings.TrimSpace(string(committer))); err != nil {
+	if err := config.Set("git.committer.name", strings.TrimSpace(string(committer))); err != nil {
 		return err
 	}
 
@@ -117,7 +151,7 @@ func LoadInfo(sess *session.Context, m *vars.Map, dir string) error {
 	if err != nil {
 		return err
 	}
-	if err := m.Store("git.committer.email", strings.TrimSpace(string(email))); err != nil {
+	if err := config.Set("git.committer.email", strings.TrimSpace(string(email))); err != nil {
 		return err
 	}
 

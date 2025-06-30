@@ -149,7 +149,12 @@ func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, tagPrefix str
 	fulltags := strings.Split(tagsout, "\n")
 	var tags []string
 	for _, tag := range fulltags {
-		tags = append(tags, strings.TrimPrefix(tag, p.TagPrefix))
+		ntag := strings.TrimPrefix(tag, p.TagPrefix)
+		// skip nested package
+		if strings.Contains(ntag, "/") {
+			continue
+		}
+		tags = append(tags, ntag)
 	}
 	semver.Sort(tags)
 	p.LastRelease = fmt.Sprintf("%s%s", p.TagPrefix, tags[len(tags)-1])

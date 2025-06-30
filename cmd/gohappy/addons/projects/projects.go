@@ -16,23 +16,20 @@ var (
 )
 
 type Settings struct {
+	SearchPaths settings.StringSlice `key:"search_paths"`
 }
 
 func (s Settings) Blueprint() (*settings.Blueprint, error) {
-	b, err := settings.New(&s)
-	if err != nil {
-		return nil, err
-	}
-	return b, nil
+	return settings.New(s)
 }
 
 func Addon() *addon.Addon {
-	addon := addon.New("Projects").
+	return addon.New("Projects").
 		WithConfig(addon.Config{}).
 		WithSettings(Settings{}).
-		WithOptions(
-			addon.Option("next", "auto", "specify next version to release auto|major|minor|patch", false, nil),
-		).WithAPI(NewAPI())
-
-	return addon
+		ProvideAPI(NewAPI()).
+		ProvideCommands(
+			cmdProjects(),
+			cmdProject(),
+		)
 }

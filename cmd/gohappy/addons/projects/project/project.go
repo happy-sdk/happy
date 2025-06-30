@@ -11,9 +11,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/happy-sdk/happy/cmd/gohappy/pkg/git"
 	"github.com/happy-sdk/happy/cmd/gohappy/pkg/module"
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -21,98 +23,145 @@ import (
 var Error = errors.New("project")
 
 type Project struct {
-	config    *vars.Map
-	sess      *session.Context
+	mu       sync.RWMutex
+	detected bool // project detected
+	loaded   bool // project loaded
+
+	config    *options.Options
 	gomodules []*module.Package
+
+	root string
 }
 
-func Load(sess *session.Context, wd string) (*Project, error) {
-	currentPath, err := filepath.Abs(wd)
+func Open(sess *session.Context, wd string) (*Project, error) {
+
+	config, err := newConfig()
 	if err != nil {
 		return nil, err
 	}
-
-	stat, err := os.Stat(currentPath)
-	if err != nil {
-		return nil, err
+	prj := &Project{
+		config: config,
+		root:   wd,
 	}
-	if !stat.IsDir() {
-		return nil, fmt.Errorf("%w: %s is not a directory", Error, currentPath)
-	}
-	config := vars.NewMap()
-
-	if err := config.Store("wd", currentPath); err != nil {
+	if err := config.Set("local.wd", wd); err != nil {
 		return nil, err
 	}
 
-	sess.Log().Debug("load git info")
-	if err := git.LoadInfo(sess, config, currentPath); err != nil {
+	if err := git.DetectGitRepo(sess, config); err != nil {
 		return nil, err
 	}
 
-	rootPath := currentPath
-	if config.Get("git.repo.found").Bool() {
-		rootPath = config.Get("git.repo.root").String()
+	if config.Get("git.repo.found").Variable().Bool() {
+		prj.detected = true
+		prj.root = config.Get("git.repo.root").String()
+	}
+
+	return prj, nil
+}
+
+func (p *Project) Load(sess *session.Context) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.root == "" {
+		return fmt.Errorf("project root path is not set")
+	}
+
+	if p.config.Get("git.repo.found").Variable().Bool() {
+		if err := git.LoadInfo(sess, p.config); err != nil {
+			return err
+		}
 	}
 
 	sess.Log().Debug("count modules")
-	moduleCount, err := module.Count(rootPath)
+	moduleCount, err := module.Count(p.root)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if err := config.Store("go.module.count", moduleCount); err != nil {
-		return nil, err
+	if err := p.config.Set("go.module.count", moduleCount); err != nil {
+		return err
 	}
-	if err := config.Store("go.monorepo", moduleCount > 1); err != nil {
-		return nil, err
+	if err := p.config.Set("go.monorepo", moduleCount > 1); err != nil {
+		return err
 	}
 
-	dotenvp := filepath.Join(rootPath, ".env")
+	dotenvp := filepath.Join(p.root, ".env")
 	dotenvb, err := os.ReadFile(dotenvp)
 	if err == nil {
 		sess.Log().Debug("loading .env file", slog.String("path", dotenvp))
 		env, err := vars.ParseMapFromBytes(dotenvb)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		env.Range(func(v vars.Variable) bool {
-			if err = config.Store(fmt.Sprintf("env.%s", v.Name()), v.String()); err != nil {
+			if err = p.config.Set(fmt.Sprintf("env.%s", v.Name()), v.String()); err != nil {
 				sess.Log().Error("error loading env var", slog.String("env", v.Name()), slog.String("value", v.String()), slog.String("err", err.Error()))
 			}
 			return true
 		})
 	}
 
-	var gomodules []*module.Package
-	if moduleCount > 0 {
-		sess.Log().Debug("loading modules")
-		if gomodules, err = module.LoadAll(sess, rootPath); err != nil {
-			return nil, err
-		}
+	return nil
+}
 
-		for _, pkg := range gomodules {
-			tagPrefix := strings.TrimPrefix(pkg.Dir+"/", rootPath+"/")
-			if err := pkg.LoadReleaseInfo(sess, rootPath, tagPrefix); err != nil {
-				return nil, err
-			}
-		}
-		_, err := module.TopologicalReleaseQueue(gomodules)
-		if err != nil {
+func (p *Project) Config() (config *options.Options) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	config = p.config
+	return
+}
+
+func (p *Project) Loaded() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.loaded
+}
+
+func (p *Project) Detected() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.detected
+}
+
+func (p *Project) WD() string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.config.Get("local.wd").String()
+}
+
+func (p *Project) GoModules(sess *session.Context, fresh bool) ([]*module.Package, error) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	if p.config.Get("go.module.count").Variable().Int() == 0 {
+		return nil, fmt.Errorf("%w: no go modules", Error)
+	}
+
+	if !fresh && p.gomodules != nil {
+		return p.gomodules, nil
+	}
+
+	var (
+		gomodules []*module.Package
+		err       error
+	)
+
+	sess.Log().Debug("loading modules")
+	if gomodules, err = module.LoadAll(sess, p.root); err != nil {
+		return nil, err
+	}
+
+	for _, pkg := range gomodules {
+		tagPrefix := strings.TrimPrefix(pkg.Dir+"/", p.root+"/")
+		if err := pkg.LoadReleaseInfo(sess, p.root, tagPrefix); err != nil {
 			return nil, err
 		}
 	}
 
-	return &Project{
-		config:    config,
-		sess:      sess,
-		gomodules: gomodules,
-	}, nil
-}
+	if _, err = module.TopologicalReleaseQueue(gomodules); err != nil {
+		return nil, err
+	}
+	p.gomodules = gomodules
 
-func (p *Project) Config() *vars.Map {
-	return p.config
-}
-
-func (p *Project) GoModules() []*module.Package {
-	return p.gomodules
+	return p.gomodules, nil
 }

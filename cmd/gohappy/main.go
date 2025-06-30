@@ -22,7 +22,7 @@ func main() {
 		Version: "v1.0.0",
 	})
 
-	app := happy.New(happy.Settings{
+	app := happy.New(&happy.Settings{
 		Name:           "Happy SDK",
 		Slug:           "gohappy",
 		Description:    "Happy Prototyping Framework and SDK",
@@ -37,7 +37,7 @@ func main() {
 			WithGlobalFlags: true,
 		},
 		Logging: happy.LoggingSettings{
-			// WithSource: true,
+			WithSource: true,
 		},
 	}).
 		AddInfo("The Happy CLI is an optional command-line tool designed to streamline management of Happy SDK-based projects. It simplifies project initialization, configuration, addon management, and release processes for single projects and monorepos. Additionally, it supports defining and running project-wide tasks to enhance development efficiency for both technical and non-technical users.").
@@ -46,15 +46,13 @@ func main() {
 			projects.Addon(),
 		).
 		WithFlags(
-			cli.StringFlag("wd", ".", "Working directory"),
-		)
+			cli.NewStringFlag("wd", ".", "Working directory"),
+		).BeforeAlways(func(sess *session.Context, args action.Args) error {
 
-	app.BeforeAlways(func(sess *session.Context, args action.Args) error {
-		wd := sess.Get("app.fs.path.wd").String()
 		if args.Flag("wd").Present() {
 			var err error
 
-			wd, err = filepath.Abs(args.Flag("wd").String())
+			wd, err := filepath.Abs(args.Flag("wd").String())
 			if err != nil {
 				return err
 			}
@@ -63,20 +61,9 @@ func main() {
 				return err
 			}
 		}
-		prjapi, err := happy.API[*projects.API](sess, "projects")
-		if err != nil {
-			return err
-		}
 
-		return prjapi.Load(sess, wd)
+		return nil
 	})
 
-	app.Do(func(sess *session.Context, args action.Args) error {
-
-		prjapi, err := happy.API[*projects.API](sess, "projects")
-		if err != nil {
-			return err
-		}
-		return prjapi.PrintInfo()
-	}).Run()
+	app.Run()
 }

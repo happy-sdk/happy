@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/happy-sdk/happy/cmd/gohappy/addons/projects/project"
+	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -18,60 +19,83 @@ import (
 type API struct {
 	mu sync.RWMutex
 	api.Provider
-	loaded bool
-	wd     string
-	prj    *project.Project
+	currentPrj *project.Project
 }
 
 func NewAPI() *API {
 	return &API{}
 }
 
-func (a *API) Load(sess *session.Context, wd string) (err error) {
-	if a.isLoaded() {
-		a.mu.RLock()
-		defer a.mu.RUnlock()
-		return fmt.Errorf("%w: project already loaded at %s", Error, a.wd)
+func (api *API) OpenProject(sess *session.Context, wd string, load bool) (prj *project.Project, err error) {
+	api.mu.Lock()
+	defer api.mu.Unlock()
+
+	// Project can be loaded from same wd not changing projects
+	if api.currentPrj != nil {
+		if api.currentPrj.WD() != wd {
+			return nil, fmt.Errorf(
+				"%w: can not load project from %s already deleted or loaded at %s",
+				Error, wd, api.currentPrj.WD())
+		}
+
+		if load && !api.currentPrj.Detected() && !api.currentPrj.Loaded() {
+			if err := api.currentPrj.Load(sess); err != nil {
+				return nil, err
+			}
+		}
+		return api.currentPrj, nil
 	}
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	a.prj, err = project.Load(sess, wd)
+	// Attempt to detect project from wd
+	prj, err = project.Open(sess, wd)
 	if err != nil {
-		return err
+		return
 	}
-
-	a.loaded = true
-	a.wd = wd
-	return nil
+	api.currentPrj = prj
+	if load {
+		err = prj.Load(sess)
+	}
+	return
 }
 
 func (a *API) Project() (*project.Project, error) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	if a.prj == nil {
-		return nil, fmt.Errorf("%w: project not loaded", Error)
+	if a.currentPrj == nil {
+		return nil, fmt.Errorf("%w: no project", project.Error)
 	}
-	return a.prj, nil
+	return a.currentPrj, nil
 }
 
-func (a *API) PrintInfo() error {
+func (a *API) Detect(sess *session.Context) bool {
+	wd := sess.Get("app.fs.path.wd").String()
+	prj, err := a.OpenProject(sess, wd, false)
+	if err != nil {
+		sess.Log().Error(err.Error())
+		return false
+	}
+	return prj.Detected()
+}
+
+func (a *API) ProjectInfoPrint(sess *session.Context) error {
 	prj, err := a.Project()
 	if err != nil {
 		return err
 	}
 
 	info := textfmt.Table{
-		Title: "Project Information",
+		Title:      "Project Information",
+		WithHeader: true,
 	}
-	for _, entry := range prj.Config().All() {
-		info.AddRow(entry.Name(), entry.String())
-	}
+	info.AddRow("key", "value")
+	prj.Config().Range(func(opt options.Option) bool {
+		info.AddRow(opt.Key(), opt.String())
+		return true
+	})
 	fmt.Println(info.String())
 
-	modules := prj.GoModules()
-	if modules != nil {
+	modules, err := prj.GoModules(sess, true)
+	if err == nil {
 		modulelist := textfmt.Table{
 			Title: "Packages",
 		}
@@ -101,11 +125,4 @@ func (a *API) PrintInfo() error {
 		fmt.Println(modulelist.String())
 	}
 	return nil
-}
-
-func (a *API) isLoaded() bool {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-
-	return a.loaded
 }
