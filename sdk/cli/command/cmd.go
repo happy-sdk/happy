@@ -41,7 +41,9 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 		return nil, root.cnflog, err
 	}
 
-	cmd := &Cmd{}
+	cmd := &Cmd{
+		name: root.name,
+	}
 
 	if acmd == root {
 		cmd.isRoot = true
@@ -78,7 +80,7 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 	cmd.usage = acmd.usage
 	cmd.info = acmd.info
 
-	cmd.hideAction = acmd.hideAction
+	cmd.disableAction = acmd.disableAction
 	cmd.beforeAction = acmd.beforeAction
 	cmd.doAction = acmd.doAction
 	cmd.afterSuccessAction = acmd.afterSuccessAction
@@ -97,11 +99,11 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 
 	for _, scmd := range acmd.subCommands {
 		cmd.subcmds = append(cmd.subcmds, &SubCmdInfo{
-			Name:        scmd.name,
-			Description: scmd.cnf.Get("description").String(),
-			Category:    scmd.cnf.Get("category").String(),
-			Hidden:      scmd.cnf.Get("hidden").Value().Bool(),
-			hideAction:  scmd.hideAction,
+			Name:          scmd.name,
+			Description:   scmd.cnf.Get("description").String(),
+			Category:      scmd.cnf.Get("category").String(),
+			Disabled:      scmd.cnf.Get("disabled").Value().Bool(),
+			disableAction: scmd.disableAction,
 		})
 		maps.Copy(catdesc, scmd.catdesc)
 	}
@@ -123,7 +125,7 @@ func compileParent(cmd *Command) *Cmd {
 	}
 
 	if c.cnf.Get("shared_before_action").Value().Bool() {
-		c.hideAction = cmd.hideAction
+		c.disableAction = cmd.disableAction
 		c.beforeAction = cmd.beforeAction
 	}
 
@@ -134,11 +136,11 @@ func compileParent(cmd *Command) *Cmd {
 }
 
 type SubCmdInfo struct {
-	Name        string
-	Description string
-	Category    string
-	Hidden      bool
-	hideAction  action.Action
+	Name          string
+	Description   string
+	Category      string
+	Disabled      bool
+	disableAction action.Action
 }
 
 type Cmd struct {
@@ -155,7 +157,7 @@ type Cmd struct {
 	usage            []string
 	info             []string
 
-	hideAction         action.Action
+	disableAction      action.Action
 	beforeAction       action.WithArgs
 	doAction           action.WithArgs
 	afterSuccessAction action.Action
@@ -185,33 +187,34 @@ func (c *Cmd) Name() string {
 func (c *Cmd) Usage() []string {
 	return c.usage
 }
-func (c *Cmd) Hidden() bool {
-	return c.cnf.Get("hidden").Value().Bool()
+
+func (c *Cmd) Disabled() bool {
+	return c.cnf.Get("disabled").Value().Bool()
 }
 
-func (c *Cmd) CheckHidden(sess *session.Context) bool {
-	if c.hideAction != nil {
-		var hidden bool
-		if err := c.hideAction(sess); err != nil {
+func (c *Cmd) CheckDisabled(sess *session.Context) bool {
+	if c.disableAction != nil {
+		var disabled bool
+		if err := c.disableAction(sess); err != nil {
 			internal.LogInit(sess.Log(), fmt.Sprintf("hide(%s): %s", c.name, err.Error()))
-			hidden = true
+			disabled = true
 			c.err = err
 		}
-		if err := c.cnf.Set("hidden", hidden); err != nil {
+		if err := c.cnf.Set("disabled", disabled); err != nil {
 			sess.Log().Error(err.Error())
 		}
 	}
 
 	for _, scmd := range c.subcmds {
-		if scmd.hideAction != nil {
+		if scmd.disableAction != nil {
 
-			if err := scmd.hideAction(sess); err != nil {
-				internal.LogInit(sess.Log(), fmt.Sprintf("hide-cmd(%s): %s", scmd.Name, err.Error()))
-				scmd.Hidden = true
+			if err := scmd.disableAction(sess); err != nil {
+				internal.LogInit(sess.Log(), fmt.Sprintf("disable-cmd(%s): %s", scmd.Name, err.Error()))
+				scmd.Disabled = true
 			}
 		}
 	}
-	return c.Hidden()
+	return c.Disabled()
 }
 
 func (c *Cmd) Info() []string {
@@ -274,8 +277,8 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 		c.parent = nil
 	}
 
-	if c.CheckHidden(sess) {
-		if c.cnf.Get("fail_hidden").Value().Bool() {
+	if c.CheckDisabled(sess) {
+		if c.cnf.Get("fail_disabled").Value().Bool() {
 			if c.err != nil {
 				return c.err
 			}
@@ -412,11 +415,11 @@ func (c *Cmd) callSharedBeforeAction(sess *session.Context) error {
 
 	// Is before action shared with sub commands
 	if c.cnf.Get("shared_before_action").Value().Bool() {
-		// Check is caller parent hidden and should fail.
-		// Even if caller parent is hidden but fail_hidden for this parent
+		// Check is caller parent disabled and should fail.
+		// Even if caller parent is disabled but fail_disabled for this parent
 		// is not set the call it.
 		fmt.Printf("%q.shared_before_action\n", c.name)
-		if c.cnf.Get("fail_hidden").Value().Bool() && c.CheckHidden(sess) {
+		if c.cnf.Get("fail_disabled").Value().Bool() && c.CheckDisabled(sess) {
 			if c.err != nil {
 				return c.err
 			}
@@ -441,6 +444,14 @@ func (c *Cmd) SkipSharedBeforeAction() bool {
 
 func (c *Cmd) HasBefore() bool {
 	return c.beforeAction != nil
+}
+
+func (c *Cmd) Err() error {
+	return c.err
+}
+
+func (c *Cmd) Config() *settings.Profile {
+	return c.cnf
 }
 
 func (c *Cmd) getArgs() (action.Args, error) {

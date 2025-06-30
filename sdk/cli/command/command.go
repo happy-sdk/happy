@@ -43,12 +43,12 @@ type Config struct {
 	// SkipSharedBefore indicates that the BeforeAlways any shared before actions provided
 	// by parent commands should be skipped.
 	SkipSharedBefore settings.Bool `key:"skip_shared_before" default:"false"`
-	// Hidden indicates that the command should be hidden from the command list.
-	Hidden settings.Bool `key:"hidden" default:"false" mutation:"once"`
-	// FailHidden indicates that the command should fail when hidden.
-	// If Hide action is set, the command will fail with an error message returned by action.
-	// If Hide action is not set, but Hidden is true, the command will fail with an error message ErrCommandNotAllowed.
-	FailHidden settings.Bool `key:"fail_hidden" default:"false"`
+	// Disabled indicates that the command should be disabled in the command list.
+	Disabled settings.Bool `key:"disabled" default:"false" mutation:"once"`
+	// FailDisabled indicates that the command should fail when disabled.
+	// If Disable action is set, the command will fail with an error message returned by action.
+	// If Disable action is not set, but Disabled is true, the command will fail with an error message ErrCommandNotAllowed.
+	FailDisabled settings.Bool `key:"fail_disabled" default:"false"`
 }
 
 func (s Config) Blueprint() (*settings.Blueprint, error) {
@@ -73,7 +73,7 @@ type Command struct {
 	subCommands map[string]*Command
 
 	beforeAction       action.WithArgs
-	hideAction         action.Action
+	disableAction      action.Action
 	doAction           action.WithArgs
 	afterSuccessAction action.Action
 	afterFailureAction action.WithPrevErr
@@ -162,17 +162,17 @@ func (c *Command) AddUsage(usage string) {
 	c.extraUsage = append(c.extraUsage, usage)
 }
 
-func (c *Command) Hide(a action.Action) *Command {
+func (c *Command) Disable(a action.Action) *Command {
 	if !c.tryLock("Hide") {
 		return c
 	}
 	defer c.mu.Unlock()
 
-	if c.hideAction != nil {
+	if c.disableAction != nil {
 		c.error(fmt.Errorf("%w: attempt to override Hide action for %s", Error, c.name))
 		return c
 	}
-	c.hideAction = a
+	c.disableAction = a
 	return c
 }
 func (c *Command) Before(a action.WithArgs) *Command {

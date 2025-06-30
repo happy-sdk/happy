@@ -17,24 +17,15 @@ package happy
 import (
 	"errors"
 
-	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/app"
-	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
 var ErrNotImplemented = errors.New("not implemented")
 
-type (
-	Main         = app.Main
-	Command      = command.Command
-	BrandBuilder = branding.Builder
-	BrandInfo    = branding.Info
-)
-
-func New(c *Settings, extend ...settings.Settings) *Main {
+func New(c *Settings, extend ...settings.Settings) *app.Main {
 	if c == nil {
 		c = &Settings{}
 	}

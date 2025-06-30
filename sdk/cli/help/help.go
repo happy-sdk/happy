@@ -7,9 +7,11 @@ package help
 import (
 	"fmt"
 	"maps"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
@@ -295,10 +297,13 @@ func (h *Help) printFlag(maxFlagLength, maxAliasLength int, flag flagInfo) {
 }
 
 func (h *Help) printSubcommand(maxNameLength int, name, description string) {
+	re := regexp.MustCompile(`\x1B\[[0-9;]*[a-zA-Z]`)
+	cleanNameLength := len(re.ReplaceAllString(name, ""))
+	padding := maxNameLength - cleanNameLength + 2
 	prefix := strings.Repeat(" ", maxNameLength+2)
 	desc := wordWrapWithPrefix(description, prefix, 80)
 
-	str := fmt.Sprintf("  %-"+fmt.Sprint(maxNameLength+10)+"s  %s", ansicolor.Format(name, ansicolor.Bold), desc)
+	str := fmt.Sprintf("  %s%"+fmt.Sprint(padding)+"s  %s", ansicolor.Format(name, ansicolor.Bold), "", desc)
 	fmt.Println(str)
 }
 
@@ -424,10 +429,20 @@ func wordWrapWithPrefix(input, prefix string, lineLength int) string {
 }
 
 func getMaxNameLength(commands []commandInfo) int {
+	re := regexp.MustCompile(`\x1B\[[0-9;]*[a-zA-Z]`)
 	max := 0
 	for _, cmd := range commands {
-		if len(cmd.name) > max {
-			max = len(cmd.name)
+		// Strip ANSI escape codes
+		cleanName := re.ReplaceAllString(cmd.name, "")
+		// Count only printable runes
+		count := 0
+		for _, r := range cleanName {
+			if unicode.IsPrint(r) {
+				count++
+			}
+		}
+		if count > max {
+			max = count
 		}
 	}
 	return max

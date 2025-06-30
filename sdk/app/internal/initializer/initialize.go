@@ -249,7 +249,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 			Flags(options.ReadOnly),
 		options.NewOption("app.fs.path.wd", "").
 			Description("Current working directory").
-			Flags(options.Once),
+			Flags(options.Mutable),
 		options.NewOption("app.fs.path.home", "").
 			Description("Current user home directory").
 			Flags(options.Once),

@@ -13,7 +13,7 @@ import (
 
 var (
 	ErrInvalidHex = errors.New("invalid HEX color code")
-	InvalidColor  = Color{valid: true}
+	InvalidColor  = Color{valid: false}
 )
 
 type Flag uint32

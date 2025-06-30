@@ -406,41 +406,71 @@ func (rt *Runtime) executeBeforeActions() error {
 func (rt *Runtime) showHelp() error {
 	theme := rt.brand.ANSI()
 
+	helpInfo := help.Info{
+		Name:           rt.sess.Get("app.name").String(),
+		Description:    rt.sess.Get("app.description").String(),
+		Version:        rt.sess.Get("app.version").String(),
+		CopyrightBy:    rt.sess.Get("app.copyright_by").String(),
+		CopyrightSince: rt.sess.Get("app.copyright_since").Int(),
+		License:        rt.sess.Get("app.license").String(),
+		Address:        rt.sess.Get("app.address").String(),
+		Usage:          rt.cmd.Usage(),
+		Info:           rt.cmd.Info(),
+	}
+
+	if rt.cmd.Disabled() {
+		err := rt.cmd.Err()
+		if err == nil {
+			err = fmt.Errorf("command disabled in current context")
+		}
+		helpInfo.Usage = []string{
+			ansicolor.Format(helpInfo.Usage[0], ansicolor.Strike),
+			ansicolor.Text(
+				err.Error(),
+				theme.Warning,
+				ansicolor.Color{},
+				0,
+			),
+		}
+	}
+
+	desc := rt.cmd.Config().Get("description").String()
+	if desc != "" {
+		helpInfo.Usage = append(
+			helpInfo.Usage,
+			"",
+			desc,
+		)
+	}
+
 	h := help.New(
-		help.Info{
-			Name:           rt.sess.Get("app.name").String(),
-			Description:    rt.sess.Get("app.description").String(),
-			Version:        rt.sess.Get("app.version").String(),
-			CopyrightBy:    rt.sess.Get("app.copyright_by").String(),
-			CopyrightSince: rt.sess.Get("app.copyright_since").Int(),
-			License:        rt.sess.Get("app.license").String(),
-			Address:        rt.sess.Get("app.address").String(),
-			Usage:          rt.cmd.Usage(),
-			Info:           rt.cmd.Info(),
-		},
+		helpInfo,
 		help.Style{
 			Primary:     ansicolor.Style{FG: theme.Primary, Format: ansicolor.Bold},
-			Info:        ansicolor.Style{FG: theme.Info},
+			Info:        ansicolor.Style{FG: theme.Secondary},
 			Version:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
 			Credits:     ansicolor.Style{FG: theme.Secondary},
 			License:     ansicolor.Style{FG: theme.Accent, Format: ansicolor.Faint},
-			Description: ansicolor.Style{FG: theme.Secondary},
+			Description: ansicolor.Style{FG: theme.Primary},
 			Category:    ansicolor.Style{FG: theme.Accent, Format: ansicolor.Bold},
 		},
 	)
 
-	if !rt.cmd.Hidden() {
-		for _, scmd := range rt.cmd.SubCommands() {
-			if scmd.Hidden {
-				continue
-			}
-			h.AddCommand(scmd.Category, scmd.Name, scmd.Description)
+	// if !rt.cmd.Hidden() {
+	for _, scmd := range rt.cmd.SubCommands() {
+		name := scmd.Name
+		desc := scmd.Description
+		if scmd.Disabled {
+			name = ansicolor.Format(name, ansicolor.Strike)
+			desc += ansicolor.Text(" (disabled)", theme.Warning, ansicolor.Color{}, 0)
 		}
+		h.AddCommand(scmd.Category, name, desc)
 	}
+	// }
 
 	h.AddCategoryDescriptions(rt.cmd.Categories())
 
-	if !rt.cmd.IsRoot() && !rt.cmd.Hidden() {
+	if !rt.cmd.IsRoot() && !rt.cmd.Disabled() {
 		h.AddCommandFlags(rt.cmd.Flags())
 		h.AddSharedFlags(rt.cmd.SharedFlags())
 	}
