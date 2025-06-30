@@ -62,7 +62,7 @@ func TestCurrentVersionFormat(t *testing.T) {
 	v := Current().String()
 
 	// The version should start with "v0.0.1-devel" or be a valid semver tag
-	validVersion := regexp.MustCompile(`^v\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?(\+.*)?$`)
+	validVersion := regexp.MustCompile(`^(?P<major>0|[v1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
 	if !validVersion.MatchString(v) {
 		t.Errorf("Current() = %v, which is not a valid version format", v)
 	}
