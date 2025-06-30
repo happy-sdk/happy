@@ -24,13 +24,13 @@ import (
 )
 
 func Command() *command.Command {
-	cmd := command.New(command.Config{
-		Name:             "config",
-		Category:         "Configuration",
-		Description:      "Manage and configure application settings",
-		Immediate:        true,
-		SkipSharedBefore: true,
-	})
+	cmd := command.New("config",
+		command.Config{
+			Category:         "Configuration",
+			Description:      "Manage and configure application settings",
+			Immediate:        true,
+			SkipSharedBefore: true,
+		})
 
 	cmd.AddInfo("This command allows you to manage the application configuration settings and settings profiles.")
 
@@ -46,13 +46,13 @@ func Command() *command.Command {
 }
 
 func configLs() *command.Command {
-	cmd := command.New(command.Config{
-		Name:        "ls",
-		Description: "List settings for current profile",
-		Usage:       "[-a|--all]",
-	})
+	cmd := command.New("ls",
+		command.Config{
+			Description: "List settings for current profile",
+			Usage:       "[-a|--all]",
+		})
 
-	cmd.Usage("--profile=<profile-name> [flags]")
+	cmd.AddUsage("--profile=<profile-name> [flags]")
 
 	cmd.WithFlags(
 		varflag.BoolFunc("all", false, "List all settings, including internal settings", "a"),
@@ -139,17 +139,17 @@ func configLs() *command.Command {
 }
 
 func configOpts() *command.Command {
-	cmd := command.New(command.Config{
-		Name:        "opts",
-		Description: "List application session options for current profile",
-	})
+	cmd := command.New("opts",
+		command.Config{
+			Description: "List application session options for current profile",
+		})
 
-	cmd.Usage("--profile=<profile-name>")
+	cmd.AddUsage("--profile=<profile-name>")
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		optstbl := textfmt.Table{}
 		sess.Opts().Range(func(opt options.Option) bool {
-			optstbl.AddRow(opt.Name(), sess.Describe(opt.Name()), opt.Value().String())
+			optstbl.AddRow(opt.Key(), sess.Describe(opt.Key()), opt.Value().String())
 			return true
 		})
 		sess.Log().Println(optstbl.String())
@@ -160,13 +160,13 @@ func configOpts() *command.Command {
 }
 
 func configSet() *command.Command {
-	cmd := command.New(command.Config{
-		Name:        "set",
-		Description: "Set a setting value",
-		MinArgs:     2,
-	})
+	cmd := command.New("set",
+		command.Config{
+			Description: "Set a setting value",
+			MinArgs:     2,
+		})
 
-	cmd.Usage("--profile=<profile-name>")
+	cmd.AddUsage("--profile=<profile-name>")
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		key := args.Arg(0).String()
@@ -224,13 +224,13 @@ func configSet() *command.Command {
 }
 
 func configGet() *command.Command {
-	cmd := command.New(command.Config{
-		Name:        "get",
-		Description: "Get a setting or option value",
-		MinArgs:     1,
-	})
+	cmd := command.New("get",
+		command.Config{
+			Description: "Get a setting or option value",
+			MinArgs:     1,
+		})
 
-	cmd.Usage("--profile=<profile-name>")
+	cmd.AddUsage("--profile=<profile-name>")
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		key := sess.Get(args.Arg(0).String())
@@ -244,13 +244,13 @@ func configGet() *command.Command {
 }
 
 func configReset() *command.Command {
-	cmd := command.New(command.Config{
-		Name:        "reset",
-		Description: "Reset a setting to its default value",
-		MinArgs:     1,
-	})
+	cmd := command.New("reset",
+		command.Config{
+			Description: "Reset a setting to its default value",
+			MinArgs:     1,
+		})
 
-	cmd.Usage("--profile=<profile-name>")
+	cmd.AddUsage("--profile=<profile-name>")
 
 	cmd.WithFlags(varflag.BoolFunc("all", false, "reset all settings", "a"))
 
