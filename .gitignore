@@ -11,9 +11,7 @@
 **/.DS_Store
 **/*.sw[mnop]
 **/coverage.*
-import.sh
 .env
-sdk/internal/cmd/hsdk/hsdk
 
 ################################################################################
 # DIRECTORIES to ignore
