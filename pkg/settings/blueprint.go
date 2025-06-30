@@ -139,7 +139,7 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 			}
 			spec.Kind = results[0].Interface().(Kind)
 		} else {
-			spec.Kind = KindCustom
+			spec.Kind = KindString
 		}
 
 		desc := field.Tag.Get("desc")

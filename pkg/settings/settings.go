@@ -54,9 +54,9 @@ type SettingField interface {
 	fmt.Stringer
 	Marshaller
 	Unmarshaller
-	SettingKind() Kind
 }
 
+// SettingKind() Kind
 type Settings interface {
 	Blueprint() (*Blueprint, error)
 }
@@ -106,14 +106,12 @@ func New[S Settings](s S) (*Blueprint, error) {
 		}
 
 		// handle short syntax group keys
-
 		// Update the field value if needed
 		if isPointer {
 			// Get the field by name from the original value to set it back
 			originalField := reflect.ValueOf(s).Elem().FieldByName(field.Name)
 			if originalField.CanSet() {
 				// Assuming settingSpecFromField returns the updated value we want to set
-
 				// Use type assertion to ensure compatibility with the original field type
 				if setter, ok := originalField.Addr().Interface().(SettingField); ok {
 					if err := setter.UnmarshalSetting([]byte(spec.Value)); err != nil {
@@ -121,7 +119,6 @@ func New[S Settings](s S) (*Blueprint, error) {
 					}
 				} else if nested, ok := originalField.Addr().Interface().(Settings); ok {
 					// Handle nested settings
-
 					if spec.Settings, err = nested.Blueprint(); err != nil {
 						return nil, fmt.Errorf("failed to set nested settings for field %s: %w", field.Name, err)
 					}
