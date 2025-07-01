@@ -115,9 +115,8 @@ func (m tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				res += dividerStyle.Render(strings.Repeat("─", 60))
 			}
 			task = group.getNextTask()
-		} else {
-			m.executingTaskName = task.name
 		}
+		m.executingTaskName = task.name
 
 		if len(task.dependsOn) > 0 {
 			if _, ok := m.failedDeps[task.dependsOn]; ok {
