@@ -42,6 +42,8 @@ var (
 	successMark  = successStyle.SetString("✓")
 	failStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("202"))
 	failMark     = failStyle.SetString("✗")
+	noticeStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("33"))
+	noticeMark   = noticeStyle.SetString("⚠")
 	warnStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
 	warnMark     = warnStyle.SetString("⚠")
 	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("117"))
@@ -75,6 +77,24 @@ func normalize(in string) (out string) {
 	return strings.ReplaceAll(in, "\n", "")
 }
 
+// Info utility function to create Result with state INFO
+func Info(status, desc string) Result {
+	return Result{
+		Status:     normalize(status),
+		State:      INFO,
+		Decription: normalize(desc),
+	}
+}
+
+// Notice utility function to create Result with state INFO
+func Notice(status, desc string) Result {
+	return Result{
+		Status:     normalize(status),
+		State:      NOTICE,
+		Decription: normalize(desc),
+	}
+}
+
 // Success utility function to create Result with state SUCCESS
 func Success(status, desc string) Result {
 	return Result{
@@ -105,11 +125,12 @@ func Failure(status, desc string) Result {
 type State uint
 
 const (
-	INFO State = iota
+	SKIPPED State = iota
+	INFO
+	NOTICE
 	SUCCESS
 	WARNING
 	FAILURE
-	SKIPPED
 )
 
 type Result struct {

@@ -28,6 +28,7 @@ type tui struct {
 	successes     int
 	failures      int
 	warnings      int
+	notices       int
 	skipped       int
 	executedTasks int
 	totalTasks    int
@@ -67,7 +68,9 @@ func (m tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case SUCCESS:
 			mark = successMark.String()
 			m.successes++
-
+		case NOTICE:
+			mark = noticeMark.String()
+			m.notices++
 		case WARNING:
 			mark = warnMark.String()
 			m.warnings++
@@ -184,9 +187,16 @@ func (m tui) checkStatusFinalReport() string {
 		}
 		freport += fmt.Sprintf("%s%s = %d", pre, warnMark, m.warnings)
 	}
-	if m.successes > 0 {
+	if m.notices > 0 {
 		pre := " "
 		if m.failures == 0 && m.warnings == 0 {
+			pre = noticeStyle.Render("NOTICES ")
+		}
+		freport += fmt.Sprintf("%s%s = %d", pre, noticeMark, m.notices)
+	}
+	if m.successes > 0 {
+		pre := " "
+		if m.failures == 0 && m.warnings == 0 && m.notices == 0 {
 			pre = successStyle.Render("OK ")
 		}
 		freport += fmt.Sprintf("%s%s = %d", pre, successMark, m.successes)
