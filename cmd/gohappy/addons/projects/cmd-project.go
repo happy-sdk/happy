@@ -9,7 +9,6 @@ import (
 
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/cmd/gohappy/addons/projects/project"
-	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -30,43 +29,10 @@ func cmdProject() *command.Command {
 				return fmt.Errorf("%w: no project detected", project.Error)
 			}
 			return nil
-		}).
-		Do(func(sess *session.Context, args action.Args) error {
-			api, err := happy.API[*API](sess)
-			if err != nil {
-				return err
-			}
-			prj, err := api.Project()
-			if err != nil {
-				return err
-			}
-			if err := prj.Load(sess); err != nil {
-				return err
-			}
-			return api.ProjectInfoPrint(sess)
 		}).WithSubCommands(
+		cmdProjectInfo(),
 		cmdProjectLint(),
 		cmdProjectRelease(),
+		cmdProjectTest(),
 	)
-}
-
-func cmdProjectRelease() *command.Command {
-	return command.New("release",
-		command.Config{
-			Description: "Release current project",
-		}).
-		Do(func(sess *session.Context, args action.Args) error {
-			api, err := happy.API[*API](sess)
-			if err != nil {
-				return err
-			}
-			prj, err := api.Project()
-			if err != nil {
-				return err
-			}
-			if err := prj.Load(sess); err != nil {
-				return err
-			}
-			return api.ProjectInfoPrint(sess)
-		})
 }
