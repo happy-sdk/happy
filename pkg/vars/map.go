@@ -7,6 +7,7 @@ package vars
 import (
 	"encoding/json"
 	"fmt"
+	"iter"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -90,12 +91,23 @@ func (m *Map) Has(key string) bool {
 	return ok
 }
 
-func (m *Map) All() (all []Variable) {
-	m.Range(func(v Variable) bool {
-		all = append(all, v)
-		return true
-	})
-	return
+func (m *Map) All() iter.Seq[Variable] {
+	m.mu.RLock()
+	keys := make([]string, len(m.db))
+	i := 0
+	for key := range m.db {
+		keys[i] = key
+		i++
+	}
+	m.mu.RUnlock()
+	sort.Strings(keys)
+	return func(yield func(Variable) bool) {
+		for _, k := range keys {
+			if !yield(m.Get(k)) {
+				return
+			}
+		}
+	}
 }
 
 // Delete deletes the value for a key.

@@ -13,6 +13,7 @@ package options
 import (
 	"errors"
 	"fmt"
+	"iter"
 	"sort"
 	"strings"
 	"sync"
@@ -362,6 +363,23 @@ func (opts *Options) Range(cb func(opt Option) bool) {
 		opt := opts.Get(k)
 		if !cb(opt) {
 			return
+		}
+	}
+}
+
+func (opts *Options) All() iter.Seq[Option] {
+	opts.mu.RLock()
+	defer opts.mu.RUnlock()
+	keys := make([]string, 0, len(opts.db))
+	for k := range opts.db {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return func(yield func(Option) bool) {
+		for _, k := range keys {
+			if !yield(opts.Get(k)) {
+				return
+			}
 		}
 	}
 }

@@ -91,7 +91,7 @@ func TestMapSet(t *testing.T) {
 	testutils.Equal(t, false, loaded3)
 
 	testutils.Equal(t, 5, collection.Len())
-	testutils.Equal(t, 5, len(collection.All()))
+	testutils.Equal(t, 5, len(slices.Collect(collection.All())))
 }
 
 func TestMapEnvFile(t *testing.T) {

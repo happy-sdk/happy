@@ -622,8 +622,8 @@ LoadPreferences:
 			}
 			pref = settings.NewPreferences()
 
-			for _, d := range prefsMap.All() {
-				pref.Set(d.Name(), d.Value().String())
+			for v := range prefsMap.All() {
+				pref.Set(v.Name(), v.Value().String())
 			}
 		}
 	}
