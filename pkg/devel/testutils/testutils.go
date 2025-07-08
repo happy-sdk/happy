@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -487,4 +488,25 @@ func truncatingFormat(data interface{}) string {
 		value = value[0:max] + "<... truncated>"
 	}
 	return value
+}
+
+func ExtractCoverage(s string) (string, error) {
+	// Match coverage percentage
+	covRe := regexp.MustCompile(`coverage: (\d+\.\d+%)`)
+	if match := covRe.FindStringSubmatch(s); len(match) > 1 {
+		return match[1], nil
+	}
+
+	fields := strings.Fields(s)
+	if len(fields) >= 3 {
+		return fields[2], nil
+	}
+
+	// Match "no test files"
+	noTestRe := regexp.MustCompile(`\[no test files\]`)
+	if noTestRe.MatchString(s) {
+		return "no test files", nil
+	}
+
+	return "", fmt.Errorf("no coverage info found")
 }
