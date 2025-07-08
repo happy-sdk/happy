@@ -277,9 +277,9 @@ func (g *Group) Task(name string, action Action) uuid.UUID {
 }
 
 // TaskD adds task which depends on another tasks to be succsessful
-func (g *Group) TaskD(name string, dependency string, action Action) uuid.UUID {
+func (g *Group) TaskD(dependency uuid.UUID, name string, action Action) uuid.UUID {
 	task := g.task(name, action)
-	task.dependsOn = dependency
+	task.dependsOn = dependency.String()
 	return task.uuid
 }
 
