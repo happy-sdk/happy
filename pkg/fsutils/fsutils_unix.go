@@ -8,7 +8,7 @@ package fsutils
 
 import "syscall"
 
-func AvailableSpace(path string) (uint64, error) {
+func availableSpace(path string) (uint64, error) {
 	var stat syscall.Statfs_t
 	err := syscall.Statfs(path, &stat)
 	if err != nil {

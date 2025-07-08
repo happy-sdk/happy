@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/fsutils"
 	"github.com/happy-sdk/happy/pkg/strings/humanize"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/api"
-	"github.com/happy-sdk/happy/sdk/internal/fsutils"
 	"github.com/happy-sdk/happy/sdk/services"
 	"github.com/happy-sdk/happy/sdk/services/service"
 	"github.com/happy-sdk/happy/sdk/session"

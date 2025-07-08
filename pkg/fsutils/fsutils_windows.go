@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func AvailableSpace(path string) (uint64, error) {
+func availableSpace(path string) (uint64, error) {
 	lpFreeBytesAvailable := uint64(0)
 	lpTotalNumberOfBytes := uint64(0)
 	lpTotalNumberOfFreeBytes := uint64(0)

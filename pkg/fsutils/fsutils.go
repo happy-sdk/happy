@@ -24,3 +24,15 @@ func DirSize(path string) (int64, error) {
 	})
 	return size, err
 }
+
+func AvailableSpace(path string) (uint64, error) {
+	return availableSpace(path)
+}
+
+func IsDir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
