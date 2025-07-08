@@ -180,6 +180,10 @@ func Current() Version {
 	return Version(fmt.Sprintf("v%d.0.1-devel%s", major, suffix))
 }
 
+func Compare(v Version, w Version) int {
+	return semver.Compare(v.String(), w.String())
+}
+
 // getGitInfo attempts to get Git information using command line
 func getGitInfo() (commit string, modified bool, date string) {
 	// Check if we're in a Git repository
