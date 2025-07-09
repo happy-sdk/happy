@@ -2,7 +2,7 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package module
+package gomodule
 
 import (
 	"errors"
@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/happy-sdk/happy/cmd/gohappy/pkg/changelog"
+	"github.com/happy-sdk/happy/cmd/gohappy/pkg/git"
+	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/session"
 	"golang.org/x/mod/modfile"
@@ -23,18 +25,19 @@ import (
 )
 
 type Package struct {
-	ModFilePath  string
-	Dir          string
-	TagPrefix    string
-	Import       string
-	Modfile      *modfile.File
-	FirstRelease bool
-	NeedsRelease bool
-	IsInternal   bool
-	UpdateDeps   bool
-	NextRelease  string
-	LastRelease  string
-	Changelog    *changelog.Changelog
+	ModFilePath    string
+	Dir            string
+	TagPrefix      string
+	Import         string
+	Modfile        *modfile.File
+	FirstRelease   bool
+	NeedsRelease   bool
+	PendingRelease bool
+	IsInternal     bool
+	UpdateDeps     bool
+	NextReleaseTag string
+	LastReleaseTag string
+	Changelog      *changelog.Changelog
 }
 
 func LoadAll(sess *session.Context, wd string) ([]*Package, error) {
@@ -52,7 +55,7 @@ func LoadAll(sess *session.Context, wd string) ([]*Package, error) {
 			return nil
 		}
 
-		pkg, err := Load(sess, goModPath)
+		pkg, err := Load(sess, wd, goModPath)
 		if err != nil {
 			return err
 		}
@@ -64,7 +67,7 @@ func LoadAll(sess *session.Context, wd string) ([]*Package, error) {
 	return pkgs, nil
 }
 
-func Load(sess *session.Context, path string) (pkg *Package, err error) {
+func Load(sess *session.Context, root, path string) (pkg *Package, err error) {
 	if path == "" {
 		return nil, errors.New("can not load module, path is empty")
 	}
@@ -113,35 +116,70 @@ func Load(sess *session.Context, path string) (pkg *Package, err error) {
 	}
 	pkg.Import = pkg.Modfile.Module.Mod.Path
 
+	pkg.TagPrefix = strings.TrimPrefix(pkg.Dir+"/", root+"/")
+
 	return pkg, nil
 }
 
-func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, tagPrefix string) error {
-	p.TagPrefix = tagPrefix
+func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, origin string, checkRemote bool) error {
+
 	sess.Log().Debug(
 		"getting latest release",
 		slog.String("package", p.Modfile.Module.Mod.Path),
 		slog.String("tag.prefix", p.TagPrefix),
 	)
 	tagscmd := exec.Command("git", "tag", "--list", p.TagPrefix+"*")
-	tagscmd.Dir = p.Dir
+	tagscmd.Dir = rootPath
 	tagsout, err := cli.Exec(sess, tagscmd)
 	if err != nil {
 		return err
 	}
 
+	var nextVersion version.Version = "v0.1.0"
+	nextVersionFile := filepath.Join(p.Dir, "VERSION")
+	nextVersionBytes, err := os.ReadFile(nextVersionFile)
+	if err == nil {
+		nextVersionStr := strings.TrimSpace(string(nextVersionBytes))
+		nextVersion, err = version.Parse(nextVersionStr)
+		if err != nil {
+			nextVersion = "v0.1.0"
+		}
+	}
+
+	defer func() {
+		if !version.IsValid(nextVersion) {
+			return
+		}
+		nextReleaseTagVersion := version.Version(path.Base(p.NextReleaseTag))
+		lastReleaseTagVersion := version.Version(path.Base(p.LastReleaseTag))
+		if version.IsValid(nextReleaseTagVersion) {
+			if version.Compare(nextVersion, nextReleaseTagVersion) == 1 {
+				p.NextReleaseTag = fmt.Sprintf("%s%s", p.TagPrefix, nextVersion)
+				p.NeedsRelease = true
+			}
+		} else if version.IsValid(lastReleaseTagVersion) {
+			if version.Compare(nextVersion, lastReleaseTagVersion) == 1 {
+				p.NextReleaseTag = fmt.Sprintf("%s%s", p.TagPrefix, nextVersion)
+				p.NeedsRelease = true
+			}
+		} else {
+			p.NextReleaseTag = fmt.Sprintf("%s%s", p.TagPrefix, nextVersion)
+			p.NeedsRelease = true
+		}
+	}()
+
 	if tagsout == "" {
 		// First release
 		p.FirstRelease = true
 		p.NeedsRelease = true
-		p.NextRelease = fmt.Sprintf("%s%s", p.TagPrefix, "v0.1.0")
-		p.LastRelease = fmt.Sprintf("%s%s", p.TagPrefix, "v0.0.0")
+		p.NextReleaseTag = fmt.Sprintf("%s%s", p.TagPrefix, nextVersion)
+		p.LastReleaseTag = fmt.Sprintf("%s%s", p.TagPrefix, ".")
 		if strings.Contains(p.Import, "internal") {
 			p.FirstRelease = false
 			p.NeedsRelease = false
 			p.IsInternal = true
-			p.LastRelease = "."
-			p.NextRelease = "."
+			p.LastReleaseTag = "."
+			p.NextReleaseTag = "."
 		}
 		return nil
 	}
@@ -149,6 +187,7 @@ func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, tagPrefix str
 	fulltags := strings.Split(tagsout, "\n")
 	var tags []string
 	for _, tag := range fulltags {
+
 		ntag := strings.TrimPrefix(tag, p.TagPrefix)
 		// skip nested package
 		if strings.Contains(ntag, "/") {
@@ -157,7 +196,32 @@ func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, tagPrefix str
 		tags = append(tags, ntag)
 	}
 	semver.Sort(tags)
-	p.LastRelease = fmt.Sprintf("%s%s", p.TagPrefix, tags[len(tags)-1])
+	p.LastReleaseTag = fmt.Sprintf("%s%s", p.TagPrefix, tags[len(tags)-1])
+
+	// Handle pending release
+	if !checkRemote {
+		return p.getChangelog(sess, rootPath)
+	}
+	if git.RemoteTagExists(sess, rootPath, origin, p.LastReleaseTag) {
+		return p.getChangelog(sess, rootPath)
+	}
+	p.NextReleaseTag = p.LastReleaseTag
+	p.LastReleaseTag = ""
+	p.NeedsRelease = true
+	p.PendingRelease = true
+
+	tags = tags[:len(tags)-1]
+	for i := len(tags) - 1; i >= 0; i-- {
+		tag := fmt.Sprintf("%s%s", p.TagPrefix, tags[i])
+		if git.RemoteTagExists(sess, rootPath, origin, tag) {
+			p.LastReleaseTag = tag
+			break
+		}
+	}
+	if p.LastReleaseTag == "" {
+		p.LastReleaseTag = fmt.Sprintf("%s%s", p.TagPrefix, ".")
+		p.FirstRelease = true
+	}
 	return p.getChangelog(sess, rootPath)
 }
 
@@ -168,30 +232,34 @@ func (p *Package) Tidy(sess *session.Context) error {
 	return err
 }
 
-func (p *Package) SetDep(dep string, version string) error {
-	if version == "" || version == "." || p.IsInternal {
+func (p *Package) SetDep(dep string, ver version.Version) error {
+	if p.IsInternal {
 		return nil
 	}
 	for _, require := range p.Modfile.Require {
 		if require.Mod.Path == dep {
-			version = path.Base(version)
-			if semver.Compare(version, require.Mod.Version) == 1 {
-				if err := p.Modfile.AddRequire(require.Mod.Path, version); err != nil {
-					return err
-				}
-				p.NeedsRelease = true
-				p.UpdateDeps = true
-
-				if p.NextRelease == "" || p.LastRelease == p.NextRelease {
-					nextver, err := bumpPatch(p.TagPrefix, p.LastRelease)
-					if err != nil {
-						return fmt.Errorf("failed to bump patch version for(%s): %w", p.Import, err)
-					}
-					p.NextRelease = nextver
-				}
-				break
+			requireModVersion, err := version.Parse(require.Mod.Version)
+			if err != nil {
+				return err
+			}
+			if version.Compare(ver, requireModVersion) == 0 {
+				return nil
 			}
 		}
+	}
+
+	if err := p.Modfile.AddRequire(dep, ver.String()); err != nil {
+		return err
+	}
+	p.NeedsRelease = true
+	p.UpdateDeps = true
+
+	if p.NextReleaseTag == "" || p.LastReleaseTag == p.NextReleaseTag {
+		nextver, err := bumpPatch(p.TagPrefix, p.LastReleaseTag)
+		if err != nil {
+			return fmt.Errorf("failed to bump patch version for(%s): %w", p.Import, err)
+		}
+		p.NextReleaseTag = nextver
 	}
 
 	p.Modfile.Cleanup()
@@ -203,9 +271,14 @@ func (p *Package) getChangelog(sess *session.Context, rootPath string) error {
 		return nil
 	}
 	var lastTagQuery = []string{"log"}
-	if !p.FirstRelease {
-		lastTagQuery = append(lastTagQuery, fmt.Sprintf("%s..HEAD", p.LastRelease))
+	upto := "HEAD"
+	if p.PendingRelease {
+		upto = p.NextReleaseTag
 	}
+	if !p.FirstRelease {
+		lastTagQuery = append(lastTagQuery, fmt.Sprintf("%s..%s", p.LastReleaseTag, upto))
+	}
+
 	localpath := strings.TrimSuffix(p.TagPrefix, "/")
 	if len(localpath) == 0 {
 		localpath = "."
@@ -227,25 +300,25 @@ func (p *Package) getChangelog(sess *session.Context, rootPath string) error {
 		return nil
 	}
 	if p.Changelog.HasMajorUpdate() {
-		nextver, err := bumpMajor(p.TagPrefix, p.LastRelease)
+		nextTag, err := bumpMajor(p.TagPrefix, p.LastReleaseTag)
 		if err != nil {
 			return fmt.Errorf("failed to bump major version for(%s): %w", p.Import, err)
 		}
-		p.NextRelease = nextver
+		p.NextReleaseTag = nextTag
 		p.NeedsRelease = true
 	} else if p.Changelog.HasMinorUpdate() {
-		nextver, err := bumpMinor(p.TagPrefix, p.LastRelease)
+		nextTag, err := bumpMinor(p.TagPrefix, p.LastReleaseTag)
 		if err != nil {
 			return fmt.Errorf("failed to bump minor version for(%s): %w", p.Import, err)
 		}
-		p.NextRelease = nextver
+		p.NextReleaseTag = nextTag
 		p.NeedsRelease = true
 	} else if p.Changelog.HasPatchUpdate() {
-		nextver, err := bumpPatch(p.TagPrefix, p.LastRelease)
+		nextTag, err := bumpPatch(p.TagPrefix, p.LastReleaseTag)
 		if err != nil {
 			return fmt.Errorf("failed to bump patch version for(%s): %w", p.Import, err)
 		}
-		p.NextRelease = nextver
+		p.NextReleaseTag = nextTag
 		p.NeedsRelease = true
 	}
 	return nil

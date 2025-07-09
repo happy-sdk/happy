@@ -2,13 +2,16 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package module
+package gomodule
 
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
+
+	"github.com/happy-sdk/happy/pkg/version"
 )
 
 func Count(wd string) (int, error) {
@@ -33,6 +36,8 @@ func Count(wd string) (int, error) {
 }
 
 // TopologicalReleaseQueue performs a topological sort on the dependency graph
+// and returns a slice of package names in release order while also
+// modifying the pkgs slice.
 func TopologicalReleaseQueue(pkgs []*Package) ([]string, error) {
 	pkgMap := make(map[string]*Package)
 	for i := range pkgs {
@@ -52,7 +57,15 @@ func TopologicalReleaseQueue(pkgs []*Package) ([]string, error) {
 			if dep, exists := pkgMap[require.Mod.Path]; exists {
 				// Add edge from dependency to dependent (dep -> pkg)
 				depGraph[dep.Import] = append(depGraph[dep.Import], pkg.Import)
-				if err := pkg.SetDep(dep.Import, dep.NextRelease); err != nil {
+				basever := path.Base(dep.NextReleaseTag)
+				if basever == "" || basever == "." {
+					basever = path.Base(dep.LastReleaseTag)
+				}
+				depNextRelease, err := version.Parse(basever)
+				if err != nil {
+					return nil, err
+				}
+				if err := pkg.SetDep(dep.Import, depNextRelease); err != nil {
 					return nil, err
 				}
 			}
@@ -118,4 +131,54 @@ func TopologicalReleaseQueue(pkgs []*Package) ([]string, error) {
 	})
 
 	return queue, nil
+}
+
+func GetCommonDeps(pkgs []*Package) ([]Dependency, error) {
+	// Map to hold the count of each external dependency
+	deps := make(map[string]Dependency)
+
+	// Map to quickly check if a dependency is internal
+	internalDeps := make(map[string]struct{})
+	for _, pkg := range pkgs {
+		internalDeps[pkg.Import] = struct{}{}
+	}
+
+	// Collect and count external dependencies
+	for _, pkg := range pkgs {
+		for _, require := range pkg.Modfile.Require {
+			if _, internal := internalDeps[require.Mod.Path]; !internal {
+				requireModVersion, err := version.Parse(require.Mod.Version)
+				if err != nil {
+					return nil, err
+				}
+
+				if dep, exists := deps[require.Mod.Path]; !exists {
+					deps[require.Mod.Path] = Dependency{
+						Import:     require.Mod.Path,
+						UsedBy:     []string{pkg.Import},
+						MaxVersion: requireModVersion,
+						MinVersion: requireModVersion,
+					}
+				} else {
+					if version.Compare(requireModVersion, dep.MaxVersion) == 1 {
+						dep.MaxVersion = requireModVersion
+					}
+					if version.Compare(requireModVersion, dep.MinVersion) == -1 {
+						dep.MinVersion = requireModVersion
+					}
+					dep.UsedBy = append(dep.UsedBy, pkg.Import)
+					deps[require.Mod.Path] = dep
+				}
+			}
+		}
+	}
+
+	// Filter dependencies that are referenced by at least two packages
+	var commonDeps []Dependency
+	for _, dep := range deps {
+		if len(dep.UsedBy) >= 2 {
+			commonDeps = append(commonDeps, dep)
+		}
+	}
+	return commonDeps, nil
 }

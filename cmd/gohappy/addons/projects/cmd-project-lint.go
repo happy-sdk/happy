@@ -5,7 +5,6 @@
 package projects
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,6 +16,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/session"
 	"github.com/happy-sdk/taskrunner"
+	tr "github.com/happy-sdk/taskrunner"
 )
 
 func cmdProjectLint() *command.Command {
@@ -29,14 +29,11 @@ func cmdProjectLint() *command.Command {
 			if err != nil {
 				return err
 			}
-			prj, err := api.Project()
+			prj, err := api.Project(sess, true)
 			if err != nil {
 				return err
 			}
-			if err := prj.Load(sess); err != nil {
-				return err
-			}
-			gomodules, err := prj.GoModules(sess, false)
+			gomodules, err := prj.GoModules(sess, false, false)
 			if err != nil {
 				return err
 			}
@@ -47,41 +44,23 @@ func cmdProjectLint() *command.Command {
 				gloangciLintBin = filepath.Join(gloangciLintBinGh, "bin", gloangciLintBin)
 			}
 
-			runner := taskrunner.New("project linter")
-			lintGoModules := taskrunner.NewGroup("lint go modules")
-
-			output := make(map[string]string)
+			runner := tr.New()
 
 			for _, gomodule := range gomodules {
-				lintGoModules.Task(gomodule.Import, func() (res taskrunner.Result) {
+				runner.Add(filepath.Base(gomodule.Dir), func(*tr.Executor) (res tr.Result) {
 					cmd := exec.Command(gloangciLintBin, "run", "./...")
 					cmd.Dir = gomodule.Dir
 					out, err := cli.Exec(sess, cmd)
 					if err != nil {
-						output[gomodule.Import] = out
-						return taskrunner.Failure(err.Error(), "linting errors")
+						fmt.Println(out)
+						return taskrunner.Failure(err.Error()).WithDesc(gomodule.Import)
 					}
-					return taskrunner.Success("ok", "")
+					return taskrunner.Success("ok").WithDesc(gomodule.Import)
 				})
 			}
 
-			if err := runner.Add(lintGoModules); err != nil {
+			if err := runner.Run(); err != nil {
 				return err
-			}
-
-			if err := runner.Run("*"); err != nil {
-				return err
-			}
-
-			for gomodule, out := range output {
-				fmt.Println(gomodule)
-				fmt.Println("-------------------------------------------")
-				fmt.Println(out)
-				fmt.Println("-------------------------------------------")
-			}
-
-			if len(output) > 0 {
-				return errors.New("linting errors")
 			}
 
 			return nil

@@ -6,10 +6,10 @@ package project
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/happy-sdk/happy/cmd/gohappy/pkg/git"
+	"github.com/happy-sdk/happy/pkg/fsutils"
 	"github.com/happy-sdk/happy/pkg/options"
 )
 
@@ -48,9 +48,7 @@ func addConfigSpecsLocal(config *options.Spec) error {
 				return options.NewValue(currentPath)
 			}).
 			Validator(func(opt options.Option) error {
-				if stat, err := os.Stat(opt.String()); err != nil {
-					return err
-				} else if !stat.IsDir() {
+				if !fsutils.IsDir(opt.String()) {
 					return fmt.Errorf("%w(%s): %s is not a directory", Error, opt.Key(), opt.String())
 				}
 				return nil

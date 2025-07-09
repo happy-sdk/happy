@@ -5,10 +5,7 @@
 package projects
 
 import (
-	"fmt"
-
 	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/cmd/gohappy/addons/projects/project"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -25,14 +22,14 @@ func cmdProject() *command.Command {
 			if err != nil {
 				return err
 			}
-			if !api.Detect(sess) {
-				return fmt.Errorf("%w: no project detected", project.Error)
-			}
-			return nil
-		}).WithSubCommands(
-		cmdProjectInfo(),
-		cmdProjectLint(),
-		cmdProjectRelease(),
-		cmdProjectTest(),
-	)
+
+			_, err = api.Project(sess, false)
+			return err
+		}).
+		WithSubCommands(
+			cmdProjectInfo(),
+			cmdProjectLint(),
+			cmdProjectRelease(),
+			cmdProjectTest(),
+		)
 }

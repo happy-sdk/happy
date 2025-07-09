@@ -5,8 +5,6 @@
 package projects
 
 import (
-	"fmt"
-
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -18,7 +16,7 @@ func cmdProjects() *command.Command {
 			Description: "Manage local projects known by Happy SDK",
 		}).
 		Do(func(sess *session.Context, args action.Args) error {
-			fmt.Println("Hello, World!")
+			sess.Log().NotImplemented("projects command not implemented")
 			return nil
 		})
 }

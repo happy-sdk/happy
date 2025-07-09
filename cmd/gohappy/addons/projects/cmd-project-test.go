@@ -9,15 +9,17 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/happy-sdk/happy"
+	"github.com/happy-sdk/happy/pkg/devel/testutils"
+	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/session"
 	"github.com/happy-sdk/taskrunner"
+	tr "github.com/happy-sdk/taskrunner"
 )
 
 func cmdProjectTest() *command.Command {
@@ -30,7 +32,7 @@ func cmdProjectTest() *command.Command {
 			if err != nil {
 				return err
 			}
-			prj, err := api.Project()
+			prj, err := api.Project(sess, true)
 			if err != nil {
 				return err
 			}
@@ -38,71 +40,76 @@ func cmdProjectTest() *command.Command {
 				return err
 			}
 
-			gomodules, err := prj.GoModules(sess, false)
+			gomodules, err := prj.GoModules(sess, false, false)
 			if err != nil {
 				return err
 			}
 
-			repoRoot := prj.Config().Get("git.repo.root").String()
-			runner := taskrunner.New("project tests")
+			runner := tr.New()
 
 			output := make(map[string]string)
 
 			for _, gomodule := range gomodules {
 
-				testGroup := taskrunner.NewGroup(gomodule.Import)
-
-				// Get packages belonging to module
-				localPkgsCmd := exec.Command("go", "list", "./...")
-				localPkgsCmd.Dir = gomodule.Dir
-				localPkgsOut, err := cli.ExecRaw(sess, localPkgsCmd)
-				if err != nil {
-					return err
-				}
-				for localPkg := range strings.SplitSeq(string(localPkgsOut), "\n") {
-					if localPkg == "" {
-						continue
-					}
-					name := strings.TrimPrefix(localPkg, gomodule.Import)
-					if name == "" {
-						name = gomodule.TagPrefix
-						if gomodule.TagPrefix == "" {
-							name = "."
-						}
-					}
-					if strings.HasPrefix(name, "/") {
-						name = filepath.Join(gomodule.TagPrefix, name)
+				runner.Add(filepath.Base(gomodule.Dir), func(*tr.Executor) (res tr.Result) {
+					// Get packages belonging to module
+					localPkgsCmd := exec.Command("go", "list", "./...")
+					localPkgsCmd.Dir = gomodule.Dir
+					localPkgsOut, err := cli.ExecRaw(sess, localPkgsCmd)
+					if err != nil {
+						return taskrunner.Failure(err.Error()).WithDesc(gomodule.Import)
 					}
 
-					testGroup.Task(name, func() (res taskrunner.Result) {
+					localPkgs := strings.Join(strings.Fields(string(localPkgsOut)), ",")
 
-						wd := filepath.Join(repoRoot, name)
-						testCmd := exec.Command("go", "test", "-coverprofile", "coverage.out", "-timeout", "1m", ".")
-						testCmd.Dir = wd
-						out, err := cli.Exec(sess, testCmd)
+					testCmd := exec.Command("go", "test", "-coverpkg", localPkgs, "-coverprofile", "coverage.out", "-timeout", "1m", "./...")
+					testCmd.Dir = gomodule.Dir
+
+					out, err := cli.Exec(sess, testCmd)
+					if err != nil {
+						fmt.Println(out)
+						return taskrunner.Failure(err.Error()).WithDesc(gomodule.Import)
+					}
+
+					coverageSumCmd := exec.Command("go", "tool", "cover", "-func", "coverage.out")
+					coverageSumCmd.Dir = gomodule.Dir
+
+					coverageSumOut, err := cli.Exec(sess, coverageSumCmd)
+					if err != nil {
+						output[gomodule.Import] = coverageSumOut
+						return taskrunner.Failure(err.Error()).WithDesc(gomodule.Import)
+					}
+
+					lines := strings.Split(strings.TrimSpace(string(coverageSumOut)), "\n")
+					var coverage vars.Value
+					if len(lines) > 0 {
+						lastLine := lines[len(lines)-1]
+
+						cov, err := testutils.ExtractCoverage(lastLine)
 						if err != nil {
-							output[gomodule.Import] = out
-							return taskrunner.Failure(err.Error(), "test errors")
+							return taskrunner.Failure(err.Error()).WithDesc(gomodule.Import)
 						}
-						coverage, err := extractCoverage(out)
-						if err != nil {
-							return taskrunner.Failure(err.Error(), "coverage extraction failed")
-						}
-						if coverage == "no test files" || coverage == "0.0%" {
-							return taskrunner.Warn(coverage, "no coverage")
-						}
-						return taskrunner.Success(coverage, "")
-					})
-
-				}
-
-				if err := runner.Add(testGroup); err != nil {
-					return err
-				}
+						coverage, _ = vars.NewValue(strings.TrimSuffix(cov, "%"))
+					}
+					c, _ := coverage.Float64()
+					if c == 100.0 {
+						return taskrunner.Success(fmt.Sprintf("coverage[ %-8s]: full", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
+					} else if c >= 90.0 {
+						return taskrunner.Success(fmt.Sprintf("coverage[ %-8s]: high", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
+					} else if c >= 75.0 {
+						return taskrunner.Info(fmt.Sprintf("coverage[ %-8s]: moderate", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
+					} else if c >= 50.0 {
+						return taskrunner.Notice(fmt.Sprintf("coverage[ %-8s]: low", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
+					} else if c > 0.0 {
+						return taskrunner.Warn(fmt.Sprintf("coverage[ %-8s]: very-low", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
+					} else {
+						return taskrunner.Warn("coverage[ 0%      ]: no coverage").WithDesc(gomodule.Import)
+					}
+				})
 
 			}
 
-			if err := runner.Run("*"); err != nil {
+			if err := runner.Run(); err != nil {
 				return err
 			}
 
@@ -119,20 +126,4 @@ func cmdProjectTest() *command.Command {
 
 			return nil
 		})
-}
-
-func extractCoverage(s string) (string, error) {
-	// Match coverage percentage
-	covRe := regexp.MustCompile(`coverage: (\d+\.\d+%)`)
-	if match := covRe.FindStringSubmatch(s); len(match) > 1 {
-		return match[1], nil
-	}
-
-	// Match "no test files"
-	noTestRe := regexp.MustCompile(`\[no test files\]`)
-	if noTestRe.MatchString(s) {
-		return "no test files", nil
-	}
-
-	return "", fmt.Errorf("no coverage or test files info found")
 }

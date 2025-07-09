@@ -10,6 +10,7 @@ import (
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/cmd/gohappy/addons/projects"
 	"github.com/happy-sdk/happy/pkg/branding"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -35,13 +36,14 @@ func main() {
 		CLI: happy.CliSettings{
 			WithConfigCmd:        true,
 			WithGlobalFlags:      true,
-			HideDisabledCommands: true,
+			HideDisabledCommands: false,
 		},
 		Logging: happy.LoggingSettings{
 			WithSource: true,
+			Level:      logging.LevelOk,
 		},
 	}).
-		AddInfo("The Happy CLI is an optional command-line tool designed to streamline management of Happy SDK-based projects. It simplifies project initialization, configuration, addon management, and release processes for single projects and monorepos. Additionally, it supports defining and running project-wide tasks to enhance development efficiency for both technical and non-technical users.").
+		AddInfo("The Happy CLI is an experimental command-line tool designed to streamline management of Happy SDK-based projects. It simplifies project initialization, configuration, addon management, and release processes for single projects and monorepos. Additionally, it supports defining and running project-wide tasks to enhance development efficiency.").
 		WithBrand(brand).
 		WithAddon(
 			projects.Addon(),

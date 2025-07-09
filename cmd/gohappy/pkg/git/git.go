@@ -122,13 +122,7 @@ func LoadInfo(sess *session.Context, config *options.Options) error {
 	}
 
 	// Check for uncommitted changes
-	statusCmd := exec.Command("git", "status", "--porcelain")
-	statusCmd.Dir = repoRoot
-	status, err := cli.ExecRaw(sess, statusCmd)
-	if err != nil {
-		return err
-	}
-	dirty := bytes.TrimSpace(status) != nil
+	dirty := Dirty(sess, repoRoot, ".")
 	if err := config.Set("git.repo.dirty", dirty); err != nil {
 		return err
 	}
@@ -152,6 +146,56 @@ func LoadInfo(sess *session.Context, config *options.Options) error {
 		return err
 	}
 	if err := config.Set("git.committer.email", strings.TrimSpace(string(email))); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TagExists(sess *session.Context, wd string, tag string) bool {
+	tagCmd := exec.Command("git", "tag", "-l", tag)
+	tagCmd.Dir = wd
+	tagOutput, err := cli.ExecRaw(sess, tagCmd)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(tagOutput), tag)
+}
+
+func RemoteTagExists(sess *session.Context, wd string, origin, tag string) bool {
+	tagCmd := exec.Command("git", "ls-remote", "--tags", origin, tag)
+	tagCmd.Dir = wd
+	tagOutput, err := cli.ExecRaw(sess, tagCmd)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(tagOutput), tag)
+}
+
+func Dirty(sess *session.Context, wd string, path string) bool {
+	statusCmd := exec.Command("git", "status", "--porcelain", path)
+	statusCmd.Dir = wd
+	status, err := cli.ExecRaw(sess, statusCmd)
+	if err != nil {
+		return false
+	}
+	return bytes.TrimSpace(status) != nil
+}
+
+func Commit(sess *session.Context, wd, spath, commitMsg string) error {
+	if !Dirty(sess, wd, spath) {
+		return nil
+	}
+
+	gitadd := exec.Command("git", "add", spath)
+	gitadd.Dir = wd
+	if err := cli.Run(sess, gitadd); err != nil {
+		return err
+	}
+
+	gitcommit := exec.Command("git", "commit", "-sm", commitMsg)
+	gitcommit.Dir = wd
+	if err := cli.Run(sess, gitcommit); err != nil {
 		return err
 	}
 
