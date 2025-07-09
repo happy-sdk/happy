@@ -2,7 +2,7 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package projects
+package devel
 
 import (
 	"errors"
@@ -11,9 +11,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/addon"
 )
 
-var (
-	Error = errors.New("project")
-)
+var Error = errors.New("devel")
 
 type Settings struct {
 	SearchPaths settings.StringSlice `key:"search_paths"`
@@ -25,7 +23,9 @@ func (s Settings) Blueprint() (*settings.Blueprint, error) {
 
 func Addon() *addon.Addon {
 	return addon.New("Projects").
-		WithConfig(addon.Config{}).
+		WithConfig(addon.Config{
+			Slug: "projects",
+		}).
 		WithSettings(Settings{}).
 		ProvideAPI(NewAPI()).
 		ProvideCommands(

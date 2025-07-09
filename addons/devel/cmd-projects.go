@@ -2,7 +2,7 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package projects
+package devel
 
 import (
 	"github.com/happy-sdk/happy/sdk/action"

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/cmd/gohappy/addons/projects"
+	"github.com/happy-sdk/happy/addons/devel"
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/action"
@@ -46,7 +46,7 @@ func main() {
 		AddInfo("The Happy CLI is an experimental command-line tool designed to streamline management of Happy SDK-based projects. It simplifies project initialization, configuration, addon management, and release processes for single projects and monorepos. Additionally, it supports defining and running project-wide tasks to enhance development efficiency.").
 		WithBrand(brand).
 		WithAddon(
-			projects.Addon(),
+			devel.Addon(),
 		).
 		WithFlags(
 			cli.NewStringFlag("wd", ".", "Working directory"),
