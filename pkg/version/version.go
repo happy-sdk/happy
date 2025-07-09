@@ -180,6 +180,9 @@ func Current() Version {
 	return Version(fmt.Sprintf("v%d.0.1-devel%s", major, suffix))
 }
 
+// Compare returns an integer comparing two versions according to
+// semantic version precedence.
+// The result will be 0 if v == w, -1 if v < w, or +1 if v > w.
 func Compare(v Version, w Version) int {
 	return semver.Compare(v.String(), w.String())
 }
