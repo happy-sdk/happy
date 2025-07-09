@@ -1,4 +1,4 @@
-module github.com/happy-sdk/taskrunner
+module github.com/happy-sdk/happy/lib/taskrunner
 
 go 1.24.0
 
