@@ -45,10 +45,14 @@ func Parse(v string) (Version, error) {
 	if !strings.HasPrefix(v, "v") {
 		v = "v" + v
 	}
-	if !semver.IsValid(v) {
+	if !IsValid(Version(v)) {
 		return Version(""), fmt.Errorf("%w: invalid version: %s", Error, v)
 	}
 	return Version(v), nil
+}
+
+func IsValid(v Version) bool {
+	return semver.IsValid(v.String())
 }
 
 // Prerelease extracts the pre-release part of a semantic version.
