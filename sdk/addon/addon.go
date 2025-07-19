@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"reflect"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -106,11 +105,8 @@ func (addon *Addon) WithSettings(s settings.Settings) *Addon {
 	if addon.tryConfigureAttached() {
 		return addon
 	}
-	if s != nil && reflect.TypeOf(s).Kind() == reflect.Ptr {
-		addon.perr(fmt.Errorf("%w: %s.Settings must not be a pointer - provide a struct or nil", Error, addon.info.Name))
-	} else {
-		addon.settings = s
-	}
+
+	addon.settings = s
 	return addon
 }
 
