@@ -356,7 +356,7 @@ func (rt *Runtime) executeBeforeActions() error {
 			WithHeader: true,
 		}
 		settingstbl.AddRow("KEY", "KIND", "IS SET", "MUTABILITY", "VALUE", "DEFAULT")
-		for _, s := range rt.sess.Settings().All() {
+		for s := range rt.sess.Settings().All() {
 			var defval string
 			if s.Mutability() != settings.SettingImmutable && s.Default().String() != s.Value().String() {
 				defval = s.Default().String()
@@ -582,9 +582,18 @@ func (rt *Runtime) Exit(code int) {
 		rt.log(1, logging.LevelDebug, i18n.PTD(i18np, "shutdown_complete", "shutdown complete"), slog.Int("exit.code", code))
 	}
 
+	rt.disposeLogger()
+
 	// If we are not testing, exit the main process
 	if !testing.Testing() {
 		os.Exit(code)
+	}
+}
+func (rt *Runtime) disposeLogger() {
+	if rt.sess != nil {
+		if err := rt.sess.Log().Dispose(); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
 	}
 }
 

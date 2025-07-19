@@ -203,8 +203,9 @@ func (c *Cmd) CheckDisabled(sess *session.Context) bool {
 	if c.cnf.Get("disabled").Value().Bool() {
 		return true
 	}
+	var disabled bool
+
 	if c.disableAction != nil {
-		var disabled bool
 		if err := c.disableAction(sess); err != nil {
 			internal.LogInit(sess.Log(), fmt.Sprintf("hide(%s): %s", c.name, err.Error()))
 			disabled = true
@@ -216,6 +217,10 @@ func (c *Cmd) CheckDisabled(sess *session.Context) bool {
 	}
 
 	for _, scmd := range c.subcmds {
+		if disabled {
+			scmd.Disabled = true
+			continue
+		}
 		if scmd.disableAction != nil {
 
 			if err := scmd.disableAction(sess); err != nil {
@@ -279,11 +284,18 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	if c.err != nil {
+		return c.err
+	}
+
+	var disabledParent bool
 	if c.parent != nil {
-		disabledParent := c.parent.CheckDisabled(sess)
+		disabledParent = c.parent.CheckDisabled(sess)
 		if disabledParent {
+			_ = c.cnf.Set("fail_disabled", c.parent.cnf.Get("fail_disabled").Value().Bool())
 			_ = c.cnf.Set("disabled", true)
 		}
+
 		if !disabledParent && !c.sharedCalled && !c.cnf.Get("skip_shared_before").Value().Bool() {
 			if err := c.parent.callSharedBeforeAction(sess); err != nil {
 				return err
@@ -293,13 +305,9 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 
 	if c.CheckDisabled(sess) {
 		if c.cnf.Get("fail_disabled").Value().Bool() {
-			if c.err != nil {
-				return c.err
-			}
 			return fmt.Errorf("%w: %s", ErrCommandNotAllowed, c.name)
 		} else {
-			internal.Log(sess.Log(), fmt.Sprintf("%s: %s", ErrCommandNotAllowed, c.name))
-			return nil
+			return fmt.Errorf("%w: %s disabled", Error, c.name)
 		}
 	}
 	// dereference parent

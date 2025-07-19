@@ -151,9 +151,8 @@ func (s ProfileSettings) Blueprint() (*settings.Blueprint, error) {
 // It provides a blueprint for configuring the default language and supported languages
 // for Happy SDK Applications.
 type I18nSettings struct {
-	Language       settings.String      `key:"language,save" default:"en" mutation:"mutable"`
-	Supported      settings.StringSlice `key:"supported"`
-	WithGlobalFlag settings.Bool        `key:"add_global_flag"`
+	Language  settings.String      `key:"language,save" default:"en" mutation:"mutable"`
+	Supported settings.StringSlice `key:"supported"`
 }
 
 func (s I18nSettings) Blueprint() (*settings.Blueprint, error) {
@@ -180,12 +179,11 @@ func (s I18nSettings) Blueprint() (*settings.Blueprint, error) {
 
 type CliSettings struct {
 	settings.Settings
-	Name                 settings.String `default:"" desc:"Name of executable file"`
-	MainMinArgs          settings.Uint   `default:"0" desc:"Minimum number of arguments for a application main"`
-	MainMaxArgs          settings.Uint   `default:"0" desc:"Maximum number of arguments for a application main"`
-	WithConfigCmd        settings.Bool   `default:"false" desc:"Add the config command in the CLI"`
-	WithGlobalFlags      settings.Bool   `default:"false" desc:"Add the default global flags automatically in the CLI"`
-	HideDisabledCommands settings.Bool   `default:"false" desc:"Hide disabled commands"`
+	MainMinArgs          settings.Uint `default:"0" desc:"Minimum number of arguments for a application main"`
+	MainMaxArgs          settings.Uint `default:"0" desc:"Maximum number of arguments for a application main"`
+	WithConfigCmd        settings.Bool `default:"false" desc:"Add the config command in the CLI"`
+	WithGlobalFlags      settings.Bool `default:"false" desc:"Add the default global flags automatically in the CLI"`
+	HideDisabledCommands settings.Bool `default:"false" desc:"Hide disabled commands"`
 }
 
 func (s CliSettings) Blueprint() (*settings.Blueprint, error) {
@@ -210,7 +208,7 @@ func (s DateTimeSettings) Blueprint() (*settings.Blueprint, error) {
 
 type InstanceSettings struct {
 	// How many instances of the applications can be booted at the same time.
-	Max settings.Uint `key:"max" default:"1" desc:"Maximum number of instances of the application that can be booted at the same time"`
+	Max settings.Uint `key:"max" default:"0" desc:"Maximum number of instances of the application that can be booted at the same time"`
 }
 
 func (s InstanceSettings) Blueprint() (*settings.Blueprint, error) {

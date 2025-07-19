@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/happy-sdk/happy/pkg/version"
 	"golang.org/x/text/language"
 )
 
@@ -19,9 +20,9 @@ var (
 )
 
 type Blueprint struct {
-	name string
-	mode ExecutionMode
-	pkg  string
+	name                  string
+	mode                  ExecutionMode
+	pkgSettingsStructName string
 	// module string
 	// lang   language.Tag // default language
 	specs      map[string]SettingSpec
@@ -34,6 +35,10 @@ type groupSettings struct{}
 
 func (g groupSettings) Blueprint() (*Blueprint, error) {
 	return New(g)
+}
+
+func (b *Blueprint) PackageSettingsStructName() string {
+	return b.pkgSettingsStructName
 }
 
 func (b *Blueprint) AddSpec(spec SettingSpec) error {
@@ -51,7 +56,7 @@ func (b *Blueprint) AddSpec(spec SettingSpec) error {
 		g, ok := b.groups[group]
 		if !ok {
 			if err := b.Extend(group, groupSettings{}); err != nil {
-				return fmt.Errorf("%w: extending %s %s", ErrBlueprint, b.pkg, err.Error())
+				return fmt.Errorf("%w: extending %s %s", ErrBlueprint, b.pkgSettingsStructName, err.Error())
 			}
 			return b.AddSpec(spec)
 		}
@@ -79,7 +84,7 @@ func (b *Blueprint) Migrate(keyfrom, keyto string) error {
 	return nil
 }
 
-func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflect.Value) (SettingSpec, error) {
+func settingSpecFromField(field reflect.StructField, value reflect.Value) (SettingSpec, error) {
 	spec := SettingSpec{}
 
 	var persistent string
@@ -87,9 +92,6 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 
 	if persistent == "save" {
 		spec.Persistent = true
-	}
-	if persistent == "config" {
-		spec.UserDefined = true
 	}
 
 	// Use struct field name converted to dot.separated.format if 'key' tag is not present
@@ -135,7 +137,7 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 		if kindGetterMethod.IsValid() {
 			results := kindGetterMethod.Call(nil)
 			if len(results) != 1 {
-				return spec, fmt.Errorf("%w: %q field %q must implement either Setting or Settings interface", ErrBlueprint, b.pkg, spec.Key)
+				return spec, fmt.Errorf("field %q must implement either Setting or Settings interface", spec.Key)
 			}
 			spec.Kind = results[0].Interface().(Kind)
 		} else {
@@ -151,7 +153,7 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 		}
 		spec.Default = field.Tag.Get("default")
 		if spec.Kind == KindBool && (spec.Default != "" && spec.Default != "false") {
-			return spec, fmt.Errorf("%w: %q boolean field %q can have default value only false", ErrBlueprint, b.pkg, spec.Key)
+			return spec, fmt.Errorf("boolean field %q can have default value only false", spec.Key)
 		}
 
 		if isFieldSet(value) {
@@ -174,10 +176,11 @@ func (b *Blueprint) settingSpecFromField(field reflect.StructField, value reflec
 			}
 		}
 		if spec.Unmarchaler == nil || spec.Marchaler == nil {
-			return spec, fmt.Errorf("%w: %q field %q must implement SettingField interface (both UnmarshalSetting and MarshalSetting methods required)", ErrBlueprint, b.pkg, spec.Key)
+			return spec, fmt.Errorf("field %q must implement settings.Value interface (both UnmarshalSetting and MarshalSetting methods required)", spec.Key)
 		}
 	} else {
-		return spec, fmt.Errorf("%w: %q field %q must implement either Settings or SettingField interface", ErrBlueprint, b.pkg, spec.Key)
+		err := fmt.Errorf("field %q must implement either settings.Settings or settings.Value interface", spec.Key)
+		return spec, err
 	}
 
 	return spec, nil
@@ -251,7 +254,7 @@ func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {
 		if g, ok := b.groups[group]; ok {
 			return g.GetSpec(skey)
 		}
-		return spec, fmt.Errorf("no settings group %s found in %s (%s) key: %s", group, b.name, b.pkg, key)
+		return spec, fmt.Errorf("no settings group %s found in %s (%s) key: %s", group, b.name, b.pkgSettingsStructName, key)
 	}
 
 	if g, ok := b.groups[key]; ok {
@@ -261,13 +264,13 @@ func (b *Blueprint) GetSpec(key string) (SettingSpec, error) {
 	var ok bool
 	spec, ok = b.specs[key]
 	if !ok {
-		return spec, fmt.Errorf("no settings group or key found %s in %s (%s)", key, b.name, b.pkg)
+		return spec, fmt.Errorf("no settings group or key found %s in %s (%s)", key, b.name, b.pkgSettingsStructName)
 	}
 
 	return spec, nil
 }
 
-func (b *Blueprint) SetDefault(key string, value string) error {
+func (b *Blueprint) SetDefault(key string, value Value) error {
 	if strings.Contains(key, ".") {
 		group, skey, _ := strings.Cut(key, ".")
 		g, ok := b.groups[group]
@@ -275,6 +278,27 @@ func (b *Blueprint) SetDefault(key string, value string) error {
 			return fmt.Errorf("%w: SetDefault group %s not found", ErrBlueprint, group)
 		}
 		return g.SetDefault(skey, value)
+	}
+	spec, ok := b.specs[key]
+	if !ok {
+		return fmt.Errorf("%w: SetDefault key %s not found", ErrBlueprint, key)
+	}
+	spec.Default = value.String()
+	if spec.Value == "" || spec.Value == "0" {
+		spec.Value = value.String()
+	}
+	b.specs[key] = spec
+	return nil
+}
+
+func (b *Blueprint) SetDefaultFromString(key string, value string) error {
+	if strings.Contains(key, ".") {
+		group, skey, _ := strings.Cut(key, ".")
+		g, ok := b.groups[group]
+		if !ok {
+			return fmt.Errorf("%w: SetDefault group %s not found", ErrBlueprint, group)
+		}
+		return g.SetDefaultFromString(skey, value)
 	}
 	spec, ok := b.specs[key]
 	if !ok {
@@ -290,6 +314,7 @@ func (b *Blueprint) SetDefault(key string, value string) error {
 }
 
 func (b *Blueprint) Extend(group string, ext Settings) (err error) {
+
 	if ext == nil {
 		return fmt.Errorf("%w: extending %s with nil", ErrBlueprint, group)
 	}
@@ -311,14 +336,14 @@ func (b *Blueprint) Extend(group string, ext Settings) (err error) {
 
 	// Check if there was an error or panic during Blueprint call
 	if err != nil {
-		return fmt.Errorf("%w: extending %s with error: %s", ErrBlueprint, b.pkg, err)
+		return fmt.Errorf("%w: extending %s with error: %s", ErrBlueprint, b.pkgSettingsStructName, err)
 	}
 
 	// Check if there was an error or panic during Blueprint call
 	if berr != nil {
 		exptbp, err = New(ext)
 		if err != nil {
-			return fmt.Errorf("%w: extending %s with error: %s", ErrBlueprint, b.pkg, err)
+			return fmt.Errorf("%w: extending %s with error: %s", ErrBlueprint, b.pkgSettingsStructName, err)
 		}
 	}
 	if exptbp == nil {
@@ -331,24 +356,25 @@ func (b *Blueprint) Extend(group string, ext Settings) (err error) {
 		b.groups = make(map[string]*Blueprint)
 	}
 	if _, ok := b.groups[group]; ok {
-		return fmt.Errorf("%w: group %s already exists, cannot extend with %s", ErrBlueprint, group, exptbp.pkg)
+		return fmt.Errorf("%w: group %s already exists, cannot extend with %s", ErrBlueprint, group, exptbp.pkgSettingsStructName)
 	}
 	b.groups[group] = exptbp
+
 	return nil
 }
 
-func (b *Blueprint) Schema(module, version string) (Schema, error) {
+func (b *Blueprint) Schema(module string, version version.Version) (Schema, error) {
 
 	if b.errs != nil {
 		return Schema{}, fmt.Errorf("%w: %s", ErrBlueprint, errors.Join(b.errs...))
 	}
 	s := Schema{
-		version:    version,
-		mode:       b.mode,
-		pkg:        b.pkg,
-		module:     module,
-		settings:   make(map[string]SettingSpec),
-		migrations: b.migrations,
+		version:               version,
+		mode:                  b.mode,
+		pkgSettingsStructName: b.pkgSettingsStructName,
+		module:                module,
+		settings:              make(map[string]SettingSpec),
+		migrations:            b.migrations,
 	}
 	s.setID()
 
@@ -391,7 +417,7 @@ func (b *Blueprint) Schema(module, version string) (Schema, error) {
 	return s, nil
 }
 
-func (b *Blueprint) setPKG() string {
+func setPKG(mode ExecutionMode) string {
 	pc, _, _, ok := runtime.Caller(2)
 	if !ok {
 		return "unknown"
@@ -413,7 +439,7 @@ func (b *Blueprint) setPKG() string {
 	}
 
 	// In test mode, the path may include "_test" suffix, which we should strip.
-	if b.mode == ModeTesting {
+	if mode == ModeTesting {
 		pkgPath, _, _ = strings.Cut(pkgPath, "_test")
 	}
 

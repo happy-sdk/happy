@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/happy-sdk/happy/pkg/version"
 	"golang.org/x/text/language"
 )
 
@@ -17,13 +18,13 @@ var (
 )
 
 type Schema struct {
-	id         string
-	pkg        string
-	module     string
-	mode       ExecutionMode
-	version    string
-	settings   map[string]SettingSpec
-	migrations map[string]string
+	id                    string
+	pkgSettingsStructName string
+	module                string
+	mode                  ExecutionMode
+	version               version.Version
+	settings              map[string]SettingSpec
+	migrations            map[string]string
 }
 
 func (s *Schema) set(key string, spec SettingSpec) error {
@@ -52,7 +53,7 @@ func (s *Schema) Profile(name string, pref *Preferences) (*Profile, error) {
 
 func (s *Schema) setID() {
 	// Generate the ID using SHA-256 on the combined package path and execution mode.
-	data := s.pkg + "-" + s.module + "-" + s.mode.String()
+	data := s.pkgSettingsStructName + "-" + s.module + "-" + s.mode.String()
 	hash := sha256.Sum256([]byte(data))
 	s.id = fmt.Sprintf("%x", hash)
 }

@@ -5,6 +5,7 @@
 package initializer
 
 import (
+	"context"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -21,15 +22,15 @@ import (
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/logging"
+	consoleadapter "github.com/happy-sdk/happy/pkg/logging/adapters/console"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
-	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
+	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/addon"
 	"github.com/happy-sdk/happy/sdk/app/internal/application"
-	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/internal"
@@ -609,27 +610,17 @@ LoadPreferences:
 					init.log.Error("failed to close profile preferences file", slog.String("path", loadPrefFilePath), slog.String("error", err.Error()))
 				}
 			}()
-			var (
-				data []string
-			)
+			pref = &settings.Preferences{}
 			dataDecoder := gob.NewDecoder(prefFile)
-			if err = dataDecoder.Decode(&data); err != nil && !errors.Is(err, io.EOF) {
-				return fmt.Errorf("%w: failed to decode preferences %s", Error, err.Error())
-			}
-			prefsMap, err := vars.ParseMapFromSlice(data)
-			if err != nil {
-				return err
-			}
-			pref = settings.NewPreferences()
 
-			for v := range prefsMap.All() {
-				pref.Set(v.Name(), v.Value().String())
+			if err = dataDecoder.Decode(pref); err != nil && !errors.Is(err, io.EOF) {
+				return err
 			}
 		}
 	}
 
 LoadProfile:
-	schema, err := init.settingsb.Schema(init.opts.Get("app.module").String(), init.opts.Get("app.version").String())
+	schema, err := init.settingsb.Schema(init.opts.Get("app.module").String(), version.Version("v1.0.0"))
 	if err != nil {
 		return err
 	}
@@ -760,9 +751,6 @@ func (init *Initializer) configureLogger() (err error) {
 			return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
 		}
 		init.log = nil
-		if !noSlogDefault {
-			slog.SetDefault(init.logger.Logger())
-		}
 		return nil
 	}
 
@@ -785,16 +773,21 @@ func (init *Initializer) configureLogger() (err error) {
 		theme = ansicolor.New()
 	}
 
-	logger := cli.NewLogger(logopts, theme)
+	logopts.SetSlogOutput = !noSlogDefault
+
+	logger := logging.New(consoleadapter.New(
+		context.Background(),
+		os.Stdout,
+		logopts,
+		theme,
+	))
 	if err := logger.ConsumeQueue(init.log); err != nil {
 		return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
 	}
 	init.log = nil
 
 	init.logger = logger
-	if !noSlogDefault {
-		slog.SetDefault(logger.Logger())
-	}
+
 	return nil
 }
 

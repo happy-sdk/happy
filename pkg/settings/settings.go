@@ -33,10 +33,11 @@ import (
 )
 
 var (
-	ErrSettings = errors.New("settings")
-	ErrSetting  = errors.New("setting")
-	ErrProfile  = fmt.Errorf("%w: profile", ErrSettings)
-	ErrSpec     = errors.New("spec error")
+	Error          = errors.New("settings")
+	ErrSetting     = errors.New("setting")
+	ErrProfile     = fmt.Errorf("%w: profile", Error)
+	ErrPreferences = fmt.Errorf("%w: preferences", Error)
+	ErrSpec        = errors.New("spec error")
 )
 
 // Marshaller interface for marshaling settings
@@ -49,8 +50,8 @@ type Unmarshaller interface {
 	UnmarshalSetting([]byte) error
 }
 
-// SettingField interface that combines multiple interfaces
-type SettingField interface {
+// Value interface that combines multiple interfaces
+type Value interface {
 	fmt.Stringer
 	Marshaller
 	Unmarshaller
@@ -90,7 +91,7 @@ func New[S Settings](s S) (*Blueprint, error) {
 		mode: getExecutionMode(),
 	}
 
-	b.pkg = b.setPKG()
+	b.pkgSettingsStructName = setPKG(b.mode)
 
 	// Iterate over the struct fields
 	for i := range val.NumField() {
@@ -100,20 +101,24 @@ func New[S Settings](s S) (*Blueprint, error) {
 			continue
 		}
 		value := val.Field(i)
-		spec, err := b.settingSpecFromField(field, value)
+		spec, err := settingSpecFromField(field, value)
 		if err != nil {
+			if isPointer {
+				return nil, fmt.Errorf("%T: %w", s, err)
+			}
 			return nil, err
 		}
 
 		// handle short syntax group keys
 		// Update the field value if needed
 		if isPointer {
+
 			// Get the field by name from the original value to set it back
 			originalField := reflect.ValueOf(s).Elem().FieldByName(field.Name)
 			if originalField.CanSet() {
 				// Assuming settingSpecFromField returns the updated value we want to set
 				// Use type assertion to ensure compatibility with the original field type
-				if setter, ok := originalField.Addr().Interface().(SettingField); ok {
+				if setter, ok := originalField.Addr().Interface().(Value); ok {
 					if err := setter.UnmarshalSetting([]byte(spec.Value)); err != nil {
 						return nil, fmt.Errorf("failed to set field %s: %w", field.Name, err)
 					}
@@ -123,9 +128,15 @@ func New[S Settings](s S) (*Blueprint, error) {
 						return nil, fmt.Errorf("failed to set nested settings for field %s: %w", field.Name, err)
 					}
 				} else {
-					return nil, fmt.Errorf("field %s does not implement SettingField interface", field.Name)
+					return nil, fmt.Errorf("field %s does not implement settings.Value interface", field.Name)
 				}
 			}
+		} else {
+			// Get the field by name from the original value to set it back
+			// fmt.Println("New.Blueprint(!isPointer): ", b.pkg, field.Name)
+			// if nested, ok := originalField.Addr().Interface().(Settings); ok {
+
+			// }
 		}
 
 		if err := b.AddSpec(spec); err != nil {
@@ -173,7 +184,7 @@ func fieldImplementsSettings(field reflect.StructField) bool {
 	return fieldType.Implements(settingsType) || reflect.PointerTo(fieldType).Implements(settingsType)
 }
 
-// fieldImplementsSetting checks if a field implements the SettingField interface
+// fieldImplementsSetting checks if a field implements the Value interface
 func fieldImplementsSetting(field reflect.StructField) bool {
 	fieldType := field.Type
 
@@ -182,8 +193,8 @@ func fieldImplementsSetting(field reflect.StructField) bool {
 		fieldType = fieldType.Elem()
 	}
 
-	// Get the reflect.Type representation of the SettingField interface
-	settingType := reflect.TypeOf((*SettingField)(nil)).Elem()
+	// Get the reflect.Type representation of the Value interface
+	settingType := reflect.TypeOf((*Value)(nil)).Elem()
 
 	// Check if the field's type or pointer to field's type implements the Setting interface
 	implements := fieldType.Implements(settingType) || reflect.PointerTo(fieldType).Implements(settingType)

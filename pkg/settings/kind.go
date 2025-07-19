@@ -180,15 +180,15 @@ func (d Duration) SettingKind() Kind {
 type StringSlice []string
 
 func (ss StringSlice) String() string {
-	return strings.Join(ss, "|")
+	return strings.Join(ss, "\x1f") // Unit Separator
 }
 
 func (ss StringSlice) MarshalSetting() ([]byte, error) {
 	return []byte(ss.String()), nil
 }
 
-func (ss *StringSlice) UnmarshalSetting(data []byte) error {
-	*ss = strings.Split(string(data), "|")
+func (ss StringSlice) UnmarshalSetting(data []byte) error {
+	ss = strings.Split(string(data), "\x1f")
 	return nil
 }
 

@@ -23,8 +23,8 @@ import (
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/cli"
+	"github.com/happy-sdk/happy/sdk/cli/cmd/config"
 	"github.com/happy-sdk/happy/sdk/cli/command"
-	"github.com/happy-sdk/happy/sdk/config"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -40,7 +40,6 @@ type defaults struct {
 	configAdditionalProfiles  []string
 	configAllowCustomProfiles bool
 	configEnableProfileDevel  bool
-	binName                   string
 	cliMainMinArgs            uint
 	cliMainMaxArgs            uint
 	cliWithConfigCmd          bool
@@ -139,14 +138,9 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	if err != nil {
 		return err
 	}
-	binNameSpec, err := init.settingsb.GetSpec("app.cli.name")
-	if err != nil {
-		return err
-	}
 
 	init.defaults.configDisabled = configDisabledSpec.Value == "true"
 	init.defaults.slug = slugSpec.Value
-	init.defaults.binName = binNameSpec.Value
 	init.defaults.identifier = identifierSpec.Value
 	init.defaults.cliMainMinArgs = uint(cliMainMinArgs)
 	init.defaults.cliMainMaxArgs = uint(cliMainMaxArgs)
@@ -195,7 +189,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		} else {
 			init.defaults.slug = path.Base(module)
 		}
-		if err := init.settingsb.SetDefault("app.slug", init.defaults.slug); err != nil {
+		if err := init.settingsb.SetDefaultFromString("app.slug", init.defaults.slug); err != nil {
 			return err
 		}
 	} else {
@@ -211,7 +205,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		}
 	}
 
-	if err := init.settingsb.SetDefault("app.identifier", init.defaults.identifier); err != nil {
+	if err := init.settingsb.SetDefaultFromString("app.identifier", init.defaults.identifier); err != nil {
 		return err
 	}
 
@@ -219,18 +213,16 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		return err
 	}
 
-	// Set binName from valid slug if not set.
-	if init.defaults.binName == "" {
-		init.defaults.binName = init.defaults.slug
-	}
-
-	if err := init.settingsb.SetDefault("app.copyright_since", fmt.Sprint(time.Now().Year())); err != nil {
+	if err := init.settingsb.SetDefaultFromString("app.copyright_since", fmt.Sprint(time.Now().Year())); err != nil {
 		return err
 	}
 
 	optSpecs := []*options.OptionSpec{
 		options.NewOption("app.is_devel", version.IsGoRun()).
 			Description("Is application in development mode").
+			Flags(options.ReadOnly),
+		options.NewOption("app.cli.binary_name", filepath.Base(os.Args[0])+filepath.Ext(os.Args[0])).
+			Description("Application binary name").
 			Flags(options.ReadOnly),
 		options.NewOption("app.version", ver.String()).
 			Description("Application version").
@@ -383,7 +375,7 @@ func (init *Initializer) initBasePaths() error {
 			if len(profileName) == 0 {
 				return fmt.Errorf("default profile file is empty")
 			}
-			if err := init.settingsb.SetDefault("app.default_profile", profileName); err != nil {
+			if err := init.settingsb.SetDefaultFromString("app.default_profile", profileName); err != nil {
 				return err
 			}
 			if err := init.opts.Set("app.profile.name", profileName); err != nil {
@@ -413,7 +405,7 @@ func (init *Initializer) initBasePaths() error {
 }
 
 func (init *Initializer) initRootCommand() error {
-	internal.LogInitDepth(init.log, 1, "initializing root command", slog.String("bin", init.defaults.binName))
+	internal.LogInitDepth(init.log, 1, "initializing root command", slog.String("bin", init.opts.Get("app.cli.binary_name").String()))
 
 	// Normalize os.Args
 	var osargs []string
@@ -424,15 +416,16 @@ func (init *Initializer) initRootCommand() error {
 		osargs = append(osargs, arg)
 	}
 
-	if init.defaults.binName == "" {
-		return fmt.Errorf("%w: unable to detemone bin name", Error)
+	binName := init.opts.Get("app.cli.binary_name").String()
+	if binName == "" {
+		return fmt.Errorf("%w: unable to determine bin name", Error)
 	}
 
-	osargs[0] = init.defaults.binName
+	osargs[0] = binName
 	os.Args = osargs
 
 	// Create root command
-	root := command.New(init.defaults.binName,
+	root := command.New(binName,
 		command.Config{
 			MinArgs: settings.Uint(init.defaults.cliMainMinArgs),
 			MaxArgs: settings.Uint(init.defaults.cliMainMaxArgs),
@@ -462,7 +455,7 @@ func (init *Initializer) initRootCommand() error {
 	}
 
 	if init.defaults.cliWithConfigCmd {
-		root.WithSubCommands(config.Command())
+		root.WithSubCommands(config.Command(config.DefaultCommandConfig()))
 	}
 
 	init.main = root

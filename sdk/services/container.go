@@ -149,7 +149,7 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 	}
 
 	kv := map[string]any{
-		"addr":       c.info.Addr(),
+		"addr":       c.info.Addr().String(),
 		"running":    c.info.Running(),
 		"started.at": c.info.StartedAt(),
 	}

@@ -6,10 +6,12 @@ package settings
 
 import (
 	"fmt"
+	"iter"
 	"sort"
 	"sync"
 
 	"github.com/happy-sdk/happy/pkg/vars"
+	"github.com/happy-sdk/happy/pkg/version"
 	"golang.org/x/text/language"
 )
 
@@ -19,6 +21,7 @@ type Profile struct {
 	lang     language.Tag
 	schema   Schema
 	loaded   bool
+	changed  bool
 	settings map[string]Setting
 }
 
@@ -34,20 +37,30 @@ func (p *Profile) Lang() language.Tag {
 	return p.lang
 }
 
-func (p *Profile) All() []Setting {
+func (p *Profile) All() iter.Seq[Setting] {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	var settings []Setting
-	for _, setting := range p.settings {
-		settings = append(settings, setting)
+	return p.all()
+}
+
+func (p *Profile) all() iter.Seq[Setting] {
+	return func(yield func(Setting) bool) {
+		var settings []Setting
+		for _, setting := range p.settings {
+			settings = append(settings, setting)
+		}
+
+		sort.Slice(settings, func(i, j int) bool {
+			return settings[i].key < settings[j].key
+		})
+
+		for _, setting := range settings {
+			if !yield(setting) {
+				return
+			}
+		}
 	}
-
-	sort.Slice(settings, func(i, j int) bool {
-		return settings[i].key < settings[j].key
-	})
-
-	return settings
 }
 
 // Loaded reports true when settings profile is loaded
@@ -58,15 +71,15 @@ func (p *Profile) Loaded() bool {
 	return p.loaded
 }
 
-func (p *Profile) Version() string {
+func (p *Profile) Version() version.Version {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.schema.version
 }
-func (p *Profile) Pkg() string {
+func (p *Profile) PackageSettingsStructName() string {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	return p.schema.pkg
+	return p.schema.pkgSettingsStructName
 }
 
 func (p *Profile) Module() string {
@@ -108,7 +121,7 @@ func (p *Profile) Set(key string, val any) (err error) {
 	if setting.mutability == SettingImmutable {
 		return fmt.Errorf("setting is immutable %s", key)
 	} else if setting.isSet && setting.mutability == SettingOnce {
-		return fmt.Errorf("setting is set once %s", key)
+		return fmt.Errorf("setting can only be set once %s", key)
 	}
 	setting.vv, err = vars.NewAs(key, val, true, vars.Kind(setting.kind))
 	if err != nil {
@@ -119,6 +132,14 @@ func (p *Profile) Set(key string, val any) (err error) {
 		if err := v.fn(setting); err != nil {
 			return err
 		}
+	}
+
+	if prev, ok := p.settings[key]; ok {
+		if prev.vv.String() != setting.vv.String() {
+			p.changed = true
+		}
+	} else {
+		p.changed = true
 	}
 
 	setting.isSet = true
@@ -127,7 +148,13 @@ func (p *Profile) Set(key string, val any) (err error) {
 	return nil
 }
 
-func (p *Profile) Validate(key string, val any) (err error) {
+func (p *Profile) Changed() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.changed
+}
+
+func (p *Profile) ValidatePreference(key string, val any) (err error) {
 	if !p.Has(key) {
 		return fmt.Errorf("setting not found %s", key)
 	}
@@ -135,11 +162,12 @@ func (p *Profile) Validate(key string, val any) (err error) {
 	defer p.mu.RUnlock()
 	setting := p.settings[key]
 
-	if setting.Mutability() == SettingImmutable {
-		return fmt.Errorf("setting is immutable %s", key)
-	}
 	if !setting.Persistent() {
 		return fmt.Errorf("setting is not persistent %s", key)
+	}
+
+	if setting.Mutability() == SettingImmutable {
+		return fmt.Errorf("setting is immutable %s", key)
 	}
 
 	setting.vv, err = vars.NewAs(key, val, true, vars.Kind(setting.kind))
@@ -154,6 +182,21 @@ func (p *Profile) Validate(key string, val any) (err error) {
 	}
 
 	return nil
+}
+
+// Preferences returns the profile's preferences which can be saved.
+func (p *Profile) Preferences() *Preferences {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	prefs := NewPreferences(p.schema.version)
+	for setting := range p.all() {
+		if setting.IsSet() && setting.Persistent() {
+			prefs.Set(setting.Key(), setting.Value().String())
+		}
+	}
+
+	return prefs
 }
 
 func (p *Profile) load(prefs *Preferences) (err error) {
@@ -171,34 +214,36 @@ func (p *Profile) load(prefs *Preferences) (err error) {
 		p.settings[spec.Key] = setting
 	}
 
-	if prefs != nil {
-		for key, val := range prefs.data {
-			lkey := key
-			s, ok := p.settings[lkey]
-			if !ok && p.schema.migrations != nil {
-				if to, has := p.schema.migrations[lkey]; has {
-					lkey = to
-					s, ok = p.settings[lkey]
+	if prefs == nil {
+		p.loaded = true
+		return nil
+	}
+	for key, val := range prefs.data {
+		lkey := key
+		s, ok := p.settings[lkey]
+		if !ok && p.schema.migrations != nil {
+			if to, has := p.schema.migrations[lkey]; has {
+				lkey = to
+				s, ok = p.settings[lkey]
+			}
+		}
+
+		if ok {
+			s.vv, err = vars.NewAs(lkey, val, true, vars.Kind(s.kind))
+			if err != nil {
+				return fmt.Errorf("%w: preferences key(%s) %s", ErrProfile, lkey, err.Error())
+			}
+			s.isSet = true
+
+			for _, v := range p.schema.settings[lkey].validators {
+				if err := v.fn(s); err != nil {
+					return err
 				}
 			}
-
-			if ok {
-				s.vv, err = vars.NewAs(lkey, val, true, vars.Kind(s.kind))
-				if err != nil {
-					return fmt.Errorf("%w: preferences key(%s) %s", ErrProfile, lkey, err.Error())
-				}
-				s.isSet = true
-
-				for _, v := range p.schema.settings[lkey].validators {
-					if err := v.fn(s); err != nil {
-						return err
-					}
-				}
-				p.settings[lkey] = s
-			} else {
-				// return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, lkey)
-				prefs.data[lkey] = ""
-			}
+			p.settings[lkey] = s
+		} else {
+			// return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, lkey)
+			prefs.data[lkey] = ""
 		}
 	}
 	p.loaded = true

@@ -64,7 +64,9 @@ func New(sess *session.Context) (*Instance, error) {
 		sess: sess,
 	}
 
-	if len(pidfiles) >= sess.Settings().Get("app.instance.max").Value().Int() {
+	appInstanceMax := sess.Settings().Get("app.instance.max").Value().Int()
+
+	if appInstanceMax > 0 && len(pidfiles) >= appInstanceMax {
 		sess.Log().Error("existing pid files")
 		for _, pidfile := range pidfiles {
 			sess.Log().Println(filepath.Join(pidsdir, pidfile.Name()))
