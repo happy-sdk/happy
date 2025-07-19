@@ -2,12 +2,13 @@
 //
 // Copyright © 2022 The Happy Authors
 
-package cli
+package console
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"os"
@@ -35,7 +36,48 @@ type consoleTheme struct {
 	light      ansicolor.Style
 }
 
-func NewLogger(opts *logging.Options, theme ansicolor.Theme) *logging.DefaultLogger {
+type Adapter struct {
+	ctx     context.Context
+	opts    *logging.Options
+	handler slog.Handler
+}
+
+func New(ctx context.Context, w io.Writer, opts *logging.Options, theme ansicolor.Theme) logging.Adapter {
+
+	handler := NewHandler(ctx, w, opts, theme)
+	return &Adapter{
+		ctx:     ctx,
+		opts:    opts,
+		handler: handler,
+	}
+}
+
+func (ta *Adapter) Handler() slog.Handler {
+	return ta.handler
+}
+
+func (ta *Adapter) Options() *logging.Options {
+	return ta.opts
+}
+
+func (ta *Adapter) Context() context.Context {
+	return ta.ctx
+}
+
+func (ta *Adapter) Dispose() error {
+	return nil
+}
+
+type ConsoleHandler struct {
+	slog.Handler
+	styles consoleTheme
+	src    bool
+	l      *log.Logger
+	tsfmt  string
+	nots   bool
+}
+
+func NewHandler(ctx context.Context, w io.Writer, opts *logging.Options, theme ansicolor.Theme) *ConsoleHandler {
 	if opts.LevelVar == nil {
 		opts.LevelVar = new(slog.LevelVar)
 	}
@@ -80,54 +122,7 @@ func NewLogger(opts *logging.Options, theme ansicolor.Theme) *logging.DefaultLog
 		nots:  opts.NoTimestamp,
 	}
 
-	return logging.New(
-		context.Background(),
-		h,
-		opts,
-	)
-}
-
-type ConsoleHandler struct {
-	slog.Handler
-	styles consoleTheme
-	src    bool
-	l      *log.Logger
-	tsfmt  string
-	nots   bool
-}
-
-func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
-	l := logging.Level(lvl)
-	if l == logging.LevelQuiet {
-		return ""
-	}
-
-	var c ansicolor.Style
-	switch l {
-	case logging.LevelDebug:
-		c = h.styles.debug
-	case logging.LevelInfo:
-		c = h.styles.info
-	case logging.LevelOk:
-		c = h.styles.success
-	case logging.LevelNotice:
-		c = h.styles.notice
-	case logging.LevelWarn:
-		c = h.styles.warn
-	case logging.LevelNotImplemented:
-		c = h.styles.notimpl
-	case logging.LevelDeprecated:
-		c = h.styles.deprecated
-	case logging.LevelError:
-		c = h.styles.error
-	case logging.LevelAlways:
-		return ""
-	case logging.LevelBUG:
-		c = h.styles.bug
-	default:
-		c = h.styles.sysdebug
-	}
-	return c.String(fmt.Sprintf(" %-11s", l.String()))
+	return h
 }
 
 func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
@@ -189,6 +184,7 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 			}
 		}
 	}
+
 	if lvl == logging.LevelAlways {
 		h.l.Println(msg, payload)
 	} else {
@@ -196,6 +192,40 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	return nil
+}
+
+func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
+	l := logging.Level(lvl)
+	if l == logging.LevelQuiet {
+		return ""
+	}
+
+	var c ansicolor.Style
+	switch l {
+	case logging.LevelDebug:
+		c = h.styles.debug
+	case logging.LevelInfo:
+		c = h.styles.info
+	case logging.LevelOk:
+		c = h.styles.success
+	case logging.LevelNotice:
+		c = h.styles.notice
+	case logging.LevelWarn:
+		c = h.styles.warn
+	case logging.LevelNotImplemented:
+		c = h.styles.notimpl
+	case logging.LevelDeprecated:
+		c = h.styles.deprecated
+	case logging.LevelError:
+		c = h.styles.error
+	case logging.LevelAlways:
+		return ""
+	case logging.LevelBUG:
+		c = h.styles.bug
+	default:
+		c = h.styles.sysdebug
+	}
+	return c.String(fmt.Sprintf(" %-11s", l.String()))
 }
 
 //nolint:unused

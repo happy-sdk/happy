@@ -193,6 +193,17 @@ func (l *QueueLogger) Consumed() bool {
 	return l.consumed
 }
 
+func (l *QueueLogger) Dispose() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.consumed {
+		return fmt.Errorf("%w: %s", ErrLoggerAlreadyDisposed, "QueueLogger")
+	}
+	l.records = nil
+	l.consumed = true
+	return nil
+}
+
 type QueueRecord struct {
 	pc    uintptr
 	lvl   Level
