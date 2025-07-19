@@ -632,6 +632,11 @@ func (v Value) FormatFloat(fmt byte, prec, bitSize int) string {
 // Fields is like calling strings.Fields on Value.String().
 // It returns slice of strings (words) found in Value string representation.
 func (v Value) Fields() []string {
+	if v.Kind() == KindSlice {
+		return stringsFieldsFunc(v.str, func(r rune) bool {
+			return r == '\x1f'
+		})
+	}
 	return stringsFields(v.str)
 }
 

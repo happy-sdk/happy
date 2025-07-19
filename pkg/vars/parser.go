@@ -273,6 +273,12 @@ func (p *parser) parseValue(val any) (typ Kind, err error) {
 		return kind, err
 	}
 
+	if v, ok := val.(stringer); ok {
+		typ = KindString
+		p.fmt.string(v.String())
+		return typ, nil
+	}
+
 	switch v := val.(type) {
 	case bool:
 		typ = KindBool

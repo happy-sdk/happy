@@ -203,16 +203,16 @@ func (m *Map) Range(f func(v Variable) bool) {
 
 	sort.Strings(keys)
 
-	m.mu.RLock()
 	for _, key := range keys {
-		v := m.db[key]
-		m.mu.RUnlock()
-		if !f(v) {
-			break
-		}
 		m.mu.RLock()
+		v := m.db[key]
+		if !f(v) {
+			m.mu.RUnlock()
+			break
+		} else {
+			m.mu.RUnlock()
+		}
 	}
-	m.mu.RUnlock()
 }
 
 // ToBytes returns []byte containing
