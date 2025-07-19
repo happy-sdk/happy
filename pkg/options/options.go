@@ -129,6 +129,10 @@ func (spec *Spec) add(opt *OptionSpec) error {
 		return fmt.Errorf("%w(%s): duplicated key %s", ErrOption, spec.opts.name, key)
 	}
 
+	hasDefault := opt.value != nil
+	if !hasDefault {
+		opt.value = ""
+	}
 	value, err := vars.NewValue(opt.value)
 	if err != nil {
 		return fmt.Errorf("%w(%s): failed to create value for key %s: %s", ErrOption, spec.opts.name, key, err.Error())
@@ -141,7 +145,7 @@ func (spec *Spec) add(opt *OptionSpec) error {
 
 	option := newOption(variable, variable, false, opt.flags, opt.desc)
 
-	if opt.parser != nil {
+	if hasDefault && opt.parser != nil {
 		parser := opt.parser
 		spec.opts.parsers[key] = parser
 		value, err = parser(*option, value)
@@ -154,7 +158,7 @@ func (spec *Spec) add(opt *OptionSpec) error {
 		}
 	}
 
-	if opt.validator != nil {
+	if hasDefault && opt.validator != nil {
 		validator := opt.validator
 		spec.opts.validators[key] = validator
 		if err := validator(*option); err != nil {
