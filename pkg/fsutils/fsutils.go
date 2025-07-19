@@ -36,3 +36,11 @@ func IsDir(path string) bool {
 	}
 	return info.IsDir()
 }
+
+func IsRegular(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.Mode().IsRegular()
+}
