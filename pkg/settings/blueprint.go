@@ -129,8 +129,12 @@ func settingSpecFromField(field reflect.StructField, value reflect.Value) (Setti
 		case "mutable":
 			spec.Mutability = SettingMutable
 		default:
-			spec.Mutability = SettingImmutable
-			spec.IsSet = true
+			if spec.Persistent {
+				spec.Mutability = SettingOnce
+			} else {
+				spec.Mutability = SettingImmutable
+				spec.IsSet = true
+			}
 		}
 
 		kindGetterMethod := value.MethodByName("SettingKind")

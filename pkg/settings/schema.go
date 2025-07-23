@@ -44,6 +44,16 @@ func (s *Schema) Profile(name string, pref *Preferences) (*Profile, error) {
 		schema: *s,
 		lang:   language.English,
 	}
+
+	if pref != nil {
+		if pref.version == "" {
+			pref.version = s.version
+		}
+		if version.Compare(pref.version, s.version) != 0 {
+			return nil, fmt.Errorf("%w: schema supports version %s, provided preferences version %s", ErrPreferences, s.version.String(), pref.version.String())
+		}
+	}
+
 	if err := profile.load(pref); err != nil {
 		return nil, err
 	}

@@ -187,8 +187,8 @@ func (ss StringSlice) MarshalSetting() ([]byte, error) {
 	return []byte(ss.String()), nil
 }
 
-func (ss StringSlice) UnmarshalSetting(data []byte) error {
-	ss = strings.Split(string(data), "\x1f")
+func (ss *StringSlice) UnmarshalSetting(data []byte) error {
+	*ss = strings.Split(string(data), "\x1f")
 	return nil
 }
 

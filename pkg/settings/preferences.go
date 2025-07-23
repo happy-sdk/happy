@@ -7,6 +7,7 @@ package settings
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -31,6 +32,11 @@ func NewPreferences(schemaVersion version.Version) *Preferences {
 func (p *Preferences) Set(key, value string) {
 	p.data[key] = value
 }
+
+func (p *Preferences) SchemaVersion() version.Version {
+	return p.version
+}
+
 func (p *Preferences) GobDecode(data []byte) error {
 
 	var (
@@ -87,4 +93,85 @@ func (p Preferences) GobEncode() ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func (p *Preferences) UnmarshalJSON(b []byte) error {
+	prefs := make(map[string]json.RawMessage)
+	if err := json.Unmarshal(b, &prefs); err != nil {
+		return err
+	}
+
+	versionStr, ok := prefs["version"]
+	if !ok {
+		return ErrPreferences
+	}
+
+	var ver version.Version
+	if err := json.Unmarshal(versionStr, &ver); err != nil {
+		return err
+	}
+	p.version = ver
+	p.data = make(map[string]string)
+
+	for rootKey, rootRawValue := range prefs {
+		if rootKey == "version" {
+			continue
+		}
+
+		var rootValueAny any
+		if err := json.Unmarshal(rootRawValue, &rootValueAny); err != nil {
+			return err
+		}
+
+		switch rootValue := rootValueAny.(type) {
+		case map[string]any:
+			for key, val := range rootValue {
+				subKey := fmt.Sprintf("%s.%s", rootKey, key)
+				switch subValue := val.(type) {
+				case map[string]any:
+					data := parseNested(subKey, subValue)
+					for k, v := range data {
+						p.data[k] = v
+					}
+				default:
+					val, err := vars.NewValue(subValue)
+					if err != nil {
+						return err
+					}
+					p.data[subKey] = val.String()
+				}
+
+			}
+		default:
+			val, err := vars.NewValue(rootValue)
+			if err != nil {
+				return err
+			}
+			p.data[rootKey] = val.String()
+		}
+	}
+
+	return nil
+}
+
+func parseNested(key string, obj map[string]any) map[string]string {
+	data := make(map[string]string)
+	for k, v := range obj {
+		subKey := fmt.Sprintf("%s.%s", key, k)
+		switch subValue := v.(type) {
+		case map[string]any:
+			sdata := parseNested(subKey, subValue)
+			for k, v := range sdata {
+				nestedKey := fmt.Sprintf("%s.%s", subKey, k)
+				data[nestedKey] = v
+			}
+		default:
+			val, err := vars.NewValue(subValue)
+			if err != nil {
+				return nil
+			}
+			data[subKey] = val.String()
+		}
+	}
+	return data
 }

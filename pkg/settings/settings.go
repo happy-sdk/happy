@@ -131,12 +131,6 @@ func New[S Settings](s S) (*Blueprint, error) {
 					return nil, fmt.Errorf("field %s does not implement settings.Value interface", field.Name)
 				}
 			}
-		} else {
-			// Get the field by name from the original value to set it back
-			// fmt.Println("New.Blueprint(!isPointer): ", b.pkg, field.Name)
-			// if nested, ok := originalField.Addr().Interface().(Settings); ok {
-
-			// }
 		}
 
 		if err := b.AddSpec(spec); err != nil {
