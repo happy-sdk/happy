@@ -6,7 +6,6 @@ package textfmt
 
 import (
 	"strings"
-	"unicode"
 )
 
 // WordWrap returns string wrapped string to a specified line width.
@@ -26,112 +25,88 @@ func WordWrapWithPrefixes(text string, lineWidth int, firstPrefix, contPrefix st
 		return text
 	}
 
-	firstPrefixLen := len([]rune(firstPrefix))
-	contPrefixLen := len([]rune(contPrefix))
+	firstPrefixWidth := displayWidth(firstPrefix)
+	contPrefixWidth := displayWidth(contPrefix)
 
 	var result strings.Builder
 	result.Grow(len(text) + len(text)/lineWidth + len(contPrefix)*len(text)/lineWidth)
 
 	currentLineLength := 0
 	var currentWords []string
-	isFirstLine := true
+	linesWritten := 0
 
-	// Split on whitespace and process
-	start := 0
-	for i, r := range text {
-		if unicode.IsSpace(r) {
-			if i > start {
-				word := text[start:i]
-				wordLen := len([]rune(word))
-
-				// Calculate effective width for current line
-				effectiveWidth := lineWidth
-				if isFirstLine {
-					effectiveWidth -= firstPrefixLen
-				} else {
-					effectiveWidth -= contPrefixLen
-				}
-
-				if effectiveWidth <= 0 {
-					// Prefix too long, just return original
-					return text
-				}
-
-				if currentLineLength == 0 {
-					currentWords = append(currentWords, word)
-					currentLineLength = wordLen
-				} else if currentLineLength+1+wordLen <= effectiveWidth {
-					currentWords = append(currentWords, word)
-					currentLineLength += 1 + wordLen
-				} else {
-					// Write current line with appropriate prefix
-					if !isFirstLine {
-						result.WriteByte('\n')
-					}
-					if isFirstLine {
-						result.WriteString(firstPrefix)
-					} else {
-						result.WriteString(contPrefix)
-					}
-					result.WriteString(strings.Join(currentWords, " "))
-					isFirstLine = false
-
-					// Start new line
-					currentWords = currentWords[:0]
-					currentWords = append(currentWords, word)
-					currentLineLength = wordLen
-				}
-			}
-			start = i + 1
+	// Helper function to get current effective width
+	getCurrentEffectiveWidth := func() int {
+		if linesWritten == 0 {
+			return lineWidth - firstPrefixWidth
 		}
+		return lineWidth - contPrefixWidth
 	}
 
-	// Handle last word
-	if start < len(text) {
-		word := text[start:]
-		wordLen := len([]rune(word))
-
-		effectiveWidth := lineWidth
-		if isFirstLine {
-			effectiveWidth -= firstPrefixLen
+	// Helper function to write current line
+	writeCurrentLine := func() {
+		if linesWritten > 0 {
+			result.WriteByte('\n')
+		}
+		if linesWritten == 0 {
+			result.WriteString(firstPrefix)
 		} else {
-			effectiveWidth -= contPrefixLen
+			result.WriteString(contPrefix)
+		}
+		lineContent := strings.Join(currentWords, " ")
+		result.WriteString(lineContent)
+		linesWritten++
+		currentWords = currentWords[:0]
+		currentLineLength = 0
+	}
+
+	// Split on whitespace and process words
+	words := strings.Fields(text)
+
+	for _, word := range words {
+		wordWidth := len(word)
+		effectiveWidth := getCurrentEffectiveWidth()
+
+		if effectiveWidth <= 0 {
+			// Prefix too long, just return original
+			return text
 		}
 
 		if currentLineLength == 0 {
+			// First word on line
 			currentWords = append(currentWords, word)
-		} else if currentLineLength+1+wordLen <= effectiveWidth {
+			currentLineLength = wordWidth
+		} else if currentLineLength+1+wordWidth <= effectiveWidth {
+			// Word fits on current line (1 is for the space)
 			currentWords = append(currentWords, word)
+			currentLineLength += 1 + wordWidth
 		} else {
-			// Write current line
-			if !isFirstLine {
-				result.WriteByte('\n')
-			}
-			if isFirstLine {
-				result.WriteString(firstPrefix)
-			} else {
-				result.WriteString(contPrefix)
-			}
-			result.WriteString(strings.Join(currentWords, " "))
-			isFirstLine = false
-
-			currentWords = currentWords[:0]
+			// Word doesn't fit, write current line and start new one
+			writeCurrentLine()
 			currentWords = append(currentWords, word)
+			currentLineLength = wordWidth
 		}
 	}
 
 	// Write final line
 	if len(currentWords) > 0 {
-		if !isFirstLine {
-			result.WriteByte('\n')
-		}
-		if isFirstLine {
-			result.WriteString(firstPrefix)
-		} else {
-			result.WriteString(contPrefix)
-		}
-		result.WriteString(strings.Join(currentWords, " "))
+		writeCurrentLine()
 	}
 
 	return result.String()
+}
+
+// displayWidth calculates the visual/print width of a string
+// accounting for tabs and other special characters
+func displayWidth(s string) int {
+	width := 0
+	for _, r := range s {
+		switch r {
+		case '\t':
+			width += 2
+		default:
+			width += 1
+		}
+	}
+	return width
 }

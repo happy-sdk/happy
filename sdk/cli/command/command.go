@@ -24,6 +24,7 @@ var (
 	ErrFlags             = fmt.Errorf("%w flags error", Error)
 	ErrHasNoParent       = fmt.Errorf("%w has no parent command", Error)
 	ErrCommandNotAllowed = fmt.Errorf("%w not allowed", Error)
+	ErrNotImplemented    = fmt.Errorf("%w not implemented", Error)
 )
 
 type Config struct {
@@ -45,7 +46,7 @@ type Config struct {
 	// by parent commands should be skipped.
 	SkipSharedBefore settings.Bool `key:"skip_shared_before" default:"false"`
 	// Disabled indicates that the command should be disabled in the command list.
-	Disabled settings.Bool `key:"disabled" default:"false" mutation:"once"`
+	Disabled settings.Bool `key:"disabled" default:"false" mutation:"mutable"`
 	// FailDisabled indicates that the command should fail when disabled.
 	// If Disable action is set, the command will fail with an error message returned by action.
 	// If Disable action is not set, but Disabled is true, the command will fail with an error message ErrCommandNotAllowed.
@@ -165,12 +166,13 @@ func (c *Command) WithSubCommands(cmds ...*Command) *Command {
 	return c
 }
 
-func (c *Command) AddUsage(usage string) {
+func (c *Command) AddUsage(usage string) *Command {
 	if !c.tryLock("Usage") {
-		return
+		return c
 	}
 	defer c.mu.Unlock()
 	c.extraUsage = append(c.extraUsage, usage)
+	return c
 }
 
 func (c *Command) Disable(a action.Action) *Command {
@@ -532,10 +534,9 @@ func (c *Command) toInvalid() *Command {
 	defer c.mu.Unlock()
 
 	defer func() {
+		slog.Error("HAPPY COMMAND", slog.String("err", c.err.Error()))
 		stackTrace := debug.Stack()
-		fmt.Println("HAPPY COMMAND")
-		fmt.Println("err: ", c.err.Error())
-		fmt.Println(string(stackTrace))
+		slog.Error(string(stackTrace))
 	}()
 
 	// Ensure that the error field is set.
@@ -576,4 +577,11 @@ func (c *Command) error(err error) {
 		c.cnflog.Error(err.Error())
 	}
 	c.err = err
+}
+
+func NotImplemented(msg string) error {
+	if msg == "" {
+		return ErrNotImplemented
+	}
+	return fmt.Errorf("%w: %s", ErrNotImplemented, msg)
 }

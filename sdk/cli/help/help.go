@@ -334,10 +334,9 @@ func (h *Help) printBanner() error {
 
 func (h *Help) printInfo() error {
 	if len(h.info.Info) > 0 {
-		fmt.Println("")
 		for _, info := range h.info.Info {
-
-			fmt.Println(textfmt.WordWrapWithPrefixes(h.style.Info.String(info), 72, "    ", "  "))
+			fmt.Println("")
+			fmt.Println(h.style.Info.String(textfmt.WordWrapWithPrefixes(info, 72, "    ", "  ")))
 		}
 	}
 	return nil

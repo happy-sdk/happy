@@ -2,14 +2,15 @@ go 1.24.4
 
 use (
 	.
-	./addons/devel
-	./cmd/gohappy
+	./lib/taskrunner
 	./pkg/branding
 	./pkg/devel/bug
+	./pkg/devel/goutils
 	./pkg/devel/testutils
 	./pkg/fsutils
 	./pkg/i18n
 	./pkg/logging
+	./pkg/logging/adapters/console
 	./pkg/networking
 	./pkg/options
 	./pkg/scheduling/cron

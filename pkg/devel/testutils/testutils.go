@@ -9,10 +9,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -509,4 +511,166 @@ func ExtractCoverage(s string) (string, error) {
 	}
 
 	return "", fmt.Errorf("no coverage info found")
+}
+
+// Containable defines types that can be searched for containment
+type Containable[T comparable] interface {
+	~[]T | ~string | ~map[T]any
+}
+
+// Contains is the unified generic method that dispatches to the correct implementation
+func Contains[Container Containable[Item], Item comparable](
+	tt TestingIface,
+	container Container,
+	item Item,
+	msgAndArgs ...any,
+) bool {
+	tt.Helper()
+	return contains(tt, container, item, msgAndArgs...)
+}
+
+// Alternative: Separate interfaces for better type safety
+type SliceOrMap[T comparable] interface {
+	~[]T | ~map[T]any
+}
+
+// ContainsExact for exact matching (slices and map keys)
+func ContainsExact[Container SliceOrMap[Item], Item comparable](
+	tt TestingIface,
+	container Container,
+	item Item,
+	msgAndArgs ...any,
+) bool {
+	tt.Helper()
+	return containsExact(tt, container, item, msgAndArgs...)
+}
+
+func containsExact[Container SliceOrMap[Item], Item comparable](
+	tt TestingIface,
+	container Container,
+	item Item,
+	msgAndArgs ...any,
+) bool {
+	tt.Helper()
+
+	switch c := any(container).(type) {
+	case []Item:
+		if slices.Contains(c, item) {
+			return true
+		}
+		return fail(tt, fmt.Sprintf("Slice does not contain item:\n"+
+			"slice: %v\n"+
+			"item: %v", c, item), msgAndArgs...)
+
+	case map[Item]any:
+		if _, exists := c[item]; exists {
+			return true
+		}
+		return fail(tt, fmt.Sprintf("Map does not contain key:\n"+
+			"map keys: %v\n"+
+			"key: %v", maps.Keys(c), item), msgAndArgs...)
+
+	default:
+		return fail(tt, fmt.Sprintf("Unsupported container type: %T", container), msgAndArgs...)
+	}
+}
+
+func contains[Container Containable[Item], Item comparable](
+	tt TestingIface,
+	container Container,
+	item Item,
+	msgAndArgs ...any,
+) bool {
+	tt.Helper()
+
+	// Use type switching on the actual value to dispatch
+	switch c := any(container).(type) {
+	case []Item:
+		// Slice contains - use slices.Contains
+		if slices.Contains(c, item) {
+			return true
+		}
+		return fail(tt, fmt.Sprintf("Slice does not contain item:\n"+
+			"slice: %v\n"+
+			"item: %v", c, item), msgAndArgs...)
+
+	case string:
+		// String contains - convert item to string and use strings.Contains
+		if str, ok := any(item).(string); ok {
+			if strings.Contains(c, str) {
+				return true
+			}
+		}
+		return fail(tt, fmt.Sprintf("String does not contain substring:\n"+
+			"string: %q\n"+
+			"substring: %v", c, item), msgAndArgs...)
+
+	case map[Item]any:
+		// Map key contains
+		if _, exists := c[item]; exists {
+			return true
+		}
+		return fail(tt, fmt.Sprintf("Map does not contain key:\n"+
+			"map keys: %v\n"+
+			"key: %v", maps.Keys(c), item), msgAndArgs...)
+
+	default:
+		return fail(tt, fmt.Sprintf("Unsupported container type for Contains: %T", container), msgAndArgs...)
+	}
+}
+
+// ContainsFunc provides functional matching for slices (can't be unified easily)
+func ContainsFunc[T any](tt TestingIface, container []T, predicate func(T) bool, msgAndArgs ...any) bool {
+	tt.Helper()
+	if slices.ContainsFunc(container, predicate) {
+		return true
+	}
+	return fail(tt, fmt.Sprintf("Slice does not contain element matching predicate:\n"+
+		"slice: %v", container), msgAndArgs...)
+}
+
+// ContainsValue for checking map values (separate since it's a different operation)
+func ContainsValue[K comparable, V comparable](tt TestingIface, m map[K]V, value V, msgAndArgs ...any) bool {
+	tt.Helper()
+	for _, v := range m {
+		if v == value {
+			return true
+		}
+	}
+	return fail(tt, fmt.Sprintf("Map does not contain value:\n"+
+		"map: %v\n"+
+		"value: %v", m, value), msgAndArgs...)
+}
+
+// More specific versions are still available if needed for clarity
+func ContainsSlice[T comparable](tt TestingIface, slice []T, item T, msgAndArgs ...any) bool {
+	tt.Helper()
+	return Contains(tt, slice, item, msgAndArgs...)
+}
+
+func ContainsString(tt TestingIface, str, substr string, msgAndArgs ...any) bool {
+	tt.Helper()
+	return Contains(tt, str, substr, msgAndArgs...)
+}
+
+func ContainsKey[K comparable, V any](tt TestingIface, m map[K]V, key K, msgAndArgs ...any) bool {
+	tt.Helper()
+	// Convert to map[K]any for the generic Contains
+	anyMap := make(map[K]any, len(m))
+	for k, v := range m {
+		anyMap[k] = v
+	}
+	return Contains(tt, anyMap, key, msgAndArgs...)
+}
+
+func ContainsWithEq[T any](tt TestingIface, container []T, item T, eq func(T, T) bool, msgAndArgs ...any) bool {
+	tt.Helper()
+	for _, v := range container {
+		if eq(v, item) {
+			return true
+		}
+	}
+	return fail(tt, fmt.Sprintf("Slice does not contain item with custom equality:\n"+
+		"slice: %v\n"+
+		"item: %v", container, item), msgAndArgs...)
 }

@@ -2,7 +2,7 @@
 
 # Happy Prototyping Framework and SDK
 
-Happy SDK is an open-source Go framework designed to make building applications simple and fast. Its clear, modular structure and addon system promote code reuse, enabling anyone—coders or non-coders—to create prototypes or full projects efficiently. It integrates smoothly with projects using multiple programming languages, helping teams bring ideas to life with ease.
+Happy SDK is an open-source Go framework designed to make building applications simple and fast. Its clear, modular structure and addon system promote code reuse, enabling anyone—coders or non-coders—to create prototypes or full projects efficiently. It integrates smoothly with projects using multiple programming languages, helping teams bring ideas to life with ease with built-in monorepo support.
 
 :warning: *Until v1.0.0, API changes may break compatibility, so pin your Happy version and update cautiously.*  
 

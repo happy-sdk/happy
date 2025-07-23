@@ -516,11 +516,16 @@ func (rt *Runtime) executeDoAction() error {
 	internal.Log(rt.sess.Log(), "executing command", slog.String("args", strings.Join(os.Args, " ")))
 	src, err := rt.cmd.ExecDo(rt.sess)
 	if err != nil {
-		var source []slog.Attr
-		if src != "" {
-			source = append(source, slog.String(slog.SourceKey, src))
+		if errors.Is(err, command.ErrNotImplemented) {
+			rt.sess.Log().NotImplemented(err.Error())
+		} else {
+			var source []slog.Attr
+			if src != "" {
+				source = append(source, slog.String(slog.SourceKey, src))
+			}
+			rt.sess.Log().Error(err.Error(), source...)
 		}
-		rt.sess.Log().Error(err.Error(), source...)
+
 	}
 
 	internal.Log(rt.sess.Log(), "command took", slog.String("took", time.Since(doTimer).String()))
@@ -589,6 +594,7 @@ func (rt *Runtime) Exit(code int) {
 		os.Exit(code)
 	}
 }
+
 func (rt *Runtime) disposeLogger() {
 	if rt.sess != nil {
 		if err := rt.sess.Log().Dispose(); err != nil {

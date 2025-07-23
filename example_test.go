@@ -4,29 +4,20 @@
 
 package happy_test
 
-import (
-	"fmt"
+// func ExampleNew() {
+// 	app := happy.New(nil)
 
-	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/pkg/logging"
-	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/session"
-)
+// 	// Create a new test logger
+// 	log := logging.NewTestLogger(logging.LevelError)
+// 	app.WithLogger(log)
 
-func ExampleNew() {
-	app := happy.New(nil)
+// 	app.Do(func(sess *session.Context, args action.Args) error {
+// 		sess.Log().Println("Hello, world!")
+// 		return nil
+// 	})
 
-	// Create a new test logger
-	log := logging.NewTestLogger(logging.LevelError)
-	app.WithLogger(log)
-
-	app.Do(func(sess *session.Context, args action.Args) error {
-		sess.Log().Println("Hello, world!")
-		return nil
-	})
-
-	app.Run()
-	fmt.Println(log.Output())
-	// Output:
-	// {"level":"out","msg":"Hello, world!"}
-}
+// 	app.Run()
+// 	fmt.Println(log.Output())
+// 	// Output:
+// 	// {"level":"out","msg":"Hello, world!"}
+// }

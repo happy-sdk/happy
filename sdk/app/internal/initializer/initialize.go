@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/devel/goutils"
 	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
@@ -75,9 +76,13 @@ func (init *Initializer) initialize() {
 func (init *Initializer) initSettingsAndOpts() (err error) {
 	internal.LogInitDepth(init.log, 1, "initializing application options and settings")
 
+	if init.settings == nil {
+		err = fmt.Errorf("%w: settings is <nil>", Error)
+		return
+	}
+
 	// Load settings blueprint
 	if init.settingsb, err = init.settings.Blueprint(); err != nil {
-		init.error(err)
 		return
 	}
 
@@ -217,11 +222,16 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		return err
 	}
 
+	binaryName := filepath.Base(os.Args[0]) + filepath.Ext(os.Args[0])
+	if testing.Testing() {
+		binaryName = "testing"
+	}
+
 	optSpecs := []*options.OptionSpec{
-		options.NewOption("app.is_devel", version.IsGoRun()).
+		options.NewOption("app.is_devel", goutils.IsGoRun()).
 			Description("Is application in development mode").
 			Flags(options.ReadOnly),
-		options.NewOption("app.cli.binary_name", filepath.Base(os.Args[0])+filepath.Ext(os.Args[0])).
+		options.NewOption("app.cli.binary_name", binaryName).
 			Description("Application binary name").
 			Flags(options.ReadOnly),
 		options.NewOption("app.version", ver.String()).

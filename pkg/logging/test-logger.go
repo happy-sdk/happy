@@ -13,6 +13,24 @@ import (
 	"time"
 )
 
+// safeBuffer wraps bytes.Buffer with mutex protection
+type safeBuffer struct {
+	mu  sync.RWMutex
+	buf bytes.Buffer
+}
+
+func (tsb *safeBuffer) Write(p []byte) (n int, err error) {
+	tsb.mu.Lock()
+	defer tsb.mu.Unlock()
+	return tsb.buf.Write(p)
+}
+
+func (tsb *safeBuffer) String() string {
+	tsb.mu.RLock()
+	defer tsb.mu.RUnlock()
+	return tsb.buf.String()
+}
+
 // NewTestLogger returns a new test logger that writes to a buffer
 // with slog.JSONHandler. The buffer can be accessed via the Output method.
 func NewTestLogger(lvl Level) *TestLogger {
@@ -21,8 +39,7 @@ func NewTestLogger(lvl Level) *TestLogger {
 		ctx:   context.Background(),
 		tsloc: time.Local,
 	}
-	out := new(bytes.Buffer)
-
+	out := &safeBuffer{}
 	l.lvl.Set(slog.Level(lvl))
 	h := slog.NewJSONHandler(out, &slog.HandlerOptions{
 		Level: l.lvl,
@@ -43,16 +60,13 @@ func NewTestLogger(lvl Level) *TestLogger {
 }
 
 type TestLogger struct {
-	mu  sync.RWMutex
 	log *DefaultLogger
-	out *bytes.Buffer
+	out *safeBuffer
 }
 
 // Output returns String returns the contents of the unread portion
 // of the log output as a string.
 func (tl *TestLogger) Output() string {
-	tl.mu.RLock()
-	defer tl.mu.RUnlock()
 	return tl.out.String()
 }
 
@@ -111,6 +125,7 @@ func (l *TestLogger) Errors(err error, attrs ...slog.Attr) {
 		l.log.Error(err.Error(), attrs...)
 	}
 }
+
 func (l *TestLogger) BUG(msg string, attrs ...slog.Attr) {
 	l.log.BUG(msg, attrs...)
 }
@@ -151,4 +166,8 @@ func (l *TestLogger) ConsumeQueue(queue *QueueLogger) error {
 		}
 	}
 	return nil
+}
+
+func (l *TestLogger) Dispose() error {
+	return l.log.Dispose()
 }

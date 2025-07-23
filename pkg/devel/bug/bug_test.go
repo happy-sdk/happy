@@ -6,6 +6,7 @@ package bug_test
 
 import (
 	"bytes"
+	"context"
 	"log/slog"
 	"strings"
 	"testing"
@@ -32,7 +33,7 @@ func TestLogSlog(t *testing.T) {
 
 func TestLogLogger(t *testing.T) {
 	var buf bytes.Buffer
-	logger := logging.NewDefaultWithWriter(&buf, logging.DefaultOptions())
+	logger := logging.NewTextLogger(context.Background(), &buf, logging.DefaultOptions())
 	slog.SetDefault(logger.Logger())
 
 	bug.Log("test_bug", logger)

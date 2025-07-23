@@ -200,6 +200,7 @@ func (c *Cmd) Disabled() bool {
 }
 
 func (c *Cmd) CheckDisabled(sess *session.Context) bool {
+
 	if c.cnf.Get("disabled").Value().Bool() {
 		return true
 	}
@@ -444,12 +445,15 @@ func (c *Cmd) callSharedBeforeAction(sess *session.Context) error {
 		// Check is caller parent disabled and should fail.
 		// Even if caller parent is disabled but fail_disabled for this parent
 		// is not set the call it.
-		if c.cnf.Get("fail_disabled").Value().Bool() && c.CheckDisabled(sess) {
-			if c.err != nil {
-				return c.err
+		if c.parent != nil {
+			if c.cnf.Get("fail_disabled").Value().Bool() && c.parent.cnf.Get("disabled").Value().Bool() {
+				if c.err != nil {
+					return c.err
+				}
+				return fmt.Errorf("%w: %s", ErrCommandNotAllowed, c.name)
 			}
-			return fmt.Errorf("%w: %s", ErrCommandNotAllowed, c.name)
 		}
+
 		c.sharedCalled = true
 		if err := c.beforeAction(sess, action.NewArgs(c.flags)); err != nil {
 			internal.Log(sess.Log(), "shared before action",

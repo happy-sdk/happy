@@ -1,0 +1,12 @@
+version: "1"
+
+releaser:
+  enabled: true
+
+git:
+  author:
+    email: hello@happy-sdk.dev
+    name: The Happy Authors
+  branch: main
+  remote:
+    url: git@github.com:happy-sdk/happy.git

@@ -201,6 +201,12 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 		}
 		profileTable.AddRow("KEY", "KIND", "IS SET", "MUTABILITY", "VALUE", "DEFAULT")
 		for _, c := range profileConfig {
+			if c.Kind == "slice" && c.Value != "" {
+				for _, v := range sess.Get(c.Key).Fields() {
+					profileTable.AddRow(c.Key+"[]", c.Kind+"(string)", c.IsSet, c.Mutability, v, c.Default)
+				}
+				continue
+			}
 			profileTable.AddRow(c.Key, c.Kind, c.IsSet, c.Mutability, c.Value, c.Default)
 		}
 		sess.Log().Println(profileTable.String())
@@ -217,6 +223,7 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 		appTable.AddRow("KEY", "KIND", "VALUE")
 
 		for _, c := range appConfig {
+
 			appTable.AddRow(c.Key, c.Kind, c.Value)
 		}
 

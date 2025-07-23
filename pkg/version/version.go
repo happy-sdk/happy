@@ -5,6 +5,7 @@
 package version
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -37,6 +38,36 @@ func (v Version) Build() string {
 	return strings.Trim(semver.Build(v.String()), "+")
 }
 
+func (v Version) IsValid() bool {
+	return semver.IsValid(string(v))
+}
+
+func (v *Version) UnmarshalJSON(b []byte) error {
+	var str string
+	if err := json.Unmarshal(b, &str); err != nil {
+		return err
+	}
+	if str == "" {
+		return fmt.Errorf("%w: empty version", Error)
+	}
+	if str[0] != 'v' {
+		str = "v" + str
+	}
+	parts := strings.Split(str, ".")
+	if l := len(parts); l < 3 {
+		if l < 2 {
+			str += ".0"
+		}
+		str += ".0"
+	}
+	*v = Version(str)
+	if !v.IsValid() {
+		return fmt.Errorf("%w: invalid version: %s", Error, str)
+	}
+
+	return nil
+}
+
 // Current attempts to generate the closest realistic semantic version
 // without requiring -ldflags, using Go module build info.
 
@@ -45,14 +76,14 @@ func Parse(v string) (Version, error) {
 	if !strings.HasPrefix(v, "v") {
 		v = "v" + v
 	}
-	if !IsValid(Version(v)) {
+	if !IsValid(v) {
 		return Version(""), fmt.Errorf("%w: invalid version: %s", Error, v)
 	}
 	return Version(v), nil
 }
 
-func IsValid(v Version) bool {
-	return semver.IsValid(v.String())
+func IsValid(v string) bool {
+	return semver.IsValid(v)
 }
 
 // Prerelease extracts the pre-release part of a semantic version.
@@ -95,7 +126,7 @@ func Current() Version {
 	}
 
 	var (
-		major    = 1
+		major    = 0
 		commit   = ""
 		modified = false
 		date     = ""
@@ -127,9 +158,14 @@ func Current() Version {
 		}
 	}
 
+	wd, err := os.Getwd()
+	if err != nil {
+		return fallbackVersion()
+	}
+
 	// If no VCS info from build info, try Git commands as fallback
 	if !vcsInfoFound || commit == "" {
-		if gitCommit, gitModified, gitDate := getGitInfo(); gitCommit != "" {
+		if gitCommit, gitModified, gitDate := getGitInfo(wd); gitCommit != "" {
 			commit = gitCommit
 			modified = gitModified
 			date = gitDate
@@ -142,7 +178,7 @@ func Current() Version {
 	}
 
 	// Try to construct the same pseudo-version format as -buildvcs
-	if baseVersion := getLatestTag(); baseVersion != "" {
+	if baseVersion := getLatestTag(wd); baseVersion != "" {
 		// Get commit timestamp in the exact format Go uses
 		timestamp := ""
 		if date != "" {
@@ -152,14 +188,80 @@ func Current() Version {
 			}
 		} else {
 			// Fallback to git log for commit time
-			if commitTime := getCommitTime(); commitTime != "" {
+			if commitTime := getCommitTime(wd); commitTime != "" {
 				timestamp = commitTime
 			}
 		}
 
 		// Get 12-character commit hash (same as Go uses)
 		commit12 := commit
-		if fullCommit := getFullCommitHash(); fullCommit != "" && len(fullCommit) >= 12 {
+		if fullCommit := getFullCommitHash(wd); fullCommit != "" && len(fullCommit) >= 12 {
+			commit12 = fullCommit[:12]
+		}
+
+		if timestamp != "" && commit12 != "" {
+			version := fmt.Sprintf("%s-0.%s-%s", baseVersion, timestamp, commit12)
+			if modified {
+				version += "+dirty"
+			}
+			return Version(version)
+		}
+	}
+
+	// Fallback to original format if we can't get tag info
+	suffix := fmt.Sprintf("+git.%s", commit)
+	if date != "" {
+		suffix += "." + date
+	}
+	if modified {
+		suffix += ".dirty"
+	}
+
+	return Version(fmt.Sprintf("v%d.0.1-devel%s", major, suffix))
+}
+
+func OfDir(dir string) Version {
+	if dir == "" || dir == "." {
+		if wd, err := os.Getwd(); err != nil {
+			return fallbackVersion()
+		} else {
+			dir = wd
+		}
+	}
+
+	var (
+		major    = 0
+		commit   string
+		modified bool
+		date     string
+	)
+
+	commit, modified, date = getGitInfo(dir)
+
+	// If we still have no commit info, fallback to a basic devel version
+	if commit == "" {
+		return fallbackVersion()
+	}
+
+	// Try to construct the same pseudo-version format as -buildvcs
+	if baseVersion := getLatestTag(dir); baseVersion != "" {
+		// Get commit timestamp in the exact format Go uses
+		timestamp := ""
+		if date != "" {
+			if ts, err := strconv.ParseInt(date, 10, 64); err == nil {
+				t := time.Unix(ts, 0).UTC()
+				timestamp = t.Format("20060102150405")
+			}
+		} else {
+			// Fallback to git log for commit time
+			if commitTime := getCommitTime(dir); commitTime != "" {
+				timestamp = commitTime
+			}
+		}
+
+		// Get 12-character commit hash (same as Go uses)
+		commit12 := commit
+		if fullCommit := getFullCommitHash(dir); fullCommit != "" && len(fullCommit) >= 12 {
 			commit12 = fullCommit[:12]
 		}
 
@@ -192,14 +294,15 @@ func Compare(v Version, w Version) int {
 }
 
 // getGitInfo attempts to get Git information using command line
-func getGitInfo() (commit string, modified bool, date string) {
+func getGitInfo(wd string) (commit string, modified bool, date string) {
 	// Check if we're in a Git repository
-	if !isGitRepo() {
+	if !isGitRepo(wd) {
 		return "", false, ""
 	}
 
 	// Get commit hash
 	if cmd := exec.Command("git", "rev-parse", "--short=7", "HEAD"); cmd.Err == nil {
+		cmd.Dir = wd
 		if output, err := cmd.Output(); err == nil {
 			commit = strings.TrimSpace(string(output))
 		}
@@ -207,6 +310,7 @@ func getGitInfo() (commit string, modified bool, date string) {
 
 	// Check if working directory is dirty
 	if cmd := exec.Command("git", "diff-index", "--quiet", "HEAD", "--"); cmd.Err == nil {
+		cmd.Dir = wd
 		if err := cmd.Run(); err != nil {
 			modified = true
 		}
@@ -215,6 +319,7 @@ func getGitInfo() (commit string, modified bool, date string) {
 	// Get commit date
 	if commit != "" {
 		if cmd := exec.Command("git", "show", "-s", "--format=%ct", commit); cmd.Err == nil {
+			cmd.Dir = wd
 			if output, err := cmd.Output(); err == nil {
 				date = strings.TrimSpace(string(output))
 			}
@@ -225,18 +330,19 @@ func getGitInfo() (commit string, modified bool, date string) {
 }
 
 // getLatestTag attempts to get the base version for pseudo-version (matching Go's logic)
-func getLatestTag() string {
-	if !isGitRepo() {
+func getLatestTag(wd string) string {
+	if !isGitRepo(wd) {
 		return ""
 	}
 
 	// Get the most recent tag that's an ancestor of HEAD
 	if cmd := exec.Command("git", "describe", "--tags", "--abbrev=0", "--match=v*.*.*"); cmd.Err == nil {
+		cmd.Dir = wd
 		if output, err := cmd.Output(); err == nil {
 			tag := strings.TrimSpace(string(output))
 			if semver.IsValid(tag) {
 				// Check if we have commits after this tag
-				if hasCommitsAfterTag(tag) {
+				if hasCommitsAfterTag(wd, tag) {
 					// Increment patch version (Go's pseudo-version behavior)
 					return incrementPatchVersion(tag)
 				}
@@ -249,13 +355,14 @@ func getLatestTag() string {
 }
 
 // hasCommitsAfterTag checks if there are commits after the given tag
-func hasCommitsAfterTag(tag string) bool {
-	if !isGitRepo() {
+func hasCommitsAfterTag(wd, tag string) bool {
+	if !isGitRepo(wd) {
 		return false
 	}
 
 	// Check if HEAD is different from the tag
 	cmd := exec.Command("git", "rev-list", "--count", tag+"..HEAD")
+	cmd.Dir = wd
 	if output, err := cmd.Output(); err == nil {
 		count := strings.TrimSpace(string(output))
 		if c, err := strconv.Atoi(count); err == nil && c > 0 {
@@ -291,8 +398,8 @@ func incrementPatchVersion(tag string) string {
 }
 
 // getCommitTime gets the commit time in Go's pseudo-version format (YYYYMMDDHHMMSS)
-func getCommitTime() string {
-	if !isGitRepo() {
+func getCommitTime(wd string) string {
+	if !isGitRepo(wd) {
 		return ""
 	}
 
@@ -310,12 +417,13 @@ func getCommitTime() string {
 }
 
 // getFullCommitHash gets the full commit hash
-func getFullCommitHash() string {
-	if !isGitRepo() {
+func getFullCommitHash(wd string) string {
+	if !isGitRepo(wd) {
 		return ""
 	}
 
 	if cmd := exec.Command("git", "rev-parse", "HEAD"); cmd.Err == nil {
+		cmd.Dir = wd
 		if output, err := cmd.Output(); err == nil {
 			return strings.TrimSpace(string(output))
 		}
@@ -325,23 +433,13 @@ func getFullCommitHash() string {
 }
 
 // isGitRepo checks if current directory is in a Git repository
-func isGitRepo() bool {
+func isGitRepo(wd string) bool {
 	cmd := exec.Command("git", "rev-parse", "--git-dir")
+	cmd.Dir = wd
 	return cmd.Run() == nil
 }
 
 // fallbackVersion returns a basic development version when no VCS info is available
 func fallbackVersion() Version {
 	return Version(fmt.Sprintf("v0.0.1-devel+%d", time.Now().UnixMilli()))
-}
-
-// IsGoRun detects if the program is running via 'go run'
-func IsGoRun() bool {
-	executable, err := os.Executable()
-	if err != nil {
-		return false
-	}
-
-	return strings.Contains(executable, os.TempDir()) ||
-		strings.Contains(executable, "go-build")
 }

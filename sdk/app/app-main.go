@@ -5,7 +5,6 @@
 package app
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -142,6 +141,7 @@ func (m *Main) Run() {
 	}
 
 	if err := m.init.Configure(); err != nil {
+
 		if errors.Is(err, application.ErrExitSuccess) {
 			m.rt.Exit(0)
 			return
@@ -152,8 +152,7 @@ func (m *Main) Run() {
 			// to consume the log queue if it is not already consumed.
 			if m.init != nil {
 				for _, r := range m.log.Consume() {
-					slogr := r.Record(time.Local)
-					_ = slog.Default().Handler().Handle(context.Background(), slogr)
+					m.init.SystemDebug(r.Record(time.Local))
 				}
 			}
 		}
@@ -260,11 +259,18 @@ func (m *Main) WithFlags(ffns ...varflag.FlagCreateFunc) *Main {
 }
 
 func (m *Main) WithLogger(logger logging.Logger) *Main {
-	if m.canConfigure("setting logger") {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		m.init.SetLogger(logger)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.booted {
+		slog.Error("application is already booted", slog.String("msg", "setting logger"))
+		return m
 	}
+
+	if m.init == nil {
+		slog.Error("initializer is nil, not set correctly", slog.String("msg", "setting logger"))
+		return m
+	}
+	m.init.SetLogger(logger)
 	return m
 }
 

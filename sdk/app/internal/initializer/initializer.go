@@ -417,6 +417,14 @@ func (init *Initializer) Finalize() (err error) {
 	return nil
 }
 
+func (init *Initializer) SystemDebug(r slog.Record) {
+	if init.logger != nil {
+		_ = init.logger.Logger().Handler().Handle(context.Background(), r)
+	} else {
+		_ = slog.Default().Handler().Handle(context.Background(), r)
+	}
+}
+
 // ////////////////////////////////////////////////////////////////////////////
 // Configuration stage
 
