@@ -91,19 +91,46 @@ func (m *Map) Has(key string) bool {
 	return ok
 }
 
+// All returns an iterator that yields all variables in the map.
+// The iteration order is deterministic, based on sorted keys.
+//
+// All creates a snapshot of the map at the time it's called, so concurrent
+// modifications to the map during iteration will not affect the yielded values.
+// This ensures that nested iterations or concurrent map operations don't
+// interfere with each other.
+//
+// The returned iterator can be used with Go's range-over-func feature:
+//
+//	for v := range m.All() {
+//		fmt.Printf("%s = %s\n", v.Name(), v.String())
+//	}
+//
+// If the iterator's yield function returns false, iteration stops early.
 func (m *Map) All() iter.Seq[Variable] {
-	m.mu.RLock()
-	keys := make([]string, len(m.db))
-	i := 0
-	for key := range m.db {
-		keys[i] = key
-		i++
-	}
-	m.mu.RUnlock()
-	sort.Strings(keys)
 	return func(yield func(Variable) bool) {
-		for _, k := range keys {
-			if !yield(m.Get(k)) {
+		m.mu.RLock()
+		// Create a snapshot of all variables at this moment
+		snapshot := make([]Variable, 0, len(m.db))
+		keys := make([]string, 0, len(m.db))
+
+		for key := range m.db {
+			keys = append(keys, key)
+		}
+
+		// Sort keys for consistent iteration order
+		sort.Strings(keys)
+
+		// Build snapshot with current values
+		for _, key := range keys {
+			if v, exists := m.db[key]; exists {
+				snapshot = append(snapshot, v)
+			}
+		}
+		m.mu.RUnlock()
+
+		// Iterate over snapshot without holding locks
+		for _, v := range snapshot {
+			if !yield(v) {
 				return
 			}
 		}
@@ -193,24 +220,29 @@ func (m *Map) LoadOrStore(key string, value any) (actual Variable, loaded bool) 
 // false after a constant number of calls.
 func (m *Map) Range(f func(v Variable) bool) {
 	m.mu.RLock()
-	keys := make([]string, len(m.db))
-	i := 0
+	// Create a snapshot of all variables at this moment
+	snapshot := make([]Variable, 0, len(m.db))
+	keys := make([]string, 0, len(m.db))
+
 	for key := range m.db {
-		keys[i] = key
-		i++
+		keys = append(keys, key)
+	}
+
+	// Sort keys for consistent iteration order
+	sort.Strings(keys)
+
+	// Build snapshot with current values
+	for _, key := range keys {
+		if v, exists := m.db[key]; exists {
+			snapshot = append(snapshot, v)
+		}
 	}
 	m.mu.RUnlock()
 
-	sort.Strings(keys)
-
-	for _, key := range keys {
-		m.mu.RLock()
-		v := m.db[key]
+	// Iterate over snapshot without holding locks
+	for _, v := range snapshot {
 		if !f(v) {
-			m.mu.RUnlock()
 			break
-		} else {
-			m.mu.RUnlock()
 		}
 	}
 }
