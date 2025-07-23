@@ -2,4 +2,7 @@ module github.com/happy-sdk/happy/pkg/devel/goutils
 
 go 1.24
 
-require golang.org/x/mod v0.25.0
+require (
+	github.com/happy-sdk/happy/pkg/version v0.3.1
+	golang.org/x/mod v0.25.0
+)
