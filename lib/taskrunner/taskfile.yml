@@ -1,0 +1,15 @@
+version: '3'
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - echo "LIST PROJECT TASKS USE:"
+      - echo "-l, --list         Lists tasks with description of current Taskfile."
+      - echo "-a, --list-all     Lists tasks with or without a description."
+
+  hello:
+    # desc: prints hello to stdout
+    silent: true
+    cmds:
+      - echo "hello"
