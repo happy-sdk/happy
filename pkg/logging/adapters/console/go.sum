@@ -1,2 +1,4 @@
+github.com/happy-sdk/happy/pkg/logging v0.2.1 h1:gT5GhBXwAObGNMm/hcYPDOo6v3D48+4u8kvAdL0tsWE=
+github.com/happy-sdk/happy/pkg/logging v0.2.1/go.mod h1:+0uJHtXLcKfDNZdXl8RSYKPdyt2TnAxn3yUJJbJPVpU=
 github.com/happy-sdk/happy/pkg/tui v0.1.0 h1:CJdighgT2Ugv7hY/NgiSl3yMachl4bVhQYzjvYhVWd0=
 github.com/happy-sdk/happy/pkg/tui v0.1.0/go.mod h1:qqmTjwlJaPNpIbCj3UezJMhSO/kwBHC0fBGCM7LRBjE=
