@@ -194,7 +194,7 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 
 	kv := map[string]any{
 		"name":       c.info.Name(),
-		"addr":       c.info.Addr(),
+		"addr":       c.info.Addr().String(),
 		"running":    c.info.Running(),
 		"stopped.at": c.info.StoppedAt(),
 	}

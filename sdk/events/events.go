@@ -6,6 +6,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -68,7 +69,11 @@ func (ev *event) Create(value any, payload *vars.Map) Event {
 	if payload != nil {
 		pl, err = vars.ReadOnlyMapFrom(payload)
 		if err != nil {
-			slog.Error(err.Error())
+			key := ev.key
+			if ev.scope != "" {
+				key += "(" + ev.scope + ")"
+			}
+			slog.Error(fmt.Sprintf("%s: %s", key, err.Error()))
 		}
 	}
 	val, err := vars.NewValue(value)

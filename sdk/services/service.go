@@ -46,6 +46,7 @@ func New(s service.Config) *Service {
 func (s *Service) Name() string {
 	return s.settings.Name.String()
 }
+
 func (s *Service) Slug() string {
 	return s.settings.Slug.String()
 }
