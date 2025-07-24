@@ -2,7 +2,6 @@ go 1.24.4
 
 use (
 	.
-	./lib/taskrunner
 	./pkg/branding
 	./pkg/devel/bug
 	./pkg/devel/goutils
