@@ -7,11 +7,11 @@ require (
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.1.1
 	github.com/happy-sdk/happy/pkg/options v0.6.1
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.5.2
-	github.com/happy-sdk/happy/pkg/settings v0.6.2
+	github.com/happy-sdk/happy/pkg/settings v0.6.3
 	github.com/happy-sdk/happy/pkg/strings/humanize v0.5.2
 	github.com/happy-sdk/happy/pkg/strings/slug v0.2.1
 	github.com/happy-sdk/happy/pkg/strings/textfmt v0.5.1
-	github.com/happy-sdk/happy/pkg/vars v0.18.1
+	github.com/happy-sdk/happy/pkg/vars v0.18.2
 	github.com/happy-sdk/happy/pkg/version v0.4.1
 	golang.org/x/text v0.26.0
 )

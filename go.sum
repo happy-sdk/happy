@@ -18,8 +18,8 @@ github.com/happy-sdk/happy/pkg/options v0.6.1 h1:MS7cWD5MFQ0uNXsEbGNDb6C6JUYVUsi
 github.com/happy-sdk/happy/pkg/options v0.6.1/go.mod h1:3fT92+ExgEUvilPPRNflWjQkql1hGl0xD3jLtlQkns0=
 github.com/happy-sdk/happy/pkg/scheduling/cron v0.5.2 h1:vox7/j/wtCebx2lyGRGNZLRQardUsVAdGljIgwXHvxw=
 github.com/happy-sdk/happy/pkg/scheduling/cron v0.5.2/go.mod h1:VrA9V1I4h2HsVHSLeFRLM/zi5o5DEQSZPAJ3YYP/Zy8=
-github.com/happy-sdk/happy/pkg/settings v0.6.2 h1:VAzDNf3TZJg8bPfxPP2AJXOwzSt2WyzanctvoX+qzhM=
-github.com/happy-sdk/happy/pkg/settings v0.6.2/go.mod h1:uyqL2zLT7AQKUl7ATCX9ytosM7HT1GlGv390/uYsaEY=
+github.com/happy-sdk/happy/pkg/settings v0.6.3 h1:/vIbhPNnhrqmXuvMM//yKcaw2PxmNCHaBMuQv+cdtx4=
+github.com/happy-sdk/happy/pkg/settings v0.6.3/go.mod h1:VQEalZfFIOAe7MUVH1Y+gNEB/Vwjae7xkif/6N3tc68=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.5.2 h1:GgatU3lkBHiJZWq84ikTlAu2ZL2vNF13dyi/iGuRjS0=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.5.2/go.mod h1:Ec0AjJmHvfgJhWfsySPBvI/lKEzLeW3IwvfPez+R/Ws=
 github.com/happy-sdk/happy/pkg/strings/humanize v0.5.2 h1:Vf9IiaCkXzpN3116/hSQZx1bYPHLzTwsf+w14fhyZO4=
@@ -30,8 +30,8 @@ github.com/happy-sdk/happy/pkg/strings/textfmt v0.5.1 h1:LRPXbf9IqtGw213DtmkBpts
 github.com/happy-sdk/happy/pkg/strings/textfmt v0.5.1/go.mod h1:Gs5aymYTLnDfuv1NjipPjgaLdffjbEVUuyWyDGaQtBw=
 github.com/happy-sdk/happy/pkg/tui v0.1.0 h1:CJdighgT2Ugv7hY/NgiSl3yMachl4bVhQYzjvYhVWd0=
 github.com/happy-sdk/happy/pkg/tui v0.1.0/go.mod h1:qqmTjwlJaPNpIbCj3UezJMhSO/kwBHC0fBGCM7LRBjE=
-github.com/happy-sdk/happy/pkg/vars v0.18.1 h1:Jqkjze8l/nsInOdYzgtbPrd3jmsB4xhXugvXS43pDeg=
-github.com/happy-sdk/happy/pkg/vars v0.18.1/go.mod h1:YLRclH0ozOaTtE+JHCcoU6seOoPyE6JHcsqBK9HEpDU=
+github.com/happy-sdk/happy/pkg/vars v0.18.2 h1:KenxutZFFqReqIixQGvyyLgzlw8PYVlfU6YUK7Bat2w=
+github.com/happy-sdk/happy/pkg/vars v0.18.2/go.mod h1:TZjApQ+14knllK6nLrbkPSeHa+WnhMYTt0P6C9eKaMY=
 github.com/happy-sdk/happy/pkg/version v0.4.1 h1:tTS2xHCOklEOAtfvqyYHNZoMnDQ5+zBOyni0f49Oh+s=
 github.com/happy-sdk/happy/pkg/version v0.4.1/go.mod h1:gGgIbaVBjrktFgydeW9LNJu7wW20vOShmfW8p1uG8jU=
 golang.org/x/mod v0.25.0 h1:n7a+ZbQKQA/Ysbyb0/6IbB1H/X41mKgbhfv7AfG/44w=
