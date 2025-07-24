@@ -597,8 +597,11 @@ func (rt *Runtime) Exit(code int) {
 
 func (rt *Runtime) disposeLogger() {
 	if rt.sess != nil {
-		if err := rt.sess.Log().Dispose(); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
+		logger := rt.sess.Log()
+		if logger != nil {
+			if err := logger.Dispose(); err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
 		}
 	}
 }

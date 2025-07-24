@@ -169,5 +169,8 @@ func (l *TestLogger) ConsumeQueue(queue *QueueLogger) error {
 }
 
 func (l *TestLogger) Dispose() error {
-	return l.log.Dispose()
+	if l.log != nil {
+		return l.log.Dispose()
+	}
+	return nil
 }

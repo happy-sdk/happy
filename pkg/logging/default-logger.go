@@ -209,7 +209,10 @@ func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr
 }
 
 func (l *DefaultLogger) Dispose() error {
-	return l.adapter.Dispose()
+	if l.adapter != nil {
+		return l.adapter.Dispose()
+	}
+	return nil
 }
 
 func (l *DefaultLogger) logDepth(lvl slog.Level, msg string, attrs ...slog.Attr) {
