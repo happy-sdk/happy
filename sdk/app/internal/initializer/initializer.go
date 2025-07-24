@@ -6,7 +6,6 @@ package initializer
 
 import (
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"io"
@@ -608,20 +607,15 @@ LoadPreferences:
 			}
 			return fmt.Errorf("%w: profile %q loading error: %s", Error, currentProfileName, err.Error())
 		} else {
-			internal.LogInit(init.log, "loading preferences from", slog.String("path", loadPrefFilePath))
-			prefFile, err := os.Open(loadPrefFilePath)
+			internal.LogInit(init.log, "loading preferencess from", slog.String("path", loadPrefFilePath))
+			prefFile, err := os.ReadFile(loadPrefFilePath)
 			if err != nil {
 				return err
 			}
-			defer func() {
-				if err := prefFile.Close(); err != nil {
-					init.log.Error("failed to close profile preferences file", slog.String("path", loadPrefFilePath), slog.String("error", err.Error()))
-				}
-			}()
-			pref = &settings.Preferences{}
-			dataDecoder := gob.NewDecoder(prefFile)
 
-			if err = dataDecoder.Decode(pref); err != nil && !errors.Is(err, io.EOF) {
+			pref = settings.NewPreferences(version.Version("v1.0.0"))
+
+			if err = pref.GobDecode(prefFile); err != nil && !errors.Is(err, io.EOF) {
 				return err
 			}
 		}

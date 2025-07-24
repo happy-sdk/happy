@@ -39,7 +39,6 @@ func (p *Preferences) SchemaVersion() version.Version {
 }
 
 func (p *Preferences) GobDecode(data []byte) error {
-
 	var (
 		temp []string
 	)
@@ -58,11 +57,15 @@ func (p *Preferences) GobDecode(data []byte) error {
 	p.data = make(map[string]string)
 
 	versionStr := prefsMap.Get("version").String()
-	ver, err := version.Parse(versionStr)
-	if err != nil {
-		return err
+	if versionStr == "" {
+		p.version = version.Version("v1.0.0")
+	} else {
+		ver, err := version.Parse(versionStr)
+		if err != nil {
+			return err
+		}
+		p.version = ver
 	}
-	p.version = ver
 
 	for v := range prefsMap.All() {
 		if v.Name() == "version" {
