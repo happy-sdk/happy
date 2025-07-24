@@ -141,6 +141,7 @@ func (c *Context) Value(key any) any {
 	case *int:
 		if c.terminate != nil && c.terminate.Err() != nil {
 			if c.allowUserCancel {
+				fmt.Println()
 				c.mu.Lock()
 				c.terminateStop()
 				c.terminate = nil
