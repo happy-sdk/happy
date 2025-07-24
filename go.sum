@@ -8,10 +8,10 @@ github.com/happy-sdk/happy/pkg/fsutils v0.2.0 h1:8RiMcG6XD3z8akdjB2ChpMpqg5iAXhI
 github.com/happy-sdk/happy/pkg/fsutils v0.2.0/go.mod h1:ckXF9wGAZQgXeINWWzGh8C6BuAip0ZdMSwIiLX2xvo4=
 github.com/happy-sdk/happy/pkg/i18n v0.2.0 h1:RikaoarCZWI5iq8syJkj+9U8TdDEk4hwNq/Wutohbm4=
 github.com/happy-sdk/happy/pkg/i18n v0.2.0/go.mod h1:IDalj32VNR+Bqfz95e/WanujvHfSKgy2riCfT8yXBQs=
-github.com/happy-sdk/happy/pkg/logging v0.2.3 h1:Y+FVUjOQTufLug/UPmdKPrKlOr54n4W6axPCfA1pI7s=
-github.com/happy-sdk/happy/pkg/logging v0.2.3/go.mod h1:+0uJHtXLcKfDNZdXl8RSYKPdyt2TnAxn3yUJJbJPVpU=
-github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.3 h1:Lv4BpnRiJv9haZeyXeA5vYpSiBcTiGbfWiSF1Jl6ZEY=
-github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.3/go.mod h1:gbuBwE3VQjmsdzl4JqLqaO73yg90/yOnWEUG4Jip8tc=
+github.com/happy-sdk/happy/pkg/logging v0.2.4 h1:bMEWRjZmYJrgSUqV5NkApe9issufwkurOOcjFICitQM=
+github.com/happy-sdk/happy/pkg/logging v0.2.4/go.mod h1:+0uJHtXLcKfDNZdXl8RSYKPdyt2TnAxn3yUJJbJPVpU=
+github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.4 h1:P7smDFKD6G4WjZCj+Bdz3NDVbnqVuifhaCDhdRNJfOg=
+github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.4/go.mod h1:p7f99pEjMsNpPr9tL2MxzXVzPMNHmy8WHNz7Yp340Us=
 github.com/happy-sdk/happy/pkg/networking v0.1.0 h1:Rh/VSx5gtW5FpGyb4sqyb0qwAYB66dsWMci9DeTtP+A=
 github.com/happy-sdk/happy/pkg/networking v0.1.0/go.mod h1:bVZQxC1qzSk8eDJbchRmHiIUac3RAQebRbfuPerHGEU=
 github.com/happy-sdk/happy/pkg/options v0.6.1 h1:MS7cWD5MFQ0uNXsEbGNDb6C6JUYVUsiPO3Hhfy8988Q=

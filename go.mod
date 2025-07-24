@@ -22,8 +22,8 @@ require (
 	github.com/happy-sdk/happy/pkg/devel/goutils v0.1.1
 	github.com/happy-sdk/happy/pkg/fsutils v0.2.0
 	github.com/happy-sdk/happy/pkg/i18n v0.2.0
-	github.com/happy-sdk/happy/pkg/logging v0.2.3
-	github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.3
+	github.com/happy-sdk/happy/pkg/logging v0.2.4
+	github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.4
 	github.com/happy-sdk/happy/pkg/networking v0.1.0
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.5.2 // indirect
 	github.com/happy-sdk/happy/pkg/tui v0.1.0
