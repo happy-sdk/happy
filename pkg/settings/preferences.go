@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/version"
@@ -130,9 +131,13 @@ func (p *Preferences) UnmarshalJSON(b []byte) error {
 				switch subValue := val.(type) {
 				case map[string]any:
 					data := parseNested(subKey, subValue)
-					for k, v := range data {
-						p.data[k] = v
+					maps.Copy(p.data, data)
+				case []string:
+					val, err := vars.NewValue(subValue)
+					if err != nil {
+						return err
 					}
+					p.data[subKey] = val.String()
 				default:
 					val, err := vars.NewValue(subValue)
 					if err != nil {
@@ -165,12 +170,26 @@ func parseNested(key string, obj map[string]any) map[string]string {
 				nestedKey := fmt.Sprintf("%s.%s", subKey, k)
 				data[nestedKey] = v
 			}
-		default:
+		case []string:
 			val, err := vars.NewValue(subValue)
 			if err != nil {
 				return nil
 			}
 			data[subKey] = val.String()
+		default:
+			if strslice, ok := subValue.([]string); ok {
+				val, err := vars.NewValue(strslice)
+				if err != nil {
+					return nil
+				}
+				data[subKey] = val.String()
+			} else {
+				val, err := vars.NewValue(subValue)
+				if err != nil {
+					return nil
+				}
+				data[subKey] = val.String()
+			}
 		}
 	}
 	return data

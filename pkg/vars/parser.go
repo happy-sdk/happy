@@ -6,6 +6,7 @@ package vars
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"time"
 )
@@ -635,7 +636,18 @@ func (p *parser) parseUnderlyingAsKind(val any) (Kind, error) {
 		underlying = v
 		localtype = KindSlice
 		if !implStringer {
-			p.fmt.write(v)
+			if strslice, ok := val.([]any); ok {
+				strs := []string{}
+				for _, v := range strslice {
+					if sval, sok := v.(string); sok {
+						strs = append(strs, sval)
+					}
+				}
+				p.fmt.string(strings.Join(strs, "\x1f"))
+				p.val = strs
+			} else {
+				p.fmt.write(v)
+			}
 		}
 	default:
 		return typ,
