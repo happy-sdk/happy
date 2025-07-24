@@ -1,4 +1,2 @@
-github.com/happy-sdk/happy/pkg/logging v0.0.0-20250709205801-50c15b12267b h1:eDme700jTPgP+i3Jl3atE0qQZJCtPZB4gAnPzA73nAc=
-github.com/happy-sdk/happy/pkg/logging v0.0.0-20250709205801-50c15b12267b/go.mod h1:+0uJHtXLcKfDNZdXl8RSYKPdyt2TnAxn3yUJJbJPVpU=
-github.com/happy-sdk/happy/pkg/tui v0.0.0-20250709205801-50c15b12267b h1:7MYoB6dg9LfBiQ9ng44StkntdO6jxU42HsC0vvEv4Ko=
-github.com/happy-sdk/happy/pkg/tui v0.0.0-20250709205801-50c15b12267b/go.mod h1:qqmTjwlJaPNpIbCj3UezJMhSO/kwBHC0fBGCM7LRBjE=
+github.com/happy-sdk/happy/pkg/tui v0.1.0 h1:CJdighgT2Ugv7hY/NgiSl3yMachl4bVhQYzjvYhVWd0=
+github.com/happy-sdk/happy/pkg/tui v0.1.0/go.mod h1:qqmTjwlJaPNpIbCj3UezJMhSO/kwBHC0fBGCM7LRBjE=
