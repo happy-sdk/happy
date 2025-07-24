@@ -27,10 +27,15 @@ github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8/go.mod h1:wcDNUv
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
+github.com/happy-sdk/happy/pkg/branding v0.3.3/go.mod h1:Zx4lStP6b3W5QYCv9+HkGIFnQXeNNdgGPzyb3FXoNqM=
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.3.1/go.mod h1:jqKfUpNe+iUe7KAMfLbILLxDYd8EB1cO5BO0CPliWQ8=
+github.com/happy-sdk/happy/pkg/devel/goutils v0.1.1/go.mod h1:U/MN5xAjTnpwrcQneNu5hfWWr40oQfethb1ud5Ml4LI=
 github.com/happy-sdk/happy/pkg/i18n v0.1.0/go.mod h1:8s6rnV8ZgSoDoPl5MhrggbWaFNShaEp1yB1/iTXFEKA=
 github.com/happy-sdk/happy/pkg/logging v0.2.0/go.mod h1:+0uJHtXLcKfDNZdXl8RSYKPdyt2TnAxn3yUJJbJPVpU=
+github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.1/go.mod h1:bIMr7fpQ+qrx0F8ksMdzXk+4JwNSWxAkyArvM6MfFp4=
+github.com/happy-sdk/happy/pkg/options v0.6.0/go.mod h1:CX8FjsrJ9IBK6ozRk3/FFsxeAaRrhXekXyuw3wQILb8=
 github.com/happy-sdk/happy/pkg/settings v0.5.2/go.mod h1:0FDF8Disg9Ik9cnZ5KlpyBd2T3c4HlpW6UgKR6PWNI8=
+github.com/happy-sdk/happy/pkg/settings v0.6.1/go.mod h1:ZhchEkfhD2+/bHIrk6pfdNdUNfnxLm/Nfo/aZYBVJJI=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
