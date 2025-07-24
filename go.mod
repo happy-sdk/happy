@@ -22,26 +22,10 @@ require (
 	github.com/happy-sdk/happy/pkg/devel/goutils v0.1.1
 	github.com/happy-sdk/happy/pkg/fsutils v0.2.0
 	github.com/happy-sdk/happy/pkg/i18n v0.2.0
-	github.com/happy-sdk/happy/pkg/logging v0.2.2
-	github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.2
+	github.com/happy-sdk/happy/pkg/logging v0.2.3
+	github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.3
 	github.com/happy-sdk/happy/pkg/networking v0.1.0
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.5.2 // indirect
 	github.com/happy-sdk/happy/pkg/tui v0.1.0
 	golang.org/x/mod v0.25.0 // indirect
 )
-
-replace github.com/happy-sdk/happy/pkg/devel/testutils => /devel/happy-sdk/happy/pkg/devel/testutils
-
-replace github.com/happy-sdk/happy/pkg/scheduling/cron => /devel/happy-sdk/happy/pkg/scheduling/cron
-
-replace github.com/happy-sdk/happy/pkg/strings/humanize => /devel/happy-sdk/happy/pkg/strings/humanize
-
-replace github.com/happy-sdk/happy/pkg/strings/slug => /devel/happy-sdk/happy/pkg/strings/slug
-
-replace github.com/happy-sdk/happy/pkg/strings/textfmt => /devel/happy-sdk/happy/pkg/strings/textfmt
-
-replace github.com/happy-sdk/happy/pkg/vars => /devel/happy-sdk/happy/pkg/vars
-
-replace github.com/happy-sdk/happy/pkg/version => /devel/happy-sdk/happy/pkg/version
-
-replace github.com/happy-sdk/happy/pkg/strings/bexp => /devel/happy-sdk/happy/pkg/strings/bexp
