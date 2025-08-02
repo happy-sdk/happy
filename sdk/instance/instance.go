@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -110,9 +111,10 @@ func verifyPidFiles(sess *session.Context, pidsdir string) ([]os.DirEntry, error
 
 	var res []os.DirEntry
 	for _, pidfile := range pidfiles {
-		if pidfile.IsDir() {
+		if pidfile.IsDir() || !strings.HasPrefix(pidfile.Name(), "instance-") {
 			continue
 		}
+
 		if ok, err := verifyPidFile(sess, pidfile); err != nil {
 			return nil, err
 		} else if ok {
