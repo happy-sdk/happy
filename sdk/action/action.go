@@ -14,6 +14,7 @@ import (
 )
 
 type Action func(sess *session.Context) error
+
 type Register func(sess session.Register) error
 
 // type ActionWithFlags func(sess *Session, flags Flags) error
@@ -82,3 +83,5 @@ func (a *args) Flag(name string) varflag.Flag {
 	}
 	return f
 }
+
+var ActionNoop func(*session.Context) error = func(*session.Context) error { return nil }
