@@ -123,6 +123,10 @@ func (s Setting) String() string {
 	return s.vv.String()
 }
 
+func (s Setting) Display() string {
+	return s.vv.Display()
+}
+
 func (s Setting) Key() string {
 	return s.key
 }
