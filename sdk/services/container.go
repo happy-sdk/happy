@@ -264,7 +264,7 @@ func (c *Container) HandleEvent(sess *session.Context, ev events.Event) {
 			if sk == "any" || sk == lid {
 				if err := listener(sess, ev); err != nil {
 					service.AddError(c.info, err)
-					sess.Log().Error(Error.Error(), slog.String("service", c.info.Addr().String()), slog.String("err", err.Error()))
+					sess.Log().Error(err.Error(), slog.String("service", c.info.Addr().String()))
 				}
 			}
 		}
