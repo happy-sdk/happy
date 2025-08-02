@@ -7,6 +7,7 @@ package vars
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 )
 
@@ -46,6 +47,14 @@ type (
 
 // String returns string representation of the Value.
 func (v Value) String() string {
+	return v.str
+}
+
+func (v Value) Display() string {
+	if v.kind == KindSlice {
+		fields := v.Fields()
+		return strings.Join(fields, " ")
+	}
 	return v.str
 }
 

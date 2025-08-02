@@ -39,6 +39,10 @@ func (v Variable) String() string {
 	return v.val.String()
 }
 
+func (v Variable) Display() string {
+	return v.val.Display()
+}
+
 // Value returns Value of variable.
 func (v Variable) Value() Value {
 	return v.val
