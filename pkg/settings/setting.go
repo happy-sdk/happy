@@ -158,3 +158,7 @@ func (s Setting) Mutability() Mutability {
 func (s Setting) Description() string {
 	return s.desc
 }
+
+func UnmarshalValue[T Value](data []byte, v T) error {
+	return v.UnmarshalSetting(data)
+}

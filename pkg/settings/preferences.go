@@ -43,6 +43,7 @@ func (p *Preferences) GobDecode(data []byte) error {
 		temp []string
 	)
 
+	data = bytes.TrimSpace(data)
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
 	if err := decoder.Decode(&temp); err != nil && !errors.Is(err, io.EOF) {
