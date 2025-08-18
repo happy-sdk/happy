@@ -11,7 +11,6 @@ import (
 	"io"
 	"log"
 	"log/slog"
-	"os"
 	"runtime"
 	"strconv"
 	"time"
@@ -103,7 +102,7 @@ func NewHandler(ctx context.Context, w io.Writer, opts *logging.Options, theme a
 			light:      ansicolor.Style{FG: theme.Light},
 		},
 		src: opts.AddSource,
-		Handler: slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Handler: slog.NewJSONHandler(w, &slog.HandlerOptions{
 			Level: opts.LevelVar,
 			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 				if a.Key == slog.LevelKey {
@@ -117,7 +116,7 @@ func NewHandler(ctx context.Context, w io.Writer, opts *logging.Options, theme a
 			},
 			AddSource: opts.AddSource,
 		}),
-		l:     log.New(os.Stderr, "", 0),
+		l:     log.New(w, "", 0),
 		tsfmt: tsfmt,
 		nots:  opts.NoTimestamp,
 	}
