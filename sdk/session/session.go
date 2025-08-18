@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/logging"
+	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -57,6 +58,7 @@ type Context struct {
 	evch chan<- events.Event
 
 	isReady     bool
+	released    bool
 	ready       context.Context
 	readyCancel context.CancelFunc
 	readyEvent  events.Event
@@ -87,10 +89,18 @@ func (c *Context) Wait(ctrlc bool) <-chan struct{} {
 	c.mu.Lock()
 	c.allowUserCancel = true
 	c.mu.Unlock()
-	internal.Log(c.Log(), "waiting for user cancel or session termination")
-	if ctrlc {
-		fmt.Println("Press Ctrl+C to cancel")
+
+	c.mu.RLock()
+	if c.terminateStop != nil {
+		internal.Log(c.Log(), "waiting for user cancel or session termination")
+		if ctrlc {
+			fmt.Println("Press Ctrl+C to cancel")
+		}
+	} else {
+		internal.Log(c.Log(), "waiting for session termination")
 	}
+	c.mu.RUnlock()
+
 	return c.Done()
 }
 
@@ -139,30 +149,56 @@ func (c *Context) Value(key any) any {
 			return v
 		}
 	case *int:
-		if c.terminate != nil && c.terminate.Err() != nil {
-			if c.allowUserCancel {
-				fmt.Println()
-				c.mu.Lock()
-				c.terminateStop()
-				c.terminate = nil
-				c.terminated = true
-				c.terminateStop = nil
-				if c.done != nil {
-					close(c.done)
-					c.done = nil
-				}
-				c.mu.Unlock()
-				c.Destroy(ErrExitSuccess)
-				return nil
-			}
+		if !c.released {
+			if c.terminate != nil && c.terminate.Err() != nil {
+				if c.allowUserCancel {
+					fmt.Println()
+					c.mu.Lock()
 
-			c.Destroy(ErrDestroyed)
-		} else if c.kill != nil && c.kill.Err() != nil {
-			c.Destroy(c.kill.Err())
+					if c.terminateStop != nil {
+						c.terminateStop()
+						c.terminate = nil
+						c.terminated = true
+						c.terminateStop = nil
+					}
+
+					if c.done != nil {
+						close(c.done)
+						c.done = nil
+					}
+					c.mu.Unlock()
+					c.Destroy(ErrExitSuccess)
+					return nil
+				}
+
+				c.Destroy(ErrDestroyed)
+			} else if c.kill != nil && c.kill.Err() != nil {
+				c.Destroy(c.kill.Err())
+			}
 		}
+
 		return nil
 	}
 	return nil
+}
+
+// Release releases os.Interrupt and os.Kill signals.
+// Caller becomes responsible of signals.
+func (c *Context) Release() {
+	c.mu.Lock()
+	c.released = true
+	if c.terminateStop != nil {
+		c.terminateStop()
+		c.terminateStop = nil
+	}
+
+	if c.killStop != nil {
+		c.killStop()
+		c.killStop = nil
+	}
+	c.mu.Unlock()
+
+	internal.Log(c.Log(), "session released SIGINT, SIGKILL signals")
 }
 
 // Destroy can be called do destroy session.
@@ -200,7 +236,7 @@ func (c *Context) Destroy(err error) {
 	}
 	if c.killStop != nil {
 		c.killStop()
-		c.terminateStop = nil
+		c.killStop = nil
 	}
 
 	c.mu.Lock()
@@ -319,24 +355,38 @@ func (c *Context) Dispatch(ev events.Event) {
 }
 
 func (c *Context) CanRecover(err error) bool {
-	if err == nil {
-		return true
-	}
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	if c.allowUserCancel && c.terminated && errors.Is(err, ErrExitSuccess) {
+	if c.err != nil && !errors.Is(err, ErrExitSuccess) {
+		return false
+	}
+
+	if c.allowUserCancel && c.terminated {
 		c.Log().Warn("session terminated by user")
 		return true
 	}
+
+	if err == nil {
+		return true
+	}
+
 	return false
 }
 
-func (c *Context) ServiceInfo(svcurl string) (*service.Info, error) {
+func (c *Context) ServiceInfo(svcaddr string) (*service.Info, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	svcinfo, ok := c.svss[svcurl]
+
+	hostaddr, err := address.Parse(c.opts.Get("app.address").String())
+	if err == nil {
+		if addr, err := hostaddr.ResolveService(svcaddr); err == nil {
+			svcaddr = addr.Path()
+		}
+	}
+	svcinfo, ok := c.svss[svcaddr]
 	if !ok {
-		return nil, fmt.Errorf("%w: unknown service %s", Error, svcurl)
+		return nil, fmt.Errorf("%w: unknown service %s", Error, svcaddr)
 	}
 	return svcinfo, nil
 }
@@ -362,8 +412,10 @@ func (c *Context) AttachAPI(slug string, api api.Provider) error {
 
 func (c *Context) start() (err error) {
 	c.ready, c.readyCancel = context.WithCancel(context.Background())
-	c.terminate, c.terminateStop = signal.NotifyContext(c, os.Interrupt)
-	c.kill, c.killStop = signal.NotifyContext(c, os.Kill)
+
+	c.terminate, c.terminateStop = signal.NotifyContext(context.Background(), os.Interrupt)
+	c.kill, c.killStop = signal.NotifyContext(context.Background(), os.Kill)
+
 	if timelocStr := c.Get("app.datetime.location").String(); timelocStr != "" {
 		c.timeloc, err = time.LoadLocation(timelocStr)
 		if err != nil {

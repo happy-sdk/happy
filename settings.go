@@ -194,7 +194,7 @@ type EngineSettings struct {
 	ThrottleTicks settings.Duration `key:"throttle_ticks,save" default:"1s" mutation:"once" desc:"Throttle engine ticks duration"`
 }
 
-func (s EngineSettings) Blueprint() (*settings.Blueprint, error) {
+func (s *EngineSettings) Blueprint() (*settings.Blueprint, error) {
 	return settings.New(s)
 }
 

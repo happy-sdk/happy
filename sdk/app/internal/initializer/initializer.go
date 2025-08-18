@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/branding"
+	"github.com/happy-sdk/happy/pkg/fsutils"
 	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/logging"
 	consoleadapter "github.com/happy-sdk/happy/pkg/logging/adapters/console"
@@ -658,6 +659,18 @@ LoadProfile:
 		}
 	}
 	if err := init.opts.Set("app.fs.path.cache", profileCacheDir); err != nil {
+		return err
+	}
+
+	// Set profile run directory
+	profileRunDir := filepath.Join(fsutils.RuntimeDir(init.defaults.slug), "profiles", loadSlug)
+	_, err = os.Stat(profileRunDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		if err := init.utilMkdir("create cache directory", profileRunDir, 0700); err != nil {
+			return fmt.Errorf("%w: failed to create cache directory %s", Error, err)
+		}
+	}
+	if err := init.opts.Set("app.fs.path.run", profileRunDir); err != nil {
 		return err
 	}
 

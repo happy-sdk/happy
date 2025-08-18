@@ -167,7 +167,10 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 func (c *Container) Stop(sess *session.Context, e error) (err error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-
+	if !c.info.Running() {
+		sess.Dispatch(service.StoppedEvent.Create(c.info.Name(), nil))
+		return nil
+	}
 	if e != nil {
 		sess.Log().Error(e.Error(), slog.String("service", c.info.Addr().String()))
 	}
@@ -187,7 +190,7 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 
 	payload := new(vars.Map)
 	if err != nil {
-		if errset := payload.Store("err", err); errset != nil {
+		if errset := payload.Store("err", err.Error()); errset != nil {
 			err = errors.Join(errset, err)
 		}
 	}
@@ -255,7 +258,7 @@ func (c *Container) Tock(sess *session.Context, delta time.Duration, tps int) er
 func (c *Container) HandleEvent(sess *session.Context, ev events.Event) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	if c.svc.listeners == nil {
+	if c.svc.listeners == nil || !c.info.Running() {
 		return
 	}
 	lid := ev.Scope() + "." + ev.Key()

@@ -79,7 +79,10 @@ func (pf *File) Unlock() error {
 }
 
 func (pf *File) Remove() error {
-	defer pf.Close()
+	defer func() {
+		// This error is ignored
+		_ = pf.Close()
+	}()
 	if err := pf.Unlock(); err != nil {
 		return err
 	}

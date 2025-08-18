@@ -258,6 +258,9 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		options.NewOption("app.fs.path.tmp", "").
 			Description("Runtime tmp directory").
 			Flags(options.Once),
+		options.NewOption("app.fs.path.run", "").
+			Description("Runtime directory").
+			Flags(options.Once),
 		options.NewOption("app.fs.path.cache", "").
 			Description("Application cache directory").
 			Flags(options.Once),

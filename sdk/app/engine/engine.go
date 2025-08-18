@@ -6,6 +6,7 @@ package engine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -26,7 +27,10 @@ import (
 	"github.com/happy-sdk/happy/sdk/stats"
 )
 
-var Error = fmt.Errorf("engine error")
+var (
+	Error                = fmt.Errorf("engine")
+	ErrServiceTerminated = fmt.Errorf("%w: service terminated", Error)
+)
 
 type engineState int
 
@@ -471,7 +475,6 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 			payload := ev.Payload()
 			if payload != nil {
 				payload.Range(func(v vars.Variable) bool {
-
 					go e.serviceStart(sess, v.String())
 					return true
 				})
@@ -503,7 +506,7 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 			payload := ev.Payload()
 			if payload != nil {
 				payload.Range(func(v vars.Variable) bool {
-					go e.serviceStop(sess, v.String(), nil)
+					go e.serviceStop(sess, v.String(), ErrServiceTerminated) // prevents restart
 					return true
 				})
 			}
@@ -521,7 +524,7 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 				sess.Log().Error("failed to resolve service address", slog.String("err", err.Error()))
 				return
 			}
-			go e.serviceStop(sess, addr.String(), nil)
+			go e.serviceStop(sess, addr.String(), ErrServiceTerminated) // prevents restart
 		}
 	}
 	for _, svcc := range registry {
@@ -581,19 +584,25 @@ func (e *Engine) listenEvent(scope, key string) error {
 }
 
 func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
+	svcaddr, err := address.Parse(svcurl)
+	if err != nil {
+		sess.Log().Error(err.Error())
+		return
+	}
 	e.mu.RLock()
-	svcc, ok := e.registry[svcurl]
+
+	svcc, ok := e.registry[svcaddr.Path()]
 	e.mu.RUnlock()
 	if !ok {
-		sess.Log().Warn("no such service to start", slog.String("service", svcurl))
+		sess.Log().Warn("no such service to start", slog.String("service", svcaddr.String()))
 		return
 	}
 	if svcc.Info().Failed() {
-		sess.Log().NotImplemented("skip starting service due previous errors", slog.String("service", svcurl))
+		sess.Log().NotImplemented("skip starting service due previous errors", slog.String("service", svcaddr.String()))
 		return
 	}
 
-	sarg := slog.String("service", svcurl)
+	sarg := slog.String("service", svcaddr.String())
 	if !ok {
 		sess.Log().Warn(
 			"requested unknown service",
@@ -610,20 +619,23 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 		return
 	}
 
+	// Update service address with query parameters when start requetsed
+	service.SetFullStartAddr(svcc.Info(), svcaddr)
+
 	if err := svcc.Start(e.engineLoopCtx, sess); err != nil {
 		sess.Log().Error(
 			"failed to start service",
 			slog.String("err", err.Error()),
 			sarg,
 		)
-		if e.state == engineRunning && svcc.CanRetry() {
-			sess.Log().Notice("retrying to start the service", sarg, slog.Int("retry", svcc.Retries()))
-			e.serviceStart(sess, svcurl)
+		if e.state == engineRunning && svcc.CanRetry() && sess.CanRecover(nil) {
+			sess.Log().Notice("retrying to start the service 1", sarg, slog.Int("retry", svcc.Retries()))
+			e.serviceStart(sess, svcaddr.String())
 		}
 		return
 	}
 
-	go func(svcc *services.Container, svcurl string, sarg slog.Attr) {
+	go func(svcc *services.Container, svcaddr *address.Address, sarg slog.Attr) {
 
 		if !svcc.HasTick() {
 			<-e.engineLoopCtx.Done()
@@ -632,6 +644,9 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 		}
 
 		throttle := time.Duration(sess.Get("app.engine.throttle_ticks").Int64())
+		if svcc.Settings().ThrottleTicks > 0 {
+			throttle = time.Duration(svcc.Settings().ThrottleTicks)
+		}
 		lastTick := sess.Time(time.Now())
 		ttick := time.NewTicker(throttle)
 		defer ttick.Stop()
@@ -662,7 +677,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 				lastTick = now
 
 				if err := svcc.Tick(sess, lastTick, delta); err != nil {
-					e.serviceStop(sess, svcurl, err)
+					e.serviceStop(sess, svcaddr.Path(), err)
 					break ticker
 				}
 
@@ -678,12 +693,12 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 
 				tickDelta := time.Since(lastTick)
 				if err := svcc.Tock(sess, tickDelta, tps); err != nil {
-					e.serviceStop(sess, svcurl, err)
+					e.serviceStop(sess, svcaddr.Path(), err)
 					break ticker
 				}
 			}
 		}
-	}(svcc, svcurl, sarg)
+	}(svcc, svcaddr, sarg)
 }
 
 func (e *Engine) serviceStop(sess *session.Context, svcurl string, err error) {
@@ -697,15 +712,17 @@ func (e *Engine) serviceStop(sess *session.Context, svcurl string, err error) {
 		return
 	}
 	internal.Log(sess.Log(), "stopping service", sarg)
-	if stoperr := svcc.Stop(sess, err); stoperr != nil {
+	serr := err
+	// When ErrServiceTerminated is encountered, set the error to nil
+	// This is to prevent the service from being restarted unnecessarily
+	if errors.Is(serr, ErrServiceTerminated) {
+		serr = nil
+	}
+	if stoperr := svcc.Stop(sess, serr); stoperr != nil {
 		sess.Log().Error("failed to stop service", slog.String("err", stoperr.Error()), sarg)
 	} else {
-		if e.state == engineRunning && svcc.CanRetry() {
-			if stoperr != nil {
-				sess.Log().Warn("retrying to skipped due service stop error", sarg)
-				return
-			}
-			sess.Log().Notice("retrying to start the service", sarg, slog.Int("retry", svcc.Retries()))
+		if err == nil && e.state == engineRunning && svcc.CanRetry() && sess.CanRecover(nil) {
+			sess.Log().Notice("retrying to start the service 2", sarg, slog.Int("retry", svcc.Retries()))
 			go e.serviceStart(sess, svcurl)
 		}
 	}

@@ -17,7 +17,7 @@ type Flag = varflag.FlagCreateFunc
 var (
 	FlagVersion     = varflag.BoolFunc("version", false, "print application version")
 	FlagHelp        = varflag.BoolFunc("help", false, "display help or help for the command. [...command --help]", "h")
-	FlagX           = varflag.BoolFunc("x", false, "the -x flag prints all the cli commands as they are executed.")
+	FlagX           = varflag.BoolFunc("show-exec", false, "the -x flag prints all the cli commands as they are executed.", "x")
 	FlagSystemDebug = varflag.BoolFunc("system-debug", false, "enable system debug log level (very verbose)")
 	FlagDebug       = varflag.BoolFunc("debug", false, "enable debug log level")
 	FlagVerbose     = varflag.BoolFunc("verbose", false, "enable verbose log level", "v")

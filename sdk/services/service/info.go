@@ -123,6 +123,17 @@ func MarkStarted(s *Info) {
 	s.started()
 }
 
+func SetFullStartAddr(s *Info, addr *address.Address) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.addr.Path() == addr.Path() {
+		s.addr = addr
+	}
+}
+
 func MarkStopped(s *Info) {
 	if s == nil {
 		return
