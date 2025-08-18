@@ -28,6 +28,7 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/happy-sdk/happy/pkg/cli/ansicolor v0.3.1/go.mod h1:jqKfUpNe+iUe7KAMfLbILLxDYd8EB1cO5BO0CPliWQ8=
+github.com/happy-sdk/happy/pkg/fsutils v0.3.0/go.mod h1:ckXF9wGAZQgXeINWWzGh8C6BuAip0ZdMSwIiLX2xvo4=
 github.com/happy-sdk/happy/pkg/i18n v0.1.0/go.mod h1:8s6rnV8ZgSoDoPl5MhrggbWaFNShaEp1yB1/iTXFEKA=
 github.com/happy-sdk/happy/pkg/logging v0.2.0/go.mod h1:+0uJHtXLcKfDNZdXl8RSYKPdyt2TnAxn3yUJJbJPVpU=
 github.com/happy-sdk/happy/pkg/logging v0.2.2/go.mod h1:+0uJHtXLcKfDNZdXl8RSYKPdyt2TnAxn3yUJJbJPVpU=
@@ -35,12 +36,14 @@ github.com/happy-sdk/happy/pkg/logging v0.2.3/go.mod h1:+0uJHtXLcKfDNZdXl8RSYKPd
 github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.1/go.mod h1:bIMr7fpQ+qrx0F8ksMdzXk+4JwNSWxAkyArvM6MfFp4=
 github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.2/go.mod h1:9Eryp4EPmtI4SITTcEOXdLAYOW/UHOorvUXzdFbBZjo=
 github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.3/go.mod h1:gbuBwE3VQjmsdzl4JqLqaO73yg90/yOnWEUG4Jip8tc=
+github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.6/go.mod h1:6w7u+Hm95AaeZd8RdSV/mTPTyOYgJrFVpFBjkAY5GqY=
+github.com/happy-sdk/happy/pkg/networking v0.2.0/go.mod h1:bVZQxC1qzSk8eDJbchRmHiIUac3RAQebRbfuPerHGEU=
 github.com/happy-sdk/happy/pkg/options v0.6.0/go.mod h1:CX8FjsrJ9IBK6ozRk3/FFsxeAaRrhXekXyuw3wQILb8=
-github.com/happy-sdk/happy/pkg/options v0.6.1/go.mod h1:3fT92+ExgEUvilPPRNflWjQkql1hGl0xD3jLtlQkns0=
+github.com/happy-sdk/happy/pkg/options v0.6.2/go.mod h1:Tcx+yJrk721SAH8uCvdU6UgSOkfAQ2GP5rjRhzd7PQA=
 github.com/happy-sdk/happy/pkg/settings v0.5.2/go.mod h1:0FDF8Disg9Ik9cnZ5KlpyBd2T3c4HlpW6UgKR6PWNI8=
 github.com/happy-sdk/happy/pkg/settings v0.6.1/go.mod h1:ZhchEkfhD2+/bHIrk6pfdNdUNfnxLm/Nfo/aZYBVJJI=
 github.com/happy-sdk/happy/pkg/settings v0.6.2/go.mod h1:uyqL2zLT7AQKUl7ATCX9ytosM7HT1GlGv390/uYsaEY=
-github.com/happy-sdk/happy/pkg/settings v0.6.3/go.mod h1:VQEalZfFIOAe7MUVH1Y+gNEB/Vwjae7xkif/6N3tc68=
+github.com/happy-sdk/happy/pkg/settings v0.7.0/go.mod h1:Nk9VLr9+YUd+xMI35zkuvyL6h4RckGZBiXR+LUmKQPo=
 github.com/happy-sdk/happy/pkg/vars v0.18.1/go.mod h1:YLRclH0ozOaTtE+JHCcoU6seOoPyE6JHcsqBK9HEpDU=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
