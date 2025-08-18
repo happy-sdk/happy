@@ -5,6 +5,7 @@
 package service
 
 import (
+	"maps"
 	"sync"
 	"time"
 
@@ -12,19 +13,21 @@ import (
 )
 
 type Info struct {
-	mu        sync.RWMutex
-	name      string
-	addr      *address.Address
-	running   bool
-	errs      map[time.Time]error
-	startedAt time.Time
-	stoppedAt time.Time
+	mu            sync.RWMutex
+	name          string
+	addr          *address.Address
+	running       bool
+	errs          map[time.Time]error
+	startedAt     time.Time
+	stoppedAt     time.Time
+	loaderTimeout time.Duration
 }
 
-func NewInfo(name string, addr *address.Address) *Info {
+func NewInfo(name string, addr *address.Address, loaderTimeout time.Duration) *Info {
 	return &Info{
-		name: name,
-		addr: addr,
+		name:          name,
+		addr:          addr,
+		loaderTimeout: loaderTimeout,
 	}
 }
 
@@ -77,10 +80,14 @@ func (s *Info) Errs() map[time.Time]error {
 		return nil
 	}
 	errsCopy := make(map[time.Time]error, len(s.errs))
-	for k, v := range s.errs {
-		errsCopy[k] = v
-	}
+	maps.Copy(errsCopy, s.errs)
 	return errsCopy
+}
+
+func (s *Info) LoaderTimeout() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.loaderTimeout
 }
 
 func (s *Info) started() {

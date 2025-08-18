@@ -117,9 +117,14 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 		))
 		return sl.loaderCh
 	}
-	timeout := sl.sess.Get("app.services.loader_timeout").Duration()
-	if timeout <= 0 {
-		timeout = time.Duration(time.Second * 30)
+
+	var (
+		timeout        time.Duration
+		defaultTimeout = sl.sess.Get("app.services.loader_timeout").Duration()
+	)
+
+	if defaultTimeout <= 0 {
+		defaultTimeout = time.Duration(time.Second * 30)
 		sl.sess.Log().NotImplemented(
 			"service loader using default timeout",
 			slog.Duration("timeout", timeout),
@@ -133,6 +138,12 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 
 	for _, svcaddr := range sl.svcAddrs {
 		info, err := sl.sess.ServiceInfo(svcaddr)
+		to := info.LoaderTimeout()
+		if to > 0 {
+			timeout += to
+		} else {
+			timeout += defaultTimeout
+		}
 		if err != nil {
 			sl.cancel(err)
 			return sl.loaderCh
@@ -171,7 +182,7 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 		for {
 			select {
 			case <-ctx.Done():
-				sl.sess.Log().Warn("loader context done")
+				sl.sess.Log().Info("loader context done")
 				for _, status := range queue {
 					if !status.Running() {
 						sl.addErr(fmt.Errorf("service did not load on time %s", status.Addr().String()))
@@ -258,7 +269,7 @@ func resolveAddress(hostaddr *address.Address, s string) (string, error) {
 
 // cancel is used internally to cancel loading
 func (sl *ServiceLoader) cancel(reason error) {
-	sl.sess.Log().Warn("sevice loader canceled", slog.String("reason", reason.Error()))
+	sl.sess.Log().Info("sevice loader canceled", slog.String("reason", reason.Error()))
 	sl.addErr(reason)
 	sl.loading = false
 	close(sl.loaderCh)

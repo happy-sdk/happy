@@ -623,7 +623,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 	service.SetFullStartAddr(svcc.Info(), svcaddr)
 
 	if err := svcc.Start(e.engineLoopCtx, sess); err != nil {
-		sess.Log().Error(
+		sess.Log().Info(
 			"failed to start service",
 			slog.String("err", err.Error()),
 			sarg,

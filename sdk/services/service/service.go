@@ -26,6 +26,7 @@ type Config struct {
 	MaxRetries    settings.Int      `key:",init" default:"3" desc:"Maximum number of retries on error."`
 	RetryBackoff  settings.Duration `key:",init" default:"5s" desc:"Duration to wait before each retry."`
 	ThrottleTicks settings.Duration `key:"throttle_ticks,init" default:"0" desc:"Throttle service ticks duration (defaults to global engine throttle_ticks)"`
+	LoaderTimeout settings.Duration `key:"loader_timeout,init" default:"0" mutation:"once" desc:"Service loader timeout for that service"`
 }
 
 func (s *Config) Blueprint() (*settings.Blueprint, error) {

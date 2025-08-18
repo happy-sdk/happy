@@ -38,7 +38,7 @@ func NewContainer(sess *session.Context, addr *address.Address, svc *Service) (*
 		return nil, fmt.Errorf("%w: address is nil", Error)
 	}
 	container := &Container{
-		info: service.NewInfo(svc.Name(), addr),
+		info: service.NewInfo(svc.Name(), addr, time.Duration(svc.settings.LoaderTimeout)),
 		svc:  svc,
 	}
 
