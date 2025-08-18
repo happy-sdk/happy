@@ -44,3 +44,15 @@ func IsRegular(path string) bool {
 	}
 	return info.Mode().IsRegular()
 }
+
+func RuntimeDir(appslug string) string {
+	return runtimeDir(appslug)
+}
+
+func IsDirectoryAccessible(dir string) bool {
+	info, err := os.Stat(dir)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
