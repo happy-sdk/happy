@@ -77,8 +77,22 @@ func (a *Address) String() string {
 	return a.url.String()
 }
 
+func (a *Address) Path() string {
+	urlCopy := *a.url
+	urlCopy.RawQuery = ""
+	return urlCopy.String()
+}
+
 func (a *Address) Host() string {
 	return a.host
+}
+
+func (a *Address) URL() *url.URL {
+	return a.url
+}
+
+func (a *Address) Query() url.Values {
+	return a.url.Query()
 }
 
 func (a *Address) Instance() string {
