@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/happy-sdk/happy/pkg/branding v0.3.3
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.1.1
-	github.com/happy-sdk/happy/pkg/options v0.6.2
+	github.com/happy-sdk/happy/pkg/options v0.6.3
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.5.2
 	github.com/happy-sdk/happy/pkg/settings v0.7.0
 	github.com/happy-sdk/happy/pkg/strings/humanize v0.5.2
