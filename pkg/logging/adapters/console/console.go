@@ -124,6 +124,18 @@ func NewHandler(ctx context.Context, w io.Writer, opts *logging.Options, theme a
 	return h
 }
 
+func groupToMap(gv []slog.Attr) map[string]any {
+	obj := make(map[string]any)
+	for _, v := range gv {
+		if v.Value.Kind() == slog.KindGroup {
+			obj[v.Key] = groupToMap(v.Value.Group())
+		}
+		obj[v.Key] = v.Value.Any()
+	}
+
+	return obj
+}
+
 func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	lvlstr := h.getLevelStr(r.Level)
 	lvl := logging.Level(r.Level)
@@ -140,6 +152,11 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		r.Attrs(func(a slog.Attr) bool {
 			if a.Key == slog.SourceKey && a.Value.Kind() == slog.KindString {
 				src = a.Value.String()
+				return true
+			}
+
+			if a.Value.Kind() == slog.KindGroup {
+				fields[a.Key] = groupToMap(a.Value.Group())
 				return true
 			}
 			fields[a.Key] = a.Value.Any()
