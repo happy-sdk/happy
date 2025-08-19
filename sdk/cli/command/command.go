@@ -133,6 +133,23 @@ func New(name string, cnf Config) *Command {
 	return c
 }
 
+// Name returns the name of the command.
+func (c *Command) Name() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.name
+}
+
+func (c *Command) SetCategory(category string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if err := c.cnf.Set("category", category); err != nil {
+		c.error(fmt.Errorf("%w: failed to set category: %v", Error, err))
+	}
+}
+
 func (c *Command) DescribeCategory(cat, desc string) *Command {
 	if !c.tryLock("DescribeCategory") {
 		return c
