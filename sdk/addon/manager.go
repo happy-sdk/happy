@@ -34,6 +34,9 @@ func NewManager() *Manager {
 }
 
 func (m *Manager) Add(addon *Addon) error {
+	if addon == nil {
+		return fmt.Errorf("%w: attempt to add nil addon", Error)
+	}
 	if !slug.IsValid(addon.info.Slug) {
 		return fmt.Errorf("%w: %q", ErrInvalidAddonName, addon.info.Slug)
 	}

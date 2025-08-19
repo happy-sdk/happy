@@ -219,6 +219,9 @@ func (m *Main) WithAddon(addon *addon.Addon) *Main {
 	if !m.canConfigure("attaching addon") {
 		return m
 	}
+	if addon == nil {
+		return m
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.init.WithAddon(addon)
