@@ -46,6 +46,19 @@ func (s IECSize) Bytes() uint64 {
 	return uint64(s)
 }
 
+func (s IECSize) MarshalSetting() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+func (s *IECSize) UnmarshalSetting(data []byte) error {
+	val, err := Parse(string(data))
+	if err != nil {
+		return err
+	}
+	*s = IECSize(val.Bytes())
+	return nil
+}
+
 // SISize represents SI (base-10) byte sizes (1 KB = 10^3 bytes).
 type SISize uint64
 
@@ -72,6 +85,19 @@ func (s SISize) String() string {
 // Bytes returns the raw byte count.
 func (s SISize) Bytes() uint64 {
 	return uint64(s)
+}
+
+func (s SISize) MarshalSetting() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+func (s *SISize) UnmarshalSetting(data []byte) error {
+	val, err := Parse(string(data))
+	if err != nil {
+		return err
+	}
+	*s = SISize(val.Bytes())
+	return nil
 }
 
 var (
