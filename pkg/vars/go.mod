@@ -8,5 +8,5 @@ require (
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.1.1
 	github.com/happy-sdk/happy/pkg/i18n v0.2.0
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.5.2
-	golang.org/x/text v0.26.0
+	golang.org/x/text v0.28.0
 )

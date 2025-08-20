@@ -8,3 +8,5 @@ require (
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.1.1
 	github.com/happy-sdk/happy/pkg/vars v0.19.0
 )
+
+require golang.org/x/text v0.28.0 // indirect
