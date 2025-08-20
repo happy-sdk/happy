@@ -41,7 +41,7 @@ func runtimeDir(appslug string) string {
 
 	// Fallback 1: Standard user runtime directory
 	userRuntimeDir := filepath.Join("/run/user", strconv.Itoa(uid), appslug)
-	if IsDirectoryAccessible(filepath.Dir(userRuntimeDir)) {
+	if IsDir(filepath.Dir(userRuntimeDir)) {
 		return userRuntimeDir
 	}
 

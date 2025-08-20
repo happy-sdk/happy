@@ -5,31 +5,56 @@
 package fsutils
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 )
 
-// DirSize calculates the total size of a directory by traversing it
-// and summing the sizes of all encountered files.
-func DirSize(path string) (int64, error) {
-	var size int64
-	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			size += info.Size()
-		}
-		return err
-	})
-	return size, err
-}
-
+// AvailableSpace calculates the available space on the filesystem where path resides.
 func AvailableSpace(path string) (uint64, error) {
 	return availableSpace(path)
 }
 
+// CountFilesAndDirs counts regular files and directories in dir and its subdirectories.
+func CountFilesAndDirs(dir string) (filec, dirc int, err error) {
+	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			dirc++
+		} else if d.Type().IsRegular() {
+			filec++
+		}
+		return nil
+	})
+	return filec, dirc, err
+}
+
+// DirSize calculates the total size of a directory by traversing it
+// and summing the sizes of all encountered files.
+// DirSize calculates the total size of regular files in dir and its subdirectories,
+// excluding symlinks.
+func DirSize(dir string) (int64, error) {
+	var size int64
+	err := filepath.WalkDir(dir, func(_ string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && d.Type().IsRegular() {
+			info, err := d.Info()
+			if err != nil {
+				return err
+			}
+			size += info.Size()
+		}
+		return nil
+	})
+	return size, err
+}
+
+// IsDir checks if the given path is a directory.
 func IsDir(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -38,6 +63,8 @@ func IsDir(path string) bool {
 	return info.IsDir()
 }
 
+// IsRegular reports whether the path is a regular file.
+// Follows symlinks, so a symlink pointing to a regular file returns true.
 func IsRegular(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -46,20 +73,17 @@ func IsRegular(path string) bool {
 	return info.Mode().IsRegular()
 }
 
-func RuntimeDir(appslug string) string {
-	return runtimeDir(appslug)
-}
-
-func IsDirectoryAccessible(dir string) bool {
-	info, err := os.Stat(dir)
+// IsSymlink checks if the given path is a symbolic link.
+func IsSymlink(path string) bool {
+	info, err := os.Lstat(path)
 	if err != nil {
 		return false
 	}
-	return info.IsDir()
+	return info.Mode()&os.ModeSymlink != 0
 }
 
-// DataDir returns the platform path for shared persistent data.
-func DataDir(appslug string) string {
+// UserDataDir returns the platform path for shared persistent data.
+func UserDataDir(appslug string) string {
 	switch runtime.GOOS {
 	case "linux":
 		if dataHome := os.Getenv("XDG_DATA_HOME"); dataHome != "" {
@@ -81,8 +105,13 @@ func DataDir(appslug string) string {
 	}
 }
 
-// StateDir returns the platform path for shared state data.
-func StateDir(appslug string) string {
+// UserRuntimeDir return user runtime dir.
+func UserRuntimeDir(appslug string) string {
+	return runtimeDir(appslug)
+}
+
+// UserStateDir returns the platform path for shared state data.
+func UserStateDir(appslug string) string {
 	switch runtime.GOOS {
 	case "linux":
 		if stateHome := os.Getenv("XDG_STATE_HOME"); stateHome != "" {
