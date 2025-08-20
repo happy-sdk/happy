@@ -149,6 +149,7 @@ func (c *Context) Value(key any) any {
 			return v
 		}
 	case *int:
+
 		if !c.released {
 			if c.terminate != nil && c.terminate.Err() != nil {
 				if c.allowUserCancel {
@@ -413,8 +414,8 @@ func (c *Context) AttachAPI(slug string, api api.Provider) error {
 func (c *Context) start() (err error) {
 	c.ready, c.readyCancel = context.WithCancel(context.Background())
 
-	c.terminate, c.terminateStop = signal.NotifyContext(context.Background(), os.Interrupt)
-	c.kill, c.killStop = signal.NotifyContext(context.Background(), os.Kill)
+	c.terminate, c.terminateStop = signal.NotifyContext(c, os.Interrupt)
+	c.kill, c.killStop = signal.NotifyContext(c, os.Kill)
 
 	if timelocStr := c.Get("app.datetime.location").String(); timelocStr != "" {
 		c.timeloc, err = time.LoadLocation(timelocStr)
