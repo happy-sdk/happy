@@ -5,6 +5,11 @@
 package testutils
 
 type Data[IN, WANT any] []struct {
+	In   IN
+	Want WANT
+}
+
+type NamedData[IN, WANT any] []struct {
 	Name string
 	In   IN
 	Want WANT
