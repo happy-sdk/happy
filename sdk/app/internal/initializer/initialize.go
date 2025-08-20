@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/devel/goutils"
+	"github.com/happy-sdk/happy/pkg/fsutils"
 	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
@@ -261,8 +262,32 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		options.NewOption("app.fs.path.run", "").
 			Description("Runtime directory").
 			Flags(options.Once),
+		options.NewOption("app.fs.path.profile.run", "").
+			Description("Profile runtime directory").
+			Flags(options.Once),
 		options.NewOption("app.fs.path.cache", "").
-			Description("Application cache directory").
+			Description("Application shared cache directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.profile.cache", "").
+			Description("Application profile cache directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.data", "").
+			Description("Applciation shared persistent data directory").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.profile.data", "").
+			Description("Profile-specific persistent data").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.state", "").
+			Description("Applciation shared state data").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.profile.state", "").
+			Description("Profile-specific state, e.g., logs").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.logs", "").
+			Description("Shared logs").
+			Flags(options.Once),
+		options.NewOption("app.fs.path.profile.logs", "").
+			Description("Profile-specific logs").
 			Flags(options.Once),
 		options.NewOption("app.fs.path.config", "").
 			Description("Application configuration directory").
@@ -270,7 +295,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		options.NewOption("app.fs.path.pids", "").
 			Description("Application pids directory").
 			Flags(options.Once),
-		options.NewOption("app.fs.path.profile", "").
+		options.NewOption("app.fs.path.profile.config", "").
 			Description("Base directory of loaded profile").
 			Flags(options.Once),
 		options.NewOption("app.main.exec.x", "").
@@ -361,11 +386,49 @@ func (init *Initializer) initBasePaths() error {
 		}
 	}
 
+	// Runtime directory
+	runDir := fsutils.RuntimeDir(init.defaults.slug)
+	if err := init.opts.Set("app.fs.path.run", runDir); err != nil {
+		return err
+	}
+
+	// Data directory
+	dataDir := fsutils.DataDir(init.defaults.slug)
+	if err := init.opts.Set("app.fs.path.data", dataDir); err != nil {
+		return err
+	}
+
+	// State directory
+	stateDir := fsutils.StateDir(init.defaults.slug)
+	if err := init.opts.Set("app.fs.path.state", stateDir); err != nil {
+		return err
+	}
+
+	// Logs directory
+	if err := init.opts.Set("app.fs.path.logs", filepath.Join(stateDir, "logs")); err != nil {
+		return err
+	}
+
+	// User cache directory
+	var userCacheDir string
+	if testing.Testing() {
+		userCacheDir = filepath.Join(init.opts.Get("app.fs.path.tmp").String(), "cache")
+	} else {
+		userCacheDir, err = os.UserCacheDir()
+		if err != nil {
+			return fmt.Errorf("%w: failed to get user cache dir %s", Error, err)
+		}
+		userCacheDir = filepath.Join(userCacheDir, init.defaults.slug)
+	}
+	if err := init.opts.Set("app.fs.path.cache", userCacheDir); err != nil {
+		return err
+	}
+
 	if !init.defaults.configDisabled {
 		if err := init.opts.Set("app.fs.path.config", appConfigDir); err != nil {
 			return err
 		}
-		pidsDir := filepath.Join(appConfigDir, "pids")
+		pidsDir := filepath.Join(stateDir, "pids")
 		_, err = os.Stat(pidsDir)
 		if errors.Is(err, fs.ErrNotExist) {
 			if err := init.utilMkdir("create pids dir", pidsDir, 0700); err != nil {

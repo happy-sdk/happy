@@ -381,7 +381,7 @@ func configReset() *command.Command {
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		if args.Flag("all").Present() {
-			profileFilePath := filepath.Join(sess.Get("app.fs.path.profile").String(), "profile.preferences")
+			profileFilePath := filepath.Join(sess.Get("app.fs.path.profile.config").String(), "profile.preferences")
 			internal.Log(sess.Log(), "profile.save",
 				slog.String("profile", sess.Get("app.profile.name").String()),
 				slog.String("file", profileFilePath),
@@ -405,7 +405,7 @@ func configReset() *command.Command {
 			return fmt.Errorf("setting %q does not exist", key)
 		}
 
-		profileFilePath := filepath.Join(sess.Get("app.fs.path.profile").String(), "profile.preferences")
+		profileFilePath := filepath.Join(sess.Get("app.fs.path.profile.config").String(), "profile.preferences")
 		internal.Log(sess.Log(), "profile.save",
 			slog.String("profile", sess.Get("app.profile.name").String()),
 			slog.String("file", profileFilePath),
@@ -447,7 +447,7 @@ func configReset() *command.Command {
 }
 
 func savePreferences(sess *session.Context, prefs *settings.Preferences) error {
-	profileFilePath := filepath.Join(sess.Get("app.fs.path.profile").String(), "profile.preferences")
+	profileFilePath := filepath.Join(sess.Get("app.fs.path.profile.config").String(), "profile.preferences")
 
 	var dest bytes.Buffer
 

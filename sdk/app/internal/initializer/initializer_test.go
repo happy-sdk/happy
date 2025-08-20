@@ -112,8 +112,8 @@ func TestDefault(t *testing.T) {
 // 		testutils.Equal(t, home, sess.Get("app.fs.path.home").String(), "app.fs.path.home")
 // 		// app.fs.path.pids
 // 		testutils.Equal(t, filepath.Join(tmpdir, "config", "pids"), sess.Get("app.fs.path.pids").String(), "app.fs.path.pids")
-// 		// app.fs.path.profile
-// 		testutils.Equal(t, filepath.Join(tmpdir, "config", "profiles", "default"), sess.Get("app.fs.path.profile").String(), "app.fs.path.profile")
+// 		// app.fs.path.profile.config
+// 		testutils.Equal(t, filepath.Join(tmpdir, "config", "profiles", "default"), sess.Get("app.fs.path.profile.config").String(), "app.fs.path.profile.config")
 // 		// app.fs.path.wd
 // 		wd, err := os.Getwd()
 // 		if err != nil {

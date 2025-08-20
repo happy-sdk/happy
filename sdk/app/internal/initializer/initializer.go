@@ -15,11 +15,9 @@ import (
 	"path/filepath"
 	"slices"
 	"sync"
-	"testing"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/branding"
-	"github.com/happy-sdk/happy/pkg/fsutils"
 	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/logging"
 	consoleadapter "github.com/happy-sdk/happy/pkg/logging/adapters/console"
@@ -507,7 +505,7 @@ func (init *Initializer) configureProfile() (err error) {
 	// Function check does given profile exists
 	if init.defaults.configDisabled {
 		loadProfileConfigDir := filepath.Join(profilesDir, loadSlug)
-		if err := init.opts.Set("app.fs.path.profile", loadProfileConfigDir); err != nil {
+		if err := init.opts.Set("app.fs.path.profile.config", loadProfileConfigDir); err != nil {
 			return err
 		}
 		goto LoadProfile
@@ -597,7 +595,7 @@ func (init *Initializer) configureProfile() (err error) {
 LoadPreferences:
 	{
 		loadProfileConfigDir := filepath.Join(profilesDir, loadSlug)
-		if err := init.opts.Set("app.fs.path.profile", loadProfileConfigDir); err != nil {
+		if err := init.opts.Set("app.fs.path.profile.config", loadProfileConfigDir); err != nil {
 			return err
 		}
 		loadPrefFilePath := filepath.Join(loadProfileConfigDir, prefFilename)
@@ -638,39 +636,46 @@ LoadProfile:
 		init.settingsb = nil
 	}()
 
-	// Get user cache directory
-	var userCacheDir string
-	if testing.Testing() {
-		userCacheDir = filepath.Join(init.opts.Get("app.fs.path.tmp").String(), "cache")
-	} else {
-		userCacheDir, err = os.UserCacheDir()
-		if err != nil {
-			return fmt.Errorf("%w: failed to get user cache dir %s", Error, err)
-		}
-		userCacheDir = filepath.Join(userCacheDir, init.defaults.slug)
-	}
-
 	// Set profile cache directory
-	profileCacheDir := filepath.Join(userCacheDir, "profiles", loadSlug)
+	profileCacheDir := filepath.Join(init.opts.Get("app.fs.path.cache").String(), "profiles", loadSlug)
 	_, err = os.Stat(profileCacheDir)
 	if errors.Is(err, fs.ErrNotExist) && !init.defaults.configDisabled {
 		if err := init.utilMkdir("create cache directory", profileCacheDir, 0700); err != nil {
 			return fmt.Errorf("%w: failed to create cache directory %s", Error, err)
 		}
 	}
-	if err := init.opts.Set("app.fs.path.cache", profileCacheDir); err != nil {
+
+	if err := init.opts.Set("app.fs.path.profile.cache", profileCacheDir); err != nil {
 		return err
 	}
 
 	// Set profile run directory
-	profileRunDir := filepath.Join(fsutils.RuntimeDir(init.defaults.slug), "profiles", loadSlug)
+	profileRunDir := filepath.Join(init.opts.Get("app.fs.path.run").String(), "profiles", loadSlug)
 	_, err = os.Stat(profileRunDir)
 	if errors.Is(err, fs.ErrNotExist) {
 		if err := init.utilMkdir("create cache directory", profileRunDir, 0700); err != nil {
 			return fmt.Errorf("%w: failed to create cache directory %s", Error, err)
 		}
 	}
-	if err := init.opts.Set("app.fs.path.run", profileRunDir); err != nil {
+	if err := init.opts.Set("app.fs.path.profile.run", profileRunDir); err != nil {
+		return err
+	}
+
+	// Set profile data directory
+	profileDataDir := filepath.Join(init.opts.Get("app.fs.path.data").String(), "profiles", loadSlug)
+	if err := init.opts.Set("app.fs.path.profile.data", profileDataDir); err != nil {
+		return err
+	}
+
+	// Set profile state directory
+	profileStateDir := filepath.Join(init.opts.Get("app.fs.path.state").String(), "profiles", loadSlug)
+	if err := init.opts.Set("app.fs.path.profile.state", profileStateDir); err != nil {
+		return err
+	}
+
+	// Set profile state directory
+	profileLogsDir := filepath.Join(init.opts.Get("app.fs.path.state").String(), "profiles", loadSlug, "logs")
+	if err := init.opts.Set("app.fs.path.profile.logs", profileLogsDir); err != nil {
 		return err
 	}
 
