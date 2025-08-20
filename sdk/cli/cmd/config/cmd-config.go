@@ -108,8 +108,9 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 	cmd.AddUsage("--profile=<profile-name> [flags]")
 
 	cmd.WithFlags(
-		varflag.BoolFunc("all", false, "List all settings, including internal settings", "a"),
+		varflag.BoolFunc("all", false, "List all settings (default current profile), including internal settings", "a"),
 		varflag.BoolFunc("describe", false, "Describe settings", "d"),
+		varflag.StringFunc("prefix", "", "Display settings with a specific prefix", "p"),
 	)
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
@@ -123,16 +124,20 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 			IsSet string
 		}
 		var (
-			appConfig     []appConfigRow
-			profileConfig []appConfigRow
+			appConfig      []appConfigRow
+			profileConfig  []appConfigRow
+			onlyWithPrefix bool   = args.Flag("prefix").Present()
+			withPrefix     string = args.Flag("prefix").String()
 		)
 
 		describeFlagTrue := args.Flag("describe").Var().Bool()
 		for s := range sess.Settings().All() {
 			if (slices.Contains(disabledKeys, s.Key())) ||
-				(!describeFlagTrue && slices.Contains(hiddenKeys, s.Key())) {
+				(!describeFlagTrue && slices.Contains(hiddenKeys, s.Key()) ||
+					onlyWithPrefix && !strings.HasPrefix(s.Key(), withPrefix)) {
 				continue
 			}
+
 			var defval string
 			if s.Default().String() != s.Value().String() {
 				defval = s.Default().String()
@@ -156,7 +161,9 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 		}
 
 		sess.Opts().Range(func(opt options.Option) bool {
-			if slices.Contains(hiddenKeys, opt.Key()) || slices.Contains(disabledKeys, opt.Key()) {
+			if slices.Contains(hiddenKeys, opt.Key()) ||
+				slices.Contains(disabledKeys, opt.Key()) ||
+				(onlyWithPrefix && !strings.HasPrefix(opt.Key(), withPrefix)) {
 				return true
 			}
 
@@ -190,7 +197,7 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 				}
 			}
 
-			sess.Log().Println(desctable.String())
+			fmt.Println(desctable.String())
 			return nil
 		}
 
@@ -209,7 +216,7 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 			}
 			profileTable.AddRow(c.Key, c.Kind, c.IsSet, c.Mutability, c.Value, c.Default)
 		}
-		sess.Log().Println(profileTable.String())
+		fmt.Println(profileTable.String())
 
 		// App settings
 		if !args.Flag("all").Var().Bool() {
@@ -227,7 +234,7 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 			appTable.AddRow(c.Key, c.Kind, c.Value)
 		}
 
-		sess.Log().Println(appTable.String())
+		fmt.Println(appTable.String())
 
 		return nil
 	})
