@@ -14,22 +14,54 @@ import (
 
 const (
 	// IEC Sizes in kibis of bits
-	Byte = 1 << (iota * 10)
-	KiByte
-	MiByte
-	GiByte
-	TiByte
-	PiByte
-	EiByte
 
-	// SI Sizes.
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
+	Byte = 1 << (iota * 10)
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
+	KiByte
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
+	MiByte
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
+	GiByte
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
+	TiByte
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
+	PiByte
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
+	EiByte
+)
+
+const (
+	// SI Sizes
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	IByte = 1
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	KByte = IByte * 1000
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	MByte = KByte * 1000
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	GByte = MByte * 1000
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	TByte = GByte * 1000
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	PByte = TByte * 1000
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	EByte = PByte * 1000
+
+	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	ZByte = EByte * 1000
 )
 
@@ -63,6 +95,8 @@ var sizeSymbs = map[string]uint64{
 
 // Bytes converts a byte count into a human-readable string using decimal (SI) units (kB, MB, GB, etc.).
 // It uses a base of 1000 (1 kB = 1000 bytes).
+//
+// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize.ByteSI(s).String() instead.
 func Bytes(s uint64) string {
 	sizes := []string{"B", "kB", "MB", "GB", "TB", "PB", "EB"}
 	return bytesToStr(s, 1000, sizes)
@@ -70,6 +104,8 @@ func Bytes(s uint64) string {
 
 // IBytes converts a byte count into a human-readable string using binary (IEC) units (KiB, MiB, GiB, etc.).
 // It uses a base of 1024 (1 KiB = 1024 bytes).
+//
+// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize.IECSize(s).String() instead.
 func IBytes(s uint64) string {
 	sizes := []string{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"}
 	return bytesToStr(s, 1024, sizes)
@@ -77,6 +113,8 @@ func IBytes(s uint64) string {
 
 // ParseBytes parses a string representation of bytes (like "1.5 GB" or "1024 B") and returns the number of bytes it represents.
 // It supports both decimal (SI) and binary (IEC) units and handles values with commas as well.
+//
+// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize.Parse(s) instead.
 func ParseBytes(s string) (uint64, error) {
 	lastDigit := strings.IndexFunc(s, func(r rune) bool {
 		return !unicode.IsDigit(r) && r != '.' && r != ','

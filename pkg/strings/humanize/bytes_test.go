@@ -88,7 +88,7 @@ type Tests struct {
 }
 
 func TestIBytes(t *testing.T) {
-	data := testutils.Data[uint64, string]{
+	data := testutils.NamedData[uint64, string]{
 		{"Exactly 1 KiB", KiByte, "1 KiB"},
 		{"Exactly 1 MiB", MiByte, "1 MiB"},
 		{"Exactly 1 GiB", GiByte, "1 GiB"},
@@ -109,7 +109,7 @@ func TestIBytes(t *testing.T) {
 	}
 }
 func TestBytes(t *testing.T) {
-	data := testutils.Data[uint64, string]{
+	data := testutils.NamedData[uint64, string]{
 		{"Exactly 1 kB", KByte, "1 kB"},
 		{"Exactly 1 MB", MByte, "1 MB"},
 		{"Exactly 1 GB", GByte, "1 GB"},
