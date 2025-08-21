@@ -13,6 +13,7 @@ require (
 	github.com/happy-sdk/happy/pkg/strings/textfmt v0.5.1
 	github.com/happy-sdk/happy/pkg/vars v0.19.0
 	github.com/happy-sdk/happy/pkg/version v0.4.1
+	golang.org/x/term v0.34.0
 	golang.org/x/text v0.28.0
 )
 

@@ -17,6 +17,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/session"
+	"golang.org/x/term"
 )
 
 var (
@@ -57,6 +58,50 @@ func AskForInput(q string) string {
 		return ""
 	}
 	return strings.TrimSpace(response)
+}
+
+func AskForSecret(q string) string {
+	_, _ = fmt.Fprintln(os.Stdout, q)
+
+	var secret []byte
+	for {
+		char, err := getChar()
+		if err != nil {
+			return ""
+		}
+
+		switch char {
+		case '\r', '\n':
+			fmt.Println()
+			return string(secret)
+		case 127, 8:
+			if len(secret) > 0 {
+				secret = secret[:len(secret)-1]
+				fmt.Print("\b \b") // Move back, print space, move back again
+			}
+		case 3: // Ctrl+C
+			fmt.Println()
+			return ""
+		default:
+			if char >= 32 && char <= 126 {
+				secret = append(secret, char)
+				fmt.Print("*")
+			}
+		}
+	}
+}
+
+func getChar() (byte, error) {
+	// Save original terminal state
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return 0, err
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
+	var buf [1]byte
+	_, err = os.Stdin.Read(buf[:])
+	return buf[0], err
 }
 
 // Exec wraps ExecRaw to return output as string.

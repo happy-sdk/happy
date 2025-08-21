@@ -21,6 +21,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
+	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -43,6 +44,11 @@ type CommandConfig struct {
 	HideKeys []string
 	// Disable keys from any interactions, also hides the key from listing.
 	DisableKeys []string
+	// Secrets these values will be redacted in output
+	// Config cmd get also will retrun redacted
+	Secrets []string
+	// SecretsPassword is the password used to display redacted secret value with config get
+	SecretsPassword string
 }
 
 func DefaultCommandConfig() CommandConfig {
@@ -75,10 +81,10 @@ func Command(cnf CommandConfig) *command.Command {
 
 	var subcmds []*command.Command
 	if !cnf.WithoutLsCommand {
-		subcmds = append(subcmds, configLs(cnf.HideKeys, cnf.DisableKeys))
+		subcmds = append(subcmds, configLs(cnf.HideKeys, cnf.DisableKeys, cnf.Secrets))
 	}
 	if !cnf.WithoutGetCommand {
-		subcmds = append(subcmds, configGet(cnf.DisableKeys))
+		subcmds = append(subcmds, configGet(cnf.DisableKeys, cnf.Secrets, cnf.SecretsPassword))
 	}
 	if !cnf.WithoutSetCommand {
 		subcmds = append(subcmds, configSet(cnf.DisableKeys))
@@ -98,7 +104,7 @@ func Command(cnf CommandConfig) *command.Command {
 	return cmd
 }
 
-func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
+func configLs(hiddenKeys, disabledKeys, secrets []string) *command.Command {
 	cmd := command.New("ls",
 		command.Config{
 			Description: "List settings for current profile",
@@ -138,14 +144,21 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 				continue
 			}
 
-			var defval string
+			var (
+				defval string
+				value  string = s.Value().String()
+			)
 			if s.Default().String() != s.Value().String() {
 				defval = s.Default().String()
+			}
+			if slices.Contains(secrets, s.Key()) {
+				defval = ""
+				value = "<redacted>"
 			}
 
 			row := appConfigRow{
 				Key:        s.Key(),
-				Value:      s.Value().String(),
+				Value:      value,
 				Default:    defval,
 				Desc:       sess.Describe(s.Key()),
 				Kind:       s.Kind().String(),
@@ -167,10 +180,14 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 				return true
 			}
 
+			var value string = opt.Value().String()
+			if slices.Contains(secrets, opt.Key()) {
+				value = "<redacted>"
+			}
 			row := appConfigRow{
 				Key:   opt.Key(),
 				Kind:  opt.Default().Kind().String(),
-				Value: opt.Value().String(),
+				Value: value,
 				Desc:  opt.Description(),
 			}
 			appConfig = append(appConfig, row)
@@ -360,7 +377,7 @@ func configRemove(disabledKeys []string) *command.Command {
 	return cmd
 }
 
-func configGet(disabledKeys []string) *command.Command {
+func configGet(disabledKeys, secrets []string, secretsPassword string) *command.Command {
 	cmd := command.New("get",
 		command.Config{
 			Description: "Get a setting or option value",
@@ -369,10 +386,32 @@ func configGet(disabledKeys []string) *command.Command {
 
 	cmd.AddUsage("--profile=<profile-name>")
 
+	cmd.WithFlags(
+		cli.NewBoolFlag("secret", false, "Prompts to enter Secrets password to display value. If password is not set it prints secret value instead <redacted> without the prompt"),
+	)
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		key := args.Arg(0).String()
 		if slices.Contains(disabledKeys, key) || !sess.Has(key) {
 			return fmt.Errorf("setting %q does not exist", key)
+		}
+		if !slices.Contains(secrets, key) {
+			fmt.Println(sess.Get(key).String())
+			return nil
+		}
+		var canshow bool
+		if args.Flag("secret").Present() {
+			if secretsPassword == "" {
+				canshow = true
+			} else {
+				if str := cli.AskForSecret("enter secrets password"); str != secretsPassword {
+					return fmt.Errorf("invalid password")
+				}
+				canshow = true
+			}
+		}
+		if !canshow {
+			fmt.Println("<redacted>")
+			return nil
 		}
 		fmt.Println(sess.Get(key).String())
 		return nil
