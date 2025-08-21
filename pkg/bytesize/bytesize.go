@@ -184,7 +184,8 @@ func Parse(s string) (Size, error) {
 	return IECSize(bytesVal), nil
 }
 
-// bytesToStr converts a byte count to a human-readable string with the given base and units.
+// bytesToStr converts a byte count to a human-readable string
+// with the given base and units.
 func bytesToStr(s uint64, base float64, sizes []string) string {
 	if float64(s) < base {
 		return strconv.FormatUint(s, 10) + " B"
@@ -199,7 +200,7 @@ func bytesToStr(s uint64, base float64, sizes []string) string {
 	val := float64(s) / power
 
 	// Check if value is a whole number or close to the next unit.
-	isWholeNumber := math.Abs(val-math.Round(val)) < 0.1
+	isWholeNumber := math.Abs(val-math.Round(val)) < 0.05
 	nextUnitThreshold := math.Pow(base, eFloor+1) - power*0.05
 
 	if float64(s) >= nextUnitThreshold && int(eFloor) < len(sizes)-1 {
