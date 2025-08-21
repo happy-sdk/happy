@@ -183,58 +183,71 @@ func configLs(hiddenKeys []string, disabledKeys []string) *command.Command {
 
 		// Descriptions
 		if describeFlagTrue {
-			desctable := textfmt.Table{
-				Title:      "Settings Descriptions",
-				WithHeader: true,
-			}
+			desctable := textfmt.NewTable(
+				textfmt.TableTitle("Settings Descriptions"),
+				textfmt.TableWithHeader(),
+			)
 			desctable.AddRow("KEY", "DESCRIPTION")
+
+			descbatch := textfmt.NewTableBatchOp()
 			for _, c := range profileConfig {
-				desctable.AddRow(c.Key, c.Desc)
+				descbatch.AddRow(c.Key, c.Desc)
 			}
 			if args.Flag("all").Var().Bool() {
 				for _, c := range appConfig {
-					desctable.AddRow(c.Key, c.Desc)
+					descbatch.AddRow(c.Key, c.Desc)
 				}
 			}
+			desctable.Batch(descbatch)
 
 			fmt.Println(desctable.String())
 			return nil
 		}
 
+		configTable := textfmt.NewTable(
+			textfmt.TableTitle(fmt.Sprintf("Configuration of %s", sess.Get("app.name").String())),
+		)
 		// Profile settings
-		profileTable := textfmt.Table{
-			Title:      fmt.Sprintf("Settings for current PROFILE: %s", sess.Settings().Name()),
-			WithHeader: true,
-		}
+
+		profileTable := textfmt.NewTable(
+			textfmt.TableTitle(fmt.Sprintf("Settings for current PROFILE: %s", sess.Settings().Name())),
+			textfmt.TableWithHeader(),
+		)
 		profileTable.AddRow("KEY", "KIND", "IS SET", "MUTABILITY", "VALUE", "DEFAULT")
+		profileBatch := textfmt.NewTableBatchOp()
 		for _, c := range profileConfig {
 			if c.Kind == "slice" && c.Value != "" {
 				for _, v := range sess.Get(c.Key).Fields() {
-					profileTable.AddRow(c.Key+"[]", c.Kind+"(string)", c.IsSet, c.Mutability, v, c.Default)
+					profileBatch.AddRow(c.Key+"[]", c.Kind+"(string)", c.IsSet, c.Mutability, v, c.Default)
 				}
 				continue
 			}
-			profileTable.AddRow(c.Key, c.Kind, c.IsSet, c.Mutability, c.Value, c.Default)
+			profileBatch.AddRow(c.Key, c.Kind, c.IsSet, c.Mutability, c.Value, c.Default)
 		}
-		fmt.Println(profileTable.String())
+		profileTable.Batch(profileBatch)
 
 		// App settings
 		if !args.Flag("all").Var().Bool() {
+			configTable.Append(profileTable)
+			fmt.Println(configTable.String())
 			return nil
 		}
-		appTable := textfmt.Table{
-			Title:      "Immutable Config",
-			WithHeader: true,
-		}
 
+		appTable := textfmt.NewTable(
+			textfmt.TableTitle("Application Config"),
+			textfmt.TableWithHeader(),
+		)
 		appTable.AddRow("KEY", "KIND", "VALUE")
-
+		appBatch := textfmt.NewTableBatchOp()
 		for _, c := range appConfig {
-
-			appTable.AddRow(c.Key, c.Kind, c.Value)
+			appBatch.AddRow(c.Key, c.Kind, c.Value)
 		}
+		appTable.Batch(appBatch)
 
-		fmt.Println(appTable.String())
+		configTable.Append(appTable)
+		configTable.Append(profileTable)
+
+		fmt.Println(configTable.String())
 
 		return nil
 	})

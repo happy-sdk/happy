@@ -351,18 +351,23 @@ func (rt *Runtime) executeBeforeActions() error {
 
 	if rt.sess.Log().Level() < logging.LevelDebug {
 		// Settings table
-		settingstbl := textfmt.Table{
-			Title:      "Application Settings",
-			WithHeader: true,
-		}
+
+		settingstbl := textfmt.NewTable(
+			textfmt.TableTitle("Application Settings"),
+			textfmt.TableWithHeader(),
+		)
 		settingstbl.AddRow("KEY", "KIND", "IS SET", "MUTABILITY", "VALUE", "DEFAULT")
+
+		batch := textfmt.NewTableBatchOp()
 		for s := range rt.sess.Settings().All() {
 			var defval string
 			if s.Mutability() != settings.SettingImmutable && s.Default().String() != s.Value().String() {
 				defval = s.Default().String()
 			}
-			settingstbl.AddRow(s.Key(), s.Kind().String(), fmt.Sprint(s.IsSet()), fmt.Sprint(s.Mutability()), s.Value().String(), defval)
+			batch.AddRow(s.Key(), s.Kind().String(), fmt.Sprint(s.IsSet()), fmt.Sprint(s.Mutability()), s.Value().String(), defval)
 		}
+		settingstbl.Batch(batch)
+
 		rt.sess.Log().Println(settingstbl.String())
 
 		// Options

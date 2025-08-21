@@ -152,10 +152,10 @@ func (s State) Range(cb func(v vars.Variable)) {
 }
 
 func (s State) String() string {
-	tbl := textfmt.Table{
-		Title:      fmt.Sprintf(s.title+" @ %s", s.time.Format(time.RFC3339)),
-		WithHeader: true,
-	}
+	tbl := textfmt.NewTable(
+		textfmt.TableTitle(fmt.Sprintf(s.title+" @ %s", s.time.Format(time.RFC3339))),
+		textfmt.TableWithHeader(),
+	)
 	tbl.AddRow("METRIC", "VALUE")
 
 	keys := make([]string, len(s.vars))
@@ -166,9 +166,12 @@ func (s State) String() string {
 	}
 	sort.Strings(keys)
 
+	btch := textfmt.NewTableBatchOp()
 	for _, v := range keys {
-		tbl.AddRow(s.vars[v].Name(), s.vars[v].String())
+		btch.AddRow(s.vars[v].Name(), s.vars[v].String())
 	}
+	tbl.Batch(btch)
+
 	return tbl.String()
 }
 

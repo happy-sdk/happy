@@ -387,19 +387,19 @@ func (init *Initializer) initBasePaths() error {
 	}
 
 	// Runtime directory
-	runDir := fsutils.RuntimeDir(init.defaults.slug)
+	runDir := fsutils.UserRuntimeDir(init.defaults.slug)
 	if err := init.opts.Set("app.fs.path.run", runDir); err != nil {
 		return err
 	}
 
 	// Data directory
-	dataDir := fsutils.DataDir(init.defaults.slug)
+	dataDir := fsutils.UserDataDir(init.defaults.slug)
 	if err := init.opts.Set("app.fs.path.data", dataDir); err != nil {
 		return err
 	}
 
 	// State directory
-	stateDir := fsutils.StateDir(init.defaults.slug)
+	stateDir := fsutils.UserStateDir(init.defaults.slug)
 	if err := init.opts.Set("app.fs.path.state", stateDir); err != nil {
 		return err
 	}
