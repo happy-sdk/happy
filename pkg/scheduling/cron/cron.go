@@ -137,15 +137,15 @@ func New(opts ...Option) *Cron {
 }
 
 // FuncJob is a wrapper that turns a func() into a cron.Job
-type FuncJob func()
+type JobFunc func()
 
-func (f FuncJob) Run() { f() }
+func (f JobFunc) Run() { f() }
 
 // AddFunc adds a func to the Cron to be run on the given schedule.
 // The spec is parsed using the time zone of this Cron instance as the default.
 // An opaque ID is returned that can be used to later remove it.
 func (c *Cron) AddFunc(spec string, cmd func()) (EntryID, error) {
-	return c.AddJob(spec, FuncJob(cmd))
+	return c.AddJob(spec, JobFunc(cmd))
 }
 
 // AddJob adds a Job to the Cron to be run on the given schedule.
