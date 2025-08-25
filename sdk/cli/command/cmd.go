@@ -55,17 +55,17 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 
 		for _, flag := range cmd.globalFlags {
 			if err := acmd.flags.Add(flag); err != nil {
-				return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.name, err.Error())
+				return nil, root.cnflog, err
 			}
 		}
 		sharedf, err := acmd.getSharedFlags()
 		if err != nil && !errors.Is(err, ErrHasNoParent) {
-			return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.name, err.Error())
+			return nil, root.cnflog, err
 		}
 		cmd.sharedFlags = sharedf.Flags()
 		for _, flag := range cmd.sharedFlags {
 			if err := acmd.flags.Add(flag); err != nil {
-				return nil, root.cnflog, fmt.Errorf("%w: %s: %s", Error, acmd.name, err.Error())
+				return nil, root.cnflog, err
 			}
 		}
 		acmd.mu.Lock()

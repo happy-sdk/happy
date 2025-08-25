@@ -38,6 +38,7 @@ type Register interface {
 	Time(t time.Time) time.Time
 	Has(key string) bool
 	Get(key string) vars.Variable
+	Context() context.Context
 }
 
 type Context struct {
@@ -72,6 +73,10 @@ type Context struct {
 
 	svss map[string]*service.Info
 	apis map[string]api.Provider
+
+	// Cached lightweight context for Context()
+	ctx       context.Context
+	ctxCancel context.CancelFunc
 }
 
 // Deadline returns the time when work done on behalf of this context
@@ -227,6 +232,11 @@ func (c *Context) Destroy(err error) {
 
 	if c.readyCancel != nil {
 		c.readyCancel()
+	}
+
+	if c.ctx != nil {
+		// Cancel the lightweight context
+		c.ctxCancel()
 	}
 
 	c.mu.Unlock()
@@ -429,6 +439,17 @@ func (c *Context) start() (err error) {
 	return err
 }
 
+// Context returns a lightweight context that becomes done when the session is done.
+// It is cached during session initialization, ensuring minimal overhead for reuse in
+// context-aware functions. Use this for efficient cancellation handling in sync with
+// the session's lifecycle, instead of the full session context.
+func (c *Context) Context() context.Context {
+	c.mu.RLock()
+	ctx := c.ctx
+	c.mu.RUnlock()
+	return ctx
+}
+
 func APIBySlug[API api.Provider](sess *Context, apiSlug string) (api API, err error) {
 	capi, ok := sess.apis[apiSlug]
 	if !ok {
@@ -482,11 +503,22 @@ type Config struct {
 	ReadyEvent   events.Event
 	EventCh      chan<- events.Event
 	APIs         map[string]api.Provider
+	Context      context.Context
+	CancelFunc   context.CancelFunc
 }
 
 func (c *Config) Init() (*Context, error) {
 	sess := &Context{
 		apis: c.APIs,
+	}
+
+	// shared context
+	if c.Context != nil {
+		sess.ctx, sess.ctxCancel = c.Context, c.CancelFunc
+		go func() {
+			<-sess.done
+			sess.ctxCancel()
+		}()
 	}
 
 	if c.Logger == nil {

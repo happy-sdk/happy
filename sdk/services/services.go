@@ -138,15 +138,15 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 
 	for _, svcaddr := range sl.svcAddrs {
 		info, err := sl.sess.ServiceInfo(svcaddr)
+		if err != nil {
+			sl.cancel(err)
+			return sl.loaderCh
+		}
 		to := info.LoaderTimeout()
 		if to > 0 {
 			timeout += to
 		} else {
 			timeout += defaultTimeout
-		}
-		if err != nil {
-			sl.cancel(err)
-			return sl.loaderCh
 		}
 		if _, ok := queue[svcaddr]; ok {
 			sl.cancel(fmt.Errorf(
@@ -269,7 +269,7 @@ func resolveAddress(hostaddr *address.Address, s string) (string, error) {
 
 // cancel is used internally to cancel loading
 func (sl *ServiceLoader) cancel(reason error) {
-	sl.sess.Log().Info("sevice loader canceled", slog.String("reason", reason.Error()))
+	sl.sess.Log().Info("service loader canceled", slog.String("reason", reason.Error()))
 	sl.addErr(reason)
 	sl.loading = false
 	close(sl.loaderCh)
@@ -277,7 +277,12 @@ func (sl *ServiceLoader) cancel(reason error) {
 
 func (sl *ServiceLoader) done() {
 	sl.loading = false
-	sl.sess.Log().Debug("service loader completed")
+	svcCount := len(sl.svcAddrs)
+	svcMessage := fmt.Sprintf("%d service", svcCount)
+	if svcCount > 1 {
+		svcMessage += "s"
+	}
+	sl.sess.Log().Debug(fmt.Sprintf("service loader completed loading %s", svcMessage))
 	close(sl.loaderCh)
 }
 
@@ -326,11 +331,16 @@ func newCron(sess *session.Context) *serviceCron {
 }
 
 func (cs *serviceCron) Job(name, expr string, cb action.Action) {
+
 	id, err := cs.lib.AddFunc(expr, func() {
 		if err := cb(cs.sess); err != nil {
 			cs.sess.Log().Error(fmt.Sprintf("%s:%s:%s", Error, cron.Error, err))
 		}
 	})
+	if id == -1 {
+		cs.sess.Log().Debug(fmt.Sprintf("cron(disabled): %s", name))
+		return
+	}
 	cs.jobIDs = append(cs.jobIDs, id)
 	cs.jobInfos[id] = cronInfo{name, expr}
 	if err != nil {

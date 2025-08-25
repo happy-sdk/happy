@@ -83,6 +83,9 @@ type Initializer struct {
 	rt *application.Runtime
 
 	defaults *defaults
+
+	context    context.Context
+	cancelFunc context.CancelFunc
 }
 
 type fallbackLanguageGetter interface {
@@ -100,6 +103,8 @@ func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger)
 		defaults:  &defaults{},
 		execlvl:   logging.LevelQuiet,
 	}
+
+	init.context, init.cancelFunc = context.WithCancel(context.Background())
 
 	if i18n.Enabled {
 		fallbackLang := language.English
@@ -796,11 +801,12 @@ func (init *Initializer) configureLogger() (err error) {
 	logopts.SetSlogOutput = !noSlogDefault
 
 	logger := logging.New(consoleadapter.New(
-		context.Background(),
+		init.context,
 		os.Stdout,
 		logopts,
 		theme,
 	))
+
 	if err := logger.ConsumeQueue(init.log); err != nil {
 		return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
 	}
@@ -844,6 +850,8 @@ func (init *Initializer) configureSession() error {
 		ReadyEvent: init.sessionReadyEvent,
 		EventCh:    init.evch,
 		APIs:       init.addonm.GetAPIs(),
+		Context:    init.context,
+		CancelFunc: init.cancelFunc,
 	}
 
 	session, err := sessconfig.Init()
@@ -853,6 +861,8 @@ func (init *Initializer) configureSession() error {
 
 	init.session = session
 
+	init.context = nil
+	init.cancelFunc = nil
 	init.profile = nil
 	init.logger = nil
 	init.opts = nil

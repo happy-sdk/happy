@@ -160,7 +160,10 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 	}
 
 	sess.Dispatch(service.StartedEvent.Create(c.info.Name(), payload))
-	sess.Log().Debug("service started", slog.String("service", c.info.Addr().String()))
+	sess.Log().Debug("service started",
+		slog.String("service", c.info.Addr().String()),
+		slog.String("name", c.info.Name()),
+	)
 	return nil
 }
 
