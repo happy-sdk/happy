@@ -349,21 +349,11 @@ func (init *Initializer) initBasePaths() error {
 	if err := init.utilMkdir("create tmp directory", tempDir, 0700); err != nil {
 		return err
 	}
-	if err := init.opts.Set("app.fs.path.tmp", tempDir); err != nil {
+	if err := init.utilWriteFile("create tmp deletion control file", filepath.Join(tempDir, ".control"), []byte(instanceID), 0600); err != nil {
 		return err
 	}
-
-	if init.defaults.configDisabled {
-		pidsDir := filepath.Join(tempDir, "pids")
-		_, err = os.Stat(pidsDir)
-		if errors.Is(err, fs.ErrNotExist) {
-			if err := init.utilMkdir("create tmp pids dir", pidsDir, 0700); err != nil {
-				return err
-			}
-		}
-		if err := init.opts.Set("app.fs.path.pids", pidsDir); err != nil {
-			return err
-		}
+	if err := init.opts.Set("app.fs.path.tmp", tempDir); err != nil {
+		return err
 	}
 
 	// config dir
@@ -390,6 +380,19 @@ func (init *Initializer) initBasePaths() error {
 	runDir := fsutils.UserRuntimeDir(init.defaults.slug)
 	if err := init.opts.Set("app.fs.path.run", runDir); err != nil {
 		return err
+	}
+
+	if init.defaults.configDisabled {
+		pidsDir := filepath.Join(runDir, "pids")
+		_, err = os.Stat(pidsDir)
+		if errors.Is(err, fs.ErrNotExist) {
+			if err := init.utilMkdir("create tmp pids dir", pidsDir, 0750); err != nil {
+				return err
+			}
+		}
+		if err := init.opts.Set("app.fs.path.pids", pidsDir); err != nil {
+			return err
+		}
 	}
 
 	// Data directory
@@ -465,12 +468,18 @@ func (init *Initializer) initBasePaths() error {
 		if tempDir == "" {
 			return fmt.Errorf("%w: missing temp dir path", Error)
 		}
-		if _, err := os.Stat(tempDir); err == nil {
-			if err := os.RemoveAll(tempDir); err != nil {
-				return fmt.Errorf("failed to delete temp dir %s: %w", tempDir, err)
-			}
-			if sess != nil {
-				internal.Log(sess.Log(), "successfully deleted temp dir", slog.String("dir", tempDir))
+		if stat, err := os.Stat(tempDir); err == nil {
+			if stat.IsDir() {
+				ctrlfile := filepath.Join(tempDir, ".control")
+				if _, err := os.Stat(ctrlfile); err == nil {
+					if err := os.RemoveAll(tempDir); err != nil {
+						return fmt.Errorf("failed to delete temp dir %s: %w", tempDir, err)
+					} else {
+						if sess != nil {
+							internal.Log(sess.Log(), "successfully deleted temp dir", slog.String("dir", tempDir))
+						}
+					}
+				}
 			}
 		}
 

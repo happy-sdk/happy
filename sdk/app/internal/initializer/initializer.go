@@ -645,7 +645,7 @@ LoadProfile:
 	profileCacheDir := filepath.Join(init.opts.Get("app.fs.path.cache").String(), "profiles", loadSlug)
 	_, err = os.Stat(profileCacheDir)
 	if errors.Is(err, fs.ErrNotExist) && !init.defaults.configDisabled {
-		if err := init.utilMkdir("create cache directory", profileCacheDir, 0700); err != nil {
+		if err := init.utilMkdir("create cache directory", profileCacheDir, 0750); err != nil {
 			return fmt.Errorf("%w: failed to create cache directory %s", Error, err)
 		}
 	}
@@ -658,8 +658,8 @@ LoadProfile:
 	profileRunDir := filepath.Join(init.opts.Get("app.fs.path.run").String(), "profiles", loadSlug)
 	_, err = os.Stat(profileRunDir)
 	if errors.Is(err, fs.ErrNotExist) {
-		if err := init.utilMkdir("create cache directory", profileRunDir, 0700); err != nil {
-			return fmt.Errorf("%w: failed to create cache directory %s", Error, err)
+		if err := init.utilMkdir("create profile run directory", profileRunDir, 0700); err != nil {
+			return fmt.Errorf("%w: failed to create profile run  directory %s", Error, err)
 		}
 	}
 	if err := init.opts.Set("app.fs.path.profile.run", profileRunDir); err != nil {
@@ -671,17 +671,35 @@ LoadProfile:
 	if err := init.opts.Set("app.fs.path.profile.data", profileDataDir); err != nil {
 		return err
 	}
+	_, err = os.Stat(profileDataDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		if err := init.utilMkdir("create profile data directory", profileDataDir, 0750); err != nil {
+			return fmt.Errorf("%w: failed to create profile data directory %s", Error, err)
+		}
+	}
 
 	// Set profile state directory
 	profileStateDir := filepath.Join(init.opts.Get("app.fs.path.state").String(), "profiles", loadSlug)
 	if err := init.opts.Set("app.fs.path.profile.state", profileStateDir); err != nil {
 		return err
 	}
+	_, err = os.Stat(profileStateDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		if err := init.utilMkdir("create profile state directory", profileStateDir, 0750); err != nil {
+			return fmt.Errorf("%w: failed to create profile profile directory %s", Error, err)
+		}
+	}
 
 	// Set profile state directory
 	profileLogsDir := filepath.Join(init.opts.Get("app.fs.path.state").String(), "profiles", loadSlug, "logs")
 	if err := init.opts.Set("app.fs.path.profile.logs", profileLogsDir); err != nil {
 		return err
+	}
+	_, err = os.Stat(profileLogsDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		if err := init.utilMkdir("create profile logs directory", profileLogsDir, 0750); err != nil {
+			return fmt.Errorf("%w: failed to create profile logs directory %s", Error, err)
+		}
 	}
 
 	return nil

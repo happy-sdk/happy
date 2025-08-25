@@ -521,16 +521,16 @@ func (rt *Runtime) SetExecLogLevel(lvl logging.Level) {
 func (rt *Runtime) Exit(code int) {
 	rt.log(0, internal.LogLevelHappy, "shutting down", slog.Int("exit.code", code))
 
+	if rt.engine != nil {
+		if err := rt.engine.Stop(rt.sess); err != nil {
+			rt.sess.Log().Error("failed to stop engine", slog.String("err", err.Error()))
+		}
+	}
+
 	for _, fn := range rt.exitFuncs {
 		if err := fn(rt.sess, code); err != nil {
 			rt.log(0, logging.LevelError, "exit func", slog.String("err", err.Error()))
 			code = 1
-		}
-	}
-
-	if rt.engine != nil {
-		if err := rt.engine.Stop(rt.sess); err != nil {
-			rt.sess.Log().Error("failed to stop engine", slog.String("err", err.Error()))
 		}
 	}
 
