@@ -516,7 +516,7 @@ func (c *Config) Init() (*Context, error) {
 	if c.Context != nil {
 		sess.ctx, sess.ctxCancel = c.Context, c.CancelFunc
 		go func() {
-			<-sess.done
+			<-sess.Done()
 			sess.ctxCancel()
 		}()
 	}

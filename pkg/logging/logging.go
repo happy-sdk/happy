@@ -46,6 +46,7 @@ type Logger interface {
 	Dispose() error
 
 	AttachAdapter(adapter Adapter) error
+	SetAdapter(adapter Adapter) error
 	Options() (*Options, error)
 }
 

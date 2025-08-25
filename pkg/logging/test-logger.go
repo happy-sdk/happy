@@ -180,6 +180,10 @@ func (l *TestLogger) AttachAdapter(adapter Adapter) error {
 	return fmt.Errorf("%w: can not attach adapter to TestLogger", Error)
 }
 
+func (l *TestLogger) SetAdapter(adapter Adapter) error {
+	return fmt.Errorf("%w: can not set adapter to TestLogger", Error)
+}
+
 func (l *TestLogger) Options() (*Options, error) {
 	return nil, fmt.Errorf("%w: TestLogger does not return options", Error)
 }

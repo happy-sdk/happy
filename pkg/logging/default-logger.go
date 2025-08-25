@@ -216,6 +216,24 @@ func (l *DefaultLogger) AttachAdapter(adapter Adapter) error {
 	return nil
 }
 
+func (l *DefaultLogger) SetAdapter(adapter Adapter) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if adapter == nil {
+		return fmt.Errorf("%w: SetAdapter got nil adapter", Error)
+	}
+
+	l.adapter = adapter
+	l.log = slog.New(adapter.Handler())
+
+	if adapter.Options().SetSlogOutput {
+		slog.SetDefault(l.log)
+	}
+
+	return nil
+}
+
 func (l *DefaultLogger) Options() (*Options, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()

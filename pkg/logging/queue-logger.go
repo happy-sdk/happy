@@ -213,6 +213,15 @@ func (l *QueueLogger) AttachAdapter(adapter Adapter) error {
 	return fmt.Errorf("%w: can not attach adapter to QueueLogger", Error)
 }
 
+func (l *QueueLogger) SetAdapter(adapter Adapter) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.consumed {
+		return fmt.Errorf("%w: %s", ErrLoggerAlreadyDisposed, "DefaultLogger")
+	}
+	return fmt.Errorf("%w: can not set adapter to QueueLogger", Error)
+}
+
 func (l *QueueLogger) Options() (*Options, error) {
 	return nil, fmt.Errorf("%w: QueueLogger does not return options", Error)
 }
