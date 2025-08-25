@@ -92,6 +92,10 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 		return nil, fmt.Errorf("empty spec string")
 	}
 
+	if spec == "-" {
+		return &ScheduleSpec{disabled: true}, nil
+	}
+
 	// Extract timezone if present
 	var loc = time.Local
 	if strings.HasPrefix(spec, "TZ=") || strings.HasPrefix(spec, "CRON_TZ=") {

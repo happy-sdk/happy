@@ -8,7 +8,8 @@ import "time"
 // ConstantDelaySchedule represents a simple recurring duty cycle, e.g. "Every 5 minutes".
 // It does not support jobs more frequent than once a second.
 type ConstantDelaySchedule struct {
-	Delay time.Duration
+	Delay    time.Duration
+	disabled bool
 }
 
 // Every returns a crontab Schedule that activates once every duration.
@@ -18,13 +19,23 @@ func Every(duration time.Duration) ConstantDelaySchedule {
 	if duration < time.Second {
 		duration = time.Second
 	}
+	delay := duration - time.Duration(duration.Nanoseconds())%time.Second
 	return ConstantDelaySchedule{
-		Delay: duration - time.Duration(duration.Nanoseconds())%time.Second,
+		Delay:    delay,
+		disabled: delay == 0,
 	}
 }
 
 // Next returns the next time this should be run.
 // This rounds so that the next activation time will be on the second.
-func (schedule ConstantDelaySchedule) Next(t time.Time) time.Time {
-	return t.Add(schedule.Delay - time.Duration(t.Nanosecond())*time.Nanosecond)
+func (recurring ConstantDelaySchedule) Next(t time.Time) time.Time {
+	return t.Add(recurring.Delay - time.Duration(t.Nanosecond())*time.Nanosecond)
+}
+
+func (recurring ConstantDelaySchedule) Interval() time.Duration {
+	return recurring.Delay
+}
+
+func (recurring ConstantDelaySchedule) Disabled() bool {
+	return recurring.disabled
 }

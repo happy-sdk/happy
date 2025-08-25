@@ -12,6 +12,8 @@ type ScheduleSpec struct {
 
 	// Override location for this schedule.
 	Location *time.Location
+
+	disabled bool
 }
 
 // bounds provides a range of acceptable values (plus a map of name to value).
@@ -59,6 +61,9 @@ const (
 // Next returns the next time this schedule is activated, greater than the given
 // time.  If no time can be found to satisfy the schedule, return the zero time.
 func (s *ScheduleSpec) Next(t time.Time) time.Time {
+	if s.disabled {
+		return time.Time{}
+	}
 	// General approach
 	//
 	// For Month, Day, Hour, Minute, Second:
@@ -177,6 +182,58 @@ WRAP:
 	return t.In(origLocation)
 }
 
+// Interval returns the shortest duration between consecutive times the schedule would trigger.
+// If the schedule is irregular (e.g., specific days of the month or weekdays), it returns the
+// smallest possible interval based on the finest granularity specified.
+func (s *ScheduleSpec) Interval() time.Duration {
+	// Helper function to count set bits in a uint64
+	countSetBits := func(n uint64) int {
+		count := 0
+		for n != 0 {
+			count += int(n & 1)
+			n >>= 1
+		}
+		return count
+	}
+
+	// Check if the starBit is set (indicating a wildcard)
+	hasStar := func(field uint64) bool {
+		return field&starBit != 0
+	}
+
+	// If seconds are specified (not all set or not a wildcard), return 1s as the finest granularity
+	if !hasStar(s.Second) && countSetBits(s.Second) < 60 {
+		return time.Second
+	}
+
+	// If minutes are specified, return 1m
+	if !hasStar(s.Minute) && countSetBits(s.Minute) < 60 {
+		return time.Minute
+	}
+
+	// If hours are specified, return 1h
+	if !hasStar(s.Hour) && countSetBits(s.Hour) < 24 {
+		return time.Hour
+	}
+
+	// If days of month or days of week are specified, return 24h
+	if (!hasStar(s.Dom) && countSetBits(s.Dom) < 31) || (!hasStar(s.Dow) && countSetBits(s.Dow) < 7) {
+		return 24 * time.Hour
+	}
+
+	// If months are specified, return a nominal 1-month duration (30 days for approximation)
+	if !hasStar(s.Month) && countSetBits(s.Month) < 12 {
+		return 30 * 24 * time.Hour
+	}
+
+	// Default case: if all fields are wildcards or fully set, assume the finest granularity (1s)
+	return time.Second
+}
+
+func (s *ScheduleSpec) Disabled() bool {
+	return s.disabled
+}
+
 // dayMatches returns true if the schedule's day-of-week and day-of-month
 // restrictions are satisfied by the given time.
 func dayMatches(s *ScheduleSpec, t time.Time) bool {
@@ -188,4 +245,23 @@ func dayMatches(s *ScheduleSpec, t time.Time) bool {
 		return domMatch && dowMatch
 	}
 	return domMatch || dowMatch
+}
+
+type Expression string
+
+// MarshalSetting converts the Expression setting to a byte slice for storage or transmission.
+func (e *Expression) MarshalSetting() ([]byte, error) {
+	// Simply cast the String to a byte slice.
+	return []byte(*e), nil
+}
+
+// UnmarshalSetting updates the Expression setting from a byte slice, typically read from storage or received in a message.
+func (e *Expression) UnmarshalSetting(data []byte) error {
+	*e = Expression(data)
+	return nil
+}
+
+// String returns Expression string
+func (e Expression) String() string {
+	return string(e)
 }
