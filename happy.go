@@ -20,6 +20,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/app"
+	"github.com/happy-sdk/happy/sdk/services"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
@@ -39,4 +40,26 @@ func New(c *Settings, extend ...settings.Settings) *app.Main {
 func API[API api.Provider](sess *session.Context) (api API, err error) {
 	err = session.API(sess, &api)
 	return
+}
+
+// ServiceLoader is a convenience function to create a new ServiceLoader instance from the services package.
+// It initializes and prepares the specified services for loading using the provided session context,
+// acting as a shorthand for services.NewLoader within the Happy-SDK framework.
+//
+// Parameters:
+//   - sess: The session context used to configure the service loader.
+//   - svcs: A variadic list of service names or addresses to be loaded and started.
+//
+// Returns:
+//   - A pointer to a ServiceLoader instance configured to load the specified services.
+//
+// Example usage:
+//
+//	loader := ServiceLoader(sess, "serviceA", "serviceB")
+//	<-loader.Load()
+//	if err := loader.Err(); err != nil {
+//	    log.Fatal("Service loading failed:", err)
+//	}
+func ServiceLoader(sess *session.Context, svcs ...string) *services.ServiceLoader {
+	return services.NewLoader(sess, svcs...)
 }
