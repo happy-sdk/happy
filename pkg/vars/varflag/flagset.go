@@ -27,6 +27,7 @@ type FlagSet struct {
 	args    []vars.Value
 	pos     int
 	parsed  bool
+	aliases map[string]string
 }
 
 var ErrInvalidFlagSetName = errors.New("invalid flag set name")
@@ -43,7 +44,11 @@ func NewFlagSet(name string, argn int) (*FlagSet, error) {
 	} else if !ValidFlagName(name) {
 		return nil, fmt.Errorf("%w: %q is not valid name for flag set", ErrInvalidFlagSetName, name)
 	}
-	return &FlagSet{name: name, argn: argn}, nil
+	return &FlagSet{
+		name:    name,
+		argn:    argn,
+		aliases: make(map[string]string),
+	}, nil
 }
 
 func SetArgcMax(flags Flags, max int) error {
@@ -76,15 +81,22 @@ func (s *FlagSet) Len() int {
 
 // Add flag to flag set.
 func (s *FlagSet) Add(flag ...Flag) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for _, f := range flag {
-		_, err := s.Get(f.Name())
+		_, err := s.get(f.Name())
 		if !errors.Is(err, ErrNoNamedFlag) {
 			return fmt.Errorf("%w: %s", ErrFlagExists, f.Name())
 		}
+		if err := s.checkAliasShadowing(f); err != nil {
+			return err
+		}
 		f.AttachTo(s.name)
+		for _, alias := range f.Aliases() {
+			s.aliases[alias] = f.Name()
+		}
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	s.flags = append(s.flags, flag...)
 	return nil
@@ -94,6 +106,9 @@ func (s *FlagSet) Add(flag ...Flag) error {
 func (s *FlagSet) Get(name string) (Flag, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	return s.get(name)
+}
+func (s *FlagSet) get(name string) (Flag, error) {
 	for _, f := range s.flags {
 		if f.Name() == name {
 			return f, nil
@@ -172,76 +187,6 @@ func (s *FlagSet) Sets() []Flags {
 
 // Parse all flags recursively.
 func (s *FlagSet) Parse(args []string) error {
-	// s.mu.Lock()
-	// defer s.mu.Unlock()
-
-	// if s.parsed {
-	// 	return fmt.Errorf("%w: %s", ErrFlagAlreadyParsed, s.name)
-	// }
-	// s.parsed = true
-	// var currargs []string
-	// if s.name == "/" || s.name == "*" || s.name == filepath.Base(os.Args[0]) {
-	// 	currargs = args[1:]
-	// 	// root cmd is always considered as present
-	// 	s.present = true
-	// } else {
-	// 	for i, arg := range args {
-	// 		if arg == s.name {
-	// 			s.pos = i
-	// 			currargs = args[i:]
-	// 			s.present = true
-	// 		}
-	// 	}
-	// }
-
-	// // if set is not present it is not an error
-	// if !s.present {
-	// 	return nil
-	// }
-
-	// // first parse flags for current set
-	// for _, gflag := range s.flags {
-	// 	_, err := gflag.Parse(currargs)
-	// 	if err != nil && !errors.Is(err, ErrFlagAlreadyParsed) {
-	// 		return fmt.Errorf("%s %w", s.name, err)
-	// 	}
-	// 	// this flag need to be removed from sub command args
-	// 	if gflag.Present() {
-	// 		currargs = slicediff(currargs, gflag.Input())
-	// 	}
-	// }
-
-	// // nothing to parse
-	// if len(currargs) == 0 {
-	// 	return nil
-	// }
-	// // parse sets
-	// for _, set := range s.sets {
-	// 	if set.Name() != currargs[0] {
-	// 		continue
-	// 	}
-	// 	fmt.Println("set: ", set.Name(), currargs)
-
-	// 	if err := set.Parse(currargs); err != nil {
-	// 		return err
-	// 	}
-	// 	if set.Present() {
-	// 		fmt.Println("set present: ", set.Name())
-	// 		if s.name == "/" {
-	// 			// update global flag command names
-	// 			for _, flag := range s.flags {
-	// 				if !flag.Present() {
-	// 					continue
-	// 				}
-	// 			}
-	// 		}
-	// 		break
-	// 	}
-	// }
-
-	// // since we did not have errors we can look up args
-	// return s.extractArgs(currargs)
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -352,6 +297,18 @@ includessubset:
 			s.args = append(s.args, a)
 		} else {
 			break
+		}
+	}
+	return nil
+}
+
+func (s *FlagSet) checkAliasShadowing(flag Flag) error {
+	if flag.Aliases() == nil {
+		return nil
+	}
+	for _, alias := range flag.Aliases() {
+		if flagName, ok := s.aliases[alias]; ok && flag.Name() != flagName {
+			return fmt.Errorf("%w: --%s alias -%s shadows --%s alias --%s", ErrAliasShadow, flag.Name(), alias, flagName, alias)
 		}
 	}
 	return nil

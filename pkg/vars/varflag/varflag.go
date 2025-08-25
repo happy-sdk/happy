@@ -33,6 +33,8 @@ var (
 	ErrFlag = i18n.NewError("ErrFlag", "flag error")
 	// ErrFlag is returned when flag fails to initialize.
 	ErrFlagExists = i18n.NewError("ErrFlagExists", "flag already exists")
+	// ErrAliasShadow is returned when flag alias is shadowed.
+	ErrAliasShadow = i18n.NewError("ErrAliasShadow", "flag alias shadowed")
 	// ErrParse is used to indicate parse errors.
 	ErrParse = i18n.NewError("ErrParse", "flag parse error")
 	// ErrMissingValue is used when flag value was not in parsed args.
@@ -80,7 +82,7 @@ type (
 		// Hide flag from help menu.
 		Hide()
 
-		// IsGlobal reports whether this flag was global and was set before any command or arg
+		// Global reports whether this flag was global and was set before any command or arg
 		Global() bool
 
 		// BelongsTo marks flag non global and belonging to provided named command.
