@@ -15,7 +15,7 @@ import (
 
 func appendingJob(slice *[]int, value int) Job {
 	var m sync.Mutex
-	return FuncJob(func() {
+	return JobFunc(func() {
 		m.Lock()
 		*slice = append(*slice, value)
 		m.Unlock()
@@ -24,7 +24,7 @@ func appendingJob(slice *[]int, value int) Job {
 
 func appendingWrapper(slice *[]int, value int) JobWrapper {
 	return func(j Job) Job {
-		return FuncJob(func() {
+		return JobFunc(func() {
 			appendingJob(slice, value).Run()
 			j.Run()
 		})
@@ -46,7 +46,7 @@ func TestChain(t *testing.T) {
 }
 
 func TestChainRecover(t *testing.T) {
-	panickingJob := FuncJob(func() {
+	panickingJob := JobFunc(func() {
 		panic("panickingJob panics")
 	})
 

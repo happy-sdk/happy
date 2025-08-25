@@ -302,9 +302,9 @@ func TestRunningMultipleSchedules(t *testing.T) {
 	if _, err := cron.AddFunc("* * * * * ?", func() { wg.Done() }); err != nil {
 		testutils.NoError(t, err)
 	}
-	cron.Schedule(Every(time.Minute), FuncJob(func() {}))
-	cron.Schedule(Every(time.Second), FuncJob(func() { wg.Done() }))
-	cron.Schedule(Every(time.Hour), FuncJob(func() {}))
+	cron.Schedule(Every(time.Minute), JobFunc(func() {}))
+	cron.Schedule(Every(time.Second), JobFunc(func() { wg.Done() }))
+	cron.Schedule(Every(time.Hour), JobFunc(func() {}))
 
 	cron.Start()
 	defer cron.Stop()
@@ -538,8 +538,8 @@ func TestScheduleAfterRemoval(t *testing.T) {
 	var mu sync.Mutex
 
 	cron := newWithSeconds()
-	hourJob := cron.Schedule(Every(time.Hour), FuncJob(func() {}))
-	cron.Schedule(Every(time.Second), FuncJob(func() {
+	hourJob := cron.Schedule(Every(time.Hour), JobFunc(func() {}))
+	cron.Schedule(Every(time.Second), JobFunc(func() {
 		mu.Lock()
 		defer mu.Unlock()
 		switch calls {
@@ -578,6 +578,14 @@ func (*ZeroSchedule) Next(time.Time) time.Time {
 	return time.Time{}
 }
 
+func (*ZeroSchedule) Disabled() bool {
+	return false
+}
+
+func (*ZeroSchedule) Interval() time.Duration {
+	return 0
+}
+
 // Tests that job without time does not run
 func TestJobWithZeroTimeDoesNotRun(t *testing.T) {
 	cron := newWithSeconds()
@@ -585,7 +593,7 @@ func TestJobWithZeroTimeDoesNotRun(t *testing.T) {
 	if _, err := cron.AddFunc("* * * * * *", func() { atomic.AddInt64(&calls, 1) }); err != nil {
 		testutils.NoError(t, err)
 	}
-	cron.Schedule(new(ZeroSchedule), FuncJob(func() { t.Error("expected zero task will not run") }))
+	cron.Schedule(new(ZeroSchedule), JobFunc(func() { t.Error("expected zero task will not run") }))
 	cron.Start()
 	defer cron.Stop()
 	<-time.After(OneSecond)

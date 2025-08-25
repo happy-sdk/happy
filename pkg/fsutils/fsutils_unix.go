@@ -166,7 +166,7 @@ func sELinuxContext(path string) (string, error) {
 }
 
 func dirBtimeSpan(dir string, recursive bool) (oldest, newest time.Time, bspan time.Duration, err error) {
-	var first bool = true
+	first := true
 
 	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {

@@ -14,13 +14,8 @@ import (
 var (
 	intSlicePool = sync.Pool{
 		New: func() any {
-			return make([]int, 0, 16) // Start with capacity 16
-		},
-	}
-
-	stringSlicePool = sync.Pool{
-		New: func() any {
-			return make([]string, 0, 16)
+			slice := make([]int, 0, 16)
+			return &slice
 		},
 	}
 
@@ -202,7 +197,7 @@ func (t *Table) invalidateCache() {
 
 // hasContent checks if table has content
 func (t *Table) hasContent() bool {
-	if len(t.rows) > 0 && !(t.withHeader && len(t.rows) == 1) {
+	if len(t.rows) > 0 && (!t.withHeader || len(t.rows) != 1) {
 		return true
 	}
 	for _, c := range t.children {
@@ -254,10 +249,11 @@ func (t *Table) calculateLocalColumnWidths() []int {
 		return nil
 	}
 
-	cw := intSlicePool.Get().([]int)
+	cwPtr := intSlicePool.Get().(*[]int)
+	cw := *cwPtr
 	defer func() {
-		cw = cw[:0] // Reset slice but keep capacity
-		intSlicePool.Put(cw)
+		*cwPtr = (*cwPtr)[:0] // Reset slice but keep capacity
+		intSlicePool.Put(cwPtr)
 	}()
 
 	// Ensure we have enough capacity

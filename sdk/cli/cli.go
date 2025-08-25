@@ -97,7 +97,9 @@ func getChar() (byte, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	defer func() {
+		_ = term.Restore(int(os.Stdin.Fd()), oldState)
+	}()
 
 	var buf [1]byte
 	_, err = os.Stdin.Read(buf[:])

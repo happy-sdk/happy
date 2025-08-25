@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/bytesize"
 	"github.com/happy-sdk/happy/pkg/fsutils"
-	"github.com/happy-sdk/happy/pkg/strings/humanize"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/api"
@@ -100,19 +100,19 @@ func (r *Profiler) Update() {
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 	// _ = r.db.Store("mem.allocated", humanize.IBytes(mem.Alloc))
-	_ = r.db.Store("mem.total_allocated", humanize.IBytes(mem.TotalAlloc))
-	_ = r.db.Store("mem.sys", humanize.IBytes(mem.Sys))
-	_ = r.db.Store("mem.heap.alloc", humanize.IBytes(mem.HeapAlloc))
-	_ = r.db.Store("mem.heap.sys", humanize.IBytes(mem.HeapSys))
+	_ = r.db.Store("mem.total_allocated", bytesize.IECSize(mem.TotalAlloc).String())
+	_ = r.db.Store("mem.sys", bytesize.IECSize(mem.Sys).String())
+	_ = r.db.Store("mem.heap.alloc", bytesize.IECSize(mem.HeapAlloc).String())
+	_ = r.db.Store("mem.heap.sys", bytesize.IECSize(mem.HeapSys).String())
 	_ = r.db.Store("mem.heap.heap_objects", mem.HeapObjects)
 	_ = r.db.Store("mem.pointer.lookups", mem.Lookups)
 	_ = r.db.Store("mem.mallocs", mem.Mallocs)
 
 	// Critical GC metrics
-	_ = r.db.Store("mem.gc.next", humanize.IBytes(mem.NextGC))
+	_ = r.db.Store("mem.gc.next", bytesize.IECSize(mem.NextGC).String())
 	_ = r.db.Store("mem.gc.num", mem.NumGC)
 	_ = r.db.Store("mem.gc.cpu_fraction", mem.GCCPUFraction)
-	_ = r.db.Store("mem.stack.inuse", humanize.IBytes(mem.StackInuse))
+	_ = r.db.Store("mem.stack.inuse", bytesize.IECSize(mem.StackInuse).String())
 	r.lastUpdated = time.Now().In(r.tsloc)
 }
 
@@ -252,19 +252,19 @@ func AsService(prof *Profiler) *services.Service {
 			if cacheSize, err := fsutils.DirSize(cachePath); err != nil {
 				sess.Log().Error("failed to get cache size", slog.String("err", err.Error()))
 			} else {
-				_ = prof.Set("fs.cache.size", humanize.Bytes(uint64(cacheSize)))
+				_ = prof.Set("fs.cache.size", bytesize.SISize(cacheSize))
 			}
 
 			if tmpSize, err := fsutils.DirSize(tmpPath); err != nil {
 				sess.Log().Error("failed to get tmp size", slog.String("err", err.Error()))
 			} else {
-				_ = prof.Set("fs.tmp.size", humanize.Bytes(uint64(tmpSize)))
+				_ = prof.Set("fs.tmp.size", bytesize.SISize(tmpSize))
 			}
 
 			if availableSpace, err := fsutils.AvailableSpace(cachePath); err != nil {
 				sess.Log().Error("failed to get available space", slog.String("err", err.Error()))
 			} else {
-				_ = prof.Set("fs.available", humanize.Bytes(uint64(availableSpace)))
+				_ = prof.Set("fs.available", bytesize.SISize(availableSpace))
 			}
 
 			return nil

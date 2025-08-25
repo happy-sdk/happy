@@ -59,13 +59,15 @@ func CompressDir(dir, tarpath string) error {
 	if err != nil {
 		return fmt.Errorf("%w: failed to create destination file: %s", Error, err.Error())
 	}
-	defer tarfile.Close()
 
 	gw := gzip.NewWriter(tarfile)
-	defer gw.Close()
-
 	tw := tar.NewWriter(gw)
-	defer tw.Close()
+
+	defer func() {
+		_ = tarfile.Close()
+		_ = gw.Close()
+		_ = tw.Close()
+	}()
 
 	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -95,7 +97,9 @@ func CompressDir(dir, tarpath string) error {
 			if err != nil {
 				return err
 			}
-			defer file.Close()
+			defer func() {
+				_ = file.Close()
+			}()
 
 			if _, err := io.Copy(tw, file); err != nil {
 				return err

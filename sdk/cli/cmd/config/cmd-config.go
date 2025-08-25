@@ -132,8 +132,8 @@ func configLs(hiddenKeys, disabledKeys, secrets []string) *command.Command {
 		var (
 			appConfig      []appConfigRow
 			profileConfig  []appConfigRow
-			onlyWithPrefix bool   = args.Flag("prefix").Present()
-			withPrefix     string = args.Flag("prefix").String()
+			onlyWithPrefix = args.Flag("prefix").Present()
+			withPrefix     = args.Flag("prefix").String()
 		)
 
 		describeFlagTrue := args.Flag("describe").Var().Bool()
@@ -146,7 +146,7 @@ func configLs(hiddenKeys, disabledKeys, secrets []string) *command.Command {
 
 			var (
 				defval string
-				value  string = s.Value().String()
+				value  = s.Value().String()
 			)
 			if s.Default().String() != s.Value().String() {
 				defval = s.Default().String()
@@ -180,7 +180,7 @@ func configLs(hiddenKeys, disabledKeys, secrets []string) *command.Command {
 				return true
 			}
 
-			var value string = opt.Value().String()
+			value := opt.Value().String()
 			if slices.Contains(secrets, opt.Key()) {
 				value = "<redacted>"
 			}

@@ -26,7 +26,6 @@ type File struct {
 	abspath       string
 	file          *os.File
 	rotations     int
-	title         string
 	prevRotation  time.Time
 	btime         time.Time
 	rotateOnOpen  bool

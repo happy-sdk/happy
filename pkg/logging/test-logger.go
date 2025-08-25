@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -173,4 +174,12 @@ func (l *TestLogger) Dispose() error {
 		return l.log.Dispose()
 	}
 	return nil
+}
+
+func (l *TestLogger) AttachAdapter(adapter Adapter) error {
+	return fmt.Errorf("%w: can not attach adapter to TestLogger", Error)
+}
+
+func (l *TestLogger) Options() (*Options, error) {
+	return nil, fmt.Errorf("%w: TestLogger does not return options", Error)
 }

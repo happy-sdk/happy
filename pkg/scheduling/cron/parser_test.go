@@ -152,7 +152,7 @@ func TestParseSchedule(t *testing.T) {
 		{secondParser, "CRON_TZ=UTC  0 5 * * * *", every5min(time.UTC)},
 		{standardParser, "CRON_TZ=UTC  5 * * * *", every5min(time.UTC)},
 		{secondParser, "CRON_TZ=Asia/Tokyo 0 5 * * * *", every5min(tokyo)},
-		{secondParser, "@every 5m", ConstantDelaySchedule{5 * time.Minute}},
+		{secondParser, "@every 5m", ConstantDelaySchedule{Delay: 5 * time.Minute}},
 		{secondParser, "@midnight", midnight(time.Local)},
 		{secondParser, "TZ=UTC  @midnight", midnight(time.UTC)},
 		{secondParser, "TZ=Asia/Tokyo @midnight", midnight(tokyo)},
@@ -161,7 +161,7 @@ func TestParseSchedule(t *testing.T) {
 		{
 			parser: secondParser,
 			expr:   "* 5 * * * *",
-			expected: &SpecSchedule{
+			expected: &ScheduleSpec{
 				Second:   all(seconds),
 				Minute:   1 << 5,
 				Hour:     all(hours),
@@ -315,7 +315,7 @@ func TestNormalizeFields_Errors(t *testing.T) {
 	}
 }
 
-func TestStandardSpecSchedule(t *testing.T) {
+func TestStandardScheduleSpec(t *testing.T) {
 	entries := []struct {
 		expr     string
 		expected Schedule
@@ -323,11 +323,11 @@ func TestStandardSpecSchedule(t *testing.T) {
 	}{
 		{
 			expr:     "5 * * * *",
-			expected: &SpecSchedule{1 << seconds.min, 1 << 5, all(hours), all(dom), all(months), all(dow), time.Local},
+			expected: &ScheduleSpec{1 << seconds.min, 1 << 5, all(hours), all(dom), all(months), all(dow), time.Local, false},
 		},
 		{
 			expr:     "@every 5m",
-			expected: ConstantDelaySchedule{time.Duration(5) * time.Minute},
+			expected: ConstantDelaySchedule{Delay: time.Duration(5) * time.Minute},
 		},
 		{
 			expr: "5 j * * *",
@@ -361,20 +361,20 @@ func TestNoDescriptorParser(t *testing.T) {
 	}
 }
 
-func every5min(loc *time.Location) *SpecSchedule {
-	return &SpecSchedule{1 << 0, 1 << 5, all(hours), all(dom), all(months), all(dow), loc}
+func every5min(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{1 << 0, 1 << 5, all(hours), all(dom), all(months), all(dow), loc, false}
 }
 
-func every5min5s(loc *time.Location) *SpecSchedule {
-	return &SpecSchedule{1 << 5, 1 << 5, all(hours), all(dom), all(months), all(dow), loc}
+func every5min5s(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{1 << 5, 1 << 5, all(hours), all(dom), all(months), all(dow), loc, false}
 }
 
-func midnight(loc *time.Location) *SpecSchedule {
-	return &SpecSchedule{1, 1, 1, all(dom), all(months), all(dow), loc}
+func midnight(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{1, 1, 1, all(dom), all(months), all(dow), loc, false}
 }
 
-func annual(loc *time.Location) *SpecSchedule {
-	return &SpecSchedule{
+func annual(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
 		Second:   1 << seconds.min,
 		Minute:   1 << minutes.min,
 		Hour:     1 << hours.min,
