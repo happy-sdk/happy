@@ -42,7 +42,6 @@ type Adapter struct {
 }
 
 func New(ctx context.Context, w io.Writer, opts *logging.Options, theme ansicolor.Theme) logging.Adapter {
-
 	handler := NewHandler(ctx, w, opts, theme)
 	return &Adapter{
 		ctx:     ctx,
@@ -51,23 +50,23 @@ func New(ctx context.Context, w io.Writer, opts *logging.Options, theme ansicolo
 	}
 }
 
-func (ta *Adapter) Handler() slog.Handler {
-	return ta.handler
+func (a *Adapter) Handler() slog.Handler {
+	return a.handler
 }
 
-func (ta *Adapter) Options() *logging.Options {
-	return ta.opts
+func (a *Adapter) Options() *logging.Options {
+	return a.opts
 }
 
-func (ta *Adapter) Context() context.Context {
-	return ta.ctx
+func (a *Adapter) Context() context.Context {
+	return a.ctx
 }
 
-func (ta *Adapter) Dispose() error {
+func (a *Adapter) Dispose() error {
 	return nil
 }
 
-type ConsoleHandler struct {
+type Handler struct {
 	slog.Handler
 	styles consoleTheme
 	src    bool
@@ -76,7 +75,7 @@ type ConsoleHandler struct {
 	nots   bool
 }
 
-func NewHandler(ctx context.Context, w io.Writer, opts *logging.Options, theme ansicolor.Theme) *ConsoleHandler {
+func NewHandler(ctx context.Context, w io.Writer, opts *logging.Options, theme ansicolor.Theme) *Handler {
 	if opts.LevelVar == nil {
 		opts.LevelVar = new(slog.LevelVar)
 	}
@@ -85,7 +84,7 @@ func NewHandler(ctx context.Context, w io.Writer, opts *logging.Options, theme a
 	if opts.TimestampFormat != "" {
 		tsfmt = opts.TimestampFormat
 	}
-	h := &ConsoleHandler{
+	h := &Handler{
 		styles: consoleTheme{
 			attrs:      ansicolor.Style{FG: theme.Secondary},
 			muted:      ansicolor.Style{FG: theme.Muted},
@@ -136,7 +135,7 @@ func groupToMap(gv []slog.Attr) map[string]any {
 	return obj
 }
 
-func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
+func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	lvlstr := h.getLevelStr(r.Level)
 	lvl := logging.Level(r.Level)
 
@@ -210,7 +209,7 @@ func (h *ConsoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	return nil
 }
 
-func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
+func (h *Handler) getLevelStr(lvl slog.Level) string {
 	l := logging.Level(lvl)
 	if l == logging.LevelQuiet {
 		return ""
@@ -245,7 +244,7 @@ func (h *ConsoleHandler) getLevelStr(lvl slog.Level) string {
 }
 
 //nolint:unused
-func (h *ConsoleHandler) http(status int, method, p string, attrs ...slog.Attr) {
+func (h *Handler) http(status int, method, p string, attrs ...slog.Attr) {
 
 	var (
 		state,

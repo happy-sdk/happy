@@ -12,11 +12,13 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
 type DefaultLogger struct {
+	mu      sync.RWMutex
 	adapter Adapter
 
 	ctx   context.Context
@@ -195,17 +197,29 @@ func (l *DefaultLogger) ConsumeQueue(queue *QueueLogger) error {
 	return nil
 }
 
-func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr) {
-	if ch, ok := l.log.Handler().(httpHandler); ok {
-		ch.http(status, method, path, attrs...)
-		return
+func (l *DefaultLogger) AttachAdapter(adapter Adapter) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if adapter == nil {
+		return fmt.Errorf("%w: AttachAdapter got nil adapter", Error)
 	}
 
-	var pcs [1]uintptr
-	runtime.Callers(3, pcs[:])
-	r := slog.NewRecord(l.ts(), lvlAlways, fmt.Sprintf("[%-8s %-3s] %s", method, fmt.Sprint(status), path), pcs[0])
-	r.AddAttrs(attrs...)
-	_ = l.log.Handler().Handle(l.ctx, r)
+	a := NewCombinedAdapter(l.adapter, adapter)
+	l.adapter = a
+	l.log = slog.New(a.Handler())
+
+	if adapter.Options().SetSlogOutput {
+		slog.SetDefault(l.log)
+	}
+
+	return nil
+}
+
+func (l *DefaultLogger) Options() (*Options, error) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.adapter.Options(), nil
 }
 
 func (l *DefaultLogger) Dispose() error {
@@ -222,6 +236,19 @@ func (l *DefaultLogger) logDepth(lvl slog.Level, msg string, attrs ...slog.Attr)
 	var pcs [1]uintptr
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(l.ts(), lvl, msg, pcs[0])
+	r.AddAttrs(attrs...)
+	_ = l.log.Handler().Handle(l.ctx, r)
+}
+
+func (l *DefaultLogger) http(status int, method, path string, attrs ...slog.Attr) {
+	if ch, ok := l.log.Handler().(httpHandler); ok {
+		ch.http(status, method, path, attrs...)
+		return
+	}
+
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+	r := slog.NewRecord(l.ts(), lvlAlways, fmt.Sprintf("[%-8s %-3s] %s", method, fmt.Sprint(status), path), pcs[0])
 	r.AddAttrs(attrs...)
 	_ = l.log.Handler().Handle(l.ctx, r)
 }

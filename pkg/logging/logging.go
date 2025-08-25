@@ -44,6 +44,9 @@ type Logger interface {
 
 	ConsumeQueue(queue *QueueLogger) error
 	Dispose() error
+
+	AttachAdapter(adapter Adapter) error
+	Options() (*Options, error)
 }
 
 type Options struct {

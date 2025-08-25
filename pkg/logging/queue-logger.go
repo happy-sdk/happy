@@ -204,6 +204,19 @@ func (l *QueueLogger) Dispose() error {
 	return nil
 }
 
+func (l *QueueLogger) AttachAdapter(adapter Adapter) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.consumed {
+		return fmt.Errorf("%w: %s", ErrLoggerAlreadyDisposed, "QueueLogger")
+	}
+	return fmt.Errorf("%w: can not attach adapter to QueueLogger", Error)
+}
+
+func (l *QueueLogger) Options() (*Options, error) {
+	return nil, fmt.Errorf("%w: QueueLogger does not return options", Error)
+}
+
 type QueueRecord struct {
 	pc    uintptr
 	lvl   Level
