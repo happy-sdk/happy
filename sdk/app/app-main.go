@@ -146,7 +146,7 @@ func (m *Main) Run() {
 			m.rt.Exit(0)
 			return
 		}
-		m.log.Errors(err)
+		m.log.Error(err.Error())
 		{
 			// rare case where logger is not available, then use slog
 			// to consume the log queue if it is not already consumed.

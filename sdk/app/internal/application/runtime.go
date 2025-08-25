@@ -18,9 +18,6 @@ import (
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/logging"
-	"github.com/happy-sdk/happy/pkg/options"
-	"github.com/happy-sdk/happy/pkg/settings"
-	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
@@ -348,36 +345,6 @@ func (rt *Runtime) executeBeforeActions() error {
 	}
 
 	internal.Log(rt.sess.Log(), "executing before actions")
-
-	if rt.sess.Log().Level() < logging.LevelDebug {
-		// Settings table
-
-		settingstbl := textfmt.NewTable(
-			textfmt.TableTitle("Application Settings"),
-			textfmt.TableWithHeader(),
-		)
-		settingstbl.AddRow("KEY", "KIND", "IS SET", "MUTABILITY", "VALUE", "DEFAULT")
-
-		batch := textfmt.NewTableBatchOp()
-		for s := range rt.sess.Settings().All() {
-			var defval string
-			if s.Mutability() != settings.SettingImmutable && s.Default().String() != s.Value().String() {
-				defval = s.Default().String()
-			}
-			batch.AddRow(s.Key(), s.Kind().String(), fmt.Sprint(s.IsSet()), fmt.Sprint(s.Mutability()), s.Value().String(), defval)
-		}
-		settingstbl.Batch(batch)
-
-		rt.sess.Log().Println(settingstbl.String())
-
-		// Options
-		optstbl := textfmt.Table{}
-		rt.sess.Opts().Range(func(opt options.Option) bool {
-			optstbl.AddRow(opt.Key(), opt.Value().String())
-			return true
-		})
-		rt.sess.Log().Println(optstbl.String())
-	}
 
 	if rt.beforeAlways != nil && !rt.cmd.SkipSharedBeforeAction() {
 		timer := time.Now()
