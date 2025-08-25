@@ -143,7 +143,7 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 		return nil, err
 	}
 
-	return &SpecSchedule{
+	return &ScheduleSpec{
 		Second:   second,
 		Minute:   minute,
 		Hour:     hour,
@@ -369,7 +369,7 @@ func all(r bounds) uint64 {
 func parseDescriptor(descriptor string, loc *time.Location) (Schedule, error) {
 	switch descriptor {
 	case "@yearly", "@annually":
-		return &SpecSchedule{
+		return &ScheduleSpec{
 			Second:   1 << seconds.min,
 			Minute:   1 << minutes.min,
 			Hour:     1 << hours.min,
@@ -380,7 +380,7 @@ func parseDescriptor(descriptor string, loc *time.Location) (Schedule, error) {
 		}, nil
 
 	case "@monthly":
-		return &SpecSchedule{
+		return &ScheduleSpec{
 			Second:   1 << seconds.min,
 			Minute:   1 << minutes.min,
 			Hour:     1 << hours.min,
@@ -391,7 +391,7 @@ func parseDescriptor(descriptor string, loc *time.Location) (Schedule, error) {
 		}, nil
 
 	case "@weekly":
-		return &SpecSchedule{
+		return &ScheduleSpec{
 			Second:   1 << seconds.min,
 			Minute:   1 << minutes.min,
 			Hour:     1 << hours.min,
@@ -402,7 +402,7 @@ func parseDescriptor(descriptor string, loc *time.Location) (Schedule, error) {
 		}, nil
 
 	case "@daily", "@midnight":
-		return &SpecSchedule{
+		return &ScheduleSpec{
 			Second:   1 << seconds.min,
 			Minute:   1 << minutes.min,
 			Hour:     1 << hours.min,
@@ -413,7 +413,7 @@ func parseDescriptor(descriptor string, loc *time.Location) (Schedule, error) {
 		}, nil
 
 	case "@hourly":
-		return &SpecSchedule{
+		return &ScheduleSpec{
 			Second:   1 << seconds.min,
 			Minute:   1 << minutes.min,
 			Hour:     all(hours),

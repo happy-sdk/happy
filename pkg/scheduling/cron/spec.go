@@ -5,9 +5,9 @@ package cron
 
 import "time"
 
-// SpecSchedule specifies a duty cycle (to the second granularity), based on a
+// ScheduleSpec specifies a duty cycle (to the second granularity), based on a
 // traditional crontab specification. It is computed initially and stored as bit sets.
-type SpecSchedule struct {
+type ScheduleSpec struct {
 	Second, Minute, Hour, Dom, Month, Dow uint64
 
 	// Override location for this schedule.
@@ -58,7 +58,7 @@ const (
 
 // Next returns the next time this schedule is activated, greater than the given
 // time.  If no time can be found to satisfy the schedule, return the zero time.
-func (s *SpecSchedule) Next(t time.Time) time.Time {
+func (s *ScheduleSpec) Next(t time.Time) time.Time {
 	// General approach
 	//
 	// For Month, Day, Hour, Minute, Second:
@@ -179,7 +179,7 @@ WRAP:
 
 // dayMatches returns true if the schedule's day-of-week and day-of-month
 // restrictions are satisfied by the given time.
-func dayMatches(s *SpecSchedule, t time.Time) bool {
+func dayMatches(s *ScheduleSpec, t time.Time) bool {
 	var (
 		domMatch = 1<<uint(t.Day())&s.Dom > 0
 		dowMatch = 1<<uint(t.Weekday())&s.Dow > 0
