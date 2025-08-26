@@ -5,6 +5,8 @@
 package action
 
 import (
+	"errors"
+	"slices"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/options"
@@ -85,3 +87,38 @@ func (a *args) Flag(name string) varflag.Flag {
 }
 
 var ActionNoop func(*session.Context) error = func(*session.Context) error { return nil }
+
+// EnsureArgs ensures that the given arguments are present in the given Args.
+// If an argument is not present, it is added to the Args.
+// Important: Duplicated args are ignored.
+func EnsureArgs(old Args, a ...string) (new Args, err error) {
+	v, ok := old.(*args)
+	if !ok {
+		return nil, errors.New("can not ensure args")
+	}
+
+	var newArgs []vars.Value
+
+	for _, arg := range a {
+		found := false
+		for _, v := range v.args {
+			if v.String() == arg {
+				found = true
+				break
+			}
+		}
+		if !found {
+			v, err := vars.NewValue(arg)
+			if err != nil {
+				return nil, err
+			}
+			newArgs = append(newArgs, v)
+		}
+	}
+	cargs := slices.Concat(v.args, newArgs)
+	return &args{
+		args:  cargs,
+		argn:  uint(len(cargs)),
+		flags: v.flags,
+	}, nil
+}
