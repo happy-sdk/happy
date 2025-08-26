@@ -64,12 +64,9 @@ type Context struct {
 	readyCancel context.CancelFunc
 	readyEvent  events.Event
 
-	kill     context.Context // SIGKILL listener
-	killStop context.CancelFunc
-
-	terminated    bool
-	terminate     context.Context // SIGINT or SIGTERM listener
-	terminateStop context.CancelFunc
+	terminated bool
+	sigCtx     context.Context // os signal listener
+	sigCancel  context.CancelFunc
 
 	svss map[string]*service.Info
 	apis map[string]api.Provider
@@ -96,13 +93,13 @@ func (c *Context) Wait(ctrlc bool) <-chan struct{} {
 	c.mu.Unlock()
 
 	c.mu.RLock()
-	if c.terminateStop != nil {
-		internal.Log(c.Log(), "waiting for user cancel or session termination")
+	if c.sigCancel != nil {
+		internal.Log(c.logger, "waiting for user cancel or session termination")
 		if ctrlc {
 			fmt.Println("Press Ctrl+C to cancel")
 		}
 	} else {
-		internal.Log(c.Log(), "waiting for session termination")
+		internal.Log(c.logger, "waiting for session termination")
 	}
 	c.mu.RUnlock()
 
@@ -148,42 +145,32 @@ func (c *Context) Value(key any) any {
 		return ErrDestroyed
 	}
 
+	var (
+		err           error
+		shouldDestroy bool
+	)
+
 	switch k := key.(type) {
 	case string:
-		if v, ok := c.opts.Load(k); ok {
+		if v, ok := c.Opts().Load(k); ok {
 			return v
 		}
 	case *int:
-
+		c.mu.RLock()
 		if !c.released {
-			if c.terminate != nil && c.terminate.Err() != nil {
+			if c.sigCtx != nil && c.sigCtx.Err() != nil {
+				shouldDestroy = true
 				if c.allowUserCancel {
-					fmt.Println()
-					c.mu.Lock()
-
-					if c.terminateStop != nil {
-						c.terminateStop()
-						c.terminate = nil
-						c.terminated = true
-						c.terminateStop = nil
-					}
-
-					if c.done != nil {
-						close(c.done)
-						c.done = nil
-					}
-					c.mu.Unlock()
-					c.Destroy(ErrExitSuccess)
-					return nil
+					err = ErrExitSuccess
+				} else {
+					err = c.sigCtx.Err()
 				}
-
-				c.Destroy(ErrDestroyed)
-			} else if c.kill != nil && c.kill.Err() != nil {
-				c.Destroy(c.kill.Err())
 			}
 		}
-
-		return nil
+		c.mu.RUnlock()
+	}
+	if shouldDestroy {
+		c.Destroy(err)
 	}
 	return nil
 }
@@ -193,36 +180,35 @@ func (c *Context) Value(key any) any {
 func (c *Context) Release() {
 	c.mu.Lock()
 	c.released = true
-	if c.terminateStop != nil {
-		c.terminateStop()
-		c.terminateStop = nil
-	}
-
-	if c.killStop != nil {
-		c.killStop()
-		c.killStop = nil
-	}
+	sigCancel := c.sigCancel
+	c.sigCancel = nil
+	logger := c.logger
 	c.mu.Unlock()
 
-	internal.Log(c.Log(), "session released SIGINT, SIGKILL signals")
+	if sigCancel != nil {
+		sigCancel()
+	}
+
+	internal.Log(logger, "session released SIGINT, SIGKILL signals")
 }
 
 // Destroy can be called do destroy session.
 func (c *Context) Destroy(err error) {
-	if perr := c.Err(); perr != nil {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.err != nil {
 		// prevent Destroy to be called multiple times
 		// e.g. by sig release or other contexts.
 		// however update error if it is not exit success
-		if errors.Is(perr, ErrExitSuccess) && !errors.Is(err, ErrExitSuccess) {
-			c.mu.Lock()
+		if errors.Is(c.err, ErrExitSuccess) && !errors.Is(err, ErrExitSuccess) {
 			c.err = err
-			c.mu.Unlock()
 		}
 		return
 	}
 
-	c.mu.Lock()
 	c.disposed = true
+	c.ctxCancel()
 
 	// s.err is nil otherwise we would not be here
 	c.err = err
@@ -234,27 +220,15 @@ func (c *Context) Destroy(err error) {
 		c.readyCancel()
 	}
 
-	if c.ctx != nil {
-		// Cancel the lightweight context
-		c.ctxCancel()
+	if c.sigCancel != nil {
+		c.sigCancel()
+		c.sigCancel = nil
 	}
 
-	c.mu.Unlock()
-
-	if c.terminateStop != nil {
-		c.terminateStop()
-		c.terminateStop = nil
-	}
-	if c.killStop != nil {
-		c.killStop()
-		c.killStop = nil
-	}
-
-	c.mu.Lock()
 	if c.done != nil {
 		close(c.done)
+		c.done = nil
 	}
-	c.mu.Unlock()
 }
 
 // Terminate is used to terminate session. and called only internally
@@ -342,6 +316,7 @@ func (c *Context) Dispatch(ev events.Event) {
 	}
 
 	c.mu.Lock()
+
 	if !c.isReady && ev == c.readyEvent {
 		c.readyEvent = nil
 		c.isReady = true
@@ -350,17 +325,19 @@ func (c *Context) Dispatch(ev events.Event) {
 		internal.Log(c.Log(), "session is ready")
 		return
 	}
-	if c.evch == nil {
-		c.Log().Error("event channel is closed, dropping event", slog.String("event", ev.String()))
-		c.mu.Unlock()
-		return
-	}
 
 	if ev == internal.TerminateSessionEvent {
 		c.terminateSession()
 		c.mu.Unlock()
 		return
 	}
+
+	if c.evch == nil {
+		c.Log().Error("event channel is closed, dropping event", slog.String("event", ev.String()))
+		c.mu.Unlock()
+		return
+	}
+
 	c.evch <- ev
 	c.mu.Unlock()
 }
@@ -424,8 +401,7 @@ func (c *Context) AttachAPI(slug string, api api.Provider) error {
 func (c *Context) start() (err error) {
 	c.ready, c.readyCancel = context.WithCancel(context.Background())
 
-	c.terminate, c.terminateStop = signal.NotifyContext(c, os.Interrupt)
-	c.kill, c.killStop = signal.NotifyContext(c, os.Kill)
+	c.sigCtx, c.sigCancel = signal.NotifyContext(c, os.Interrupt, os.Kill)
 
 	if timelocStr := c.Get("app.datetime.location").String(); timelocStr != "" {
 		c.timeloc, err = time.LoadLocation(timelocStr)
@@ -435,7 +411,7 @@ func (c *Context) start() (err error) {
 	} else {
 		c.timeloc = time.Local
 	}
-	internal.LogDepth(c.Log(), 1, "session started")
+	internal.LogDepth(c.logger, 1, "session started")
 	return err
 }
 
@@ -515,10 +491,6 @@ func (c *Config) Init() (*Context, error) {
 	// shared context
 	if c.Context != nil {
 		sess.ctx, sess.ctxCancel = c.Context, c.CancelFunc
-		go func() {
-			<-sess.Done()
-			sess.ctxCancel()
-		}()
 	}
 
 	if c.Logger == nil {
