@@ -29,6 +29,30 @@ const (
 	Descriptor                             // Allow descriptors such as @monthly, @weekly, etc.
 )
 
+func (o ParseOption) String() string {
+	switch o {
+	case Second:
+		return "Second"
+	case SecondOptional:
+		return "SecondOptional"
+	case Minute:
+		return "Minute"
+	case Hour:
+		return "Hour"
+	case Dom:
+		return "Dom"
+	case Month:
+		return "Month"
+	case Dow:
+		return "Dow"
+	case DowOptional:
+		return "DowOptional"
+	case Descriptor:
+		return "Descriptor"
+	}
+	return "Unknown"
+}
+
 var places = []ParseOption{
 	Second,
 	Minute,
@@ -93,14 +117,16 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 	}
 
 	if spec == "-" {
-		return &ScheduleSpec{disabled: true}, nil
+		return &ScheduleSpec{Disabled: true}, nil
 	}
 
-	// Extract timezone if present
 	var loc = time.Local
 	if strings.HasPrefix(spec, "TZ=") || strings.HasPrefix(spec, "CRON_TZ=") {
 		var err error
 		i := strings.Index(spec, " ")
+		if i == -1 {
+			return nil, fmt.Errorf("invalid timezone specification: %s", spec)
+		}
 		eq := strings.Index(spec, "=")
 		if loc, err = time.LoadLocation(spec[eq+1 : i]); err != nil {
 			return nil, fmt.Errorf("provided bad location %s: %v", spec[eq+1:i], err)
@@ -108,7 +134,6 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 		spec = strings.TrimSpace(spec[i:])
 	}
 
-	// Handle named schedules (descriptors), if configured
 	if strings.HasPrefix(spec, "@") {
 		if p.options&Descriptor == 0 {
 			return nil, fmt.Errorf("parser does not accept descriptors: %v", spec)
@@ -116,32 +141,28 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 		return parseDescriptor(spec, loc)
 	}
 
-	// Split on whitespace.
 	fields := strings.Fields(spec)
-
-	// Validate & fill in any omitted or optional fields
-	var err error
-	fields, err = normalizeFields(fields, p.options)
+	fields, err := normalizeFields(fields, p.options)
 	if err != nil {
 		return nil, err
 	}
 
-	field := func(field string, r bounds) uint64 {
+	field := func(field string, r bounds, fieldOpt ParseOption) uint64 {
 		if err != nil {
 			return 0
 		}
 		var bits uint64
-		bits, err = getField(field, r)
+		bits, err = getField(field, r, fieldOpt)
 		return bits
 	}
 
 	var (
-		second     = field(fields[0], seconds)
-		minute     = field(fields[1], minutes)
-		hour       = field(fields[2], hours)
-		dayofmonth = field(fields[3], dom)
-		month      = field(fields[4], months)
-		dayofweek  = field(fields[5], dow)
+		second     = field(fields[0], seconds, Second)
+		minute     = field(fields[1], minutes, Minute)
+		hour       = field(fields[2], hours, Hour)
+		dayofmonth = field(fields[3], dom, Dom)
+		month      = field(fields[4], months, Month)
+		dayofweek  = field(fields[5], dow, Dow)
 	)
 	if err != nil {
 		return nil, err
@@ -164,6 +185,9 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 // As part of performing this function, it also validates that the provided
 // fields are compatible with the configured options.
 func normalizeFields(fields []string, options ParseOption) ([]string, error) {
+	if len(fields) == 1 && strings.HasPrefix(fields[0], "@") && options&Descriptor > 0 {
+		return fields, nil // Defer to parseDescriptor
+	}
 	// Validate optionals & add their field to options
 	optionals := 0
 	if options&SecondOptional > 0 {
@@ -236,14 +260,66 @@ func ParseStandard(standardSpec string) (Schedule, error) {
 	return standardParser.Parse(standardSpec)
 }
 
+var withOptionalSecondParser = NewParser(
+	SecondOptional | Minute | Hour | Dom | Month | Dow | Descriptor,
+)
+
+func OptionalSecondParser() Parser {
+	return withOptionalSecondParser
+}
+
+func ParseWithOptionalSecond(spec string) (Schedule, error) {
+	return withOptionalSecondParser.Parse(spec)
+}
+
+var withOptionalDowParser = NewParser(Minute | Hour | Dom | Month | DowOptional | Descriptor)
+var minimalParser = NewParser(Dom | Month | Dow | Descriptor)
+var minimalWithOptionalDowParser = NewParser(Dom | Month | DowOptional | Descriptor)
+
+// OptionalDowParser returns a parser
+// with Minute, Hour, Dom, Month, optional Dow, and Descriptor support.
+func OptionalDowParser() Parser {
+	return withOptionalDowParser
+}
+
+// MinimalParser returns a parser
+// with Dom, Month, Dow, and Descriptor support (no time fields).
+func MinimalParser() Parser {
+	return minimalParser
+}
+
+// MinimalWithOptionalDowParser returns a parser
+// with Dom, Month, optional Dow, and Descriptor support.
+func MinimalWithOptionalDowParser() Parser {
+	return minimalWithOptionalDowParser
+}
+
+// ParseWithOptionalDow parses a cron spec
+// with optional day of week.
+func ParseWithOptionalDow(spec string) (Schedule, error) {
+	return withOptionalDowParser.Parse(spec)
+}
+
+// ParseMinimal parses a minimal cron spec
+// with Dom, Month, Dow, and Descriptor.
+func ParseMinimal(spec string) (Schedule, error) {
+	return minimalParser.Parse(spec)
+}
+
+// ParseMinimalWithOptionalDow parses a minimal cron spec
+// with Dom, Month, optional Dow, and Descriptor.
+func ParseMinimalWithOptionalDow(spec string) (Schedule, error) {
+	return minimalWithOptionalDowParser.Parse(spec)
+}
+
 // getField returns an Int with the bits set representing all of the times that
 // the field represents or error parsing field value.  A "field" is a comma-separated
 // list of "ranges".
-func getField(field string, r bounds) (uint64, error) {
+func getField(field string, r bounds, fieldOpt ParseOption) (uint64, error) {
 	var bits uint64
 	ranges := strings.FieldsFunc(field, func(r rune) bool { return r == ',' })
 	for _, expr := range ranges {
-		bit, err := getRange(expr, r)
+		bit, err := getRange(expr, r, fieldOpt)
 		if err != nil {
 			return bits, err
 		}
@@ -257,7 +333,7 @@ func getField(field string, r bounds) (uint64, error) {
 //	number | number "-" number [ "/" number ]
 //
 // or error parsing range.
-func getRange(expr string, r bounds) (uint64, error) {
+func getRange(expr string, r bounds, field ParseOption) (uint64, error) {
 	var (
 		start, end, step uint
 		rangeAndStep     = strings.Split(expr, "/")
@@ -271,6 +347,16 @@ func getRange(expr string, r bounds) (uint64, error) {
 		start = r.min
 		end = r.max
 		extra = starBit
+	} else if lowAndHigh[0] == "L" && (field == Dom || field == Dow) {
+		if field == Dom {
+			start = 28 // Possible last days of month
+			end = 31
+			extra = lastDomBit
+		} else { // Dow
+			start = r.min // Use the specified weekday (resolved in Next)
+			end = start
+			extra = lastDowBit
+		}
 	} else {
 		start, err = parseIntOrName(lowAndHigh[0], r.names)
 		if err != nil {
@@ -297,8 +383,6 @@ func getRange(expr string, r bounds) (uint64, error) {
 		if err != nil {
 			return 0, err
 		}
-
-		// Special handling: "N/step" means "N-max/step".
 		if singleDigit {
 			end = r.max
 		}
@@ -373,60 +457,29 @@ func all(r bounds) uint64 {
 func parseDescriptor(descriptor string, loc *time.Location) (Schedule, error) {
 	switch descriptor {
 	case "@yearly", "@annually":
-		return &ScheduleSpec{
-			Second:   1 << seconds.min,
-			Minute:   1 << minutes.min,
-			Hour:     1 << hours.min,
-			Dom:      1 << dom.min,
-			Month:    1 << months.min,
-			Dow:      all(dow),
-			Location: loc,
-		}, nil
-
+		return annual(loc), nil
+	case "@quarterly":
+		return quarterly(loc), nil
 	case "@monthly":
-		return &ScheduleSpec{
-			Second:   1 << seconds.min,
-			Minute:   1 << minutes.min,
-			Hour:     1 << hours.min,
-			Dom:      1 << dom.min,
-			Month:    all(months),
-			Dow:      all(dow),
-			Location: loc,
-		}, nil
-
+		return monthly(loc), nil
+	case "@lastday":
+		return lastday(loc), nil
+	case "@lastweekday":
+		return lastweekday(loc), nil
+	case "@firstweekday":
+		return firstweekday(loc), nil
 	case "@weekly":
-		return &ScheduleSpec{
-			Second:   1 << seconds.min,
-			Minute:   1 << minutes.min,
-			Hour:     1 << hours.min,
-			Dom:      all(dom),
-			Month:    all(months),
-			Dow:      1 << dow.min,
-			Location: loc,
-		}, nil
-
-	case "@daily", "@midnight":
-		return &ScheduleSpec{
-			Second:   1 << seconds.min,
-			Minute:   1 << minutes.min,
-			Hour:     1 << hours.min,
-			Dom:      all(dom),
-			Month:    all(months),
-			Dow:      all(dow),
-			Location: loc,
-		}, nil
-
+		return weekly(loc), nil
+	case "@weekdays":
+		return weekdays(loc), nil
+	case "@weekends":
+		return weekends(loc), nil
+	case "@daily", "@midnight", "@dayly", "@everyday":
+		return midnight(loc), nil
+	case "@noon":
+		return noon(loc), nil
 	case "@hourly":
-		return &ScheduleSpec{
-			Second:   1 << seconds.min,
-			Minute:   1 << minutes.min,
-			Hour:     all(hours),
-			Dom:      all(dom),
-			Month:    all(months),
-			Dow:      all(dow),
-			Location: loc,
-		}, nil
-
+		return hourly(loc), nil
 	}
 
 	const every = "@every "

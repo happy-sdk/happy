@@ -9,7 +9,7 @@ import "time"
 // It does not support jobs more frequent than once a second.
 type ConstantDelaySchedule struct {
 	Delay    time.Duration
-	disabled bool
+	Disabled bool
 }
 
 // Every returns a crontab Schedule that activates once every duration.
@@ -22,7 +22,7 @@ func Every(duration time.Duration) ConstantDelaySchedule {
 	delay := duration - time.Duration(duration.Nanoseconds())%time.Second
 	return ConstantDelaySchedule{
 		Delay:    delay,
-		disabled: delay == 0,
+		Disabled: delay == 0,
 	}
 }
 
@@ -36,6 +36,6 @@ func (recurring ConstantDelaySchedule) Interval() time.Duration {
 	return recurring.Delay
 }
 
-func (recurring ConstantDelaySchedule) Disabled() bool {
-	return recurring.disabled
+func (recurring ConstantDelaySchedule) IsDisabled() bool {
+	return recurring.Disabled
 }

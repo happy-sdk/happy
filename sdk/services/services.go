@@ -326,9 +326,7 @@ func newCron(sess *session.Context) *serviceCron {
 		jobInfos: make(map[cron.EntryID]cronInfo),
 	}
 	c.sess = sess
-	c.lib = cron.New(cron.WithParser(cron.NewParser(
-		cron.SecondOptional | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
-	)))
+	c.lib = cron.New(cron.WithParser(cron.OptionalSecondParser()))
 	return c
 }
 

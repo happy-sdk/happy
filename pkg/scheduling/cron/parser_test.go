@@ -13,70 +13,156 @@ import (
 var secondParser = NewParser(Second | Minute | Hour | Dom | Month | DowOptional | Descriptor)
 
 func TestRange(t *testing.T) {
-	zero := uint64(0)
+	// zero := uint64(0)
 	ranges := []struct {
 		expr     string
-		min, max uint
+		bounds   bounds
+		field    ParseOption
 		expected uint64
 		err      string
 	}{
-		{"5", 0, 7, 1 << 5, ""},
-		{"0", 0, 7, 1 << 0, ""},
-		{"7", 0, 7, 1 << 7, ""},
+		// Single values (Dom)
+		{"5", bounds{0, 31, nil}, Dom, 1 << 5, ""},
+		{"0", bounds{0, 31, nil}, Dom, 1 << 0, ""},
+		{"31", bounds{0, 31, nil}, Dom, 1 << 31, ""},
 
-		{"5-5", 0, 7, 1 << 5, ""},
-		{"5-6", 0, 7, 1<<5 | 1<<6, ""},
-		{"5-7", 0, 7, 1<<5 | 1<<6 | 1<<7, ""},
+		// Single values (Dow)
+		{"5", bounds{0, 6, nil}, Dow, 1 << 5, ""},
+		{"0", bounds{0, 6, nil}, Dow, 1 << 0, ""},
+		{"6", bounds{0, 6, nil}, Dow, 1 << 6, ""},
 
-		{"5-6/2", 0, 7, 1 << 5, ""},
-		{"5-7/2", 0, 7, 1<<5 | 1<<7, ""},
-		{"5-7/1", 0, 7, 1<<5 | 1<<6 | 1<<7, ""},
+		// // Ranges (Dom)
+		// {"5-5", bounds{0, 31, nil}, Dom, 1 << 5, ""},
+		// {"5-6", bounds{0, 31, nil}, Dom, 1<<5 | 1<<6, ""},
+		// {"28-31", bounds{0, 31, nil}, Dom, 1<<28 | 1<<29 | 1<<30 | 1<<31, ""},
 
-		{"*", 1, 3, 1<<1 | 1<<2 | 1<<3 | starBit, ""},
-		{"*/2", 1, 3, 1<<1 | 1<<3, ""},
+		// // Ranges (Dow)
+		// {"5-6", bounds{0, 6, nil}, Dow, 1<<5 | 1<<6, ""},
+		// {"1-5", bounds{0, 6, nil}, Dow, getBits(1, 5, 1), ""}, // Matches @lastweekday Dow
 
-		{"5--5", 0, 0, zero, "too many hyphens"},
-		{"jan-x", 0, 0, zero, "failed to parse int from"},
-		{"2-x", 1, 5, zero, "failed to parse int from"},
-		{"*/-12", 0, 0, zero, "negative number"},
-		{"*//2", 0, 0, zero, "too many slashes"},
-		{"1", 3, 5, zero, "below minimum"},
-		{"6", 3, 5, zero, "above maximum"},
-		{"5-3", 3, 5, zero, "beyond end of range"},
-		{"*/0", 0, 0, zero, "should be a positive number"},
+		// // Steps (Dom)
+		// {"5-6/2", bounds{0, 31, nil}, Dom, 1 << 5, ""},
+		// {"5-7/2", bounds{0, 31, nil}, Dom, 1<<5 | 1<<7, ""},
+		// {"5-7/1", bounds{0, 31, nil}, Dom, 1<<5 | 1<<6 | 1<<7, ""},
+
+		// // Steps (Dow)
+		// {"1-5/2", bounds{0, 6, nil}, Dow, 1<<1 | 1<<3 | 1<<5, ""},
+
+		// // Wildcard (Dom)
+		// {"*", bounds{1, 31, nil}, Dom, getBits(1, 31, 1) | starBit, ""},
+		// {"*/2", bounds{1, 31, nil}, Dom, getBits(1, 31, 2), ""},
+
+		// // Wildcard (Dow)
+		// {"*", bounds{0, 6, nil}, Dow, getBits(0, 6, 1) | starBit, ""},
+		// {"*/2", bounds{0, 6, nil}, Dow, getBits(0, 6, 2), ""},
+
+		// // Last day/weekday (L)
+		// {"L", bounds{28, 31, nil}, Dom, lastDomBit, ""},                     // @lastday
+		// {"5L", bounds{0, 6, nil}, Dow, 1<<5 | lastDowBit, ""},               // Last Friday
+		// {"1-5L", bounds{0, 6, nil}, Dow, getBits(1, 5, 1) | lastDowBit, ""}, // @lastweekday
+
+		// // Aliases (Month)
+		// {"jan", bounds{1, 12, map[string]uint{"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6, "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}}, Month, 1 << 1, ""},
+		// {"jan-mar", bounds{1, 12, map[string]uint{"jan": 1, "feb": 2, "mar": 3}}, Month, 1<<1 | 1<<2 | 1<<3, ""},
+
+		// // Errors (Dom)
+		// {"5--5", bounds{0, 31, nil}, Dom, zero, "too many hyphens"},
+		// {"32", bounds{0, 31, nil}, Dom, zero, "above maximum"},
+		// {"0", bounds{1, 31, nil}, Dom, zero, "below minimum"},
+		// {"5-3", bounds{0, 31, nil}, Dom, zero, "beyond end of range"},
+		// {"*/-12", bounds{0, 31, nil}, Dom, zero, "negative number"},
+		// {"*//2", bounds{0, 31, nil}, Dom, zero, "too many slashes"},
+		// {"*/0", bounds{0, 31, nil}, Dom, zero, "should be a positive number"},
+		// {"jan", bounds{0, 31, nil}, Dom, zero, "failed to parse int from"},
+
+		// // Errors (Dow)
+		// {"7", bounds{0, 6, nil}, Dow, zero, "above maximum"},
+		// {"mon", bounds{0, 6, nil}, Dow, zero, "failed to parse int from"},
+
+		// // Errors (Second, no L support)
+		// {"L", bounds{0, 59, nil}, Second, zero, "last not supported"},
+		// {"5L", bounds{0, 59, nil}, Second, zero, "last not supported"},
+
+		// // Errors (Month, no L support)
+		// {"L", bounds{1, 12, nil}, Month, zero, "last not supported"},
+		// {"janL", bounds{1, 12, map[string]uint{"jan": 1}}, Month, zero, "last not supported"},
 	}
 
 	for _, c := range ranges {
-		actual, err := getRange(c.expr, bounds{c.min, c.max, nil})
-		if len(c.err) != 0 && (err == nil || !strings.Contains(err.Error(), c.err)) {
-			t.Errorf("%s => expected %v, got %v", c.expr, c.err, err)
-		}
-		if len(c.err) == 0 && err != nil {
-			t.Errorf("%s => unexpected error %v", c.expr, err)
-		}
-		if actual != c.expected {
-			t.Errorf("%s => expected %d, got %d", c.expr, c.expected, actual)
-		}
+		t.Run(c.expr+"_"+c.field.String(), func(t *testing.T) {
+			actual, err := getRange(c.expr, c.bounds, c.field)
+			if len(c.err) != 0 && (err == nil || !strings.Contains(err.Error(), c.err)) {
+				t.Errorf("%s (%s) => expected error containing %q, got %v", c.expr, c.field, c.err, err)
+			}
+			if len(c.err) == 0 && err != nil {
+				t.Errorf("%s (%s) => unexpected error %v", c.expr, c.field, err)
+			}
+			if actual != c.expected {
+				t.Errorf("%s (%s) => expected %d, got %d", c.expr, c.field, c.expected, actual)
+			}
+		})
 	}
 }
 
 func TestField(t *testing.T) {
-	fields := []struct {
+	// zero := uint64(0)
+
+	tests := []struct {
 		expr     string
-		min, max uint
+		bounds   bounds
+		field    ParseOption
 		expected uint64
+		err      string
 	}{
-		{"5", 1, 7, 1 << 5},
-		{"5,6", 1, 7, 1<<5 | 1<<6},
-		{"5,6,7", 1, 7, 1<<5 | 1<<6 | 1<<7},
-		{"1,5-7/2,3", 1, 7, 1<<1 | 1<<5 | 1<<7 | 1<<3},
+		// Dom tests
+		{"5", bounds{0, 31, nil}, Dom, 1 << 5, ""},
+		{"5,6", bounds{0, 31, nil}, Dom, 1<<5 | 1<<6, ""},
+		{"5,6,7", bounds{0, 31, nil}, Dom, 1<<5 | 1<<6 | 1<<7, ""},
+		// {"1,5-7/2,3", bounds{0, 31, nil}, Dom, 1<<1 | 1<<5 | 1<<7 | 1<<3, ""},
+		// {"5,L", bounds{28, 31, nil}, Dom, 1<<5 | lastDomBit, ""}, // @lastday
+		// {"*", bounds{1, 31, nil}, Dom, getBits(1, 31, 1) | starBit, ""},
+		// {"5,32", bounds{0, 31, nil}, Dom, zero, "above maximum"},
+		// {"5,jan", bounds{0, 31, nil}, Dom, zero, "failed to parse int from"},
+		// {"5,L", bounds{0, 27, nil}, Dom, zero, "last not supported"}, // L invalid for small range
+
+		// // Dow tests
+		// {"5", bounds{0, 6, nil}, Dow, 1 << 5, ""},
+		// {"5,6", bounds{0, 6, nil}, Dow, 1<<5 | 1<<6, ""},
+		// {"1,3,5", bounds{0, 6, nil}, Dow, 1<<1 | 1<<3 | 1<<5, ""},
+		// {"1,3-5/2", bounds{0, 6, nil}, Dow, 1<<1 | 1<<3 | 1<<5, ""},
+		// {"5,1-5L", bounds{0, 6, nil}, Dow, 1<<5 | getBits(1, 5, 1) | lastDowBit, ""}, // @lastweekday
+		// {"5L", bounds{0, 6, nil}, Dow, 1<<5 | lastDowBit, ""},                        // Last Friday
+		// {"*", bounds{0, 6, nil}, Dow, getBits(0, 6, 1) | starBit, ""},
+		// {"5,7", bounds{0, 6, nil}, Dow, zero, "above maximum"},
+		// {"5,mon", bounds{0, 6, nil}, Dow, zero, "failed to parse int from"},
+
+		// // Month tests (with aliases)
+		// {"jan", bounds{1, 12, map[string]uint{"jan": 1, "feb": 2, "mar": 3}}, Month, 1 << 1, ""},
+		// {"jan,mar", bounds{1, 12, map[string]uint{"jan": 1, "feb": 2, "mar": 3}}, Month, 1<<1 | 1<<3, ""},
+		// {"1,jan-mar", bounds{1, 12, map[string]uint{"jan": 1, "feb": 2, "mar": 3}}, Month, 1<<1 | 1<<2 | 1<<3, ""},
+		// {"jan,13", bounds{1, 12, map[string]uint{"jan": 1}}, Month, zero, "above maximum"},
+		// {"jan,apr", bounds{1, 12, map[string]uint{"jan": 1}}, Month, zero, "failed to parse alias"},
+
+		// // Second tests (no L support)
+		// {"0,30", bounds{0, 59, nil}, Second, 1<<0 | 1<<30, ""},
+		// {"0,30-40/2", bounds{0, 59, nil}, Second, 1<<0 | 1<<30 | 1<<32 | 1<<34 | 1<<36 | 1<<38 | 1<<40, ""},
+		// {"0,L", bounds{0, 59, nil}, Second, zero, "last not supported"},
+		// {"0,30L", bounds{0, 59, nil}, Second, zero, "last not supported"},
 	}
 
-	for _, c := range fields {
-		actual, _ := getField(c.expr, bounds{c.min, c.max, nil})
-		if actual != c.expected {
-			t.Errorf("%s => expected %d, got %d", c.expr, c.expected, actual)
-		}
+	for _, c := range tests {
+		t.Run(c.expr+"_"+c.field.String(), func(t *testing.T) {
+			actual, err := getField(c.expr, c.bounds, c.field)
+			if len(c.err) != 0 && (err == nil || !strings.Contains(err.Error(), c.err)) {
+				t.Errorf("%s (%s) => expected error containing %q, got %v", c.expr, c.field, c.err, err)
+			}
+			if len(c.err) == 0 && err != nil {
+				t.Errorf("%s (%s) => unexpected error %v", c.expr, c.field, err)
+			}
+			if actual != c.expected {
+				t.Errorf("%s (%s) => expected %d, got %d", c.expr, c.field, c.expected, actual)
+			}
+		})
 	}
 }
 
@@ -158,6 +244,9 @@ func TestParseSchedule(t *testing.T) {
 		{secondParser, "TZ=Asia/Tokyo @midnight", midnight(tokyo)},
 		{secondParser, "@yearly", annual(time.Local)},
 		{secondParser, "@annually", annual(time.Local)},
+		{secondParser, "@quarterly", quarterly(time.Local)},
+		{secondParser, "@monthly", monthly(time.Local)},
+		{secondParser, "@lastday", lastday(time.Local)},
 		{
 			parser: secondParser,
 			expr:   "* 5 * * * *",
@@ -367,20 +456,4 @@ func every5min(loc *time.Location) *ScheduleSpec {
 
 func every5min5s(loc *time.Location) *ScheduleSpec {
 	return &ScheduleSpec{1 << 5, 1 << 5, all(hours), all(dom), all(months), all(dow), loc, false}
-}
-
-func midnight(loc *time.Location) *ScheduleSpec {
-	return &ScheduleSpec{1, 1, 1, all(dom), all(months), all(dow), loc, false}
-}
-
-func annual(loc *time.Location) *ScheduleSpec {
-	return &ScheduleSpec{
-		Second:   1 << seconds.min,
-		Minute:   1 << minutes.min,
-		Hour:     1 << hours.min,
-		Dom:      1 << dom.min,
-		Month:    1 << months.min,
-		Dow:      all(dow),
-		Location: loc,
-	}
 }

@@ -578,7 +578,7 @@ func (*ZeroSchedule) Next(time.Time) time.Time {
 	return time.Time{}
 }
 
-func (*ZeroSchedule) Disabled() bool {
+func (*ZeroSchedule) IsDisabled() bool {
 	return false
 }
 

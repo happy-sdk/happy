@@ -48,7 +48,7 @@ type Schedule interface {
 	// Next is invoked initially, and then each time the job is run.
 	Next(time.Time) time.Time
 	Interval() time.Duration
-	Disabled() bool
+	IsDisabled() bool
 }
 
 // EntryID identifies an entry within a Cron instance
@@ -164,7 +164,7 @@ func (c *Cron) AddJob(spec string, cmd Job) (EntryID, error) {
 // Schedule adds a Job to the Cron to be run on the given schedule.
 // The job is wrapped with the configured Chain.
 func (c *Cron) Schedule(schedule Schedule, cmd Job) EntryID {
-	if schedule.Disabled() {
+	if schedule.IsDisabled() {
 		return -1
 	}
 	c.runningMu.Lock()

@@ -13,7 +13,7 @@ type ScheduleSpec struct {
 	// Override location for this schedule.
 	Location *time.Location
 
-	disabled bool
+	Disabled bool
 }
 
 // bounds provides a range of acceptable values (plus a map of name to value).
@@ -54,29 +54,19 @@ var (
 )
 
 const (
-	// Set the top bit if a star was included in the expression.
-	starBit = 1 << 63
+	lastDomBit = 1 << 61
+	lastDowBit = 1 << 62
+	starBit    = 1 << 63
 )
 
 // Next returns the next time this schedule is activated, greater than the given
 // time.  If no time can be found to satisfy the schedule, return the zero time.
 func (s *ScheduleSpec) Next(t time.Time) time.Time {
-	if s.disabled {
+	if s.Disabled {
 		return time.Time{}
 	}
-	// General approach
-	//
-	// For Month, Day, Hour, Minute, Second:
-	// Check if the time value matches.  If yes, continue to the next field.
-	// If the field doesn't match the schedule, then increment the field until it matches.
-	// While incrementing the field, a wrap-around brings it back to the beginning
-	// of the field list (since it is necessary to re-verify previous field
-	// values)
 
-	// Convert the given time into the schedule's timezone, if one is specified.
-	// Save the original timezone so we can convert back after we find a time.
-	// Note that schedules without a time zone specified (time.Local) are treated
-	// as local to the time provided.
+	// Convert to schedule's timezone, preserving original timezone for return.
 	origLocation := t.Location()
 	loc := s.Location
 	if loc == time.Local {
@@ -86,95 +76,330 @@ func (s *ScheduleSpec) Next(t time.Time) time.Time {
 		t = t.In(s.Location)
 	}
 
-	// Start at the earliest possible time (the upcoming second).
+	// Start at the next second.
 	t = t.Add(1*time.Second - time.Duration(t.Nanosecond())*time.Nanosecond)
-
-	// This flag indicates whether a field has been incremented.
-	added := false
 
 	// If no time is found within five years, return zero.
 	yearLimit := t.Year() + 5
+
+	// Track if a field has been incremented.
+	added := false
 
 WRAP:
 	if t.Year() > yearLimit {
 		return time.Time{}
 	}
 
+	// Handle last-day-of-month case.
+	if s.Dom&lastDomBit != 0 {
+		year, month, day := t.Date()
+		// Calculate last day of the current month.
+		lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+		// If current day is past the last day or after midnight on the last day, move to next month's last day.
+		if day > lastDay || (day == lastDay && (t.Hour() > 0 || t.Minute() > 0 || t.Second() > 0)) {
+			t = time.Date(year, month+1, 1, 0, 0, 0, 0, loc)
+			month = t.Month()
+			lastDay = time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+			added = true
+		}
+		// Set to midnight on the last day.
+		t = time.Date(year, month, lastDay, 0, 0, 0, 0, loc)
+	}
+
+	// Handle last-weekday case.
+	if s.Dow&lastDowBit != 0 {
+		year, month, day := t.Date()
+		// Calculate last day of the current month.
+		lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+		// Find the last workday (Monday-Friday) or specific weekday in the month.
+		dowBits := s.Dow &^ lastDowBit            // Clear lastDowBit
+		isWorkdays := dowBits == getBits(1, 5, 1) // Check if Monday-Friday
+		lastDowDay := lastDay
+		for {
+			d := time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+			weekday := uint(d.Weekday())
+			if isWorkdays {
+				if weekday >= 1 && weekday <= 5 { // Monday to Friday
+					break
+				}
+			} else {
+				// Specific weekday (e.g., 5L for last Friday)
+				for i := uint(0); i <= 6; i++ {
+					if dowBits&(1<<i) != 0 && weekday == i {
+						goto found
+					}
+				}
+			}
+			lastDowDay--
+			continue
+		found:
+			break
+		}
+		// If current day is past the last Dow or after midnight on that day, move to next month.
+		if day > lastDowDay || (day == lastDowDay && (t.Hour() > 0 || t.Minute() > 0 || t.Second() > 0)) {
+			t = time.Date(year, month+1, 1, 0, 0, 0, 0, loc)
+			month = t.Month()
+			lastDay = time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+			lastDowDay = lastDay
+			for {
+				d := time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+				weekday := uint(d.Weekday())
+				if isWorkdays {
+					if weekday >= 1 && weekday <= 5 {
+						break
+					}
+				} else {
+					for i := uint(0); i <= 6; i++ {
+						if dowBits&(1<<i) != 0 && weekday == i {
+							goto foundNext
+						}
+					}
+				}
+				lastDowDay--
+				continue
+			foundNext:
+				break
+			}
+			added = true
+		}
+		// Set to midnight on the last Dow.
+		t = time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+	}
+
+	// Handle first-weekday case (e.g., @firstweekday).
+	isFirstWeekday := s.Dom == getBits(1, 7, 1) && s.Dow == (1<<1) // Monday in days 1–7
+	if isFirstWeekday {
+		year, month, day := t.Date()
+		// Find the first Monday in the current month.
+		firstDowDay := findFirstMonday(year, month, loc)
+		// If current day is past the first Monday or after midnight on that day, move to next month.
+		if day > firstDowDay || (day == firstDowDay && (t.Hour() > 0 || t.Minute() > 0 || t.Second() > 0)) {
+			t = time.Date(year, month+1, 1, 0, 0, 0, 0, loc)
+			month = t.Month()
+			firstDowDay = findFirstMonday(year, month, loc)
+			added = true
+		}
+		// Set to midnight on the first Monday.
+		t = time.Date(year, month, firstDowDay, 0, 0, 0, 0, loc)
+	}
+
 	// Find the first applicable month.
-	// If it's this month, then do nothing.
 	for 1<<uint(t.Month())&s.Month == 0 {
-		// If we have to add a month, reset the other parts to 0.
 		if !added {
 			added = true
-			// Otherwise, set the date at the beginning (since the current time is irrelevant).
 			t = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, loc)
 		}
 		t = t.AddDate(0, 1, 0)
-
-		// Wrapped around.
 		if t.Month() == time.January {
+			if s.Dom&lastDomBit != 0 {
+				// Recalculate last day for new month.
+				year, month, _ := t.Date()
+				lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+				t = time.Date(year, month, lastDay, 0, 0, 0, 0, loc)
+			} else if s.Dow&lastDowBit != 0 {
+				// Recalculate last Dow for new month.
+				year, month, _ := t.Date()
+				lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+				dowBits := s.Dow &^ lastDowBit
+				isWorkdays := dowBits == getBits(1, 5, 1)
+				lastDowDay := lastDay
+				for {
+					d := time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+					weekday := uint(d.Weekday())
+					if isWorkdays {
+						if weekday >= 1 && weekday <= 5 {
+							break
+						}
+					} else {
+						for i := uint(0); i <= 6; i++ {
+							if dowBits&(1<<i) != 0 && weekday == i {
+								goto foundWrap
+							}
+						}
+					}
+					lastDowDay--
+					continue
+				foundWrap:
+					break
+				}
+				t = time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+			} else if isFirstWeekday {
+				// Recalculate first Monday for new month.
+				year, month, _ := t.Date()
+				firstDowDay := findFirstMonday(year, month, loc)
+				t = time.Date(year, month, firstDowDay, 0, 0, 0, 0, loc)
+			}
 			goto WRAP
 		}
 	}
 
-	// Now get a day in that month.
-	//
-	// NOTE: This causes issues for daylight savings regimes where midnight does
-	// not exist.  For example: Sao Paulo has DST that transforms midnight on
-	// 11/3 into 1am. Handle that by noticing when the Hour ends up != 0.
-	for !dayMatches(s, t) {
-		if !added {
-			added = true
-			t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, loc)
-		}
-		t = t.AddDate(0, 0, 1)
-		// Notice if the hour is no longer midnight due to DST.
-		// Add an hour if it's 23, subtract an hour if it's 1.
-		if t.Hour() != 0 {
-			if t.Hour() > 12 {
-				t = t.Add(time.Duration(24-t.Hour()) * time.Hour)
-			} else {
-				t = t.Add(time.Duration(-t.Hour()) * time.Hour)
+	// Handle non-last-day/non-last-Dow/non-first-weekday day matching.
+	if s.Dom&lastDomBit == 0 && s.Dow&lastDowBit == 0 && !isFirstWeekday {
+		for !dayMatches(s, t) {
+			if !added {
+				added = true
+				t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, loc)
+			}
+			t = time.Date(t.Year(), t.Month(), t.Day()+1, 0, 0, 0, 0, loc)
+			if t.Hour() != 0 { // Handle DST transitions.
+				if t.Hour() > 12 {
+					t = t.Add(time.Duration(24-t.Hour()) * time.Hour)
+				} else {
+					t = t.Add(time.Duration(-t.Hour()) * time.Hour)
+				}
+			}
+			if t.Day() == 1 {
+				goto WRAP
 			}
 		}
-
-		if t.Day() == 1 {
-			goto WRAP
-		}
 	}
 
+	// Find matching hour.
 	for 1<<uint(t.Hour())&s.Hour == 0 {
 		if !added {
 			added = true
 			t = time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, loc)
 		}
 		t = t.Add(1 * time.Hour)
-
 		if t.Hour() == 0 {
+			if s.Dom&lastDomBit != 0 {
+				// Recalculate last day for next day.
+				year, month, _ := t.Date()
+				lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+				t = time.Date(year, month, lastDay, 0, 0, 0, 0, loc)
+			} else if s.Dow&lastDowBit != 0 {
+				// Recalculate last Dow for new month.
+				year, month, _ := t.Date()
+				lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+				dowBits := s.Dow &^ lastDowBit
+				isWorkdays := dowBits == getBits(1, 5, 1)
+				lastDowDay := lastDay
+				for {
+					d := time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+					weekday := uint(d.Weekday())
+					if isWorkdays {
+						if weekday >= 1 && weekday <= 5 {
+							break
+						}
+					} else {
+						for i := uint(0); i <= 6; i++ {
+							if dowBits&(1<<i) != 0 && weekday == i {
+								goto foundHour
+							}
+						}
+					}
+					lastDowDay--
+					continue
+				foundHour:
+					break
+				}
+				t = time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+			} else if isFirstWeekday {
+				// Recalculate first Monday for new month.
+				year, month, _ := t.Date()
+				firstDowDay := findFirstMonday(year, month, loc)
+				t = time.Date(year, month, firstDowDay, 0, 0, 0, 0, loc)
+			}
 			goto WRAP
 		}
 	}
 
+	// Find matching minute.
 	for 1<<uint(t.Minute())&s.Minute == 0 {
 		if !added {
 			added = true
 			t = t.Truncate(time.Minute)
 		}
 		t = t.Add(1 * time.Minute)
-
 		if t.Minute() == 0 {
+			if s.Dom&lastDomBit != 0 {
+				// Recalculate last day for next day.
+				year, month, _ := t.Date()
+				lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+				t = time.Date(year, month, lastDay, 0, 0, 0, 0, loc)
+			} else if s.Dow&lastDowBit != 0 {
+				// Recalculate last Dow for new month.
+				year, month, _ := t.Date()
+				lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+				dowBits := s.Dow &^ lastDowBit
+				isWorkdays := dowBits == getBits(1, 5, 1)
+				lastDowDay := lastDay
+				for {
+					d := time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+					weekday := uint(d.Weekday())
+					if isWorkdays {
+						if weekday >= 1 && weekday <= 5 {
+							break
+						}
+					} else {
+						for i := uint(0); i <= 6; i++ {
+							if dowBits&(1<<i) != 0 && weekday == i {
+								goto foundMinute
+							}
+						}
+					}
+					lastDowDay--
+					continue
+				foundMinute:
+					break
+				}
+				t = time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+			} else if isFirstWeekday {
+				// Recalculate first Monday for new month.
+				year, month, _ := t.Date()
+				firstDowDay := findFirstMonday(year, month, loc)
+				t = time.Date(year, month, firstDowDay, 0, 0, 0, 0, loc)
+			}
 			goto WRAP
 		}
 	}
 
+	// Find matching second.
 	for 1<<uint(t.Second())&s.Second == 0 {
 		if !added {
 			added = true
 			t = t.Truncate(time.Second)
 		}
 		t = t.Add(1 * time.Second)
-
 		if t.Second() == 0 {
+			if s.Dom&lastDomBit != 0 {
+				// Recalculate last day for new month.
+				year, month, _ := t.Date()
+				lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+				t = time.Date(year, month, lastDay, 0, 0, 0, 0, loc)
+			} else if s.Dow&lastDowBit != 0 {
+				// Recalculate last Dow for new month.
+				year, month, _ := t.Date()
+				lastDay := time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
+				dowBits := s.Dow &^ lastDowBit
+				isWorkdays := dowBits == getBits(1, 5, 1)
+				lastDowDay := lastDay
+				for {
+					d := time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+					weekday := uint(d.Weekday())
+					if isWorkdays {
+						if weekday >= 1 && weekday <= 5 {
+							break
+						}
+					} else {
+						for i := uint(0); i <= 6; i++ {
+							if dowBits&(1<<i) != 0 && weekday == i {
+								goto foundSecond
+							}
+						}
+					}
+					lastDowDay--
+					continue
+				foundSecond:
+					break
+				}
+				t = time.Date(year, month, lastDowDay, 0, 0, 0, 0, loc)
+			} else if isFirstWeekday {
+				// Recalculate first Monday for new month.
+				year, month, _ := t.Date()
+				firstDowDay := findFirstMonday(year, month, loc)
+				t = time.Date(year, month, firstDowDay, 0, 0, 0, 0, loc)
+			}
 			goto WRAP
 		}
 	}
@@ -186,6 +411,9 @@ WRAP:
 // If the schedule is irregular (e.g., specific days of the month or weekdays), it returns the
 // smallest possible interval based on the finest granularity specified.
 func (s *ScheduleSpec) Interval() time.Duration {
+	if s.Disabled {
+		return -1
+	}
 	// Helper function to count set bits in a uint64
 	countSetBits := func(n uint64) int {
 		count := 0
@@ -230,17 +458,35 @@ func (s *ScheduleSpec) Interval() time.Duration {
 	return time.Second
 }
 
-func (s *ScheduleSpec) Disabled() bool {
-	return s.disabled
+func (s *ScheduleSpec) IsDisabled() bool {
+	return s.Disabled
+}
+
+func findFirstMonday(year int, month time.Month, loc *time.Location) int {
+	firstDowDay := 1
+	for {
+		d := time.Date(year, month, firstDowDay, 0, 0, 0, 0, loc)
+		if d.Weekday() == time.Monday {
+			return firstDowDay
+		}
+		firstDowDay++
+		if firstDowDay > 7 {
+			break // Should not happen with valid Dom
+		}
+	}
+	return firstDowDay
 }
 
 // dayMatches returns true if the schedule's day-of-week and day-of-month
 // restrictions are satisfied by the given time.
+//
+//	func dayMatches(s *ScheduleSpec, t time.Time) bool {
+//		return (s.Dom&(1<<uint(t.Day())) != 0 || s.Dom&starBit != 0) &&
+//			(s.Dow&(1<<uint(t.Weekday())) != 0 || s.Dow&starBit != 0)
+//	}
 func dayMatches(s *ScheduleSpec, t time.Time) bool {
-	var (
-		domMatch = 1<<uint(t.Day())&s.Dom > 0
-		dowMatch = 1<<uint(t.Weekday())&s.Dow > 0
-	)
+	domMatch := 1<<uint(t.Day())&s.Dom > 0
+	dowMatch := 1<<uint(t.Weekday())&s.Dow > 0
 	if s.Dom&starBit > 0 || s.Dow&starBit > 0 {
 		return domMatch && dowMatch
 	}
@@ -264,4 +510,148 @@ func (e *Expression) UnmarshalSetting(data []byte) error {
 // String returns Expression string
 func (e Expression) String() string {
 	return string(e)
+}
+
+func annual(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << hours.min,
+		Dom:      1 << dom.min,
+		Month:    1 << months.min,
+		Dow:      all(dow),
+		Location: loc,
+	}
+}
+
+func quarterly(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << hours.min,
+		Dom:      1 << dom.min,
+		Month:    (1 << 1) | (1 << 4) | (1 << 7) | (1 << 10), // Jan, Apr, Jul, Oct
+		Dow:      all(dow),
+		Location: loc,
+	}
+}
+
+func monthly(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << hours.min,
+		Dom:      1 << dom.min,
+		Month:    all(months),
+		Dow:      all(dow),
+		Location: loc,
+	}
+}
+
+func lastday(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << hours.min,
+		Dom:      getBits(28, 31, 1) | lastDomBit, // Possible last days, flagged as 'L'
+		Month:    all(months),
+		Dow:      all(dow),
+		Location: loc,
+	}
+}
+
+func lastweekday(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << hours.min,
+		Dom:      all(dom),
+		Month:    all(months),
+		Dow:      (1 << 1) | lastDowBit, // Last Monday
+		Location: loc,
+	}
+}
+
+func firstweekday(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << hours.min,
+		Dom:      getBits(1, 7, 1), // First 7 days of the month
+		Month:    all(months),
+		Dow:      1 << 1, // Monday
+		Location: loc,
+	}
+}
+
+func weekly(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << hours.min,
+		Dom:      all(dom),
+		Month:    all(months),
+		Dow:      1 << dow.min,
+		Location: loc,
+	}
+}
+
+func weekdays(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min, // 0 seconds
+		Minute:   1 << minutes.min, // 0 minutes
+		Hour:     1 << hours.min,   // 0 hours (midnight)
+		Dom:      all(dom),         // Any day of month
+		Month:    all(months),      // Any month
+		Dow:      getBits(1, 5, 1), // Monday (1) to Friday (5)
+		Location: loc,
+	}
+}
+
+func weekends(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,    // 0 seconds
+		Minute:   1 << minutes.min,    // 0 minutes
+		Hour:     1 << hours.min,      // 0 hours (midnight)
+		Dom:      all(dom),            // Any day of month
+		Month:    all(months),         // Any month
+		Dow:      (1 << 0) | (1 << 6), // Sunday (0) and Saturday (6)
+		Location: loc,
+	}
+}
+
+func midnight(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << hours.min,
+		Dom:      all(dom),
+		Month:    all(months),
+		Dow:      all(dow),
+		Location: loc,
+	}
+}
+
+func noon(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     1 << 12, // 12:00
+		Dom:      all(dom),
+		Month:    all(months),
+		Dow:      all(dow),
+		Location: loc,
+	}
+}
+
+func hourly(loc *time.Location) *ScheduleSpec {
+	return &ScheduleSpec{
+		Second:   1 << seconds.min,
+		Minute:   1 << minutes.min,
+		Hour:     all(hours),
+		Dom:      all(dom),
+		Month:    all(months),
+		Dow:      all(dow),
+		Location: loc,
+	}
 }
