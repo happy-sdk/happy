@@ -464,7 +464,7 @@ func (init *Initializer) initBasePaths() error {
 	}
 
 	// Add an exit function to delete tmp dir
-	init.rt.WithExitFunc(func(sess *session.Context, code int) error {
+	init.rt.WithExitAction(func(sess *session.Context, code int) error {
 		if tempDir == "" {
 			return fmt.Errorf("%w: missing temp dir path", Error)
 		}

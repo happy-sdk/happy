@@ -309,6 +309,26 @@ func (m *Main) WithSettings(s settings.Settings) *Main {
 	return m
 }
 
+// WithExitAction adds an exit action to run after graceful shutdown,
+// before os.Exit. The action receives the session context and exit code.
+// Use the session cautiously, as it may be disposing. If any exit action
+// (including built-in ones) returns an error, the exit code is set to 1.
+//
+// Example:
+//
+//	app.WithExitAction(func(sess *session.Context, code int) error {
+//	    log.Println("Cleaning up")
+//	    return nil
+//	})
+func (m *Main) WithExitAction(a action.OnExit) *Main {
+	if m.canConfigure("setting app settings") {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		m.rt.WithExitAction(a)
+	}
+	return m
+}
+
 func (m *Main) Setup(setup action.Action) *Main {
 	if m.canConfigure("set setup action") {
 		m.mu.Lock()

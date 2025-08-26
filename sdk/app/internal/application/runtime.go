@@ -46,8 +46,8 @@ type Runtime struct {
 	inst      *instance.Instance
 	brand     *branding.Brand
 
-	exitFuncs []func(sess *session.Context, code int) error
-	exitCh    chan ShutDown
+	exitActions []action.OnExit
+	exitCh      chan ShutDown
 
 	setupAction  action.Action
 	beforeAlways action.WithArgs
@@ -77,8 +77,8 @@ func (rt *Runtime) WidthBeforeAlways(a action.WithArgs) error {
 	return nil
 }
 
-func (rt *Runtime) WithExitFunc(exitFunc func(sess *session.Context, code int) error) {
-	rt.exitFuncs = append(rt.exitFuncs, exitFunc)
+func (rt *Runtime) WithExitAction(onExit action.OnExit) {
+	rt.exitActions = append(rt.exitActions, onExit)
 }
 
 func (rt *Runtime) SetLogger(l logging.Logger) {
@@ -161,7 +161,7 @@ func (rt *Runtime) boot() (err error) {
 	if rt.inst, err = instance.New(rt.sess); err != nil {
 		return fmt.Errorf("failed to boot instance: %w", err)
 	}
-	rt.exitFuncs = append(rt.exitFuncs, func(sess *session.Context, code int) error {
+	rt.exitActions = append(rt.exitActions, func(sess *session.Context, code int) error {
 		return rt.inst.Dispose()
 	})
 
@@ -527,24 +527,26 @@ func (rt *Runtime) Exit(code int) {
 		}
 	}
 
-	for _, fn := range rt.exitFuncs {
-		if err := fn(rt.sess, code); err != nil {
-			rt.log(0, logging.LevelError, "exit func", slog.String("err", err.Error()))
-			code = 1
-		}
-	}
-
 	if rt.sess != nil {
+		for _, fn := range rt.exitActions {
+			if err := fn(rt.sess, code); err != nil {
+				rt.log(0, logging.LevelError, "exit func", slog.String("err", err.Error()))
+				code = 1
+			}
+		}
+
 		if rt.sess.Get("app.stats.enabled").Bool() && rt.sess.Log().Level() <= logging.LevelDebug {
 			if rt.engine != nil {
 				rt.sess.Log().Println(rt.engine.Stats().State().String())
 			}
 		}
+
 		rt.sess.Destroy(nil)
 		if err := rt.sess.Err(); err != nil && !errors.Is(err, session.ErrExitSuccess) {
 			rt.log(0, logging.LevelError, "session", slog.String("err", err.Error()))
 			code = 1
 		}
+
 		// Final session cleanup, close channels
 		rt.sess.Dispatch(internal.TerminateSessionEvent)
 	}

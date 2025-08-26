@@ -93,7 +93,7 @@ func (c *Context) Wait(ctrlc bool) <-chan struct{} {
 	c.mu.Unlock()
 
 	c.mu.RLock()
-	if c.sigCancel != nil {
+	if !c.released {
 		internal.Log(c.logger, "waiting for user cancel or session termination")
 		if ctrlc {
 			fmt.Println("Press Ctrl+C to cancel")
@@ -181,21 +181,15 @@ func (c *Context) Release() {
 	c.mu.Lock()
 	c.released = true
 	sigCancel := c.sigCancel
-	c.sigCancel = nil
 	logger := c.logger
 	c.mu.Unlock()
-
-	if sigCancel != nil {
-		sigCancel()
-	}
-
+	sigCancel()
 	internal.Log(logger, "session released SIGINT, SIGKILL signals")
 }
 
 // Destroy can be called do destroy session.
 func (c *Context) Destroy(err error) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	if c.err != nil {
 		// prevent Destroy to be called multiple times
@@ -204,31 +198,28 @@ func (c *Context) Destroy(err error) {
 		if errors.Is(c.err, ErrExitSuccess) && !errors.Is(err, ErrExitSuccess) {
 			c.err = err
 		}
+		c.mu.Unlock()
 		return
 	}
-
 	c.disposed = true
 	c.ctxCancel()
-
 	// s.err is nil otherwise we would not be here
 	c.err = err
 	if c.err == nil {
 		c.err = ErrExitSuccess
 	}
-
 	if c.readyCancel != nil {
 		c.readyCancel()
 	}
-
-	if c.sigCancel != nil {
-		c.sigCancel()
-		c.sigCancel = nil
-	}
-
 	if c.done != nil {
 		close(c.done)
 		c.done = nil
 	}
+	sigCancel := c.sigCancel
+	c.mu.Unlock()
+
+	c.released = true
+	sigCancel()
 }
 
 // Terminate is used to terminate session. and called only internally
@@ -333,7 +324,7 @@ func (c *Context) Dispatch(ev events.Event) {
 	}
 
 	if c.evch == nil {
-		c.Log().Error("event channel is closed, dropping event", slog.String("event", ev.String()))
+		c.logger.Error("event channel is closed, dropping event", slog.String("event", ev.String()))
 		c.mu.Unlock()
 		return
 	}
