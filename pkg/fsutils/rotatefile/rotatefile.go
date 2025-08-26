@@ -95,10 +95,11 @@ func (l *File) Close() error {
 	return nil
 }
 
-func (l *File) File() (*os.File, error) {
+// File calls os.OpenFile with given flags and permissions.
+func (l *File) OpenFile(flag int, perm os.FileMode) (*os.File, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	return os.Open(l.abspath)
+	return os.OpenFile(l.abspath, flag, perm)
 }
 
 func (l *File) Name() string {
