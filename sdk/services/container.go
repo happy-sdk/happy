@@ -186,7 +186,7 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 
 	cancelErr := e
 	if cancelErr == nil {
-		cancelErr = errServiceStopped
+		cancelErr = ErrServiceStopped
 	}
 	c.cancel(cancelErr)
 	if c.svc.stopAction != nil {
