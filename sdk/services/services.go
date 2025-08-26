@@ -22,7 +22,9 @@ import (
 )
 
 var (
-	Error = fmt.Errorf("services error")
+	Error             = errors.New("services")
+	ErrServiceStopped = errors.New("service stopped")
+
 	// StartEvent starts services defined in payload
 	StartEvent = events.New("services", "start.services")
 	StopEvent  = events.New("services", "stop.services")
@@ -157,7 +159,7 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 			return sl.loaderCh
 		}
 		if info.Running() {
-			sl.sess.Log().NotImplemented(
+			sl.sess.Log().Notice(
 				"requested service is already running",
 				slog.String("service", svcaddr),
 			)

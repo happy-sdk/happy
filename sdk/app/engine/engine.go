@@ -30,6 +30,7 @@ import (
 var (
 	Error                = fmt.Errorf("engine")
 	ErrServiceTerminated = fmt.Errorf("%w: service terminated", Error)
+	ErrEngineStopped     = fmt.Errorf("%w stopped", Error)
 )
 
 type engineState int
@@ -623,7 +624,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 	service.SetFullStartAddr(svcc.Info(), svcaddr)
 
 	if err := svcc.Start(e.engineLoopCtx, sess); err != nil {
-		sess.Log().Info(
+		sess.Log().Error(
 			"failed to start service",
 			slog.String("err", err.Error()),
 			sarg,
@@ -639,7 +640,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 
 		if !svcc.HasTick() {
 			<-e.engineLoopCtx.Done()
-			svcc.Cancel(nil)
+			svcc.Cancel(ErrEngineStopped)
 			return
 		}
 
@@ -669,7 +670,6 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 		for {
 			select {
 			case <-svcc.Done():
-				svcc.Cancel(nil)
 				break ticker
 			case now := <-ttick.C:
 				now = sess.Time(now)

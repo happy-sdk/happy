@@ -99,17 +99,6 @@ func (inst *Instance) Dispose() error {
 			internal.Log(inst.sess.Log(), "successfully deleted pidfile", slog.String("file", inst.pidfile))
 		}
 	}
-
-	// 	tmpDir := rt.sess.Opts().Get("app.fs.path.tmp").String()
-	// if stat, err := os.Stat(tmpDir); err != nil {
-	// 	rt.log(0, logging.LevelError, "failed to check tmp dir", slog.String("err", err.Error()))
-	// } else {
-	// 	if stat.IsDir() {
-	// 		// if err := os.RemoveAll(tmpDir); err != nil {
-	// 		// 	rt.log(1, logging.LevelError, "failed to remove tmp dir", slog.String("err", err.Error()))
-	// 		// }
-	// 	}
-	// }
 	return nil
 }
 
