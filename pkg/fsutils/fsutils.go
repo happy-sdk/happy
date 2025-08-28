@@ -5,16 +5,12 @@
 package fsutils
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -25,92 +21,25 @@ var (
 // FileInfo describes a file
 // it holds file access, birth, change, and modification times.
 type FileInfo struct {
-	Atime   time.Time // Last access time
-	Btime   time.Time // Birth (creation) time
-	Ctime   time.Time // Last status change time
-	Mtime   time.Time // Last modification time
-	Blksize uint32
-	Nlink   uint32
-	Size    uint64
-	Blocks  uint64
-	Ino     uint64
-	Mode    uint16
-	Uid     uint32
-	Gid     uint32
+	Atime    time.Time // Last access time
+	Btime    time.Time // Birth (creation) time
+	Ctime    time.Time // Last status change time
+	Mtime    time.Time // Last modification time
+	Blksize  uint32
+	Nlink    uint32
+	Size     uint64
+	Blocks   uint64
+	Ino      uint64
+	Mode     uint16
+	Uid      uint32
+	Gid      uint32
+	DevMajor uint32
+	DevMinor uint32
 }
 
 // AvailableSpace calculates the available space on the filesystem where path resides.
 func AvailableSpace(path string) (uint64, error) {
 	return availableSpace(path)
-}
-
-// CompressDir compresses the specified directory into a .tar.gz archive.
-// The output file is writen to file specified by tarpath.
-func CompressDir(dir, tarpath string) error {
-	if _, err := os.Stat(tarpath); err == nil {
-		return fmt.Errorf("%w: tarpath exists", Error)
-	}
-	// Ensure the directory exists
-	if _, err := os.Stat(dir); err != nil {
-		return fmt.Errorf("%w: src dir does not exist: %s", Error, err.Error())
-	}
-
-	tarfile, err := os.OpenFile(tarpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0640)
-	if err != nil {
-		return fmt.Errorf("%w: failed to create destination file: %s", Error, err.Error())
-	}
-
-	gw := gzip.NewWriter(tarfile)
-	tw := tar.NewWriter(gw)
-
-	defer func() {
-		_ = tarfile.Close()
-		_ = gw.Close()
-		_ = tw.Close()
-	}()
-
-	err = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		info, err := d.Info()
-		if err != nil {
-			return err
-		}
-
-		header, err := tar.FileInfoHeader(info, "")
-		if err != nil {
-			return err
-		}
-
-		relPath, err := filepath.Rel(dir, path)
-		if err != nil {
-			return err
-		}
-		header.Name = strings.ReplaceAll(relPath, string(os.PathSeparator), "/")
-		if err := tw.WriteHeader(header); err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer func() {
-				_ = file.Close()
-			}()
-
-			if _, err := io.Copy(tw, file); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("%w: %s", Error, err)
-	}
-	return nil
 }
 
 // CountFilesAndDirs counts regular files and directories in dir and its subdirectories.
@@ -132,35 +61,6 @@ func CountFilesAndDirs(dir string) (filec, dirc int, err error) {
 	return filec, dirc, err
 }
 
-// DirBtimeSpan returns the time duration between the oldest and newest file
-// in the directory based on their Btime (creation time). If recursive is true,
-// it includes files in subdirectories; otherwise, it scans only the top-level directory.
-func DirBtimeSpan(dir string, recursive bool) (oldest, newest time.Time, bspan time.Duration, err error) {
-	return dirBtimeSpan(dir, recursive)
-}
-
-// DirSize calculates the total size of a directory by traversing it
-// and summing the sizes of all encountered files.
-// DirSize calculates the total size of regular files in dir and its subdirectories,
-// excluding symlinks.
-func DirSize(dir string) (int64, error) {
-	var size int64
-	err := filepath.WalkDir(dir, func(_ string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !d.IsDir() && d.Type().IsRegular() {
-			info, err := d.Info()
-			if err != nil {
-				return err
-			}
-			size += info.Size()
-		}
-		return nil
-	})
-	return size, err
-}
-
 // FileSELinuxContext retrieves the file's SELinux context
 // (e.g., "unconfined_u:object_r:config_home_t:s0").
 func FileSELinuxContext(f *os.File) (string, error) {
@@ -172,13 +72,30 @@ func FileStat(file *os.File) (FileInfo, error) {
 	return fileStat(file)
 }
 
-// IsDir checks if the given path is a directory.
-func IsDir(path string) bool {
-	info, err := os.Stat(path)
+func IsStdoutStderrFile(expectedPath string) (bool, error) {
+	// Stat the expected file
+	expectedInfo, err := stat(expectedPath)
 	if err != nil {
-		return false
+		return false, fmt.Errorf("%w: failed to stat expected path", Error)
 	}
-	return info.IsDir()
+
+	stdoutStat, err := fileStat(os.Stdout)
+	if err != nil {
+		return false, fmt.Errorf("%w: failed to stat stdout", Error)
+	}
+
+	stderrStat, err := fileStat(os.Stderr)
+	if err != nil {
+		return false, fmt.Errorf("%w: failed to stat stderr", Error)
+	}
+
+	// Compare inode and device
+	return expectedInfo.Ino == stdoutStat.Ino &&
+		expectedInfo.DevMajor == stdoutStat.DevMajor &&
+		expectedInfo.DevMinor == stdoutStat.DevMinor &&
+		expectedInfo.Ino == stderrStat.Ino &&
+		expectedInfo.DevMajor == stderrStat.DevMajor &&
+		expectedInfo.DevMinor == stderrStat.DevMinor, nil
 }
 
 // IsRegular reports whether the path is a regular file.

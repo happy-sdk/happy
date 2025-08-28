@@ -109,25 +109,27 @@ func stat(path string) (FileInfo, error) {
 	}
 
 	return FileInfo{
-		Atime:   time.Unix(int64(statx.Atime.Sec), int64(statx.Atime.Nsec)),
-		Btime:   time.Unix(int64(statx.Btime.Sec), int64(statx.Btime.Nsec)),
-		Ctime:   time.Unix(int64(statx.Ctime.Sec), int64(statx.Ctime.Nsec)),
-		Mtime:   time.Unix(int64(statx.Mtime.Sec), int64(statx.Mtime.Nsec)),
-		Blksize: statx.Blksize,
-		Nlink:   statx.Nlink,
-		Size:    statx.Size,
-		Blocks:  statx.Blocks,
-		Ino:     statx.Ino,
-		Mode:    statx.Mode,
-		Uid:     statx.Uid,
-		Gid:     statx.Gid,
+		Atime:    time.Unix(int64(statx.Atime.Sec), int64(statx.Atime.Nsec)),
+		Btime:    time.Unix(int64(statx.Btime.Sec), int64(statx.Btime.Nsec)),
+		Ctime:    time.Unix(int64(statx.Ctime.Sec), int64(statx.Ctime.Nsec)),
+		Mtime:    time.Unix(int64(statx.Mtime.Sec), int64(statx.Mtime.Nsec)),
+		Blksize:  statx.Blksize,
+		Nlink:    statx.Nlink,
+		Size:     statx.Size,
+		Blocks:   statx.Blocks,
+		Ino:      statx.Ino,
+		Mode:     statx.Mode,
+		Uid:      statx.Uid,
+		Gid:      statx.Gid,
+		DevMajor: statx.Dev_major,
+		DevMinor: statx.Dev_minor,
 	}, nil
 }
 
 func fileSELinuxContext(f *os.File) (string, error) {
 	sc, err := f.SyscallConn()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w: %w", Error, err)
 	}
 
 	buf := make([]byte, 256)
@@ -138,13 +140,13 @@ func fileSELinuxContext(f *os.File) (string, error) {
 		n, xattrErr = unix.Fgetxattr(int(fd), "security.selinux", buf)
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w: %w", Error, err)
 	}
 	if xattrErr != nil {
 		if errors.Is(xattrErr, unix.ENODATA) || errors.Is(xattrErr, unix.ENOTSUP) {
 			return "", nil // No SELinux context available
 		}
-		return "", xattrErr
+		return "", fmt.Errorf("%w: %w", Error, xattrErr)
 	}
 
 	// Trim null terminator from the SELinux context
