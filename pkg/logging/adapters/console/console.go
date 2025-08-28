@@ -78,6 +78,7 @@ type Handler struct {
 func NewHandler(ctx context.Context, w io.Writer, opts *logging.Options, theme ansicolor.Theme) *Handler {
 	if opts.LevelVar == nil {
 		opts.LevelVar = new(slog.LevelVar)
+		opts.LevelVar.Set(slog.Level(opts.Level))
 	}
 	replaceAttr := opts.ReplaceAttr
 	tsfmt := "15:04:05.000"
