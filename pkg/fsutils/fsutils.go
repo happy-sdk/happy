@@ -21,6 +21,7 @@ var (
 // FileInfo describes a file
 // it holds file access, birth, change, and modification times.
 type FileInfo struct {
+	Name     string
 	Atime    time.Time // Last access time
 	Btime    time.Time // Birth (creation) time
 	Ctime    time.Time // Last status change time

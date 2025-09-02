@@ -80,6 +80,7 @@ func fileStat(f *os.File) (FileInfo, error) {
 	}
 
 	return FileInfo{
+		Name:    filepath.Base(f.Name()),
 		Atime:   time.Unix(int64(statx.Atime.Sec), int64(statx.Atime.Nsec)),
 		Btime:   time.Unix(int64(statx.Btime.Sec), int64(statx.Btime.Nsec)),
 		Ctime:   time.Unix(int64(statx.Ctime.Sec), int64(statx.Ctime.Nsec)),
@@ -109,6 +110,7 @@ func stat(path string) (FileInfo, error) {
 	}
 
 	return FileInfo{
+		Name:     filepath.Base(path),
 		Atime:    time.Unix(int64(statx.Atime.Sec), int64(statx.Atime.Nsec)),
 		Btime:    time.Unix(int64(statx.Btime.Sec), int64(statx.Btime.Nsec)),
 		Ctime:    time.Unix(int64(statx.Ctime.Sec), int64(statx.Ctime.Nsec)),

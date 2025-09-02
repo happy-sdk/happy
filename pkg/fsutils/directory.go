@@ -8,6 +8,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -103,7 +104,7 @@ func BackupDir(ctx context.Context, srcDir, outArchive string, removeSrc bool, s
 	archiveSuccess := false
 
 	// Defer cleanup with proper error handling
-	defer func() {
+	var deferAll = func(perr error) (err error) {
 		// Close writers in correct order
 		if e := tw.Close(); e != nil && err == nil {
 			err = fmt.Errorf("%w: close tar writer: %w", Error, e)
@@ -119,12 +120,18 @@ func BackupDir(ctx context.Context, srcDir, outArchive string, removeSrc bool, s
 		if archiveSuccess && err == nil {
 			if e := os.Rename(tempArchive, outArchive); e != nil {
 				err = fmt.Errorf("%w: rename temp archive: %w", Error, e)
-				os.Remove(tempArchive) // Clean up temp file on rename failure
+				if e2 := os.Remove(tempArchive); e2 != nil {
+					err = errors.Join(err, fmt.Errorf("remove temp archive: %w", e2))
+				}
 			}
 		} else {
-			os.Remove(tempArchive) // Clean up temp file on failure
+			// Clean up temp file on failure
+			if e := os.Remove(tempArchive); e != nil {
+				err = errors.Join(err, fmt.Errorf("remove temp archive: %w", e))
+			}
 		}
-	}()
+		return errors.Join(perr, err)
+	}
 
 	// Collect all files first to ensure consistent view
 	var filesToArchive []string
@@ -142,7 +149,7 @@ func BackupDir(ctx context.Context, srcDir, outArchive string, removeSrc bool, s
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("%w: collect files to archive: %w", Error, err)
+		return deferAll(fmt.Errorf("%w: collect files to archive: %w", Error, err))
 	}
 
 	// Archive files with controlled concurrency - don't use errgroup context derivation
@@ -156,7 +163,7 @@ func BackupDir(ctx context.Context, srcDir, outArchive string, removeSrc bool, s
 	for _, path := range filesToArchive {
 		// Check original context before starting goroutine
 		if ctx.Err() != nil {
-			return fmt.Errorf("%w: context canceled before archiving", Error)
+			return deferAll(fmt.Errorf("%w: context canceled before archiving", Error))
 		}
 
 		path := path // Capture for goroutine
@@ -164,7 +171,7 @@ func BackupDir(ctx context.Context, srcDir, outArchive string, removeSrc bool, s
 		select {
 		case sem <- struct{}{}:
 		case <-ctx.Done():
-			return fmt.Errorf("%w: context canceled during archiving", Error)
+			return deferAll(fmt.Errorf("%w: context canceled during archiving", Error))
 		}
 
 		wg.Add(1)
@@ -225,7 +232,11 @@ func BackupDir(ctx context.Context, srcDir, outArchive string, removeSrc bool, s
 					errChan <- fmt.Errorf("%w: open %s: %w", Error, path, err)
 					return
 				}
-				defer f.Close()
+				defer func() {
+					if err := f.Close(); err != nil {
+						errChan <- fmt.Errorf("%w: close %s: %w", Error, path, err)
+					}
+				}()
 
 				if _, err := io.Copy(tw, f); err != nil {
 					errChan <- fmt.Errorf("%w: copy %s to archive: %w", Error, path, err)
@@ -241,7 +252,7 @@ func BackupDir(ctx context.Context, srcDir, outArchive string, removeSrc bool, s
 
 	// Check for any archiving errors
 	for err := range errChan {
-		return fmt.Errorf("%w: archive files: %w", Error, err)
+		return deferAll(fmt.Errorf("%w: archive files: %w", Error, err))
 	}
 
 	archiveSuccess = true
@@ -255,7 +266,7 @@ func BackupDir(ctx context.Context, srcDir, outArchive string, removeSrc bool, s
 	sort.Sort(sort.Reverse(sort.StringSlice(filesToArchive)))
 
 	// Use separate context-aware removal with timeout and retries
-	return removeSourceFiles(ctx, filesToArchive, srcDir, sem)
+	return deferAll(removeSourceFiles(ctx, filesToArchive, srcDir, sem))
 }
 
 func removeSourceFiles(ctx context.Context, filesToRemove []string, srcDir string, sem chan struct{}) error {
@@ -263,6 +274,7 @@ func removeSourceFiles(ctx context.Context, filesToRemove []string, srcDir strin
 	errChan := make(chan error, len(filesToRemove))
 
 	for _, path := range filesToRemove {
+
 		// Check context before each batch
 		if ctx.Err() != nil {
 			return fmt.Errorf("%w: context canceled before removal", Error)
@@ -283,19 +295,19 @@ func removeSourceFiles(ctx context.Context, filesToRemove []string, srcDir strin
 
 			// Retry removal with exponential backoff for transient failures
 			maxRetries := 3
-			for attempt := 0; attempt < maxRetries; attempt++ {
+			for attempt := range maxRetries {
 				if ctx.Err() != nil {
 					errChan <- fmt.Errorf("%w: context canceled during removal retry", Error)
 					return
 				}
 
 				err := os.Remove(path)
-				if err == nil || os.IsNotExist(err) {
+				if err == nil || errors.Is(err, os.ErrNotExist) {
 					return // Success or already removed
 				}
 
 				// Check if it's a transient error worth retrying
-				if isTransientError(err) && attempt < maxRetries-1 {
+				if (isTransientError(err) || isDirectoryNotEmpty(err)) && attempt < maxRetries-1 {
 					// Exponential backoff: 10ms, 100ms, 1s
 					backoff := time.Duration(10*math.Pow(10, float64(attempt))) * time.Millisecond
 
