@@ -90,7 +90,12 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 func (c *Context) Wait(ctrlc bool) <-chan struct{} {
 	c.mu.Lock()
 	c.allowUserCancel = true
+	err := c.err
 	c.mu.Unlock()
+	if err != nil {
+		internal.Log(c.logger, "skip waiting, session terminated")
+		return c.Done()
+	}
 
 	c.mu.RLock()
 	if !c.released {
@@ -213,7 +218,6 @@ func (c *Context) Destroy(err error) {
 	}
 	if c.done != nil {
 		close(c.done)
-		c.done = nil
 	}
 	sigCancel := c.sigCancel
 	c.mu.Unlock()
@@ -227,6 +231,9 @@ func (c *Context) terminateSession() {
 	if c.evch != nil {
 		close(c.evch)
 		c.evch = nil
+	}
+	if c.done != nil {
+		c.done = nil // is closed already
 	}
 }
 

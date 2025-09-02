@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"maps"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/happy-sdk/happy/pkg/logging"
@@ -351,11 +352,12 @@ func (c *Cmd) ExecDo(sess *session.Context) (string, error) {
 	}
 
 	if err := c.doAction(sess, args); err != nil {
+		cmds := append(c.parents, c.name)
 		internal.Log(
 			sess.Log(),
-			"do action",
-			slog.String("cmd", c.name),
-			slog.String("err", err.Error()),
+			err.Error(),
+			slog.String("cmd", strings.Join(cmds, " ")),
+			slog.String("action", "do"),
 		)
 
 		return c.sources.Do, err

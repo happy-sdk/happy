@@ -13,6 +13,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/logging"
@@ -198,8 +199,6 @@ func (e *Engine) Stop(sess *session.Context) error {
 	}
 	e.mu.Lock()
 	e.state = engineStopping
-	registry := e.registry
-	totalServices := len(registry)
 	gsd := e.gsd
 	e.mu.Unlock()
 
@@ -207,10 +206,34 @@ func (e *Engine) Stop(sess *session.Context) error {
 
 	e.engineLoopCancel()
 
+	internal.Log(sess.Log(), "stopping engineLoopCancel ...")
+
+	var (
+		quarantine           map[string]*services.Container
+		totalRunningServices atomic.Int64
+	)
+
 	for u, rsvc := range e.registry {
+		if rsvc.IsLocked() {
+			time.Sleep(time.Second)
+			if rsvc.IsLocked() {
+				gsd.Add(1)
+				totalRunningServices.Add(1)
+				sess.Log().Warn(fmt.Sprintf("%s service quarantined, still busy, or possibly deadlocked.", u))
+				if quarantine == nil {
+					quarantine = make(map[string]*services.Container)
+				}
+				quarantine[u] = rsvc
+				continue
+			}
+		}
 		if !rsvc.Info().Running() {
+			internal.Log(sess.Log(), fmt.Sprintf("service already stopped %s", rsvc.Info().Slug()))
 			continue
 		}
+		totalRunningServices.Add(1)
+
+		internal.Log(sess.Log(), fmt.Sprintf("shutdown %s", rsvc.Info().Slug()))
 		gsd.Add(1)
 		go func(url string, svcc *services.Container) {
 			defer gsd.Done()
@@ -218,19 +241,76 @@ func (e *Engine) Stop(sess *session.Context) error {
 			// r.ctx also to be cancelled, however lets wait for the
 			// context done since r.ctx is cancelled after last tickk completes.
 			// so e.xtc is not parent of r.ctx.
+			internal.Log(sess.Log(), fmt.Sprintf("waiting for %s to prepare shutdown", svcc.Info().Slug()))
 			<-svcc.Done()
 			// lets call stop now we know that tick loop has exited.
-			e.serviceStop(sess, url, nil)
+			e.serviceStop(sess, url, ErrServiceTerminated)
+			totalRunningServices.Add(-1)
 		}(u, rsvc)
 	}
 
-	if totalServices > 0 {
-		internal.Log(sess.Log(), fmt.Sprintf("waiting for %d services to stop", totalServices))
+	trs := totalRunningServices.Load()
+	if trs > 0 {
+		internal.Log(sess.Log(), fmt.Sprintf("waiting for %d services to stop", trs))
 	}
 
-	internal.Log(sess.Log(), "waiting for engine to stop")
+	errChan := make(chan error, len(quarantine))
+	if len(quarantine) > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // Overall deadline
+		defer cancel()
 
-	gsd.Wait()
+		for u, container := range quarantine {
+			go func(url string, svcc *services.Container) {
+				defer gsd.Done()
+				defer totalRunningServices.Add(-1)
+				const maxAttempts = 4
+				for attempt := range maxAttempts {
+					if !svcc.IsLocked() {
+						sess.Log().Info(fmt.Sprintf("service %s released lock after %d attempts", svcc.Info().Slug(), attempt))
+						e.serviceStop(sess, url, ErrServiceTerminated)
+						return
+					}
+					if attempt == maxAttempts {
+						break
+					}
+					backoff := time.Duration(10*math.Pow(10, float64(attempt))) * time.Millisecond
+					sess.Log().Notice(fmt.Sprintf("service %s still locked, backing off %v (attempt %d/%d)",
+						url, backoff, attempt+1, maxAttempts))
+
+					select {
+					case <-time.After(backoff):
+						continue // Retry
+					case <-ctx.Done():
+						errChan <- fmt.Errorf("service %s: termination deadline reached", url)
+						return
+					}
+				}
+
+				// Still locked after all attempts - force shutdown
+				if container.IsLocked() {
+					sess.Log().Warn(fmt.Sprintf("service %s still locked after %d attempts, forcing shutdown", url, maxAttempts))
+					if err := container.ForceShutdown(sess, ErrServiceTerminated); err != nil {
+						errChan <- err
+					} else {
+						sess.Log().Ok(fmt.Sprintf("service %s force shutdown completed", url))
+					}
+				} else {
+					sess.Log().Info(fmt.Sprintf("service %s released lock right before force shutdown", svcc.Info().Slug()))
+					e.serviceStop(sess, url, ErrServiceTerminated)
+				}
+			}(u, container)
+		}
+	}
+	internal.Log(sess.Log(), "waiting for engine to stop")
+	// Wait for completion and handle any timeout errors
+	go func() {
+		gsd.Wait()
+		close(errChan)
+	}()
+	for err := range errChan {
+		sess.Log().Error(err.Error())
+	}
+
 	e.mu.Lock()
 	e.state = engineStopped
 	e.mu.Unlock()
@@ -660,7 +740,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 		var tds time.Duration // tick delta sum
 		if tpsEnabled {
 			initialDelta := throttle
-			for i := 0; i < tpsSize; i++ {
+			for i := range tpsSize {
 				tickDeltas[i] = initialDelta
 				tds += initialDelta
 			}

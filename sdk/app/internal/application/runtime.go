@@ -543,7 +543,7 @@ func (rt *Runtime) Exit(code int) {
 
 		rt.sess.Destroy(nil)
 		if err := rt.sess.Err(); err != nil && !errors.Is(err, session.ErrExitSuccess) {
-			rt.log(0, logging.LevelError, "session", slog.String("err", err.Error()))
+			rt.log(0, logging.LevelError, err.Error())
 			code = 1
 		}
 

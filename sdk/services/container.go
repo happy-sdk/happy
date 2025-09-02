@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/networking/address"
@@ -21,13 +22,14 @@ import (
 )
 
 type Container struct {
-	mu      sync.RWMutex
-	info    *service.Info
-	svc     *Service
-	cancel  context.CancelCauseFunc
-	ctx     context.Context
-	cron    *serviceCron
-	retries int
+	mu       sync.RWMutex
+	info     *service.Info
+	svc      *Service
+	cancel   context.CancelCauseFunc
+	ctx      context.Context
+	cron     *serviceCron
+	retries  int
+	lockInfo atomic.Value
 }
 
 func NewContainer(sess *session.Context, addr *address.Address, svc *Service) (*Container, error) {
@@ -38,7 +40,7 @@ func NewContainer(sess *session.Context, addr *address.Address, svc *Service) (*
 		return nil, fmt.Errorf("%w: address is nil", Error)
 	}
 	container := &Container{
-		info: service.NewInfo(svc.Name(), addr, time.Duration(svc.settings.LoaderTimeout)),
+		info: service.NewInfo(svc.Slug(), svc.Name(), addr, time.Duration(svc.settings.LoaderTimeout)),
 		svc:  svc,
 	}
 
@@ -48,20 +50,80 @@ func NewContainer(sess *session.Context, addr *address.Address, svc *Service) (*
 	return container, nil
 }
 
+func (c *Container) Cancel(err error) {
+	c.rlock("cancel service")
+	defer c.mu.RUnlock()
+	c.cancel(err)
+}
+
+func (c *Container) CanRetry() bool {
+	c.rlock("check if service can retry")
+	defer c.mu.RUnlock()
+	return bool(c.svc.settings.RetryOnError) &&
+		int(c.svc.settings.MaxRetries) > 0 &&
+		c.retries <= int(c.svc.settings.MaxRetries)
+}
+
+func (c *Container) Done() <-chan struct{} {
+	c.rlock("get done channel")
+	defer c.mu.RUnlock()
+	return c.ctx.Done()
+}
+
 func (c *Container) Info() *service.Info {
-	c.mu.RLock()
+	c.rlock("get info")
 	defer c.mu.RUnlock()
 	return c.info
 }
 
-func (c *Container) Settings() service.Config {
-	c.mu.RLock()
+func (c *Container) IsLocked() bool {
+	locked := c.mu.TryLock()
+	if locked {
+		c.mu.Unlock()
+	}
+	return !locked
+}
+
+func (c *Container) HandleEvent(sess *session.Context, ev events.Event) {
+	c.rlock("handle event")
 	defer c.mu.RUnlock()
-	return c.svc.settings
+	if c.svc.listeners == nil || !c.info.Running() {
+		return
+	}
+	lid := ev.Scope() + "." + ev.Key()
+	for sk, listeners := range c.svc.listeners {
+		for _, listener := range listeners {
+			if sk == "any" || sk == lid {
+				if err := listener(sess, ev); err != nil {
+					service.AddError(c.info, err)
+					sess.Log().Error(err.Error(), slog.String("service", c.info.Addr().String()))
+				}
+			}
+		}
+	}
+}
+
+func (c *Container) HasTick() bool {
+	c.rlock("check for tick")
+	defer c.mu.RUnlock()
+	return c.svc.tickAction != nil
+}
+
+func (c *Container) Listeners() []string {
+	c.rlock("get listeners")
+	defer c.mu.RUnlock()
+	if c.svc.listeners == nil {
+		return nil
+	}
+	var listeners []string
+	for sk := range c.svc.listeners {
+		listeners = append(listeners, sk)
+	}
+	return listeners
 }
 
 func (c *Container) Register(sess *session.Context) error {
-	c.mu.RLock()
+	c.rlock("register service")
 	defer c.mu.RUnlock()
 	initerrs := errors.Join(c.svc.errs...)
 	if initerrs != nil {
@@ -84,22 +146,21 @@ func (c *Container) Register(sess *session.Context) error {
 	return nil
 }
 
-func (c *Container) CanRetry() bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return bool(c.svc.settings.RetryOnError) &&
-		int(c.svc.settings.MaxRetries) > 0 &&
-		c.retries <= int(c.svc.settings.MaxRetries)
-}
-
 func (c *Container) Retries() int {
-	c.mu.RLock()
+	c.rlock("get retries")
 	defer c.mu.RUnlock()
 	return c.retries
 }
 
+func (c *Container) Settings() service.Config {
+	c.rlock("get settings")
+	defer c.mu.RUnlock()
+	return c.svc.settings
+}
+
 func (c *Container) Start(ectx context.Context, sess *session.Context) (err error) {
-	c.mu.RLock()
+	c.rlock("starting service")
+	retries := c.retries
 	if c.svc.settings.RetryOnError && c.svc.settings.MaxRetries > 0 && c.retries > 0 {
 		if c.retries > int(c.svc.settings.MaxRetries) {
 			c.mu.RUnlock()
@@ -119,7 +180,11 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 		c.mu.RUnlock()
 	}
 
-	c.mu.Lock()
+	if retries > 0 {
+		c.lock(fmt.Sprintf("service start retry (%d)", retries))
+	} else {
+		c.lock("calling service start action")
+	}
 	defer c.mu.Unlock()
 
 	c.retries++
@@ -168,7 +233,7 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 }
 
 func (c *Container) Stop(sess *session.Context, e error) (err error) {
-	c.mu.RLock()
+	c.rlock("calling service stop")
 	defer c.mu.RUnlock()
 	if !c.info.Running() {
 		sess.Dispatch(service.StoppedEvent.Create(c.info.Name(), nil))
@@ -220,20 +285,8 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 	return err
 }
 
-func (c *Container) Done() <-chan struct{} {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.ctx.Done()
-}
-
-func (c *Container) HasTick() bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.svc.tickAction != nil
-}
-
 func (c *Container) Tick(sess *session.Context, ts time.Time, delta time.Duration) error {
-	c.mu.RLock()
+	c.rlock("call servicetick ")
 	defer c.mu.RUnlock()
 	if c.svc.tickAction == nil {
 		return nil
@@ -242,7 +295,7 @@ func (c *Container) Tick(sess *session.Context, ts time.Time, delta time.Duratio
 }
 
 func (c *Container) Tock(sess *session.Context, delta time.Duration, tps int) error {
-	c.mu.RLock()
+	c.rlock("tock calling service")
 	if c.svc.tockAction == nil {
 		c.mu.RUnlock()
 		return nil
@@ -252,50 +305,38 @@ func (c *Container) Tock(sess *session.Context, delta time.Duration, tps int) er
 		return err
 	}
 	retries := c.retries
-	c.mu.RUnlock()
+	c.rlock("performing service tock cleanup")
 
 	if retries > 0 {
-		c.mu.Lock()
+		c.lock("when resetting service tock retries")
 		c.retries = 0
 		c.mu.Unlock()
 	}
 	return nil
 }
 
-func (c *Container) HandleEvent(sess *session.Context, ev events.Event) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	if c.svc.listeners == nil || !c.info.Running() {
-		return
+func (c *Container) ForceShutdown(sess *session.Context, err error) error {
+	if !c.IsLocked() {
+		c.lock("force shutdown")
+	} else {
+		sess.Log().Warn(fmt.Sprintf("service previously locked when %s", c.lockInfo.Load().(string)))
 	}
-	lid := ev.Scope() + "." + ev.Key()
-	for sk, listeners := range c.svc.listeners {
-		for _, listener := range listeners {
-			if sk == "any" || sk == lid {
-				if err := listener(sess, ev); err != nil {
-					service.AddError(c.info, err)
-					sess.Log().Error(err.Error(), slog.String("service", c.info.Addr().String()))
-				}
-			}
-		}
+
+	if c.cancel != nil {
+		c.cancel(err)
 	}
+	c.svc.tickAction = nil
+	c.svc.tockAction = nil
+	c.mu.Unlock()
+	return c.Stop(sess, err)
 }
 
-func (c *Container) Listeners() []string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	if c.svc.listeners == nil {
-		return nil
-	}
-	var listeners []string
-	for sk := range c.svc.listeners {
-		listeners = append(listeners, sk)
-	}
-	return listeners
+func (c *Container) lock(lockInfo string) {
+	c.mu.Lock()
+	c.lockInfo.Store(lockInfo)
 }
 
-func (c *Container) Cancel(err error) {
+func (c *Container) rlock(lockInfo string) {
 	c.mu.RLock()
-	defer c.mu.RUnlock()
-	c.cancel(err)
+	c.lockInfo.Store(lockInfo)
 }

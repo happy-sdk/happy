@@ -15,6 +15,7 @@ import (
 type Info struct {
 	mu            sync.RWMutex
 	name          string
+	slug          string
 	addr          *address.Address
 	running       bool
 	errs          map[time.Time]error
@@ -23,8 +24,9 @@ type Info struct {
 	loaderTimeout time.Duration
 }
 
-func NewInfo(name string, addr *address.Address, loaderTimeout time.Duration) *Info {
+func NewInfo(slug, name string, addr *address.Address, loaderTimeout time.Duration) *Info {
 	return &Info{
+		slug:          slug,
 		name:          name,
 		addr:          addr,
 		loaderTimeout: loaderTimeout,
@@ -47,6 +49,12 @@ func (s *Info) Name() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.name
+}
+
+func (s *Info) Slug() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.slug
 }
 
 func (s *Info) StartedAt() time.Time {
