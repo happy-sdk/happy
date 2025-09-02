@@ -200,7 +200,7 @@ func (c *Context) Destroy(err error) {
 		// prevent Destroy to be called multiple times
 		// e.g. by sig release or other contexts.
 		// however update error if it is not exit success
-		if errors.Is(c.err, ErrExitSuccess) && !errors.Is(err, ErrExitSuccess) {
+		if errors.Is(c.err, ErrExitSuccess) && (err != nil && !errors.Is(err, ErrExitSuccess)) {
 			c.err = err
 		}
 		c.mu.Unlock()

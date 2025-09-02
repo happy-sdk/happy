@@ -305,7 +305,7 @@ func (c *Container) Tock(sess *session.Context, delta time.Duration, tps int) er
 		return err
 	}
 	retries := c.retries
-	c.rlock("performing service tock cleanup")
+	c.mu.RUnlock()
 
 	if retries > 0 {
 		c.lock("when resetting service tock retries")
