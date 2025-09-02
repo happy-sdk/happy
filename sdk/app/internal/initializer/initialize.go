@@ -277,6 +277,9 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 		options.NewOption("app.fs.path.profile.data", "").
 			Description("Profile-specific persistent data").
 			Flags(options.Once),
+		options.NewOption("app.fs.path.profile.backups", "").
+			Description("Profile-specific persistent data backups").
+			Flags(options.Once),
 		options.NewOption("app.fs.path.state", "").
 			Description("Applciation shared state data").
 			Flags(options.Once),

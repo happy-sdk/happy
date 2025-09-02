@@ -678,6 +678,18 @@ LoadProfile:
 		}
 	}
 
+	// Set profile backups directory
+	profileBackupsDir := filepath.Join(init.opts.Get("app.fs.path.data").String(), "profiles", loadSlug, "backups")
+	if err := init.opts.Set("app.fs.path.profile.backups", profileBackupsDir); err != nil {
+		return err
+	}
+	_, err = os.Stat(profileBackupsDir)
+	if errors.Is(err, fs.ErrNotExist) {
+		if err := init.utilMkdir("create profile backups directory", profileBackupsDir, 0750); err != nil {
+			return fmt.Errorf("%w: failed to create profile backups directory %s", Error, err)
+		}
+	}
+
 	// Set profile state directory
 	profileStateDir := filepath.Join(init.opts.Get("app.fs.path.state").String(), "profiles", loadSlug)
 	if err := init.opts.Set("app.fs.path.profile.state", profileStateDir); err != nil {
