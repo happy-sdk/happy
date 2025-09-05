@@ -142,26 +142,47 @@ func EqualAnyf(tt TestingIface, want, got any, msg string, args ...any) bool {
 	return EqualAny(tt, want, got, append([]any{msg}, args...)...)
 }
 
-// True asserts that the specified value is true.
+// Assert checks that the specified condition is true, failing the test if false.
 //
-//	testutils.True(t, myBool)
-func True(tt TestingIface, value bool, msgAndArgs ...any) bool {
-	if !value {
-		tt.Helper()
-		return fail(tt, "Should be true", msgAndArgs...)
+// Example:
+//
+//	testutils.Assert(t, x > 0, "x should be positive, got %d", x)
+func Assert(tt TestingIface, condition bool, msgAndArgs ...any) bool {
+	tt.Helper()
+	if !condition {
+		return fail(tt, "Assertion failed", msgAndArgs...)
 	}
 	return true
 }
 
+// True asserts that the specified value is true.
+//
+// Deprecated: Use Assert instead.
+// Replace:
+//
+//	testutils.True(t, myBool, "myBool should be true")
+//
+// With:
+//
+//	testutils.Assert(t, myBool, "myBool should be true")
+func True(tt TestingIface, value bool, msgAndArgs ...any) bool {
+	tt.Helper()
+	return Assert(tt, value, msgAndArgs...)
+}
+
 // False asserts that the specified value is false.
 //
-//	testutils.False(t, myBool)
+// Deprecated: Use Assert with negation instead.
+// Replace:
+//
+//	testutils.False(t, myBool, "myBool should be false")
+//
+// With:
+//
+//	testutils.Assert(t, !myBool, "myBool should be false")
 func False(tt TestingIface, value bool, msgAndArgs ...any) bool {
-	if value {
-		tt.Helper()
-		return fail(tt, "Should be false", msgAndArgs...)
-	}
-	return true
+	tt.Helper()
+	return Assert(tt, !value, msgAndArgs...)
 }
 
 // NotNil asserts that the specified value is not nil.
