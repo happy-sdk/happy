@@ -1,5 +1,7 @@
 github.com/happy-sdk/happy/pkg/branding v0.3.3 h1:QtjPvXqtD1qIoZgJXWOfkIesaznMa0Vi29ukWuSpfL0=
 github.com/happy-sdk/happy/pkg/branding v0.3.3/go.mod h1:Zx4lStP6b3W5QYCv9+HkGIFnQXeNNdgGPzyb3FXoNqM=
+github.com/happy-sdk/happy/pkg/bytesize v0.0.0-20250902062515-0a29204ac245 h1:1qRrzx+ryvYlrJPgJtP+BImnvDraLssznR5kKf1p/tE=
+github.com/happy-sdk/happy/pkg/bytesize v0.0.0-20250902062515-0a29204ac245/go.mod h1:/6tQ19qhzl+QUIdAgAMrO7Kp8SNilE8TG4R5eKLvoJk=
 github.com/happy-sdk/happy/pkg/devel/goutils v0.1.1 h1:Biyxbpxx4wgQXDLiJAB7qVdYfczDri4rNLsUhJj06dg=
 github.com/happy-sdk/happy/pkg/devel/goutils v0.1.1/go.mod h1:U/MN5xAjTnpwrcQneNu5hfWWr40oQfethb1ud5Ml4LI=
 github.com/happy-sdk/happy/pkg/devel/testutils v1.1.1 h1:30QjezZbtLX263ItCMruZmOqK6UE48H9uS4QUPH9yPc=
@@ -22,8 +24,6 @@ github.com/happy-sdk/happy/pkg/settings v0.7.0 h1:5D3Xn4uY3LQA6I5SjKipVnsZ35iSEj
 github.com/happy-sdk/happy/pkg/settings v0.7.0/go.mod h1:Nk9VLr9+YUd+xMI35zkuvyL6h4RckGZBiXR+LUmKQPo=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.5.2 h1:GgatU3lkBHiJZWq84ikTlAu2ZL2vNF13dyi/iGuRjS0=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.5.2/go.mod h1:Ec0AjJmHvfgJhWfsySPBvI/lKEzLeW3IwvfPez+R/Ws=
-github.com/happy-sdk/happy/pkg/strings/humanize v0.5.2 h1:Vf9IiaCkXzpN3116/hSQZx1bYPHLzTwsf+w14fhyZO4=
-github.com/happy-sdk/happy/pkg/strings/humanize v0.5.2/go.mod h1:x+BH7l6h58Lucn5wioVEaJ+hIRxxTuHt3I2QmmyO2Vc=
 github.com/happy-sdk/happy/pkg/strings/slug v0.2.1 h1:Ky7O61hc0Xs3gZDWkS9uQjINbJ8s86Y7JVPcuWdBsDQ=
 github.com/happy-sdk/happy/pkg/strings/slug v0.2.1/go.mod h1:NbUXsKWwR6Ccv4tc68s4qCSuNtQQNxoDsvUGoWD6FD8=
 github.com/happy-sdk/happy/pkg/strings/textfmt v0.5.1 h1:LRPXbf9IqtGw213DtmkBptsP36mNCO7MaxXqr/nVbRQ=
@@ -35,7 +35,6 @@ github.com/happy-sdk/happy/pkg/vars v0.19.0/go.mod h1:TZjApQ+14knllK6nLrbkPSeHa+
 github.com/happy-sdk/happy/pkg/version v0.4.1 h1:tTS2xHCOklEOAtfvqyYHNZoMnDQ5+zBOyni0f49Oh+s=
 github.com/happy-sdk/happy/pkg/version v0.4.1/go.mod h1:gGgIbaVBjrktFgydeW9LNJu7wW20vOShmfW8p1uG8jU=
 golang.org/x/mod v0.27.0 h1:kb+q2PyFnEADO2IEF935ehFUXlWiNjJWtRNgBLSfbxQ=
-golang.org/x/mod v0.27.0/go.mod h1:rWI627Fq0DEoudcK+MBkNkCe0EetEaDSwJJkCcjpazc=
 golang.org/x/sys v0.35.0 h1:vz1N37gP5bs89s7He8XuIYXpyY0+QlsKmzipCbUtyxI=
 golang.org/x/sys v0.35.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
 golang.org/x/term v0.34.0 h1:O/2T7POpk0ZZ7MAzMeWFSg6S5IpWd/RXDlM9hgM3DR4=

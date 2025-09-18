@@ -710,18 +710,18 @@ func ContainsWithEq[T any](tt TestingIface, container []T, item T, eq func(T, T)
 //	testutils.IsType(t, 0, x, "Expected int type")
 //	// Fails if x is not an int
 func IsType(tt TestingIface, expectedType any, got any, msgAndArgs ...any) bool {
-	t.Helper()
+	tt.Helper()
 	expected := reflect.TypeOf(expectedType)
 	if expected == nil {
 		if got != nil {
-			fail(t, fmt.Sprintf("expected nil type, got %T", got), msgAndArgs...)
+			fail(tt, fmt.Sprintf("expected nil type, got %T", got), msgAndArgs...)
 			return false
 		}
 		return true
 	}
 	gotType := reflect.TypeOf(got)
 	if gotType != expected {
-		fail(t, fmt.Sprintf("expected type %v, got %v", expected, gotType), msgAndArgs...)
+		fail(tt, fmt.Sprintf("expected type %v, got %v", expected, gotType), msgAndArgs...)
 	}
 	return gotType == expected
 }

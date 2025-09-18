@@ -1,7 +1,8 @@
-go 1.24.4
+go 1.25.0
 
 use (
 	.
+	./pkg/bitutils
 	./pkg/branding
 	./pkg/bytesize
 	./pkg/devel/bug
@@ -10,7 +11,6 @@ use (
 	./pkg/fsutils
 	./pkg/i18n
 	./pkg/logging
-	./pkg/logging/adapters/console
 	./pkg/networking
 	./pkg/options
 	./pkg/scheduling/cron
@@ -22,4 +22,5 @@ use (
 	./pkg/tui
 	./pkg/vars
 	./pkg/version
+	./tools/happyvet
 )

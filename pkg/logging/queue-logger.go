@@ -1,254 +1,136 @@
 // SPDX-License-Identifier: Apache-2.0
-//
-// Copyright © 2024 The Happy Authors
+// Copyright © 2018-2025 The Happy SDK Authors
 
 package logging
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"log/slog"
-	"runtime"
 	"sync"
-	"time"
+	"sync/atomic"
+
+	"github.com/happy-sdk/happy/pkg/bitutils"
 )
 
+// QueueLogger is a lightweight, slog-compatible logger that queues log records in a
+// ring buffer with a Block policy, ensuring no logs are lost. It collects records without
+// writing them until drained via Consume into a configured Logger. It can be set as
+// slog.Default and reused after consumption.
+//
+// Usage:
+//
+//	queue := NewQueueLogger(1024) // ~0.7 MiB for 1024 records
+//	queue.Info("early log", "key", "value")
+//	config := DefaultConfig()
+//	logger := New(config, NewBufferedTextAdapter(os.Stdout, nil))
+//	logger.Consume(queue) // Drain queued records to logger
+//	defer logger.Dispose()
 type QueueLogger struct {
-	mu       sync.RWMutex
-	records  []QueueRecord
-	consumed bool
+	*slog.Logger
+	adapter *BufferedAdapter[*queueAdapter]
+	queue   *queueAdapter
 }
 
-func NewQueueLogger() *QueueLogger {
-	return &QueueLogger{}
-}
-
-func (l *QueueLogger) Debug(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelDebug, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Info(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelInfo, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Ok(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelOk, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Notice(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelNotice, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Warn(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelWarn, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) NotImplemented(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelNotImplemented, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Deprecated(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelDeprecated, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Error(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelError, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Errors(err error, attrs ...slog.Attr) {
-	if err == nil {
-		return
+// NewQueueLogger creates a QueueLogger with the given buffer size (~0.7 MiB for 1024).
+// The Block policy ensures no records are lost. Size must be a power of two.
+func NewQueueLogger(size int) *QueueLogger {
+	config := AdapterConfig{
+		BufferSize:    int(bitutils.NextPowerOfTwo(uint64(size))),
+		Policy:        AdapterPolicyBlock,
+		BatchSize:     512,
+		FlushInterval: 0,
+		FlushTimeout:  DefaultAdapterFlushTimeout,
+		MaxRetries:    DefaultAdapterMaxRetries,
+		RetryTimeout:  DefaultAdapterRetryTimeout,
 	}
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	var errs []error
-	// Use errors.Unwrap to iterate through wrapped errors.
-	for e := err; e != nil; {
-		// Check if e is a joined error or a single error.
-		if unwrapped, ok := e.(interface{ Unwrap() []error }); ok {
-			// If it supports Unwrap() []error, append all errors.
-			errs = append(errs, unwrapped.Unwrap()...)
-			break
-		}
-		// Try unwrapping single error.
-		if next := errors.Unwrap(e); next != nil {
-			errs = append(errs, e)
-			e = next
-		} else {
-			errs = append(errs, e)
-			break
-		}
+	queue := &queueAdapter{
+		buf: []Record{},
 	}
-	for _, err := range errs {
-		l.records = append(l.records, NewQueueRecord(LevelError, err.Error(), 3, attrs...))
+	adapter := NewBufferedAdapter(queue, config, nil)
+	ql := &QueueLogger{
+		Logger:  slog.New(adapter),
+		adapter: adapter,
+		queue:   queue,
 	}
+	return ql
 }
 
-func (l *QueueLogger) BUG(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelBUG, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Println(msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelAlways, msg, 3, attrs...))
-}
-
-func (l *QueueLogger) Printf(format string, v ...any) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelAlways, fmt.Sprintf(format, v...), 3))
-}
-
-func (l *QueueLogger) HTTP(status int, method, path string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(LevelAlways, fmt.Sprintf("%d %s %s", status, method, path), 3, attrs...))
-}
-
-func (l *QueueLogger) Enabled(lvl Level) bool {
-	return true
-}
-
-func (l *QueueLogger) Level() Level {
-	return levelHappy
-}
-
-func (l *QueueLogger) SetLevel(lvl Level) {
-	l.NotImplemented("QueueLogger.SetLevel(lvl) is not implemented")
-}
-
-func (l *QueueLogger) LogDepth(depth int, lvl Level, msg string, attrs ...slog.Attr) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, NewQueueRecord(lvl, msg, depth+3, attrs...))
-}
-
-// Handle
-func (l *QueueLogger) Handle(r slog.Record) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	record := &QueueRecord{
-		pc:  r.PC,
-		lvl: Level(r.Level),
-		ts:  r.Time,
-		msg: r.Message,
+// Consume drains all queued records into the target Logger.
+// Call *QueueLogger Dispose dont want to use it anymore to release
+// intrnal BufferAdapter
+// It returns the number of records consumed and any error encountered.
+func (ql *QueueLogger) Consume(logger *Logger) (int, error) {
+	if ql.queue.disposed.Load() {
+		return 0, fmt.Errorf("%w: QueueLogger disposed", ErrAdapter)
 	}
+	ql.queue.mu.Lock()
+	adapter := ql.adapter
+	ql.queue.mu.Unlock()
+	adapter.Flush()
 
-	r.Attrs(func(a slog.Attr) bool {
-		record.attrs = append(record.attrs, a)
-		return true
-	})
-	l.records = append(l.records, *record)
-	return nil
+	ql.queue.mu.Lock()
+	defer ql.queue.mu.Unlock()
+
+	records := ql.queue.buf
+
+	processed, err := logger.handler.queueHandle(records)
+	if err != nil {
+		return processed, err
+	}
+	if err := logger.Flush(); err != nil {
+		return processed, err
+	}
+	return processed, nil
 }
 
-func (l *QueueLogger) Logger() *slog.Logger {
-	l.NotImplemented("QueueLogger.Logger() is not implemented")
-	return nil
-}
-
-func (l *QueueLogger) ConsumeQueue(queue *QueueLogger) error {
-	if queue == nil || l == queue {
+func (ql *QueueLogger) Dispose() error {
+	if ql.queue.disposed.Swap(true) {
 		return nil
 	}
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.records = append(l.records, queue.Consume()...)
+	ql.queue.mu.Lock()
+	defer ql.queue.mu.Unlock()
+
+	_ = ql.adapter.Dispose()
+	ql.adapter = nil
+	ql.Logger = slog.New(DiscardAdapter)
 	return nil
 }
 
-func (l *QueueLogger) Consume() []QueueRecord {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	records := l.records
-	l.records = nil
-	l.consumed = true
-	return records
+type queueAdapter struct {
+	mu       sync.RWMutex
+	err      atomic.Value
+	buf      []Record
+	disposed atomic.Bool
 }
 
-func (l *QueueLogger) Consumed() bool {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	return l.consumed
+// Enabled return always true unless Disposed.
+func (qa *queueAdapter) Enabled(ctx context.Context, level slog.Level) bool {
+	return !qa.disposed.Load()
 }
 
-func (l *QueueLogger) Dispose() error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if l.consumed {
-		return fmt.Errorf("%w: %s", ErrLoggerAlreadyDisposed, "QueueLogger")
+func (qa *queueAdapter) Handle(ctx context.Context, record slog.Record) error {
+	if qa.disposed.Load() {
+		return fmt.Errorf("%w: QueueLogger disposed", ErrAdapter)
 	}
-	l.records = nil
-	l.consumed = true
+	qa.mu.Lock()
+	defer qa.mu.Unlock()
+	rec := Record{Ctx: ctx, Record: record}
+	qa.buf = append(qa.buf, rec)
 	return nil
 }
 
-func (l *QueueLogger) AttachAdapter(adapter Adapter) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if l.consumed {
-		return fmt.Errorf("%w: %s", ErrLoggerAlreadyDisposed, "QueueLogger")
-	}
-	return fmt.Errorf("%w: can not attach adapter to QueueLogger", Error)
+func (qa *queueAdapter) HandlerBatch(records []Record) error {
+	qa.mu.Lock()
+	defer qa.mu.Unlock()
+	qa.buf = append(qa.buf, records...)
+	return nil
 }
 
-func (l *QueueLogger) SetAdapter(adapter Adapter) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if l.consumed {
-		return fmt.Errorf("%w: %s", ErrLoggerAlreadyDisposed, "DefaultLogger")
-	}
-	return fmt.Errorf("%w: can not set adapter to QueueLogger", Error)
+func (qa *queueAdapter) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return qa
 }
 
-func (l *QueueLogger) Options() (*Options, error) {
-	return nil, fmt.Errorf("%w: QueueLogger does not return options", Error)
-}
-
-type QueueRecord struct {
-	pc    uintptr
-	lvl   Level
-	ts    time.Time
-	msg   string
-	attrs []slog.Attr
-}
-
-func NewQueueRecord(lvl Level, msg string, detph int, attrs ...slog.Attr) QueueRecord {
-	var pcs [1]uintptr
-	runtime.Callers(detph, pcs[:])
-
-	return QueueRecord{
-		lvl:   lvl,
-		ts:    time.Now(),
-		msg:   msg,
-		attrs: attrs,
-		pc:    pcs[0],
-	}
-}
-
-func (qr QueueRecord) Record(loc *time.Location) slog.Record {
-	r := slog.NewRecord(qr.ts.In(loc), slog.Level(qr.lvl), qr.msg, qr.pc)
-	r.AddAttrs(qr.attrs...)
-	return r
+func (qa *queueAdapter) WithGroup(name string) slog.Handler {
+	return qa
 }
