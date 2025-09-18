@@ -441,7 +441,7 @@ func buildErrorChainString(err error) string {
 
 // validateEqualArgs checks whether provided arguments can be safely used in the
 // Equal/NotEqual functions.
-func validateEqualArgs(want, got interface{}) error {
+func validateEqualArgs(want, got any) error {
 	if want == nil && got == nil {
 		return nil
 	}
@@ -455,7 +455,7 @@ func validateEqualArgs(want, got interface{}) error {
 // ObjectsAreEqual determines if two objects are considered equal.
 //
 // This function does no assertion of any kind.
-func ObjectsAreEqual(expected, actual interface{}) bool {
+func ObjectsAreEqual(expected, actual any) bool {
 	if expected == nil || actual == nil {
 		return expected == actual
 	}
@@ -475,7 +475,7 @@ func ObjectsAreEqual(expected, actual interface{}) bool {
 	return bytes.Equal(exp, act)
 }
 
-func isFunction(arg interface{}) bool {
+func isFunction(arg any) bool {
 	if arg == nil {
 		return false
 	}
@@ -488,7 +488,7 @@ func isFunction(arg interface{}) bool {
 // If the values are not of like type, the returned strings will be prefixed
 // with the type name, and the value will be enclosed in parenthesis similar
 // to a type conversion in the Go grammar.
-func formatUnequalValues(expected, actual interface{}) (e string, a string) {
+func formatUnequalValues(expected, actual any) (e string, a string) {
 	if reflect.TypeOf(expected) != reflect.TypeOf(actual) {
 		return fmt.Sprintf("%T(%s)", expected, truncatingFormat(expected)),
 			fmt.Sprintf("%T(%s)", actual, truncatingFormat(actual))
@@ -504,7 +504,7 @@ func formatUnequalValues(expected, actual interface{}) (e string, a string) {
 //
 // This helps keep formatted error messages lines from exceeding the
 // bufio.MaxScanTokenSize max line length that the go testing framework imposes.
-func truncatingFormat(data interface{}) string {
+func truncatingFormat(data any) string {
 	value := fmt.Sprintf("%#v", data)
 	max := bufio.MaxScanTokenSize - 100 // Give us some space the type info too if needed.
 	if len(value) > max {
@@ -607,6 +607,11 @@ func contains[Container Containable[Item], Item comparable](
 	// Use type switching on the actual value to dispatch
 	switch c := any(container).(type) {
 	case []Item:
+		if len(c) == 0 {
+			return fail(tt, fmt.Sprintf("Slice is empty so can not contain item:\n"+
+				"slice: %v\n"+
+				"item: %v", c, item), msgAndArgs...)
+		}
 		// Slice contains - use slices.Contains
 		if slices.Contains(c, item) {
 			return true
@@ -616,16 +621,7 @@ func contains[Container Containable[Item], Item comparable](
 			"item: %v", c, item), msgAndArgs...)
 
 	case string:
-		// String contains - convert item to string and use strings.Contains
-		if str, ok := any(item).(string); ok {
-			if strings.Contains(c, str) {
-				return true
-			}
-		}
-		return fail(tt, fmt.Sprintf("String does not contain substring:\n"+
-			"string: %q\n"+
-			"substring: %v", c, item), msgAndArgs...)
-
+		return fail(tt, "use ContainsString instead")
 	case map[Item]any:
 		// Map key contains
 		if _, exists := c[item]; exists {
@@ -665,13 +661,22 @@ func ContainsValue[K comparable, V comparable](tt TestingIface, m map[K]V, value
 
 // More specific versions are still available if needed for clarity
 func ContainsSlice[T comparable](tt TestingIface, slice []T, item T, msgAndArgs ...any) bool {
-	tt.Helper()
-	return Contains(tt, slice, item, msgAndArgs...)
+	return contains(tt, slice, item, msgAndArgs...)
 }
 
 func ContainsString(tt TestingIface, str, substr string, msgAndArgs ...any) bool {
 	tt.Helper()
-	return Contains(tt, str, substr, msgAndArgs...)
+	if str == "" {
+		return fail(tt, fmt.Sprintf("String is empty so can not contain substring:\n"+
+			"string: %q\n"+
+			"substring: %v", str, substr), msgAndArgs...)
+	}
+	if strings.Contains(str, substr) {
+		return true
+	}
+	return fail(tt, fmt.Sprintf("String does not contain substring:\n"+
+		"string: %q\n"+
+		"substring: %v", str, substr), msgAndArgs...)
 }
 
 func ContainsKey[K comparable, V any](tt TestingIface, m map[K]V, key K, msgAndArgs ...any) bool {
@@ -694,4 +699,29 @@ func ContainsWithEq[T any](tt TestingIface, container []T, item T, eq func(T, T)
 	return fail(tt, fmt.Sprintf("Slice does not contain item with custom equality:\n"+
 		"slice: %v\n"+
 		"item: %v", container, item), msgAndArgs...)
+}
+
+// IsType asserts that the given value is of the expected type. If the value is
+// not of the expected type, the test fails with a descriptive message.
+//
+// Example:
+//
+//	var x interface{} = 42
+//	testutils.IsType(t, 0, x, "Expected int type")
+//	// Fails if x is not an int
+func IsType(tt TestingIface, expectedType any, got any, msgAndArgs ...any) bool {
+	t.Helper()
+	expected := reflect.TypeOf(expectedType)
+	if expected == nil {
+		if got != nil {
+			fail(t, fmt.Sprintf("expected nil type, got %T", got), msgAndArgs...)
+			return false
+		}
+		return true
+	}
+	gotType := reflect.TypeOf(got)
+	if gotType != expected {
+		fail(t, fmt.Sprintf("expected type %v, got %v", expected, gotType), msgAndArgs...)
+	}
+	return gotType == expected
 }
