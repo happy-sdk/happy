@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"regexp"
 	"sync"
 )
 
@@ -296,4 +297,17 @@ func init() {
 		}
 		return res
 	})()
+}
+
+func StringHEX(str string) (hex string) {
+	return fmt.Sprintf("%x", []byte(str))
+}
+
+// StrippedString return clean string all
+// ANSI escape sequences removed.
+func StrippedString(str string) (stripped string) {
+	// Simple regex to remove ANSI escape sequences
+	// Pattern matches: ESC[ followed by any characters until 'm'
+	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	return ansiRegex.ReplaceAllString(str, "")
 }
