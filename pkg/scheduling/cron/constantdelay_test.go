@@ -6,6 +6,8 @@ package cron
 import (
 	"testing"
 	"time"
+
+	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
 
 func TestConstantDelayNext(t *testing.T) {
@@ -50,8 +52,6 @@ func TestConstantDelayNext(t *testing.T) {
 	for _, c := range tests {
 		actual := Every(c.delay).Next(getTime(c.time))
 		expected := getTime(c.expected)
-		if actual != expected {
-			t.Errorf("%s, \"%s\": (expected) %v != %v (actual)", c.time, c.delay, expected, actual)
-		}
+		testutils.Equal(t, expected, actual, "%s, \"%s\": (expected) %v != %v (actual)", c.time, c.delay, expected, actual)
 	}
 }
