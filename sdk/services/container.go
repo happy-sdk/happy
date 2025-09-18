@@ -159,20 +159,27 @@ func (c *Container) Settings() service.Config {
 }
 
 func (c *Container) Start(ectx context.Context, sess *session.Context) (err error) {
+	service.MarkStarted(c.info)
 	c.rlock("starting service")
 	retries := c.retries
 	if c.svc.settings.RetryOnError && c.svc.settings.MaxRetries > 0 && c.retries > 0 {
 		if c.retries > int(c.svc.settings.MaxRetries) {
+			err := fmt.Errorf("%w: service start cancelled: max retries reached", Error)
+			service.MarkStopped(c.info)
+			service.AddError(c.info, err)
 			c.mu.RUnlock()
-			return fmt.Errorf("%w: service start cancelled: max retries reached", Error)
+			return err
 		}
 		if c.svc.settings.RetryBackoff > 0 {
 			ctx, cancel := context.WithTimeout(ectx, time.Duration(c.svc.settings.RetryBackoff))
 			defer cancel()
 			<-ctx.Done()
 			if !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				err := fmt.Errorf("%w: service start cancelled: %s", Error, ctx.Err())
+				service.MarkStopped(c.info)
+				service.AddError(c.info, err)
 				c.mu.RUnlock()
-				return fmt.Errorf("%w: service start cancelled: %s", Error, ctx.Err())
+				return err
 			}
 			c.mu.RUnlock()
 		}
@@ -190,12 +197,16 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 	c.retries++
 	if c.svc.startAction != nil {
 		if err := c.svc.startAction(sess); err != nil {
+			service.MarkStopped(c.info)
+			service.AddError(c.info, err)
 			return err
 		}
 	}
 	if c.cron != nil {
 		internal.Log(sess.Log(), "starting cron jobs", slog.String("service", c.info.Addr().String()))
 		if err := c.cron.Start(); err != nil {
+			service.MarkStopped(c.info)
+			service.AddError(c.info, err)
 			return err
 		}
 	}
@@ -204,9 +215,8 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 
 	payload := new(vars.Map)
 
-	if err == nil {
-		service.MarkStarted(c.info)
-	} else {
+	if err != nil {
+		service.MarkStopped(c.info)
 		service.AddError(c.info, err)
 		if errset := payload.Store("err", err); errset != nil {
 			return errors.Join(errset, err)
@@ -220,6 +230,8 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 	}
 	for k, v := range kv {
 		if err := payload.Store(k, v); err != nil {
+			service.MarkStopped(c.info)
+			service.AddError(c.info, err)
 			return err
 		}
 	}
@@ -253,7 +265,9 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 	if cancelErr == nil {
 		cancelErr = ErrServiceStopped
 	}
-	c.cancel(cancelErr)
+	if c.cancel != nil {
+		c.cancel(cancelErr)
+	}
 	if c.svc.stopAction != nil {
 		err = c.svc.stopAction(sess, e)
 	}
@@ -267,11 +281,13 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 		}
 	}
 
+	info := c.info
+
 	kv := map[string]any{
-		"name":       c.info.Name(),
-		"addr":       c.info.Addr().String(),
-		"running":    c.info.Running(),
-		"stopped.at": c.info.StoppedAt(),
+		"name":       info.Name(),
+		"addr":       info.Addr().String(),
+		"running":    info.Running(),
+		"stopped.at": info.StoppedAt(),
 	}
 
 	for k, v := range kv {
@@ -321,12 +337,6 @@ func (c *Container) ForceShutdown(sess *session.Context, err error) error {
 	} else {
 		sess.Log().Warn(fmt.Sprintf("service previously locked when %s", c.lockInfo.Load().(string)))
 	}
-
-	if c.cancel != nil {
-		c.cancel(err)
-	}
-	c.svc.tickAction = nil
-	c.svc.tockAction = nil
 	c.mu.Unlock()
 	return c.Stop(sess, err)
 }
