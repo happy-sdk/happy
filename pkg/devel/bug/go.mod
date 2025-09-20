@@ -1,5 +1,7 @@
 module github.com/happy-sdk/happy/pkg/devel/bug
 
-go 1.24.0
+go 1.25
 
-require github.com/happy-sdk/happy/pkg/logging v0.2.4
+require github.com/happy-sdk/happy/pkg/logging v0.3.0
+
+require github.com/happy-sdk/happy/pkg/bitutils v0.1.0 // indirect
