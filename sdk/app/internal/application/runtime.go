@@ -58,7 +58,7 @@ type Runtime struct {
 	evch              chan events.Event
 	engine            *engine.Engine
 
-	tmplogger logging.Logger
+	tmplogger *logging.Logger
 	execlvl   logging.Level
 
 	initStartedAt time.Time
@@ -81,7 +81,7 @@ func (rt *Runtime) WithExitAction(onExit action.OnExit) {
 	rt.exitActions = append(rt.exitActions, onExit)
 }
 
-func (rt *Runtime) SetLogger(l logging.Logger) {
+func (rt *Runtime) SetLogger(l *logging.Logger) {
 	rt.tmplogger = l
 }
 
@@ -147,7 +147,7 @@ func (rt *Runtime) boot() (err error) {
 
 	// Run immediate command?
 	if rt.cmd.IsImmediate() {
-		internal.Log(rt.sess.Log(), "skip application boot for immediate command")
+		rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(), "skip application boot for immediate command")
 		if err := rt.executeBeforeActions(); err != nil {
 			return err
 		}
@@ -155,7 +155,7 @@ func (rt *Runtime) boot() (err error) {
 		return nil
 	}
 
-	rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "booting_application", "booting application"))
+	_ = rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "booting_application", "booting application"))
 
 	// Create a new instance
 	if rt.inst, err = instance.New(rt.sess); err != nil {
@@ -223,7 +223,7 @@ func (rt *Runtime) boot() (err error) {
 	rt.sess.Dispatch(rt.sessionReadyEvent)
 	rt.sessionReadyEvent = nil
 	if rt.execlvl == logging.LevelQuiet || rt.execlvl < logging.LevelDebug {
-		rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "application_booted", "application booted"), slog.String("took", bootTook))
+		_ = rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "application_booted", "application booted"), slog.String("took", bootTook))
 	}
 	return nil
 }
@@ -243,7 +243,7 @@ func (rt *Runtime) Start() {
 
 	rt.startedAt = rt.sess.Time(time.Now())
 	if rt.execlvl == logging.LevelQuiet || rt.execlvl < logging.LevelDebug {
-		rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "starting_application", "starting application"), slog.Time("started.at", rt.startedAt))
+		_ = rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "starting_application", "starting application"), slog.Time("started.at", rt.startedAt))
 	}
 
 	if rt.engine != nil {
@@ -328,7 +328,7 @@ func (rt *Runtime) recover(r any, msg string) {
 	rt.log(3, logging.LevelBUG, fmt.Sprintf("panic: %s (recovered)", msg),
 		slog.String("msg", errMessage),
 	)
-	rt.log(3, logging.LevelAlways, stackTrace)
+	rt.log(3, logging.LevelOut, stackTrace)
 	rt.Exit(1)
 }
 
@@ -344,27 +344,33 @@ func (rt *Runtime) executeBeforeActions() error {
 		rt.execlvl = execlvl
 	}
 
-	internal.Log(rt.sess.Log(), "executing before actions")
+	rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(),
+		"executing before actions")
 
 	if rt.beforeAlways != nil && !rt.cmd.SkipSharedBeforeAction() {
 		timer := time.Now()
-		internal.Log(rt.sess.Log(), "executing before always")
+		rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(),
+			"executing before always")
 		args := action.NewArgs(rt.cmd.GetFlagSet())
 		if err := rt.beforeAlways(rt.sess, args); err != nil {
-			internal.Log(rt.sess.Log(), "failed to execute before always action", slog.String("err", err.Error()))
+			rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(),
+				"failed to execute before always action", slog.String("err", err.Error()))
 			return err
 		}
-		internal.Log(rt.sess.Log(), "before always action took", slog.String("took", time.Since(timer).String()))
+		rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(),
+			"before always action took", slog.String("took", time.Since(timer).String()))
 	}
 
 	timer := time.Now()
 	if err := rt.cmd.ExecBefore(rt.sess); err != nil {
-		internal.Log(rt.sess.Log(), "failed to execute before action", slog.String("err", err.Error()))
+		rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(),
+			"failed to execute before action", slog.String("err", err.Error()))
 		if !rt.cmd.Flag("help").Present() {
 			return err
 		}
 	}
-	internal.Log(rt.sess.Log(), "before action took", slog.String("took", time.Since(timer).String()))
+	rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(),
+		"before action took", slog.String("took", time.Since(timer).String()))
 
 	if rt.cmd.Flag("help").Present() || rt.cmd.IsWrapper() {
 		if err := rt.showHelp(); err != nil {
@@ -485,22 +491,25 @@ func (rt *Runtime) executeDoAction() error {
 		}
 	}()
 	doTimer := time.Now()
-	internal.Log(rt.sess.Log(), "executing command", slog.String("args", strings.Join(os.Args, " ")))
+	rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(),
+		"executing command", slog.String("args", strings.Join(os.Args, " ")))
 	src, err := rt.cmd.ExecDo(rt.sess)
 	if err != nil {
 		if errors.Is(err, command.ErrNotImplemented) {
-			rt.sess.Log().NotImplemented(err.Error())
+			rt.sess.Log().Log(rt.sess.Context(), logging.LevelNotImpl.Level(), err.Error())
 		} else {
-			var source []slog.Attr
+			var source []any
 			if src != "" {
 				source = append(source, slog.String(slog.SourceKey, src))
 			}
-			rt.sess.Log().Error(err.Error(), source...)
+			rt.sess.Log().Log(rt.sess.Context(), logging.LevelError.Level(),
+				err.Error(), source...)
 		}
 
 	}
 
-	internal.Log(rt.sess.Log(), "command took", slog.String("took", time.Since(doTimer).String()))
+	rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(),
+		"command took", slog.String("took", time.Since(doTimer).String()))
 	return err
 }
 
@@ -537,7 +546,7 @@ func (rt *Runtime) Exit(code int) {
 
 		if rt.sess.Get("app.stats.enabled").Bool() && rt.sess.Log().Level() <= logging.LevelDebug {
 			if rt.engine != nil {
-				rt.sess.Log().Println(rt.engine.Stats().State().String())
+				rt.sess.Log().Log(rt.sess.Context(), logging.LevelOut.Level(), rt.engine.Stats().State().String())
 			}
 		}
 
@@ -583,11 +592,11 @@ func (rt *Runtime) disposeLogger() {
 func (rt *Runtime) log(depth int, lvl logging.Level, msg string, attrs ...slog.Attr) {
 	// try to log with session logger
 	if rt.sess != nil {
-		rt.sess.Log().LogDepth(depth+1, lvl, msg, attrs...)
+		_ = rt.sess.Log().LogDepth(depth+1, lvl, msg, attrs...)
 		return
 	}
 	if rt.tmplogger != nil {
-		rt.tmplogger.LogDepth(depth+1, lvl, msg, attrs...)
+		_ = rt.tmplogger.LogDepth(depth+1, lvl, msg, attrs...)
 		return
 	}
 

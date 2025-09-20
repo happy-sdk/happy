@@ -17,7 +17,6 @@ import (
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
@@ -209,7 +208,7 @@ func (c *Cmd) CheckDisabled(sess *session.Context) bool {
 
 	if c.disableAction != nil {
 		if err := c.disableAction(sess); err != nil {
-			internal.LogInit(sess.Log(), fmt.Sprintf("hide(%s): %s", c.name, err.Error()))
+			sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), fmt.Sprintf("hide(%s): %s", c.name, err.Error()))
 			disabled = true
 			c.err = err
 		}
@@ -226,7 +225,7 @@ func (c *Cmd) CheckDisabled(sess *session.Context) bool {
 		if scmd.disableAction != nil {
 
 			if err := scmd.disableAction(sess); err != nil {
-				internal.LogInit(sess.Log(), fmt.Sprintf("disable-cmd(%s): %s", scmd.Name, err.Error()))
+				sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), fmt.Sprintf("disable-cmd(%s): %s", scmd.Name, err.Error()))
 				scmd.Disabled = true
 			}
 		}
@@ -325,8 +324,7 @@ func (c *Cmd) ExecBefore(sess *session.Context) (err error) {
 	}
 
 	if err := c.beforeAction(sess, args); err != nil {
-		internal.Log(
-			sess.Log(),
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(),
 			"before action",
 			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
@@ -353,8 +351,7 @@ func (c *Cmd) ExecDo(sess *session.Context) (string, error) {
 
 	if err := c.doAction(sess, args); err != nil {
 		cmds := append(c.parents, c.name)
-		internal.Log(
-			sess.Log(),
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(),
 			err.Error(),
 			slog.String("cmd", strings.Join(cmds, " ")),
 			slog.String("action", "do"),
@@ -376,8 +373,7 @@ func (c *Cmd) ExecAfterFailure(sess *session.Context, err error) error {
 	}
 
 	if err := c.afterFailureAction(sess, err); err != nil {
-		internal.Log(
-			sess.Log(),
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(),
 			"after failure action",
 			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
@@ -397,7 +393,8 @@ func (c *Cmd) ExecAfterSuccess(sess *session.Context) error {
 	}
 
 	if err := c.afterSuccessAction(sess); err != nil {
-		internal.Log(sess.Log(), "after success action",
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(),
+			"after success action",
 			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
 		)
@@ -418,7 +415,8 @@ func (c *Cmd) ExecAfterAlways(sess *session.Context, err error) error {
 	}
 
 	if err := c.afterAlwaysAction(sess, err); err != nil {
-		internal.Log(sess.Log(), "after always action",
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(),
+			"after always action",
 			slog.String("cmd", c.name),
 			slog.String("err", err.Error()),
 		)
@@ -458,7 +456,7 @@ func (c *Cmd) callSharedBeforeAction(sess *session.Context) error {
 
 		c.sharedCalled = true
 		if err := c.beforeAction(sess, action.NewArgs(c.flags)); err != nil {
-			internal.Log(sess.Log(), "shared before action",
+			sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "shared before action",
 				slog.String("cmd", c.name),
 				slog.String("err", err.Error()))
 			return err

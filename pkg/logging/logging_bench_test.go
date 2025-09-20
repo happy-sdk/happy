@@ -40,7 +40,7 @@ func BenchmarkLoggers(b *testing.B) {
 		for b.Loop() {
 			logger.Log(b.Context(), slog.LevelInfo, "log info message", args...)
 		}
-		logger.Flush()
+		_ = logger.Flush()
 	})
 
 	tests := []struct {
@@ -304,7 +304,9 @@ func BenchmarkLoggers(b *testing.B) {
 		)
 
 		b.Run(tt.Name, func(b *testing.B) {
-			defer logger.Dispose()
+			defer func() {
+				_ = logger.Dispose()
+			}()
 			b.ReportAllocs()
 			for b.Loop() {
 				logger.Log(b.Context(), slog.LevelInfo, "log info message", args...)
@@ -356,11 +358,11 @@ type lineWriter interface {
 func buildLogLine[W lineWriter](buf W, attrs []slog.Attr) string {
 	for i, attr := range attrs {
 		if i > 0 {
-			buf.WriteByte(' ')
+			_ = buf.WriteByte(' ')
 		}
-		buf.WriteString(attr.Key)
-		buf.WriteByte('=')
-		fmt.Fprint(buf, attr.Value.Any())
+		_, _ = buf.WriteString(attr.Key)
+		_ = buf.WriteByte('=')
+		_, _ = fmt.Fprint(buf, attr.Value.Any())
 	}
 	return buf.String()
 }

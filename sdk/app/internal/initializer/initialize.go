@@ -19,6 +19,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/devel/goutils"
 	"github.com/happy-sdk/happy/pkg/fsutils"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
@@ -28,7 +29,6 @@ import (
 	"github.com/happy-sdk/happy/sdk/cli/cmd/config"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/instance"
-	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
@@ -75,7 +75,8 @@ func (init *Initializer) initialize() {
 }
 
 func (init *Initializer) initSettingsAndOpts() (err error) {
-	internal.LogInitDepth(init.log, 1, "initializing application options and settings")
+
+	_ = init.log.LogDepth(1, logging.LevelHappy, "initializing application options and settings")
 
 	if init.settings == nil {
 		err = fmt.Errorf("%w: settings is <nil>", Error)
@@ -323,7 +324,7 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 }
 
 func (init *Initializer) initBasePaths() error {
-	internal.LogInitDepth(init.log, 1, "initializing base paths")
+	_ = init.log.LogDepth(1, logging.LevelHappy, "initializing base paths")
 	if len(init.defaults.slug) == 0 {
 		return fmt.Errorf("%w: can not configure paths slug is empty", Error)
 	}
@@ -479,7 +480,7 @@ func (init *Initializer) initBasePaths() error {
 						return fmt.Errorf("failed to delete temp dir %s: %w", tempDir, err)
 					} else {
 						if sess != nil {
-							internal.Log(sess.Log(), "successfully deleted temp dir", slog.String("dir", tempDir))
+							sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "successfully deleted temp dir", slog.String("dir", tempDir))
 						}
 					}
 				}
@@ -493,7 +494,7 @@ func (init *Initializer) initBasePaths() error {
 }
 
 func (init *Initializer) initRootCommand() error {
-	internal.LogInitDepth(init.log, 1, "initializing root command", slog.String("bin", init.opts.Get("app.cli.binary_name").String()))
+	_ = init.log.LogDepth(1, logging.LevelHappy, "initializing root command", slog.String("bin", init.opts.Get("app.cli.binary_name").String()))
 
 	// Normalize os.Args
 	var osargs []string

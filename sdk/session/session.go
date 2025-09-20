@@ -32,7 +32,7 @@ var (
 )
 
 type Register interface {
-	Log() logging.Logger
+	Log() *logging.Logger
 	Settings() *settings.Profile
 	Opts() *options.Options
 	Time(t time.Time) time.Time
@@ -44,7 +44,7 @@ type Register interface {
 type Context struct {
 	mu sync.RWMutex
 
-	logger  logging.Logger
+	logger  *logging.Logger
 	profile *settings.Profile
 	opts    *options.Options
 	timeloc *time.Location
@@ -93,18 +93,18 @@ func (c *Context) Wait(ctrlc bool) <-chan struct{} {
 	err := c.err
 	c.mu.Unlock()
 	if err != nil {
-		internal.Log(c.logger, "skip waiting, session terminated")
+		c.logger.Log(c.ctx, logging.LevelHappy.Level(), "skip waiting, session terminated")
 		return c.Done()
 	}
 
 	c.mu.RLock()
 	if !c.released {
-		internal.Log(c.logger, "waiting for user cancel or session termination")
+		c.logger.Log(c.ctx, logging.LevelHappy.Level(), "waiting for user cancel or session termination")
 		if ctrlc {
 			fmt.Println("Press Ctrl+C to cancel")
 		}
 	} else {
-		internal.Log(c.logger, "waiting for session termination")
+		c.logger.Log(c.ctx, logging.LevelHappy.Level(), "waiting for session termination")
 	}
 	c.mu.RUnlock()
 
@@ -189,7 +189,7 @@ func (c *Context) Release() {
 	logger := c.logger
 	c.mu.Unlock()
 	sigCancel()
-	internal.Log(logger, "session released SIGINT, SIGKILL signals")
+	logger.Log(c.ctx, logging.LevelHappy.Level(), "session released SIGINT, SIGKILL signals")
 }
 
 // Destroy can be called do destroy session.
@@ -237,7 +237,7 @@ func (c *Context) terminateSession() {
 	}
 }
 
-func (c *Context) Log() logging.Logger {
+func (c *Context) Log() *logging.Logger {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.logger
@@ -301,7 +301,7 @@ func (c *Context) Ready() <-chan struct{} {
 	c.mu.RLock()
 	d := c.ready.Done()
 	if !c.isReady {
-		internal.Log(c.Log(), "waiting session to become ready")
+		c.logger.Log(c.ctx, logging.LevelHappy.Level(), "waiting session to become ready")
 	}
 	c.mu.RUnlock()
 	return d
@@ -320,7 +320,7 @@ func (c *Context) Dispatch(ev events.Event) {
 		c.isReady = true
 		c.readyCancel()
 		c.mu.Unlock()
-		internal.Log(c.Log(), "session is ready")
+		c.logger.Log(c.ctx, logging.LevelHappy.Level(), "session is ready")
 		return
 	}
 
@@ -409,7 +409,8 @@ func (c *Context) start() (err error) {
 	} else {
 		c.timeloc = time.Local
 	}
-	internal.LogDepth(c.logger, 1, "session started")
+
+	c.logger.Log(c.ctx, logging.LevelHappy.Level(), "session started")
 	return err
 }
 
@@ -461,7 +462,7 @@ func AttachServiceInfo(c *Context, svcinfo *service.Info) error {
 
 	}
 	if _, ok := c.svss[svcinfo.Addr().String()]; ok {
-		c.Log().NotImplemented("service info already attached", slog.String("service", svcinfo.Addr().String()))
+		c.Log().Log(c.ctx, logging.LevelNotImpl.Level(), "service info already attached", slog.String("service", svcinfo.Addr().String()))
 		return fmt.Errorf("%w: service info already attached (%s)", Error, svcinfo.Name())
 	}
 	c.svss[svcinfo.Addr().String()] = svcinfo
@@ -470,7 +471,7 @@ func AttachServiceInfo(c *Context, svcinfo *service.Info) error {
 
 // Config is a session builder used internally by the SDK to initialize a session.
 type Config struct {
-	Logger       logging.Logger
+	Logger       *logging.Logger
 	Profile      *settings.Profile
 	Opts         *options.Options
 	TimeLocation *time.Location

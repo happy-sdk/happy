@@ -130,7 +130,7 @@ func run(sess *session.Context, cmd *exec.Cmd) error {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
 	if sess.Get("app.main.exec.x").Bool() {
-		sess.Log().LogDepth(4, logging.LevelAlways, cmd.String())
+		_ = sess.Log().LogDepth(4, logging.LevelOut, cmd.String())
 	}
 
 	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
@@ -188,7 +188,7 @@ func execCommandRaw(sess *session.Context, cmd *exec.Cmd) ([]byte, error) {
 	sess.Log().Debug("exec: ", slog.String("cmd", cmd.String()))
 
 	if sess.Get("app.main.exec.x").Bool() {
-		sess.Log().LogDepth(4, logging.LevelAlways, cmd.String())
+		_ = sess.Log().LogDepth(4, logging.LevelOut, cmd.String())
 	}
 
 	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec

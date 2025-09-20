@@ -6,11 +6,14 @@ package logging
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"testing"
 
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
+
+var errLoggingTest = errors.New("logging:test")
 
 func defaultTestConfig() Config {
 	config := DefaultConfig()
@@ -79,7 +82,9 @@ func TestLogger(t *testing.T) {
 		config,
 		NewAdapterWithHandler(logout, slog.NewTextHandler),
 	)
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	for range 10000 {
 		logger.Log(t.Context(), LevelHappy.Level(), "log message LevelHappy", args...)
@@ -98,7 +103,7 @@ func TestLogger(t *testing.T) {
 		logger.Log(t.Context(), LevelOut.Level(), "log message LevelOut", args...)
 		logger.Log(t.Context(), LevelBUG.Level(), "log message LevelBUG", args...)
 	}
-	logger.Flush()
+	testutils.NoError(t, logger.Flush())
 
 	testutils.Equal(t, 15230000, slogout.buf.Len(), "slog buffer should be creater than 0")
 	testutils.Equal(t, 15230000, logout.buf.Len(), "Logger buffer should be creater than 0")
@@ -118,7 +123,7 @@ func (f *testWriter) Write(p []byte) (n int, err error) {
 
 func (f *testWriter) Close() error {
 	if f.fail {
-		return errors.New("testWriter: close failed")
+		return fmt.Errorf("%w: testWriter: close failed", errLoggingTest)
 	}
 	return nil
 }

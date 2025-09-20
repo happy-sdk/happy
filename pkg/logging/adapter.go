@@ -122,7 +122,7 @@ func ReplaceAdaptersStdout(l *Logger, w io.Writer) error {
 		if a.w == nil || a.w.Get() != os.Stdout {
 			continue
 		}
-		a.replaceWriter(w) // Can't fail for os.Stdout
+		_ = a.replaceWriter(w) // Can't fail for os.Stdout
 		found = true
 	}
 
@@ -154,7 +154,7 @@ func ReplaceAdaptersStderr(l *Logger, w io.Writer) error {
 		if a.w == nil || a.w.Get() != os.Stderr {
 			continue
 		}
-		a.replaceWriter(w) // Can't fail for os.Stderr
+		_ = a.replaceWriter(w) // Can't fail for os.Stderr
 		found = true
 	}
 
@@ -244,8 +244,7 @@ func (c *AdapterComposer[A]) Compose(config Config) Adapter {
 	if c == nil || c.f == nil {
 		return nil
 	}
-	var handler slog.Handler
-	handler = c.f(c.w, config)
+	var handler slog.Handler = c.f(c.w, config)
 	if handler == nil || reflect.ValueOf(handler).IsNil() {
 		return nil
 	}
@@ -484,7 +483,6 @@ type derivedAdapter struct {
 	group string
 
 	// Cached derived adapters (created lazily)
-	once            sync.Once
 	derivedAdapters []slog.Handler
 }
 

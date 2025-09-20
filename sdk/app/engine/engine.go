@@ -21,7 +21,6 @@ import (
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/events"
-	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/services"
 	"github.com/happy-sdk/happy/sdk/services/service"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -123,7 +122,7 @@ func (e *Engine) Start(sess *session.Context) error {
 	if state != engineInit {
 		return fmt.Errorf("%w: can not start engine %s", Error, state.String())
 	}
-	internal.Log(sess.Log(), "starting engine ...")
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "starting engine ...")
 
 	e.mu.Lock()
 	e.state = engineStarting
@@ -186,7 +185,7 @@ func (e *Engine) Start(sess *session.Context) error {
 		}
 	}
 
-	internal.Log(sess.Log(), "engine started", slog.String("state", state.String()))
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "engine started", slog.String("state", state.String()))
 	return nil
 }
 
@@ -202,11 +201,11 @@ func (e *Engine) Stop(sess *session.Context) error {
 	gsd := e.gsd
 	e.mu.Unlock()
 
-	internal.Log(sess.Log(), "stopping engine ...")
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "stopping engine ...")
 
 	e.engineLoopCancel()
 
-	internal.Log(sess.Log(), "stopping engineLoopCancel ...")
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "stopping engineLoopCancel ...")
 
 	var (
 		quarantine           map[string]*services.Container
@@ -228,12 +227,12 @@ func (e *Engine) Stop(sess *session.Context) error {
 			}
 		}
 		if !rsvc.Info().Running() {
-			internal.Log(sess.Log(), fmt.Sprintf("service already stopped %s", rsvc.Info().Slug()))
+			sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), fmt.Sprintf("service already stopped %s", rsvc.Info().Slug()))
 			continue
 		}
 		totalRunningServices.Add(1)
 
-		internal.Log(sess.Log(), fmt.Sprintf("shutdown %s", rsvc.Info().Slug()))
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), fmt.Sprintf("shutdown %s", rsvc.Info().Slug()))
 		gsd.Add(1)
 		go func(url string, svcc *services.Container) {
 			defer gsd.Done()
@@ -241,7 +240,7 @@ func (e *Engine) Stop(sess *session.Context) error {
 			// r.ctx also to be cancelled, however lets wait for the
 			// context done since r.ctx is cancelled after last tickk completes.
 			// so e.xtc is not parent of r.ctx.
-			internal.Log(sess.Log(), fmt.Sprintf("waiting for %s to prepare shutdown", svcc.Info().Slug()))
+			sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), fmt.Sprintf("waiting for %s to prepare shutdown", svcc.Info().Slug()))
 			<-svcc.Done()
 			// lets call stop now we know that tick loop has exited.
 			e.serviceStop(sess, url, ErrServiceTerminated)
@@ -251,7 +250,7 @@ func (e *Engine) Stop(sess *session.Context) error {
 
 	trs := totalRunningServices.Load()
 	if trs > 0 {
-		internal.Log(sess.Log(), fmt.Sprintf("waiting for %d services to stop", trs))
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), fmt.Sprintf("waiting for %d services to stop", trs))
 	}
 
 	errChan := make(chan error, len(quarantine))
@@ -274,7 +273,7 @@ func (e *Engine) Stop(sess *session.Context) error {
 						break
 					}
 					backoff := time.Duration(10*math.Pow(10, float64(attempt))) * time.Millisecond
-					sess.Log().Notice(fmt.Sprintf("service %s still locked, backing off %v (attempt %d/%d)",
+					sess.Log().Log(sess.Context(), logging.LevelNotice.Level(), fmt.Sprintf("service %s still locked, backing off %v (attempt %d/%d)",
 						url, backoff, attempt+1, maxAttempts))
 
 					select {
@@ -292,7 +291,7 @@ func (e *Engine) Stop(sess *session.Context) error {
 					if err := container.ForceShutdown(sess, ErrServiceTerminated); err != nil {
 						errChan <- err
 					} else {
-						sess.Log().Ok(fmt.Sprintf("service %s force shutdown completed", url))
+						sess.Log().Log(sess.Context(), logging.LevelSuccess.Level(), fmt.Sprintf("service %s force shutdown completed", url))
 					}
 				} else {
 					sess.Log().Info(fmt.Sprintf("service %s released lock right before force shutdown", svcc.Info().Slug()))
@@ -301,7 +300,7 @@ func (e *Engine) Stop(sess *session.Context) error {
 			}(u, container)
 		}
 	}
-	internal.Log(sess.Log(), "waiting for engine to stop")
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "waiting for engine to stop")
 	// Wait for completion and handle any timeout errors
 	go func() {
 		gsd.Wait()
@@ -321,7 +320,7 @@ func (e *Engine) Stop(sess *session.Context) error {
 		e.eventLoopCancel()
 		<-e.eventLoopShutdownCtx.Done()
 	}
-	internal.Log(sess.Log(), "engine stopped")
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "engine stopped")
 	return nil
 }
 
@@ -338,7 +337,7 @@ func (e *Engine) loopStart(sess *session.Context, init *sync.WaitGroup) {
 	e.engineLoopCtx, e.engineLoopCancel = context.WithCancel(sess)
 
 	if e.tick == nil && e.tock == nil {
-		internal.Log(sess.Log(), "engine loop skipped")
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "engine loop skipped")
 		return
 	}
 	if e.tock == nil {
@@ -367,10 +366,10 @@ func (e *Engine) loopStart(sess *session.Context, init *sync.WaitGroup) {
 				// Obtain and log the stack trace
 				stackTrace := string(stack)
 
-				sess.Log().LogDepth(2, logging.LevelBUG, "panic: engine loop (recovered)",
+				_ = sess.Log().LogDepth(2, logging.LevelBUG, "panic: engine loop (recovered)",
 					slog.String("msg", errMessage),
 				)
-				sess.Log().LogDepth(2, logging.LevelAlways, stackTrace)
+				_ = sess.Log().LogDepth(2, logging.LevelOut, stackTrace)
 				sess.Destroy(fmt.Errorf("%w: engine loop panic", Error))
 			}
 
@@ -380,7 +379,7 @@ func (e *Engine) loopStart(sess *session.Context, init *sync.WaitGroup) {
 			e.engineOK = true
 			e.mu.Unlock()
 			init.Done()
-			internal.Log(sess.Log(), "engine loop initialized")
+			sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "engine loop initialized")
 		})
 
 		// start when session is ready
@@ -415,7 +414,7 @@ func (e *Engine) loopStart(sess *session.Context, init *sync.WaitGroup) {
 			}
 		}
 
-		internal.Log(sess.Log(), "engine loop started")
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "engine loop started")
 
 	engineLoop:
 		for {
@@ -450,7 +449,7 @@ func (e *Engine) loopStart(sess *session.Context, init *sync.WaitGroup) {
 				}
 			}
 		}
-		internal.Log(sess.Log(), "engine loop stopped")
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "engine loop stopped")
 	}()
 }
 
@@ -459,11 +458,11 @@ func (e *Engine) servicesInit(sess *session.Context, init *sync.WaitGroup) {
 	svccount := len(e.registry)
 	e.mu.Unlock()
 	if svccount == 0 {
-		internal.Log(sess.Log(), "no services to initialize ...")
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "no services to initialize ...")
 		return
 	}
 
-	internal.Log(sess.Log(), "initialize services", slog.Int("count", svccount))
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "initialize services", slog.Int("count", svccount))
 
 	init.Add(svccount)
 	for svcaddrstr, svcc := range e.registry {
@@ -491,7 +490,7 @@ func (e *Engine) servicesInit(sess *session.Context, init *sync.WaitGroup) {
 func (e *Engine) startEventDispatcher(sess *session.Context) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	internal.Log(sess.Log(), "starting engine event dispatcher")
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "starting engine event dispatcher")
 
 	if e.evch == nil {
 		sess.Log().Warn("event channel is nil, skipping event dispatcher")
@@ -526,7 +525,7 @@ func (e *Engine) startEventDispatcher(sess *session.Context) {
 				e.handleEvent(sess, ev)
 			}
 		}
-		internal.Log(sess.Log(), "engine event dispatcher stopped")
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "engine event dispatcher stopped")
 	}(sess)
 }
 
@@ -539,14 +538,14 @@ func (e *Engine) handleEvent(sess *session.Context, ev events.Event) {
 	e.mu.RUnlock()
 
 	if len(skey) == 1 || !ok {
-		sess.Log().NotImplemented("event not registered, ignoring", slog.String("scope", ev.Scope()), slog.String("key", ev.Key()))
+		sess.Log().Log(sess.Context(), logging.LevelNotImpl.Level(), "event not registered, ignoring", slog.String("scope", ev.Scope()), slog.String("key", ev.Key()))
 		return
 	}
 
 	if ev.Value() == vars.NilValue {
 		sess.Log().Warn(fmt.Sprintf("event(%s.%s)", ev.Scope(), ev.Key()), slog.String("value", ev.Value().String()))
 	} else {
-		internal.Log(sess.Log(), fmt.Sprintf("event(%s.%s)", ev.Scope(), ev.Key()), slog.String("value", ev.Value().String()))
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), fmt.Sprintf("event(%s.%s)", ev.Scope(), ev.Key()), slog.String("value", ev.Value().String()))
 	}
 
 	switch ev.Scope() {
@@ -645,7 +644,7 @@ func (e *Engine) RegisterService(sess *session.Context, svc *services.Service) e
 	}
 	e.registry[addrstr] = container
 
-	internal.Log(sess.Log(), "service registered", slog.String("service", svc.Slug()))
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "service registered", slog.String("service", svc.Slug()))
 	return nil
 }
 
@@ -679,7 +678,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 		return
 	}
 	if svcc.Info().Failed() {
-		sess.Log().NotImplemented("skip starting service due previous errors", slog.String("service", svcaddr.String()))
+		sess.Log().Log(sess.Context(), logging.LevelNotImpl.Level(), "skip starting service due previous errors", slog.String("service", svcaddr.String()))
 		return
 	}
 
@@ -710,7 +709,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 			sarg,
 		)
 		if e.state == engineRunning && svcc.CanRetry() && sess.CanRecover(nil) {
-			sess.Log().Notice("retrying to start the service 1", sarg, slog.Int("retry", svcc.Retries()))
+			sess.Log().Log(sess.Context(), logging.LevelNotice.Level(), "retrying to start the service 1", sarg, slog.Int("retry", svcc.Retries()))
 			e.serviceStart(sess, svcaddr.String())
 		}
 		return
@@ -791,7 +790,7 @@ func (e *Engine) serviceStop(sess *session.Context, svcurl string, err error) {
 		sess.Log().Warn("no such service to stop", sarg)
 		return
 	}
-	internal.Log(sess.Log(), "stopping service", sarg)
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "stopping service", sarg)
 	serr := err
 	// When ErrServiceTerminated is encountered, set the error to nil
 	// This is to prevent the service from being restarted unnecessarily
@@ -802,7 +801,7 @@ func (e *Engine) serviceStop(sess *session.Context, svcurl string, err error) {
 		sess.Log().Error("failed to stop service", slog.String("err", stoperr.Error()), sarg)
 	} else {
 		if err == nil && e.state == engineRunning && svcc.CanRetry() && sess.CanRecover(nil) {
-			sess.Log().Notice("retrying to start the service 2", sarg, slog.Int("retry", svcc.Retries()))
+			sess.Log().Log(sess.Context(), logging.LevelNotice.Level(), "retrying to start the service 2", sarg, slog.Int("retry", svcc.Retries()))
 			go e.serviceStart(sess, svcurl)
 		}
 	}

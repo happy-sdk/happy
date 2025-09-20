@@ -5,12 +5,12 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"runtime/debug"
 	"sync"
-	"time"
 
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/i18n"
@@ -38,7 +38,7 @@ type Main struct {
 
 func New(s settings.Settings) *Main {
 	m := &Main{
-		log: logging.NewQueueLogger(),
+		log: logging.NewQueueLogger(1024),
 	}
 	m.init = initializer.New(s, &m.rt, m.log)
 	return m
@@ -110,12 +110,12 @@ func (m *Main) Run() {
 	defer m.mu.Unlock()
 
 	if m.booted {
-		m.log.LogDepth(1, logging.LevelWarn, i18n.PTD(i18np, "application_already_booted", "application already booted"))
+		_ = m.log.LogDepth(1, logging.LevelWarn, i18n.PTD(i18np, "application_already_booted", "application already booted"))
 		m.mu.Unlock()
 		return
 	}
 	m.booted = true
-	m.log.LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "preparing_runtime", "preparing runtime"))
+	_ = m.log.LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "preparing_runtime", "preparing runtime"))
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -129,14 +129,15 @@ func (m *Main) Run() {
 
 			// Obtain and log the stack trace
 			stackTrace := string(debug.Stack())
-			m.log.LogDepth(1, logging.LevelBUG, "panic (recovered)", slog.String("msg", errMessage))
+			_ = m.log.LogDepth(1, logging.LevelBUG, "panic (recovered)", slog.String("msg", errMessage))
 			fmt.Println(stackTrace)
 			m.rt.Exit(1)
 		}
 	}()
 
 	if m.init == nil {
-		m.log.BUG("initializer is nil, not set correctly")
+		m.log.Log(context.Background(), logging.LevelBUG.Level(),
+			"initializer is nil, not set correctly")
 		return
 	}
 
@@ -151,8 +152,8 @@ func (m *Main) Run() {
 			// rare case where logger is not available, then use slog
 			// to consume the log queue if it is not already consumed.
 			if m.init != nil {
-				for _, r := range m.log.Consume() {
-					m.init.SystemDebug(r.Record(time.Local))
+				for _, r := range m.log.Records() {
+					m.init.SystemDebug(r.Record)
 				}
 			}
 		}
@@ -261,7 +262,7 @@ func (m *Main) WithFlags(ffns ...varflag.FlagCreateFunc) *Main {
 	return m
 }
 
-func (m *Main) WithLogger(logger logging.Logger) *Main {
+func (m *Main) WithLogger(logger *logging.Logger) *Main {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.booted {
@@ -278,7 +279,7 @@ func (m *Main) WithLogger(logger logging.Logger) *Main {
 }
 
 func (m *Main) WithMigrations(mm *migration.Manager) *Main {
-	m.log.NotImplemented("WithMigrations")
+	m.log.Log(context.Background(), logging.LevelNotImpl.Level(), "WithMigrations")
 	return m
 }
 

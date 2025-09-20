@@ -336,7 +336,6 @@ func (c *ConsoleAdapter) buildLine(buf *logging.LineBuffer, record slog.Record) 
 		_, _ = buf.WriteString(attrErr.Error())
 		_ = buf.WriteByte(NL)
 	}
-	return
 }
 
 func (c *ConsoleAdapter) buildHttpLine(buf *logging.LineBuffer, method string, statusCode int, p string, record slog.Record) {
@@ -420,5 +419,4 @@ func (c *ConsoleAdapter) buildHttpLine(buf *logging.LineBuffer, method string, s
 		_, _ = buf.WriteString(attrErr.Error())
 		_ = buf.WriteByte(NL)
 	}
-	return
 }

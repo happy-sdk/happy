@@ -47,9 +47,13 @@ func TestBufferReset(t *testing.T) {
 func TestLineBuffer(t *testing.T) {
 	b := NewLineBuffer()
 	defer b.Free()
-	b.WriteString("hello")
-	b.WriteByte(',')
-	b.Write([]byte(" world"))
+	n, err := b.WriteString("hello")
+	testutils.NoError(t, err)
+	testutils.Assert(t, n > 0)
+	testutils.NoError(t, b.WriteByte(','))
+	n2, err2 := b.Write([]byte(" world"))
+	testutils.NoError(t, err2)
+	testutils.Assert(t, n2 > 0)
 	testutils.Equal(t, b.String(), "hello, world")
 
 	b.Reset()
@@ -60,7 +64,8 @@ func TestLineBufferAlloc(t *testing.T) {
 	got := int(testing.AllocsPerRun(5, func() {
 		b := NewLineBuffer()
 		defer b.Free()
-		b.WriteString("not 1K worth of bytes")
+		_, err := b.WriteString("not 1K worth of bytes")
+		testutils.NoError(t, err)
 	}))
 	testutils.Assert(t, got < 2)
 }
@@ -89,7 +94,9 @@ func TestLineBufferSetLen(t *testing.T) {
 	b := NewLineBuffer()
 	defer b.Free()
 
-	b.WriteString("hello, world")
+	n, err := b.WriteString("hello, world")
+	testutils.NoError(t, err)
+	testutils.Assert(t, n > 0)
 	b.SetLen(5)
 	testutils.Assert(t, b.String() == "hello", "SetLen should truncate to 'hello'")
 	testutils.Assert(t, b.Len() == 5, "Len should be 5 after SetLen")
@@ -102,7 +109,9 @@ func TestLineBufferSetLen(t *testing.T) {
 func TestLineBufferPoolReuse(t *testing.T) {
 	// Test pool reuse efficiency
 	b1 := NewLineBuffer()
-	b1.WriteString("test")
+	n, err := b1.WriteString("test")
+	testutils.NoError(t, err)
+	testutils.Assert(t, n > 0)
 	initialCap := cap(*b1)
 	b1.Free()
 

@@ -18,7 +18,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/happy-sdk/happy/sdk/internal"
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
@@ -70,7 +70,7 @@ func New(sess *session.Context) (*Instance, error) {
 	if appInstanceMax > 0 && len(pidfiles) >= appInstanceMax {
 		sess.Log().Error("existing pid files")
 		for _, pidfile := range pidfiles {
-			sess.Log().Println(filepath.Join(pidsdir, pidfile.Name()))
+			sess.Log().Log(sess.Context(), logging.LevelOut.Level(), filepath.Join(pidsdir, pidfile.Name()))
 		}
 		return nil, fmt.Errorf("%w: max instances reached (%s)", Error, sess.Settings().Get("app.instance.max").String())
 	}
@@ -79,7 +79,8 @@ func New(sess *session.Context) (*Instance, error) {
 		pidsdir,
 		fmt.Sprintf("instance-%s.pid", inst.id.String()),
 	)
-	internal.Log(sess.Log(), "create pid lock file", slog.String("file", inst.pidfile))
+
+	sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "create pid lock file", slog.String("file", inst.pidfile))
 
 	if err := os.WriteFile(inst.pidfile, []byte(inst.sess.Opts().Get("app.pid").Value().String()), 0644); err != nil {
 		return nil, fmt.Errorf("%w: failed to write intance PID file: %s", Error, err.Error())
@@ -89,14 +90,14 @@ func New(sess *session.Context) (*Instance, error) {
 }
 
 func (inst *Instance) Dispose() error {
-	internal.Log(inst.sess.Log(), "disposing instance", slog.String("id", inst.id.String()))
+	inst.sess.Log().Log(inst.sess.Context(), logging.LevelHappy.Level(), "disposing instance", slog.String("id", inst.id.String()))
 	// delete the pidfile
 	if _, err := os.Stat(inst.pidfile); err == nil {
 		if err := os.Remove(inst.pidfile); err != nil {
 			return fmt.Errorf("failed to delete pidfile %s: %w", inst.pidfile, err)
 		}
 		if inst.sess != nil {
-			internal.Log(inst.sess.Log(), "successfully deleted pidfile", slog.String("file", inst.pidfile))
+			inst.sess.Log().Log(inst.sess.Context(), logging.LevelHappy.Level(), "successfully deleted pidfile", slog.String("file", inst.pidfile))
 		}
 	}
 	return nil
@@ -144,7 +145,7 @@ func verifyPidFile(sess *session.Context, pidfile os.DirEntry) (ok bool, err err
 		return false, err
 	}
 	if err := p.Signal(syscall.Signal(0)); err != nil {
-		sess.Log().Notice(fmt.Sprintf("previous process %d: %s", pidInt, err.Error()))
+		sess.Log().Log(sess.Context(), logging.LevelNotice.Level(), fmt.Sprintf("previous process %d: %s", pidInt, err.Error()))
 		return false, os.Remove(pidfileAbs)
 	}
 	return true, nil

@@ -80,7 +80,7 @@ func (h *handler) Handle(ctx context.Context, record slog.Record) error {
 	return h.handle(state, pr)
 }
 
-func (h *handler) handle(state *handlerState, pr Record) error {
+func (h *handler) handle(state *handlerState, pr *Record) error {
 	var firstError error
 	errorCount := 0
 
@@ -88,7 +88,7 @@ func (h *handler) handle(state *handlerState, pr Record) error {
 		if !adapter.Enabled(pr.Ctx, pr.Record.Level) {
 			continue
 		}
-		if err := adapter.handle(pr); err != nil {
+		if err := adapter.handle(*pr); err != nil { // Dereference pr for adapter.handle
 			errorCount++
 			if firstError == nil {
 				firstError = err

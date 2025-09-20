@@ -6,7 +6,6 @@ package bug_test
 
 import (
 	"bytes"
-	"context"
 	"log/slog"
 	"strings"
 	"testing"
@@ -26,15 +25,16 @@ func TestLogSlog(t *testing.T) {
 		t.Errorf("expected out to contain %q, got %q", "test_bug\n", out)
 	}
 
-	if !strings.Contains(out, "level=ERROR+1") {
+	if !strings.Contains(out, "level=ERROR+9223372036854775798") {
 		t.Errorf("expected out to contain %q, got %q", "level=ERROR+1\n", out)
 	}
 }
 
 func TestLogLogger(t *testing.T) {
-	var buf bytes.Buffer
-	logger := logging.NewTextLogger(context.Background(), &buf, logging.DefaultOptions())
-	slog.SetDefault(logger.Logger())
+	buf := logging.NewBuffer()
+
+	logger := logging.New(logging.DefaultConfig(), logging.NewTextAdapter(buf))
+	slog.SetDefault(logger.Logger)
 
 	bug.Log("test_bug", logger)
 	out := buf.String()

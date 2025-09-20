@@ -35,7 +35,11 @@ func TestConsoleAdapterCustomTheme(t *testing.T) {
 	buf := logging.NewBuffer()
 	logger := logging.New(config, NewConsoleAdapter(buf, customTheme))
 	adapter := logging.GetAdaptersFromHandler[*ConsoleAdapter](logger.Handler())[0]
-	defer logger.Dispose()
+	defer func() {
+		if err := logger.Dispose(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	record := slog.Record{
 		Level:   logging.LevelInfo.Level(),
@@ -92,7 +96,11 @@ func TestConsoleAdapterBatchAndErrorHandling(t *testing.T) {
 
 		logger := logging.New(config, NewConsoleAdapter(buf, customTheme))
 		adapter := logging.GetAdaptersFromHandler[*ConsoleAdapter](logger.Handler())[0]
-		defer logger.Dispose()
+		defer func() {
+			if err := logger.Dispose(); err != nil {
+				t.Fatal(err)
+			}
+		}()
 
 		// Create multiple records with source info
 		records := []logging.Record{
@@ -159,7 +167,11 @@ func TestConsoleAdapterBatchAndErrorHandling(t *testing.T) {
 		}
 		logger := logging.New(config, NewConsoleAdapter(fw, customTheme))
 		adapter := logging.GetAdaptersFromHandler[*ConsoleAdapter](logger.Handler())[0]
-		defer logger.Dispose()
+		defer func() {
+			if err := logger.Dispose(); err != nil {
+				t.Fatal(err)
+			}
+		}()
 
 		record := slog.Record{
 			Level:   logging.LevelInfo.Level(),
@@ -179,7 +191,11 @@ func TestConsoleAdapterBatchAndErrorHandling(t *testing.T) {
 
 		logger := logging.New(config, NewConsoleAdapter(buf, customTheme))
 		adapter := logging.GetAdaptersFromHandler[*ConsoleAdapter](logger.Handler())[0]
-		defer logger.Dispose()
+		defer func() {
+			if err := logger.Dispose(); err != nil {
+				t.Fatal(err)
+			}
+		}()
 
 		var g errgroup.Group
 		const numGoroutines = 5
@@ -214,8 +230,8 @@ func TestConsoleAdapterBatchAndErrorHandling(t *testing.T) {
 }
 
 // Helper function to print hex representation for debugging
-func printHex(t *testing.T, name, str string) {
-	t.Logf("%s hex: %x", name, ansicolor.StringHEX(str))
-	t.Logf("%s string: %q", name, str)
-	t.Logf("%s stripped: %q", name, ansicolor.StrippedString(str))
-}
+// func printHex(t *testing.T, name, str string) {
+// 	t.Logf("%s hex: %x", name, ansicolor.StringHEX(str))
+// 	t.Logf("%s string: %q", name, str)
+// 	t.Logf("%s stripped: %q", name, ansicolor.StrippedString(str))
+// }

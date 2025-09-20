@@ -70,7 +70,7 @@ func TestMapSet(t *testing.T) {
 		err := collection.StoreReadOnly(tt.k, v, true)
 		testutils.NoError(t, err)
 		testutils.Equal(t, v, collection.Get(tt.k).String())
-		testutils.True(t, collection.Has(tt.k))
+		testutils.Assert(t, collection.Has(tt.k))
 
 		err2 := collection.StoreReadOnly(tt.k, v, true)
 		testutils.ErrorIs(t, err2, vars.ErrReadOnly)

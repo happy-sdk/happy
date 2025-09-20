@@ -10,7 +10,6 @@ require (
 	github.com/happy-sdk/happy/pkg/fsutils v0.3.0
 	github.com/happy-sdk/happy/pkg/i18n v0.2.0
 	github.com/happy-sdk/happy/pkg/logging v0.2.4
-	github.com/happy-sdk/happy/pkg/logging/adapters/console v0.1.6
 	github.com/happy-sdk/happy/pkg/networking v0.2.0
 	github.com/happy-sdk/happy/pkg/options v0.6.3
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.5.2

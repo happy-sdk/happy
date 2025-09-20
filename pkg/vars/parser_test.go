@@ -164,14 +164,14 @@ func TestParseVariableFromString(t *testing.T) {
 	}
 	v, err := vars.ParseVariableFromString("X=1")
 	testutils.Equal(t, "X", v.Name())
-	testutils.False(t, v.Empty())
+	testutils.Assert(t, !v.Empty())
 	testutils.Equal(t, 1, v.Int())
 	testutils.EqualAny(t, err, nil)
 }
 
 func TestParseVariableFromStringEmpty(t *testing.T) {
 	v, err := vars.ParseVariableFromString("")
-	testutils.True(t, v.Empty())
+	testutils.Assert(t, v.Empty())
 	testutils.Error(t, err)
 	testutils.ErrorIs(t, err, vars.ErrKey)
 }

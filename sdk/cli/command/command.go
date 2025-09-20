@@ -5,6 +5,7 @@
 package command
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -108,7 +109,7 @@ func New(name string, cnf Config) *Command {
 	c := &Command{
 		name:    name,
 		catdesc: make(map[string]string),
-		cnflog:  logging.NewQueueLogger(),
+		cnflog:  logging.NewQueueLogger(256),
 	}
 
 	if err := c.configure(&cnf); err != nil {
@@ -338,7 +339,9 @@ func (c *Command) withFlag(ffn varflag.FlagCreateFunc) *Command {
 
 func (c *Command) tryLock(method string) bool {
 	if !c.mu.TryLock() {
-		c.cnflog.BUG(
+		c.cnflog.Log(
+			context.Background(),
+			logging.LevelBUG.Level(),
 			"command configuration failed",
 			slog.String("command", c.name),
 			slog.String("method", method),
@@ -464,7 +467,7 @@ SubCommands:
 	if c.subCommands != nil {
 		for _, cmd := range c.subCommands {
 			// Add subcommand loogs to parent command log queue
-			if err := c.cnflog.ConsumeQueue(cmd.cnflog); err != nil {
+			if _, err := c.cnflog.Consume(cmd.cnflog); err != nil {
 				return err
 			}
 			cmd.parents = append(c.parents, c.name)

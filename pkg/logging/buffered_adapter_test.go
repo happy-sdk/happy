@@ -98,14 +98,16 @@ func TestBufferedAdapterHandle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger, buf := newBufferedLogger(tt.config, nil)
-			defer logger.Dispose()
+			defer func() {
+				testutils.NoError(t, logger.Dispose())
+			}()
 			err := logger.Handler().Handle(tt.ctx, tt.record)
 			if tt.expectError {
 				testutils.Error(t, err, "Handle() expected error")
 				return
 			}
 			testutils.NoError(t, err, "Handle() unexpected error")
-			logger.Flush()
+			testutils.NoError(t, logger.Flush())
 
 			got := buf.String()
 
@@ -129,7 +131,9 @@ func TestBufferedAdapterHandle(t *testing.T) {
 
 func TestBufferedAdapterMultipleDispose(t *testing.T) {
 	logger, _ := newBufferedLogger(defaultTestConfig(), nil)
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	// First dispose
 	err1 := logger.Dispose()
@@ -147,7 +151,9 @@ func TestBufferedAdapterMultipleDispose(t *testing.T) {
 
 func TestBufferedAdapterWithAttrsCloning(t *testing.T) {
 	logger, _ := newBufferedLogger(defaultTestConfig(), nil)
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	// Create new handler with attributes
 	attrs := []slog.Attr{slog.String("component", "test")}
@@ -179,7 +185,9 @@ func TestBufferedAdapterContextCancellation(t *testing.T) {
 		adapter := adapterI.(*adapter)
 		bufadapter := adapter.handler.(*BufferedAdapter[Adapter])
 
-		defer logger.Dispose()
+		defer func() {
+			testutils.NoError(t, logger.Dispose())
+		}()
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately
@@ -204,7 +212,9 @@ func TestBufferedAdapterContextCancellation(t *testing.T) {
 		adapter := adapterI.(*adapter)
 		bufadapter := adapter.handler.(*BufferedAdapter[Adapter])
 
-		defer logger.Dispose()
+		defer func() {
+			testutils.NoError(t, logger.Dispose())
+		}()
 
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately
@@ -230,7 +240,9 @@ func TestBufferedAdapterErrorInHandle(t *testing.T) {
 	adapter := adapterI.(*adapter)
 	bufadapter := adapter.handler.(*BufferedAdapter[Adapter])
 
-	defer logger.Dispose()
+	defer func() {
+		testutils.ErrorIs(t, logger.Dispose(), ErrAdapter)
+	}()
 
 	record := slog.Record{
 		Level:   LevelInfo.Level(),
@@ -311,7 +323,9 @@ func TestBufferedAdapterInitialization(t *testing.T) {
 			buf := NewBuffer()
 			adapterI := NewBufferedTextAdapter(buf, nil).Compose(tt.config)
 			logger := New(tt.config, adapterI)
-			defer logger.Dispose()
+			defer func() {
+				testutils.NoError(t, logger.Dispose())
+			}()
 
 			testutils.NotNil(t, logger, "Logger should be initialized")
 			logger.Enabled(context.Background(), LevelInfo.Level())
@@ -338,7 +352,7 @@ func TestNewBufferedAdapter(t *testing.T) {
 		badapter.WithGroup("group"),
 		"badapter.WithAttrs should return with group",
 	)
-	badapter.Dispose()
+	testutils.ErrorIs(t, badapter.Dispose(), errLoggingTest)
 	logger := New(config, badapter)
 	testutils.NotNil(t,
 		badapter.WithAttrs([]slog.Attr{slog.String("key", "value")}),
@@ -420,7 +434,7 @@ func TestBufferedAdapterDispose(t *testing.T) {
 	testutils.Equal(t, 70, buf.Len(), "unexpected buffer length")
 	str := buf.String()
 	testutils.NoError(t, err, "Handle() after Dispose should not error")
-	if "level=info msg=logged-message\n{\"level\":\"info\",\"msg\":\"logged-message\"}\n" != str {
+	if str != "level=info msg=logged-message\n{\"level\":\"info\",\"msg\":\"logged-message\"}\n" {
 		testutils.Equal(t, "{\"level\":\"info\",\"msg\":\"logged-message\"}\nlevel=info msg=logged-message\n", str)
 	}
 	testutils.Equal(t, 2, strings.Count(str, "\n"), "Dispose() should process pending records")
@@ -442,7 +456,9 @@ func TestBufferedAdapterBufferFullDrop(t *testing.T) {
 	droppedRecords := expvar.NewInt(fmt.Sprintf("logging.buffered_adapter.dropped_records_%s", t.Name()))
 	adapterI := NewBufferedTextAdapter(NewBuffer(), droppedRecords).Compose(config)
 	logger := New(config, adapterI)
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	// Reset droppedLogs for test isolation
 	droppedRecords.Set(0)
@@ -725,7 +741,9 @@ func TestBufferedAdapterFlush(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			droppedRecords := expvar.NewInt(fmt.Sprintf("logging.buffered_adapter.dropped_records_%s", t.Name()))
 			logger, buf := newBufferedLogger(tt.config, droppedRecords)
-			defer logger.Dispose()
+			defer func() {
+				_ = logger.Dispose()
+			}()
 
 			testutils.NotNil(t, logger, "Logger should never be nil")
 

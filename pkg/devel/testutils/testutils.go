@@ -53,24 +53,36 @@ func Error(tt TestingIface, err error, msgAndArgs ...any) bool {
 	return true
 }
 
-// ErrorIs asserts errors.Is(err, target)
+// ErrorIs asserts that errors.Is(err, target) returns true, meaning target is in err's chain.
 func ErrorIs(tt TestingIface, err, target error, msgAndArgs ...any) bool {
 	tt.Helper()
+
 	if errors.Is(err, target) {
 		return true
 	}
 
+	// Build the expected and actual error chain for the failure message.
 	var expectedText string
 	if target != nil {
 		expectedText = target.Error()
+	} else {
+		expectedText = "<nil>"
 	}
 
 	chain := buildErrorChainString(err)
 
-	return fail(tt, fmt.Sprintf("Target error should be in err chain:\n"+
-		"expected: %q\n"+
-		"got chain: %q", expectedText, chain,
-	), msgAndArgs...)
+	// If msgAndArgs is provided, use it to format the failure message.
+	// Otherwise, use the default message with the error chain.
+	var msg string
+	if len(msgAndArgs) > 0 {
+		// Format the user-provided message with their arguments.
+		msg = fmt.Sprintf(msgAndArgs[0].(string), msgAndArgs[1:]...)
+		msg = fmt.Sprintf("%s\nTarget error should be in err chain:\nexpected: %q\ngot chain: %q", msg, expectedText, chain)
+	} else {
+		msg = fmt.Sprintf("Target error should be in err chain:\nexpected: %q\ngot chain: %q", expectedText, chain)
+	}
+
+	return fail(tt, msg)
 }
 
 // Equal asserts comparables.
@@ -425,18 +437,18 @@ func indentMessageLines(message string, longestLabelLen int) string {
 	return outBuf.String()
 }
 
+// buildErrorChainString constructs a string representation of the error chain.
 func buildErrorChainString(err error) string {
 	if err == nil {
-		return ""
+		return "<nil>"
 	}
 
-	e := errors.Unwrap(err)
-	chain := fmt.Sprintf("%q", err.Error())
-	for e != nil {
-		chain += fmt.Sprintf("\n\t%q", e.Error())
-		e = errors.Unwrap(e)
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("%q", err.Error()))
+	for e := errors.Unwrap(err); e != nil; e = errors.Unwrap(e) {
+		builder.WriteString(fmt.Sprintf("\n\t%q", e.Error()))
 	}
-	return chain
+	return builder.String()
 }
 
 // validateEqualArgs checks whether provided arguments can be safely used in the

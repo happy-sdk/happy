@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/slug"
@@ -115,7 +116,7 @@ func (m *Manager) Register(sess session.Register) error {
 			return fmt.Errorf("%w(%s): %s", Error, addon.info.Slug, err.Error())
 		}
 		for _, deprecation := range addon.deprecations {
-			sess.Log().Deprecated(deprecation)
+			sess.Log().Log(sess.Context(), logging.LevelDepr.Level(), deprecation)
 		}
 		if addon.registerAction == nil {
 			continue

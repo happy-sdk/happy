@@ -21,16 +21,16 @@ import (
 type failingAdapter struct{}
 
 func (fa *failingAdapter) Dispose() error {
-	return errors.New("Dispose called")
+	return fmt.Errorf("%w: Dispose called", errLoggingTest)
 }
 func (fa *failingAdapter) Ready() {}
 func (fa *failingAdapter) Flush() error {
-	return errors.New("Flush called")
+	return fmt.Errorf("%w: Flush called", errLoggingTest)
 }
 
 func (fa *failingAdapter) Enabled(context.Context, slog.Level) bool { return true }
 func (fa *failingAdapter) Handle(context.Context, slog.Record) error {
-	return errors.New("Handle called")
+	return fmt.Errorf("%w: Handle called", errLoggingTest)
 }
 func (fa *failingAdapter) WithAttrs(attrs []slog.Attr) slog.Handler { return fa }
 func (fa *failingAdapter) WithGroup(name string) slog.Handler       { return fa }
@@ -40,13 +40,13 @@ type failingHttpAdapter struct {
 
 func (*failingHttpAdapter) Enabled(context.Context, slog.Level) bool { return true }
 func (*failingHttpAdapter) Handle(context.Context, slog.Record) error {
-	return errors.New("Handle called")
+	return fmt.Errorf("%w: Handle called", errLoggingTest)
 }
 func (a *failingHttpAdapter) WithAttrs(attrs []slog.Attr) slog.Handler { return a }
 func (a *failingHttpAdapter) WithGroup(name string) slog.Handler       { return a }
 
 func (*failingHttpAdapter) HTTP(_ context.Context, method string, statusCode int, path string, record slog.Record) error {
-	return errors.New("HTTP called")
+	return fmt.Errorf("%w: HTTP called", errLoggingTest)
 }
 
 type failingHttpBatchAdapter struct {
@@ -54,12 +54,12 @@ type failingHttpBatchAdapter struct {
 
 func (*failingHttpBatchAdapter) Enabled(context.Context, slog.Level) bool { return true }
 func (*failingHttpBatchAdapter) Handle(context.Context, slog.Record) error {
-	return errors.New("Handle called")
+	return fmt.Errorf("%w: Handle called", errLoggingTest)
 }
 func (a *failingHttpBatchAdapter) WithAttrs(attrs []slog.Attr) slog.Handler { return a }
 func (a *failingHttpBatchAdapter) WithGroup(name string) slog.Handler       { return a }
 func (a *failingHttpBatchAdapter) HTTPBatchHandle(records []HttpRecord) error {
-	return errors.New("HandleBatch called")
+	return fmt.Errorf("%w: HandleBatch called", errLoggingTest)
 }
 
 type httpBatchAdapter struct {
@@ -73,7 +73,11 @@ func (a *httpBatchAdapter) HTTPBatchHandle(records []HttpRecord) error { return 
 
 func TestDefaultAdapterEnabled(t *testing.T) {
 	logger, _, _ := newDefaultTestLogger()
-	defer logger.Dispose()
+	defer func() {
+		if err := logger.Dispose(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	adapter := GetAdaptersFromHandler[*DefaultAdapter](logger.Handler())[0]
 
 	tests := []struct {
@@ -153,7 +157,11 @@ func TestDefaultAdapterAllLogLevels(t *testing.T) {
 			buf := NewBuffer()
 			logger := New(config, NewTextAdapter(buf))
 			adapter := GetAdaptersFromHandler[*DefaultAdapter](logger.Handler())[0]
-			defer logger.Dispose()
+			defer func() {
+				if err := logger.Dispose(); err != nil {
+					t.Fatal(err)
+				}
+			}()
 
 			record := slog.Record{
 				Level:   lvl.level.Level(),
@@ -163,7 +171,7 @@ func TestDefaultAdapterAllLogLevels(t *testing.T) {
 
 			err := adapter.Handle(context.Background(), record)
 			testutils.NoError(t, err, "Handle() unexpected error")
-			logger.Flush()
+			testutils.NoError(t, logger.Flush())
 
 			output := buf.String()
 			testutils.Assert(t, strings.Contains(output, "test message for "+lvl.name), "Output should contain the message")
@@ -179,7 +187,11 @@ func TestDefaultAdapterNoTimestamp(t *testing.T) {
 
 	logger, buf := newTestLogger(config)
 	adapter := GetAdaptersFromHandler[*DefaultAdapter](logger.Handler())[0]
-	defer logger.Dispose()
+	defer func() {
+		if err := logger.Dispose(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	record := slog.Record{
 		Level:   LevelInfo.Level(),
@@ -189,7 +201,7 @@ func TestDefaultAdapterNoTimestamp(t *testing.T) {
 
 	err := adapter.Handle(context.Background(), record)
 	testutils.NoError(t, err, "Handle() unexpected error")
-	adapter.Flush()
+	testutils.NoError(t, adapter.Flush())
 
 	output := buf.String()
 	testutils.Assert(t, strings.Contains(output, "no timestamp test"), "Output should contain the message")
@@ -204,7 +216,11 @@ func TestDefaultAdapterConcurrentAccess(t *testing.T) {
 	logger, buf := newTestLogger(config)
 
 	adapter := GetAdaptersFromHandler[*DefaultAdapter](logger.Handler())[0]
-	defer logger.Dispose()
+	defer func() {
+		if err := logger.Dispose(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	const numGoroutines = 10
 	const recordsPerGoroutine = 100
@@ -233,7 +249,7 @@ func TestDefaultAdapterConcurrentAccess(t *testing.T) {
 	}
 
 	wg.Wait()
-	adapter.Flush()
+	testutils.NoError(t, adapter.Flush())
 
 	output := buf.String()
 	lineCount := strings.Count(output, "\n")
@@ -276,7 +292,9 @@ func TestDefaultAdapterComplexAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logger, buf := newTestLogger(config)
 			adapter := GetAdaptersFromHandler[*DefaultAdapter](logger.Handler())[0]
-			defer logger.Dispose()
+			defer func() {
+				testutils.NoError(t, logger.Dispose())
+			}()
 
 			record := slog.Record{
 				Level:   LevelInfo.Level(),
@@ -287,7 +305,7 @@ func TestDefaultAdapterComplexAttributes(t *testing.T) {
 
 			err := adapter.Handle(context.Background(), record)
 			testutils.NoError(t, err, "Handle() unexpected error")
-			adapter.Flush()
+			testutils.NoError(t, adapter.Flush())
 			output := buf.String()
 			testutils.Assert(t, strings.Contains(output, tt.expected), "Output should contain expected ATTRS: got %s", output)
 		})
@@ -324,7 +342,11 @@ func TestFailingHTTPAdapter(t *testing.T) {
 		&httpBatchAdapter{},
 	)
 
-	defer logger.Dispose()
+	defer func() {
+		if err := logger.Dispose(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	rec := NewHttpRecord(
 		time.Now(), http.MethodTrace, 201, "/home", "key", "value")
@@ -333,12 +355,14 @@ func TestFailingHTTPAdapter(t *testing.T) {
 
 	testutils.Error(t, logger.Handler().Handle(context.TODO(), rec))
 	testutils.Error(t, logger.Handler().Handle(context.TODO(), rec2))
-	logger.Flush()
+	testutils.NoError(t, logger.Flush())
 }
 
 func TestDerivedAdapter(t *testing.T) {
 	logger, _, buf := newDefaultTestLogger()
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	logger2 := logger.WithGroup("group1")
 	logger2.Info("logger2 message", "key", "value")
@@ -388,7 +412,8 @@ func TestDerivedDisposedAdapter(t *testing.T) {
 		WithGroup("g3").
 		With().With("key", "val")
 
-	l2.Handler().Handle(context.TODO(), NewHttpRecord(time.Now(), http.MethodGet, 200, "/"))
+	err := l2.Handler().Handle(context.TODO(), NewHttpRecord(time.Now(), http.MethodGet, 200, "/"))
+	testutils.ErrorIs(t, err, errLoggingTest)
 	l2.Info("logger message", "key", "value")
 
 	testutils.IsType(t, &derivedAdapter{}, l2.Handler())
@@ -397,8 +422,7 @@ func TestDerivedDisposedAdapter(t *testing.T) {
 		WithAttrs([]slog.Attr{}).WithAttrs([]slog.Attr{slog.String("key", "val")})
 
 	testutils.EqualAny(t, h2, h2.WithGroup(""))
-	logger.Dispose()
-
+	testutils.ErrorIs(t, logger.Dispose(), errLoggingTest)
 	testutils.ErrorIs(t, h2.Handle(context.TODO(), slog.Record{}), ErrAdapterDisposed)
 
 	l3 := logger.
@@ -428,13 +452,15 @@ func TestReplaceAdaptersStdout(t *testing.T) {
 		NewTextAdapter(&testWriter{fail: true}),
 		&failingAdapter{},
 	)
-	defer logger.Dispose()
+	defer func() {
+		testutils.ErrorIs(t, logger.Dispose(), errLoggingTest)
+	}()
 
 	newStdout := NewBuffer()
 	testutils.NoError(t, ReplaceAdaptersStdout(logger, newStdout))
 
 	logger.Info("message")
-	logger.Flush()
+	testutils.ErrorIs(t, logger.Flush(), errLoggingTest)
 
 	testutils.Equal(t, "level=info msg=message\n", newStdout.String())
 }
@@ -451,8 +477,12 @@ func TestReplaceAdaptersFailingStdout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
+	defer func() {
+		if err := os.Remove(tmpFile.Name()); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	testutils.NoError(t, tmpFile.Close())
 	os.Stdout = tmpFile
 
 	config := defaultTestConfig()
@@ -462,7 +492,9 @@ func TestReplaceAdaptersFailingStdout(t *testing.T) {
 		NewTextAdapter(&testWriter{fail: true}),
 		&failingAdapter{},
 	)
-	defer logger.Dispose()
+	defer func() {
+		testutils.ErrorIs(t, logger.Dispose(), errLoggingTest)
+	}()
 
 	h := logger.Handler().(*handler)
 	testutils.Error(t, h.state.Load().adapters[1].replaceWriter(tmpFile))
@@ -471,7 +503,7 @@ func TestReplaceAdaptersFailingStdout(t *testing.T) {
 	testutils.NoError(t, ReplaceAdaptersStdout(logger, newStdout))
 
 	logger.Info("message")
-	logger.Flush()
+	testutils.ErrorIs(t, logger.Flush(), errLoggingTest)
 
 	testutils.Equal(t, "level=info msg=message\nlevel=info msg=message\n", newStdout.String())
 
@@ -496,13 +528,13 @@ func TestReplaceAdaptersStderr(t *testing.T) {
 		NewTextAdapter(&testWriter{fail: true}),
 		&failingAdapter{},
 	)
-	defer logger.Dispose()
+	testutils.ErrorIs(t, logger.Flush(), errLoggingTest)
 
 	newStderr := NewBuffer()
 	testutils.NoError(t, ReplaceAdaptersStderr(logger, newStderr))
 
 	logger.Info("message")
-	logger.Flush()
+	testutils.ErrorIs(t, logger.Flush(), errLoggingTest)
 
 	testutils.Equal(t, "level=info msg=message\n", newStderr.String())
 

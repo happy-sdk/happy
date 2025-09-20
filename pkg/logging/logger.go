@@ -4,8 +4,12 @@
 package logging
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
+	"time"
 )
 
 // Logger is the primary interface for logging in the Happy SDK, fully compatible with slog.Logger.
@@ -99,4 +103,54 @@ func (l *Logger) Flush() error {
 		return ErrLoggerDisposed
 	}
 	return l.handler.Flush()
+}
+
+// LogDepth logs a message with additional context at a given depth.
+// The depth is the number of stack frames to ascend when logging the message.
+// It is useful only when AddSource is enabled.
+func (l *Logger) LogDepth(depth int, lvl Level, msg string, attrs ...slog.Attr) error {
+	if !l.Enabled(context.Background(), slog.Level(lvl)) {
+		return nil
+	}
+	var pcs [1]uintptr
+	runtime.Callers(depth+2, pcs[:])
+	r := slog.NewRecord(l.ts(), slog.Level(lvl), msg, pcs[0])
+	r.AddAttrs(attrs...)
+	return l.Handler().Handle(context.Background(), r)
+}
+
+// Consume drains all queued records into the Logger.
+// Call *QueueLogger Dispose dont want to use it anymore to release
+// intrnal BufferAdapter
+// It returns the number of records consumed and any error encountered.
+func (l *Logger) Consume(queue *QueueLogger) (int, error) {
+	if queue.queue.disposed.Load() {
+		return 0, fmt.Errorf("%w: QueueLogger disposed", ErrAdapter)
+	}
+
+	if err := queue.adapter.Flush(); err != nil {
+		return 0, err
+	}
+
+	queue.queue.mu.Lock()
+	records := queue.queue.buf
+	queue.queue.mu.Unlock()
+
+	processed, err := l.handler.queueHandle(records)
+	if err != nil {
+		return processed, err
+	}
+	if err := l.Flush(); err != nil {
+		return processed, err
+	}
+	return processed, nil
+}
+
+func (l *Logger) Level() Level {
+	return Level(l.handler.level.Level())
+}
+
+func (l *Logger) ts() time.Time {
+	state := l.handler.state.Load()
+	return time.Now().In(state.config.TimeLocation)
 }

@@ -20,10 +20,9 @@ import (
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/logging"
-	consoleadapter "github.com/happy-sdk/happy/pkg/logging/adapters/console"
+	"github.com/happy-sdk/happy/pkg/logging/adapters"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
-	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/action"
@@ -45,14 +44,14 @@ type Initializer struct {
 	log *logging.QueueLogger
 
 	// user defined logger or default logger for runtime
-	logger  logging.Logger
+	logger  *logging.Logger
 	execlvl logging.Level
 
 	opts      *options.Spec
 	settings  settings.Settings
 	settingsb *settings.Blueprint
 	profile   *settings.Profile
-	session   *session.Context
+	sess      *session.Context
 	addonm    *addon.Manager
 
 	errs []error
@@ -114,11 +113,11 @@ func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger)
 				fallbackLang = lang
 			}
 		}
-		internal.Log(log, "loading i18n")
+		_ = init.log.LogDepth(3, logging.LevelHappy, "loading i18n")
 		i18n.Initialize(fallbackLang)
 	}
 
-	init.log.LogDepth(3, logging.LevelDebug, i18n.PTD(i18np, "initializing", "initializing"), slog.String("pid", fmt.Sprint(init.pid)))
+	_ = init.log.LogDepth(3, logging.LevelDebug, i18n.PTD(i18np, "initializing", "initializing"), slog.String("pid", fmt.Sprint(init.pid)))
 	init.initialize()
 	return init
 }
@@ -295,7 +294,7 @@ func (init *Initializer) MainDo(a action.WithArgs) {
 	init.main.Do(a)
 }
 
-func (init *Initializer) SetLogger(logger logging.Logger) {
+func (init *Initializer) SetLogger(logger *logging.Logger) {
 	init.mu.Lock()
 	defer init.mu.Unlock()
 	init.logger = logger
@@ -381,13 +380,14 @@ func (init *Initializer) Configure() (err error) {
 		return err
 	}
 
-	internal.LogInit(init.session.Log(), "configuration completed")
+	init.sess.Log().Log(init.sess.Context(), logging.LevelHappy.Level(),
+		"configuration completed")
 	return
 }
 
 func (init *Initializer) Finalize() (err error) {
 	for _, opt := range init.pendingOpts {
-		init.session.Log().Warn("option not used",
+		init.sess.Log().Warn("option not used",
 			slog.String("key", opt.Key()),
 			slog.Any("value", opt.Value()),
 		)
@@ -397,9 +397,9 @@ func (init *Initializer) Finalize() (err error) {
 	init.rt.SetMain(init.cmd)
 	init.cmd = nil
 
-	session := init.session
+	session := init.sess
 	init.rt.SetSession(session)
-	init.session = nil
+	init.sess = nil
 
 	init.rt.SetBrand(init.brand)
 	init.brand = nil
@@ -415,14 +415,14 @@ func (init *Initializer) Finalize() (err error) {
 	init.rt.InitStats(init.createdAt, took)
 	init.rt.SetExecLogLevel(init.execlvl)
 
-	session.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "initialization_completed", "initialization completed"), slog.String("took", took.String()))
+	_ = session.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "initialization_completed", "initialization completed"), slog.String("took", took.String()))
 
 	return nil
 }
 
 func (init *Initializer) SystemDebug(r slog.Record) {
 	if init.logger != nil {
-		_ = init.logger.Logger().Handler().Handle(context.Background(), r)
+		_ = init.logger.Handler().Handle(context.Background(), r)
 	} else {
 		_ = slog.Default().Handler().Handle(context.Background(), r)
 	}
@@ -432,7 +432,7 @@ func (init *Initializer) SystemDebug(r slog.Record) {
 // Configuration stage
 
 func (init *Initializer) configureAddons() error {
-	internal.LogInitDepth(init.log, 1, "configuring addons")
+	init.log.Log(context.Background(), logging.LevelHappy.Level(), "configuring addons")
 	if err := init.addonm.ExtendSettings(init.settingsb); err != nil {
 		return err
 	}
@@ -445,16 +445,17 @@ func (init *Initializer) configureAddons() error {
 	init.rt.AddServices(init.addonm.Services())
 
 	if len(commands) > 0 {
-		internal.Log(init.log, "added addons commands", slog.Int("count", len(commands)))
+		init.log.Log(context.Background(), logging.LevelHappy.Level(), "added addons commands", slog.Int("count", len(commands)))
 	}
 	return nil
 }
 
 func (init *Initializer) configureCli() error {
-	internal.LogInitDepth(init.log, 1, "configuring command line interface")
+	_ = init.log.LogDepth(1, logging.LevelHappy, "configuring command line interface")
 
 	cmd, cmdlog, err := command.Compile(init.main)
-	logerr := init.log.ConsumeQueue(cmdlog)
+	_, logerr := init.log.Consume(cmdlog)
+	_ = cmdlog.Dispose()
 	if logerr != nil {
 		return fmt.Errorf("%w: failed to consume command log: %s", Error, logerr)
 	}
@@ -484,7 +485,7 @@ func (init *Initializer) configureCli() error {
 }
 
 func (init *Initializer) configureProfile() (err error) {
-	internal.LogInitDepth(init.log, 1, "configuring profile")
+	init.log.Log(context.Background(), logging.LevelHappy.Level(), "configuring profile")
 	const prefFilename = "profile.preferences"
 	if init.opts.Get("app.fs.path.config").Value().Empty() {
 		return fmt.Errorf("%w: config path is empty", Error)
@@ -538,7 +539,7 @@ func (init *Initializer) configureProfile() (err error) {
 
 		// Get profile slug to load
 		{
-			var attrs []slog.Attr
+			var attrs []any
 			attrs = append(attrs, slog.String("profile", currentProfileName))
 			loadSlug = currentProfileName
 			mode := "production"
@@ -550,7 +551,8 @@ func (init *Initializer) configureProfile() (err error) {
 			if currentProfileName != defaultProfileName {
 				attrs = append(attrs, slog.String("default", defaultProfileName))
 			}
-			internal.LogInit(init.log, "load profile", attrs...)
+			init.log.Log(context.Background(), logging.LevelHappy.Level(),
+				"load profile", attrs...)
 		}
 	}
 
@@ -576,7 +578,8 @@ func (init *Initializer) configureProfile() (err error) {
 					if err := init.utilWriteFile("write default profile preferences", filepath.Join(profilesDir, dp, prefFilename), []byte{}, 0600); err != nil {
 						return fmt.Errorf("%w: failed to write default profile preferences %s", Error, err)
 					}
-					internal.LogInit(init.log, "created default profile", slog.String("profile", dp))
+					init.log.Log(context.Background(), logging.LevelHappy.Level(),
+						"created default profile", slog.String("profile", dp))
 					if err := init.opts.Set("app.firstrun", true); err != nil {
 						return err
 					}
@@ -611,7 +614,7 @@ LoadPreferences:
 			}
 			return fmt.Errorf("%w: profile %q loading error: %s", Error, currentProfileName, err.Error())
 		} else {
-			internal.LogInit(init.log, "loading preferencess from", slog.String("path", loadPrefFilePath))
+			init.log.Log(context.Background(), logging.LevelHappy.Level(), "loading preferencess from", slog.String("path", loadPrefFilePath))
 			prefFile, err := os.ReadFile(loadPrefFilePath)
 			if err != nil {
 				return err
@@ -719,7 +722,7 @@ LoadProfile:
 
 func (init *Initializer) configureBrand() error {
 	if init.brandBuilder != nil {
-		internal.LogInitDepth(init.log, 1, "configuring custom brand")
+		init.log.Log(context.Background(), logging.LevelHappy.Level(), "configuring custom brand")
 		brand, err := init.brandBuilder.Build()
 		if err != nil {
 			return err
@@ -727,7 +730,7 @@ func (init *Initializer) configureBrand() error {
 		init.brand = brand
 		return nil
 	}
-	internal.LogInitDepth(init.log, 1, "configuring default brand")
+	init.log.Log(context.Background(), logging.LevelHappy.Level(), "configuring default brand")
 
 	builder := branding.New(branding.Info{
 		Name:    init.opts.Get("app.name").String(),
@@ -743,7 +746,7 @@ func (init *Initializer) configureBrand() error {
 }
 
 func (init *Initializer) configureLogger() (err error) {
-	internal.LogInitDepth(init.log, 1, "configuring logger")
+	init.log.Log(context.Background(), logging.LevelHappy.Level(), "configuring logger")
 
 	var (
 		lvl             logging.Level
@@ -802,44 +805,36 @@ func (init *Initializer) configureLogger() (err error) {
 	slog.SetLogLoggerLevel(slog.Level(lvl))
 	if init.logger != nil {
 		init.logger.SetLevel(lvl)
-		if err := init.logger.ConsumeQueue(init.log); err != nil {
+		if _, err := init.logger.Consume(init.log); err != nil {
 			return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
 		}
 		init.log = nil
 		return nil
 	}
 
-	logopts := logging.DefaultOptions()
-	logopts.Level = lvl
-	logopts.AddSource = withSource
-	logopts.NoTimestamp = noTimestamp
+	logcnf := logging.DefaultConfig()
+	logcnf.Level = lvl
+	logcnf.AddSource = withSource
+	logcnf.NoTimestamp = noTimestamp
 
 	tsloc, err := time.LoadLocation(tslocStr)
 	if err != nil {
 		return err
 	}
-	logopts.TimeLocation = tsloc
-	logopts.TimestampFormat = timestampFormat
+	logcnf.TimeLocation = tsloc
+	logcnf.TimeFormat = timestampFormat
 
-	var theme ansicolor.Theme
-	if init.brand != nil {
-		theme = init.brand.ANSI()
-	} else {
-		theme = ansicolor.New()
-	}
+	logcnf.SetSlogOutput = !noSlogDefault
 
-	logopts.SetSlogOutput = !noSlogDefault
+	logger := logging.New(
+		logcnf,
+		adapters.NewBufferedConsoleAdapter(os.Stdout, adapters.ConsoleAdapterDefaultTheme()))
 
-	logger := logging.New(consoleadapter.New(
-		init.context,
-		os.Stdout,
-		logopts,
-		theme,
-	))
-
-	if err := logger.ConsumeQueue(init.log); err != nil {
+	if _, err := logger.Consume(init.log); err != nil {
+		fmt.Println("setup logger", err)
 		return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
 	}
+
 	init.log = nil
 
 	init.logger = logger
@@ -848,7 +843,8 @@ func (init *Initializer) configureLogger() (err error) {
 }
 
 func (init *Initializer) configureApplyCustomOptions() error {
-	internal.LogInitDepth(init.logger, 1, "configuring custom options", slog.Int("count", len(init.pendingOpts)))
+	init.logger.Log(context.Background(), logging.LevelHappy.Level(),
+		"configuring custom options", slog.Int("count", len(init.pendingOpts)))
 	var pendingOpts []options.Arg
 	for _, opt := range init.pendingOpts {
 		if init.opts.Accepts(opt.Key()) {
@@ -864,7 +860,8 @@ func (init *Initializer) configureApplyCustomOptions() error {
 }
 
 func (init *Initializer) configureSession() error {
-	internal.LogInitDepth(init.logger, 1, "configuring session")
+	init.logger.Log(context.Background(), logging.LevelHappy.Level(),
+		"configuring session")
 
 	init.sessionReadyEvent = session.ReadyEvent()
 	init.evch = make(chan events.Event, 1000)
@@ -889,7 +886,7 @@ func (init *Initializer) configureSession() error {
 		return err
 	}
 
-	init.session = session
+	init.sess = session
 
 	init.context = nil
 	init.cancelFunc = nil
@@ -906,7 +903,8 @@ func (init *Initializer) utilMkdir(msg, path string, perm fs.FileMode) error {
 	if path == "" {
 		return fmt.Errorf("%w: %s (path is empty)", Error, msg)
 	}
-	internal.LogInitDepth(init.log, 1, msg, slog.String("dir", path))
+	init.log.Log(context.Background(), logging.LevelHappy.Level(),
+		msg, slog.String("dir", path))
 	if err := os.MkdirAll(path, perm); err != nil {
 		return err
 	}
@@ -917,11 +915,11 @@ func (init *Initializer) utilWriteFile(msg, name string, data []byte, perm fs.Fi
 	if name == "" {
 		return fmt.Errorf("%w: %s (file name is empty)", Error, msg)
 	}
-	internal.LogInitDepth(init.log, 1, msg, slog.String("file", name))
+	init.log.Log(context.Background(), logging.LevelHappy.Level(),
+		msg, slog.String("file", name))
 	if err := os.WriteFile(name, data, perm); err != nil {
 		return err
 	}
-	internal.Log(init.log, msg, slog.String("file", name))
 	return nil
 }
 
@@ -943,7 +941,7 @@ func (init *Initializer) bug(depth int, msg string, attr ...slog.Attr) {
 		defer init.mu.Unlock()
 	}
 	init.failed = true
-	init.log.LogDepth(depth+1, logging.LevelBUG, msg, attr...)
+	_ = init.log.LogDepth(depth+1, logging.LevelBUG, msg, attr...)
 }
 
 func (init *Initializer) errAllowedOnce(msg string, prevcaller string) {

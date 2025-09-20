@@ -7,8 +7,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"runtime"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/happy-sdk/happy/pkg/bitutils"
 )
@@ -60,28 +62,52 @@ func NewQueueLogger(size int) *QueueLogger {
 // Call *QueueLogger Dispose dont want to use it anymore to release
 // intrnal BufferAdapter
 // It returns the number of records consumed and any error encountered.
-func (ql *QueueLogger) Consume(logger *Logger) (int, error) {
+func (ql *QueueLogger) Consume(queue *QueueLogger) (int, error) {
 	if ql.queue.disposed.Load() {
 		return 0, fmt.Errorf("%w: QueueLogger disposed", ErrAdapter)
 	}
-	ql.queue.mu.Lock()
-	adapter := ql.adapter
-	ql.queue.mu.Unlock()
-	adapter.Flush()
+
+	if err := ql.adapter.Flush(); err != nil {
+		return 0, err
+	}
+	if err := queue.adapter.Flush(); err != nil {
+		return 0, err
+	}
 
 	ql.queue.mu.Lock()
 	defer ql.queue.mu.Unlock()
 
-	records := ql.queue.buf
+	queue.queue.mu.Lock()
+	records := queue.queue.buf
+	queue.queue.mu.Unlock()
 
-	processed, err := logger.handler.queueHandle(records)
-	if err != nil {
-		return processed, err
+	ql.queue.buf = append(ql.queue.buf, records...)
+
+	return len(records), nil
+}
+
+// LogDepth logs a message with additional context at a given depth.
+// The depth is the number of stack frames to ascend when logging the message.
+// It is useful only when AddSource is enabled.
+func (ql *QueueLogger) LogDepth(depth int, lvl Level, msg string, attrs ...slog.Attr) error {
+	if ql.queue.disposed.Load() {
+		return fmt.Errorf("%w: QueueLogger disposed", ErrAdapter)
 	}
-	if err := logger.Flush(); err != nil {
-		return processed, err
-	}
-	return processed, nil
+
+	var pcs [1]uintptr
+	runtime.Callers(depth+2, pcs[:])
+	r := slog.NewRecord(time.Now(), slog.Level(lvl), msg, pcs[0])
+	r.AddAttrs(attrs...)
+	return ql.Handler().Handle(context.Background(), r)
+}
+
+func (ql *QueueLogger) Records() []Record {
+	_ = ql.adapter.Flush()
+	ql.queue.mu.Lock()
+	defer ql.queue.mu.Unlock()
+
+	records := ql.queue.buf
+	return records
 }
 
 func (ql *QueueLogger) Dispose() error {
@@ -99,7 +125,6 @@ func (ql *QueueLogger) Dispose() error {
 
 type queueAdapter struct {
 	mu       sync.RWMutex
-	err      atomic.Value
 	buf      []Record
 	disposed atomic.Bool
 }

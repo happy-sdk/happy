@@ -14,7 +14,11 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	log := logging.NewTestLogger(logging.LevelError)
+	buf := logging.NewBuffer()
+	cnf := logging.DefaultConfig()
+	cnf.Level = logging.LevelError
+	log := logging.New(cnf, logging.NewTextAdapter(buf))
+
 	app := app.New(&happy.Settings{})
 	app.WithLogger(log)
 	testutils.NotNil(t, app, "app must never be nil")

@@ -905,55 +905,55 @@ func TestValueKinds(t *testing.T) {
 
 		v, err := vars.New("value-types", test.In, false)
 		testutils.NoError(t, err, emsg)
-		testutils.False(t, v.ReadOnly())
+		testutils.Assert(t, !v.ReadOnly())
 		vBool, err := v.Value().Bool()
-		testutils.True(t, testutils.Equal(t, test.Bool, vBool, emsg) || err != nil)
-		testutils.True(t, testutils.Equal(t, test.Bool, vBool, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Bool, vBool, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Bool, vBool, emsg) || err != nil)
 
 		vFloat32, err := v.Value().Float32()
-		testutils.True(t, testutils.Equal(t, test.Float32, vFloat32, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Float32, vFloat32, emsg) || err != nil)
 
 		vfFloat64, err := v.Value().Float64()
-		testutils.True(t, testutils.Equal(t, test.Float64, vfFloat64, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Float64, vfFloat64, emsg) || err != nil)
 
 		vComplex64, err := v.Value().Complex64()
-		testutils.True(t, testutils.Equal(t, test.Complex64, vComplex64, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Complex64, vComplex64, emsg) || err != nil)
 
 		vComplex128, err := v.Value().Complex128()
-		testutils.True(t, testutils.Equal(t, test.Complex128, vComplex128, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Complex128, vComplex128, emsg) || err != nil)
 
 		vInt, err := v.Value().Int()
-		testutils.True(t, testutils.Equal(t, test.Int, vInt, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Int, vInt, emsg) || err != nil)
 
 		vInt8, err := v.Value().Int8()
-		testutils.True(t, testutils.Equal(t, test.Int8, vInt8, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Int8, vInt8, emsg) || err != nil)
 
 		vInt16, err := v.Value().Int16()
-		testutils.True(t, testutils.Equal(t, test.Int16, vInt16, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Int16, vInt16, emsg) || err != nil)
 
 		vInt32, err := v.Value().Int32()
-		testutils.True(t, testutils.Equal(t, test.Int32, vInt32, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Int32, vInt32, emsg) || err != nil)
 
 		vInt64, err := v.Value().Int64()
-		testutils.True(t, testutils.Equal(t, test.Int64, vInt64, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Int64, vInt64, emsg) || err != nil)
 
 		vUint, err := v.Value().Uint()
-		testutils.True(t, testutils.Equal(t, test.Uint, vUint, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Uint, vUint, emsg) || err != nil)
 
 		vUint8, err := v.Value().Uint8()
-		testutils.True(t, testutils.Equal(t, test.Uint8, vUint8, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Uint8, vUint8, emsg) || err != nil)
 
 		vUint16, err := v.Value().Uint16()
-		testutils.True(t, testutils.Equal(t, test.Uint16, vUint16, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Uint16, vUint16, emsg) || err != nil)
 
 		vUint32, err := v.Value().Uint32()
-		testutils.True(t, testutils.Equal(t, test.Uint32, vUint32, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Uint32, vUint32, emsg) || err != nil)
 
 		vUint64, err := v.Value().Uint64()
-		testutils.True(t, testutils.Equal(t, test.Uint64, vUint64, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Uint64, vUint64, emsg) || err != nil)
 
 		vUintptr, err := v.Value().Uintptr()
-		testutils.True(t, testutils.Equal(t, test.Uintptr, vUintptr, emsg) || err != nil)
+		testutils.Assert(t, testutils.Equal(t, test.Uintptr, vUintptr, emsg) || err != nil)
 
 		testutils.Equal(t, test.String, v.String(), emsg)
 		// testutils.Equal(t, test.bytes, v.Bytes(), test.key)

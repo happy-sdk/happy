@@ -13,10 +13,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/events"
-	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/services/service"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -203,7 +203,7 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 		}
 	}
 	if c.cron != nil {
-		internal.Log(sess.Log(), "starting cron jobs", slog.String("service", c.info.Addr().String()))
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "starting cron jobs", slog.String("service", c.info.Addr().String()))
 		if err := c.cron.Start(); err != nil {
 			service.MarkStopped(c.info)
 			service.AddError(c.info, err)
@@ -255,7 +255,7 @@ func (c *Container) Stop(sess *session.Context, e error) (err error) {
 		sess.Log().Error(e.Error(), slog.String("service", c.info.Addr().String()))
 	}
 	if c.cron != nil {
-		internal.Log(sess.Log(), "stopping cron scheduler, waiting jobs to finish", slog.String("service", c.info.Addr().String()))
+		sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), "stopping cron scheduler, waiting jobs to finish", slog.String("service", c.info.Addr().String()))
 		if err := c.cron.Stop(); err != nil {
 			sess.Log().Error("error while stoping cron", slog.String("service", c.info.Addr().String()), slog.String("err", err.Error()))
 		}

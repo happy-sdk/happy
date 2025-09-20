@@ -17,17 +17,23 @@ import (
 )
 
 func TestNil(t *testing.T) {
-	log := logging.NewTestLogger(logging.LevelError)
+	buf := logging.NewBuffer()
+	cnf := logging.DefaultConfig()
+	cnf.Level = logging.LevelHappy
+	log := logging.New(cnf, logging.NewTextAdapter(buf))
 	app := app.New(nil)
 	app.WithLogger(log)
 	testutils.NotNil(t, app, "app must never be nil")
 	app.Run()
 
-	testutils.Contains(t, log.Output(), "settings is <nil>")
+	testutils.ContainsString(t, buf.String(), "settings is <nil>")
 }
 
 func TestDefault(t *testing.T) {
-	log := logging.NewTestLogger(logging.LevelError)
+	buf := logging.NewBuffer()
+	cnf := logging.DefaultConfig()
+	cnf.Level = logging.LevelError
+	log := logging.New(cnf, logging.NewTextAdapter(buf))
 	app := app.New(&happy.Settings{})
 	app.WithLogger(log)
 	testutils.NotNil(t, app, "app must never be nil")
@@ -71,12 +77,12 @@ func TestDefault(t *testing.T) {
 	})
 	app.Run()
 
-	testutils.Equal(t, "", log.Output())
-	testutils.True(t, beforeAlwaysCalled, "app.BeforeAlways was not called to effectively test the default initializer.")
-	testutils.True(t, beforeCalled, "app.Before was not called to effectively test the default initializer.")
-	testutils.True(t, doCalled, "app.Do was not called to effectively test the default initializer.")
-	testutils.True(t, afterSuccessCalled, "app.AfterSuccess was not called to effectively test the default initializer.")
-	testutils.True(t, afterAlwaysCalled, "app.AfterAlways was not called to effectively test the default initializer.")
+	testutils.Equal(t, "", buf.String())
+	testutils.Assert(t, beforeAlwaysCalled, "app.BeforeAlways was not called to effectively test the default initializer.")
+	testutils.Assert(t, beforeCalled, "app.Before was not called to effectively test the default initializer.")
+	testutils.Assert(t, doCalled, "app.Do was not called to effectively test the default initializer.")
+	testutils.Assert(t, afterSuccessCalled, "app.AfterSuccess was not called to effectively test the default initializer.")
+	testutils.Assert(t, afterAlwaysCalled, "app.AfterAlways was not called to effectively test the default initializer.")
 }
 
 // func TestDefaultOptions(t *testing.T) {

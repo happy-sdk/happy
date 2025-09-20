@@ -133,9 +133,9 @@ func TestBenchData(t *testing.T) {
 					out, err := exec.Command("bash", "-c", fmt.Sprintf("echo %s", test.Pattern)).Output()
 					testutils.NoError(t, err)
 					res := strings.Fields(string(out))
-					testutils.False(t, len(test.Res0) > 0 && len(res) == 0, "bash -c returned empty result expecting: ", test.Res0)
-					testutils.False(t, len(test.Res1) > 0 && len(res) < 2, "bash -c less than 2 matches")
-					testutils.False(t, len(test.Res2) > 0 && len(res) < 3, "bash -c less than 3 matches")
+					testutils.Assert(t, len(test.Res0) <= 0 || len(res) != 0, "bash -c returned empty result expecting: %q got: %q", test.Res0, res)
+					testutils.Assert(t, len(test.Res1) <= 0 || len(res) >= 2, "bash -c less than 2 matches")
+					testutils.Assert(t, len(test.Res2) <= 0 || len(res) >= 3, "bash -c less than 3 matches")
 				}
 			}
 		})

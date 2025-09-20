@@ -225,16 +225,15 @@ func (b *BufferedAdapter[A]) Flush() error {
 
 	fts := time.Now().UnixNano()
 	b.flushCh <- fts
-
 	timeout := time.After(b.config.FlushTimeout)
 	for {
 		select {
-		case <-timeout:
-			return fmt.Errorf("flush timed out after %v", time.Since(flushStarted))
 		case cfts := <-b.flushCompletedCh:
 			if cfts == fts {
 				return nil
 			}
+		case <-timeout:
+			return fmt.Errorf("flush timed out after %v", time.Since(flushStarted))
 		}
 	}
 }
@@ -295,8 +294,8 @@ func (b *BufferedAdapter[A]) worker() {
 			for b.records.Len() > 0 {
 				batch = b.records.TakePreallocatedBatch(batch)
 				b.processRecordsBatch(batch)
-				runtime.Gosched()
 			}
+
 			if b.queueLen.Load() > 0 {
 				// there is more records to process
 				runtime.Gosched()

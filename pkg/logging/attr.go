@@ -13,17 +13,19 @@ import (
 
 // attrProcessor caches attribute processing logic
 type attrProcessor struct {
-	config Config
-	pool   sync.Pool
+	config     Config
+	attrPool   sync.Pool // Pool for []slog.Attr
+	recordPool sync.Pool // Pool for *Record
 }
 
 func newAttrProcessor(config Config) *attrProcessor {
 	return &attrProcessor{
 		config: config,
-		pool: sync.Pool{
-			New: func() any {
-				return make([]slog.Attr, 0, config.AttrProcessorPoolSize)
-			},
+		attrPool: sync.Pool{
+			New: func() any { return &[]slog.Attr{} }, // Return pointer to slice
+		},
+		recordPool: sync.Pool{
+			New: func() any { return &Record{} },
 		},
 	}
 }
@@ -106,22 +108,28 @@ func (p *attrProcessor) processAttrs(in []slog.Attr) []slog.Attr {
 	return attrs
 }
 
-func (p *attrProcessor) process(ctx context.Context, src slog.Record) (r Record) {
-
-	r.Ctx = ctx
-	r.Record.Time = src.Time
-	r.Record.Level = src.Level
-	r.Record.Message = src.Message
-	r.Record.PC = src.PC
+func (p *attrProcessor) process(ctx context.Context, src slog.Record) (r *Record) {
+	r = p.recordPool.Get().(*Record)
+	*r = Record{ // Reset fields to avoid stale data
+		Ctx: ctx,
+		Record: slog.Record{
+			Time:    src.Time,
+			Level:   src.Level,
+			Message: src.Message,
+			PC:      src.PC,
+		},
+	}
 
 	if src.NumAttrs() == 0 {
 		return
 	}
 
-	attrs := p.pool.Get().([]slog.Attr)
+	attrsPtr := p.attrPool.Get().(*[]slog.Attr) // Get pointer to slice
+	attrs := *attrsPtr                          // Dereference for use
 	defer func() {
-		attrs = attrs[:0]
-		p.pool.Put(attrs)
+		*attrsPtr = (*attrsPtr)[:0] // Reset slice via pointer
+		p.attrPool.Put(attrsPtr)    // Put pointer back to pool
+		p.recordPool.Put(r)         // Return record to pool
 	}()
 
 	src.Attrs(func(a slog.Attr) bool {
@@ -132,6 +140,7 @@ func (p *attrProcessor) process(ctx context.Context, src slog.Record) (r Record)
 		a = applyReplaceIter([]string{}, a, p.config.replaceAttr)
 		if a.Key != "" {
 			attrs = append(attrs, a)
+			*attrsPtr = attrs // Update the pooled slice
 		}
 		return true
 	})

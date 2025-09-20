@@ -11,12 +11,12 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/networking/address"
 	"github.com/happy-sdk/happy/pkg/scheduling/cron"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/events"
-	"github.com/happy-sdk/happy/sdk/internal"
 	"github.com/happy-sdk/happy/sdk/services/service"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -127,13 +127,16 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 
 	if defaultTimeout <= 0 {
 		defaultTimeout = time.Duration(time.Second * 30)
-		sl.sess.Log().NotImplemented(
+
+		sl.sess.Log().Log(
+			sl.sess.Context(),
+			logging.LevelNotImpl.Level(),
 			"service loader using default timeout",
 			slog.Duration("timeout", timeout),
 			slog.Duration("app.services.loader_timeout", timeout),
 		)
 	}
-	internal.Log(sl.sess.Log(), "loading services", slog.String("host", sl.hostaddr.Host()), slog.String("instance", sl.hostaddr.Instance()))
+	sl.sess.Log().Log(sl.sess.Context(), logging.LevelHappy.Level(), "loading services", slog.String("host", sl.hostaddr.Host()), slog.String("instance", sl.hostaddr.Instance()))
 
 	queue := make(map[string]*service.Info)
 	var require []string
@@ -159,13 +162,13 @@ func (sl *ServiceLoader) Load() <-chan struct{} {
 			return sl.loaderCh
 		}
 		if info.Running() {
-			sl.sess.Log().Notice(
+			sl.sess.Log().Log(sl.sess.Context(), logging.LevelNotice.Level(),
 				"requested service is already running",
 				slog.String("service", svcaddr),
 			)
 			continue
 		}
-		internal.Log(sl.sess.Log(), "requesting service", slog.String("service", svcaddr))
+		sl.sess.Log().Log(sl.sess.Context(), logging.LevelHappy.Level(), "requesting service", slog.String("service", svcaddr))
 		queue[svcaddr] = info
 		require = append(require, svcaddr)
 	}
@@ -360,7 +363,7 @@ func (cs *serviceCron) Start() error {
 				cs.sess.Log().Error(fmt.Errorf("%w:%w: failed to find job info", Error, cron.Error).Error(), slog.Int("id", int(id)))
 				continue
 			}
-			internal.Log(cs.sess.Log(), "executing cron first time", slog.Int("job-id", int(id)), slog.String("name", info.Name), slog.String("expr", info.Expr))
+			cs.sess.Log().Log(cs.sess.Context(), logging.LevelHappy.Level(), "executing cron first time", slog.Int("job-id", int(id)), slog.String("name", info.Name), slog.String("expr", info.Expr))
 			job := cs.lib.Entry(id)
 			if job.Job != nil {
 				go job.Job.Run()

@@ -66,7 +66,9 @@ func TestLoggerWithSomeDisposedAdaptersSingleHandlererErr(t *testing.T) {
 		failingTextAdapter,
 		failingConsoleAdapter,
 	)
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 	testutils.NoError(t, logger.Handler().Handle(
 		context.TODO(),
 		slog.NewRecord(time.Now(), logging.LevelDebug.Level(), "debug msg string", 0)))
@@ -185,7 +187,9 @@ func TestRecordHTTPWithNonCompatibleAdapter(t *testing.T) {
 	buf := logging.NewBuffer()
 	text := logging.NewTextAdapter(buf)
 	logger := logging.New(logging.DefaultConfig(), text)
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	err := logger.Handler().Handle(context.TODO(), logging.NewHttpRecord(
 		time.Now(), http.MethodTrace, 201, "/home", "key", "value"))
@@ -198,7 +202,9 @@ func TestRecordHTTPWithCompatibleAdapter(t *testing.T) {
 	console := adapters.NewBufferedConsoleAdapter(buf, adapters.ConsoleAdapterDefaultTheme())
 	logger := logging.New(logging.DefaultConfig(), console)
 
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	rec := logging.NewHttpRecord(
 		time.Now(), http.MethodTrace, 201, "/home", "key", "value")
@@ -207,7 +213,7 @@ func TestRecordHTTPWithCompatibleAdapter(t *testing.T) {
 
 	testutils.NoError(t, logger.Handler().Handle(context.TODO(), rec))
 	testutils.NoError(t, logger.Handler().Handle(context.TODO(), rec2))
-	logger.Flush()
+	testutils.NoError(t, logger.Flush())
 
 	line := buf.String()
 	testutils.Assert(t, line != "", "http log line must not be empty")
@@ -235,7 +241,9 @@ func TestGetAdaptersFromHandler(t *testing.T) {
 		}),
 	)
 
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 	testutils.Nil(t, logging.GetAdaptersFromHandler[*adapters.ConsoleAdapter](nil))
 
 	console := logging.GetAdaptersFromHandler[*adapters.ConsoleAdapter](logger.Handler())
@@ -255,9 +263,11 @@ func TestQueueLogger(t *testing.T) {
 	buf := logging.NewBuffer()
 	text := logging.NewTextAdapter(buf)
 	logger := logging.New(config, text)
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
-	c, err := queue.Consume(logger)
+	c, err := logger.Consume(queue)
 	testutils.NoError(t, err)
 	testutils.Equal(t, count, c, fmt.Sprintf("expected %d records", count))
 	testutils.Equal(t, count, strings.Count(buf.String(), "\n"), fmt.Sprintf("expected %d records", count))
@@ -277,7 +287,9 @@ func TestReplaceSecrets(t *testing.T) {
 	)
 	logger2 := logger.WithGroup("group")
 	logger3 := logger2.WithGroup("sub")
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	logger.Info("message", "api_key", "secret_key", "key", "value")
 	logger2.Info("message2", "api_key", "secret_key", "key", "value")
@@ -338,7 +350,9 @@ func TestOmit(t *testing.T) {
 	)
 	logger2 := logger.WithGroup("group")
 	logger3 := logger2.WithGroup("sub")
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	logger.Info("message", "api_key", "secret_key", "key", "value")
 	logger2.Info("message2", "api_key", "secret_key", "key", "value")
@@ -395,7 +409,9 @@ func TestProcessAttrsEmpty(t *testing.T) {
 
 	buf := logging.NewBuffer()
 	logger := logging.New(config, logging.NewTextAdapter(buf))
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 	logger.With("key", "value").Info("message with no attributes")
 
 	testutils.NoError(t, logger.Flush())
@@ -420,7 +436,9 @@ func TestBufferedAdapterBatchWrites(t *testing.T) {
 		// logging.NewBufferedJSONAdapter(buf2, nil),
 		// adapters.NewBufferedConsoleAdapter(buf3, adapters.ConsoleAdapterDefaultTheme()),
 	)
-	defer logger.Dispose()
+	defer func() {
+		testutils.NoError(t, logger.Dispose())
+	}()
 
 	count := 50000
 	queue := logging.NewQueueLogger(count)
@@ -430,8 +448,8 @@ func TestBufferedAdapterBatchWrites(t *testing.T) {
 		logger.Info("message")
 	}
 
-	consumed, err := queue.Consume(logger)
-	logger.Flush()
+	consumed, err := logger.Consume(queue)
+	testutils.NoError(t, logger.Flush())
 
 	testutils.NoError(t, err)
 	testutils.Equal(t, count, consumed, "expected %d", count)
