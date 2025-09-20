@@ -1,5 +1,6 @@
-github.com/happy-sdk/happy/pkg/devel/testutils v1.1.1 h1:30QjezZbtLX263ItCMruZmOqK6UE48H9uS4QUPH9yPc=
-github.com/happy-sdk/happy/pkg/devel/testutils v1.1.1/go.mod h1:ux/Evw6T4V6oUdWTEn+2VaXcStdS+BgqshsVf4IxnN0=
-github.com/happy-sdk/happy/pkg/vars v0.19.0 h1:+i47EmofAXpNLyiiEtf59uSiT4x3EuoWGTrVoYpxGIM=
-github.com/happy-sdk/happy/pkg/vars v0.19.0/go.mod h1:TZjApQ+14knllK6nLrbkPSeHa+WnhMYTt0P6C9eKaMY=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.2.0 h1:1IF+woKuNvwSVFyUD3iHoyiQYfmIMwJ8CgNLf4CTC8Q=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.2.0/go.mod h1:ux/Evw6T4V6oUdWTEn+2VaXcStdS+BgqshsVf4IxnN0=
+github.com/happy-sdk/happy/pkg/vars v0.20.0 h1:6eXUCP43yjx8Iibu+BJu39NAo8wecj2X8cf/duZCTfE=
+github.com/happy-sdk/happy/pkg/vars v0.20.0/go.mod h1:wDVCufLDjva+wfh9YVdcLw7BUrETWOAEOAhCOfZb9Xk=
 golang.org/x/text v0.29.0 h1:1neNs90w9YzJ9BocxfsQNHKuAT4pkghyXc4nhZ6sJvk=
+golang.org/x/text v0.29.0/go.mod h1:7MhJOA9CD2qZyOKYazxdYMF85OwPdEr9jTtBpO7ydH4=
