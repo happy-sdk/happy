@@ -12,31 +12,98 @@ Happy SDK is an open-source Go framework designed to make building applications 
 
 Happy SDK is designed to simplify your development process without introducing any new or additional developer tools. Your applications built with Happy can be used, built, and tested with the standard Go build tools, such as 'go test', 'go build', and 'go run'. With Happy, you have complete control over your development environment, as it will not add any third-party dependencies to your project.
 
-*Here's a simple example of how you can use Happy:*
+*Here's a minimal example of how you can use Happy:*
 
 ```go
 // main.go
 package main
 
 import (
-	"fmt"
+ "fmt"
 
-	"github.com/happy-sdk/happy"
-	"github.com/happy-sdk/happy/sdk/action"
-	"github.com/happy-sdk/happy/sdk/session"
+ "github.com/happy-sdk/happy"
+ "github.com/happy-sdk/happy/sdk/action"
+ "github.com/happy-sdk/happy/sdk/session"
 )
 
 func main() {
-  app := happy.New(happy.Settings{})
+ app := happy.New(nil)
 
-  app.Do(func(sess *session.Context, args action.Args) error {
-    sess.Log().Println("Hello, world!")
-    return nil
-  })
+ app.Do(func(sess *session.Context, args action.Args) error {
+  sess.Log().Info("Hello, world! ")
+  return nil
+ })
 
-  app.Run()
+ app.Run()
 }
+// go run . 
+// OUT: 
+// info  00:00:00.000 Hello, world!
+```
 
+*Here's a example enabling builtin global flags including (help,version:*
+
+```go
+// main.go
+package main
+
+import (
+ "fmt"
+
+ "github.com/happy-sdk/happy"
+ "github.com/happy-sdk/happy/sdk/action"
+ "github.com/happy-sdk/happy/sdk/session"
+)
+
+func main() {
+ app := happy.New(&happy.Settings{
+  // Engine: happy.EngineSettings{},
+
+  CLI: happy.CliSettings{
+   WithGlobalFlags: true,
+  },
+
+  // Profiles: happy.ProfileSettings{},
+  // DateTime: happy.DateTimeSettings{},
+  Instance: happy.InstanceSettings{},
+
+  // We enable global flags which has --verbose flag to set info level
+  // so we set default something higher than info
+  Logging: happy.LoggingSettings{
+   Level: logging.LevelSuccess,
+  },
+
+  // Services: happy.ServicesSettings{},
+  // Stats:    happy.StatsSettings{},
+  // Devel:    happy.DevelSettings{},
+  // I18n:     happy.I18nSettings{},
+ })
+
+ app.Do(func(sess *session.Context, args action.Args) error {
+  sess.Log().Info("Hello, world! ")
+  return nil
+ })
+
+ app.Run()
+}
+// go run . -h
+// OUT: 
+//  Happy Prototype - v0.0.1-devel+git.<hash>.<timestamp>
+//  Copyright © {year} Anonymous
+//  License: NOASSERTION
+//  
+//  This application is built using the Happy-SDK to provide enhanced functionality and features.
+//
+//  yourcmd [flags]
+//
+// GLOBAL FLAGS:
+//
+//  --debug              enable debug log level - default: "false"
+//  --help         -h    display help or help for the command. [...command --help] - default: "false"
+//  --show-exec    -x    the -x flag prints all the cli commands as they are executed. - default: "false"
+//  --system-debug       enable system debug log level (very verbose) - default: "false"
+//  --verbose      -v    set log level info - default: "false"
+//  --version            print application version - default: "false"
 ```
 
 For more examples, take a look at the [examples](#examples) section and the examples in the ./examples/ directory."
@@ -81,7 +148,6 @@ app.Tock(/* called after every tick*/)
 `command.Command` provides a universal API for attaching sub-commands directly to the application or providing them from an Addon.  
  [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/cli/command)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/cli/command)
 
-
 ```go
 import "github.com/happy-sdk/happy/sdk/cli/command"
 ...
@@ -107,7 +173,6 @@ cmd.WithFlags(/* add flag(s) to  command*/)
 
 The `services.Service` API provides a flexible way to add runtime-controllable background services to your application.  
  [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/services)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/services)
-
 
 ```go
 import (

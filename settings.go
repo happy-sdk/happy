@@ -208,7 +208,7 @@ func (s DateTimeSettings) Blueprint() (*settings.Blueprint, error) {
 
 type InstanceSettings struct {
 	// How many instances of the applications can be booted at the same time.
-	Max settings.Uint `key:"max" default:"0" desc:"Maximum number of instances of the application that can be booted at the same time"`
+	Max settings.Uint `key:"max" default:"0" desc:"Maximum number of instances of the application that can be executed at the same time acquiring lockfile"`
 }
 
 func (s InstanceSettings) Blueprint() (*settings.Blueprint, error) {
