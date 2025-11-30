@@ -107,6 +107,7 @@ func (ql *QueueLogger) Records() []Record {
 	defer ql.queue.mu.Unlock()
 
 	records := ql.queue.buf
+	ql.queue.buf = nil
 	return records
 }
 

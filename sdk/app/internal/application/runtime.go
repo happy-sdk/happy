@@ -128,6 +128,177 @@ func (rt *Runtime) AddServices(svcs []*services.Service) {
 	rt.svcs = append(rt.svcs, svcs...)
 }
 
+type ShutDown struct{}
+
+// ExitCh return blocking channel that will reveive a signal when the runtime exits
+func (rt *Runtime) ExitCh() <-chan ShutDown {
+	if testing.Testing() && rt.exitCh == nil {
+		rt.exitCh = make(chan ShutDown, 1)
+	}
+	return rt.exitCh
+}
+
+func (rt *Runtime) SetExecLogLevel(lvl logging.Level) {
+	rt.execlvl = lvl
+}
+
+func (rt *Runtime) Start() {
+	if err := rt.boot(); err != nil {
+		if errors.Is(err, ErrExitSuccess) {
+			rt.Exit(0)
+			return
+		}
+
+		rt.sess.Log().Debug("failed to boot application", slog.String("err", err.Error()))
+		rt.sess.Log().Error(err.Error())
+		rt.Exit(1)
+		return
+	}
+
+	rt.startedAt = rt.sess.Time(time.Now())
+	if rt.execlvl == logging.LevelQuiet || rt.execlvl < logging.LevelDebug {
+		_ = rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "starting_application", "starting application"), slog.Time("started.at", rt.startedAt))
+	}
+
+	if rt.engine != nil {
+		if err := rt.engine.Stats().Set("app.started.at", rt.startedAt.Format(time.RFC3339)); err != nil {
+			rt.sess.Log().Error("failed to set app started at", slog.String("err", err.Error()))
+		}
+	}
+
+	<-rt.sess.Ready()
+
+	if err := rt.sess.Err(); err != nil {
+		rt.sess.Log().Error("session error", slog.String("err", err.Error()))
+		rt.Exit(1)
+		return
+	}
+
+	err := rt.executeDoAction()
+	defer func() {
+		if r := recover(); r != nil {
+			rt.recover(r, "shutdown failed")
+		}
+	}()
+
+	if rt.engine != nil {
+		if engErr := rt.engine.Stop(rt.sess); engErr != nil {
+			rt.sess.Log().Error("failed to stop engine", slog.String("err", engErr.Error()))
+		}
+	}
+
+	// Only clear the reference since session owns the channel
+	rt.evch = nil
+
+	canRecover := rt.sess.CanRecover(err)
+
+	if !canRecover {
+		if e := rt.cmd.ExecAfterFailure(rt.sess, err); e != nil {
+			rt.sess.Log().Error(e.Error(), slog.String("action", "AfterFailure"))
+			rt.Exit(1)
+			return
+		}
+	} else {
+		if e := rt.cmd.ExecAfterSuccess(rt.sess); e != nil {
+			rt.sess.Log().Error(e.Error(), slog.String("action", "AfterSuccess"))
+			rt.Exit(1)
+			return
+		}
+	}
+
+	if canRecover {
+		err = nil
+	}
+	if e := rt.cmd.ExecAfterAlways(rt.sess, err); e != nil {
+		rt.sess.Log().Error(e.Error(), slog.String("action", "AfterAlways"))
+		rt.Exit(1)
+		return
+	}
+	if rt.execlvl < logging.LevelQuiet {
+		rt.sess.Log().SetLevel(rt.execlvl)
+	}
+
+	if err != nil {
+		rt.Exit(1)
+		return
+	}
+	rt.Exit(0)
+}
+
+func (rt *Runtime) Exit(code int) {
+	rt.Log(0, internal.LogLevelHappy, "shutting down", slog.Int("exit.code", code))
+
+	if rt.engine != nil {
+		if err := rt.engine.Stop(rt.sess); err != nil {
+			rt.sess.Log().Error("failed to stop engine", slog.String("err", err.Error()))
+		}
+	}
+
+	if rt.sess != nil {
+		for _, fn := range rt.exitActions {
+			if err := fn(rt.sess, code); err != nil {
+				rt.Log(0, logging.LevelError, "exit func", slog.String("err", err.Error()))
+				code = 1
+			}
+		}
+
+		if rt.sess.Get("app.stats.enabled").Bool() && rt.sess.Log().Level() <= logging.LevelDebug {
+			if rt.engine != nil {
+				rt.sess.Log().Log(rt.sess.Context(), logging.LevelOut.Level(), rt.engine.Stats().State().String())
+			}
+		}
+
+		rt.sess.Destroy(nil)
+		if err := rt.sess.Err(); err != nil && !errors.Is(err, session.ErrExitSuccess) {
+			rt.Log(0, logging.LevelError, err.Error())
+			code = 1
+		}
+
+		// Final session cleanup, close channels
+		rt.sess.Dispatch(internal.TerminateSessionEvent)
+	}
+
+	if rt.exitCh != nil {
+		rt.exitCh <- struct{}{}
+	}
+
+	if !rt.startedAt.IsZero() {
+		rt.Log(1, logging.LevelDebug, i18n.PTD(i18np, "shutdown_complete", "shutdown complete"), slog.String("uptime", time.Since(rt.startedAt).String()), slog.Int("exit.code", code))
+	} else {
+		rt.Log(1, logging.LevelDebug, i18n.PTD(i18np, "shutdown_complete", "shutdown complete"), slog.Int("exit.code", code))
+	}
+
+	rt.disposeLogger()
+
+	// If we are not testing, exit the main process
+	if !testing.Testing() {
+		os.Exit(code)
+	}
+}
+
+func (rt *Runtime) Log(depth int, lvl logging.Level, msg string, attrs ...slog.Attr) {
+	// try to log with session logger
+	if rt.sess != nil {
+		_ = rt.sess.Log().LogDepth(depth+1, lvl, msg, attrs...)
+		return
+	}
+	if rt.tmplogger != nil {
+		_ = rt.tmplogger.LogDepth(depth+1, lvl, msg, attrs...)
+		return
+	}
+
+	// log with slog
+	slog.LogAttrs(context.Background(), slog.Level(lvl), msg, attrs...)
+}
+
+func (rt *Runtime) ConsumeLogs(log *logging.QueueLogger) {
+	if rt.sess != nil {
+		rt.sess.Log().Consume(log)
+	} else if rt.tmplogger != nil {
+		rt.tmplogger.Consume(log)
+	}
+}
+
 func (rt *Runtime) boot() (err error) {
 	// Boot the application
 	bootedAt := time.Now()
@@ -228,89 +399,6 @@ func (rt *Runtime) boot() (err error) {
 	return nil
 }
 
-func (rt *Runtime) Start() {
-	if err := rt.boot(); err != nil {
-		if errors.Is(err, ErrExitSuccess) {
-			rt.Exit(0)
-			return
-		}
-
-		rt.sess.Log().Debug("failed to boot application", slog.String("err", err.Error()))
-		rt.sess.Log().Error(err.Error())
-		rt.Exit(1)
-		return
-	}
-
-	rt.startedAt = rt.sess.Time(time.Now())
-	if rt.execlvl == logging.LevelQuiet || rt.execlvl < logging.LevelDebug {
-		_ = rt.sess.Log().LogDepth(1, logging.LevelDebug, i18n.PTD(i18np, "starting_application", "starting application"), slog.Time("started.at", rt.startedAt))
-	}
-
-	if rt.engine != nil {
-		if err := rt.engine.Stats().Set("app.started.at", rt.startedAt.Format(time.RFC3339)); err != nil {
-			rt.sess.Log().Error("failed to set app started at", slog.String("err", err.Error()))
-		}
-	}
-
-	<-rt.sess.Ready()
-
-	if err := rt.sess.Err(); err != nil {
-		rt.sess.Log().Error("session error", slog.String("err", err.Error()))
-		rt.Exit(1)
-		return
-	}
-
-	err := rt.executeDoAction()
-	defer func() {
-		if r := recover(); r != nil {
-			rt.recover(r, "shutdown failed")
-		}
-	}()
-
-	if rt.engine != nil {
-		if engErr := rt.engine.Stop(rt.sess); engErr != nil {
-			rt.sess.Log().Error("failed to stop engine", slog.String("err", engErr.Error()))
-		}
-	}
-
-	// Only clear the reference since session owns the channel
-	rt.evch = nil
-
-	canRecover := rt.sess.CanRecover(err)
-
-	if !canRecover {
-		if e := rt.cmd.ExecAfterFailure(rt.sess, err); e != nil {
-			rt.sess.Log().Error(e.Error(), slog.String("action", "AfterFailure"))
-			rt.Exit(1)
-			return
-		}
-	} else {
-		if e := rt.cmd.ExecAfterSuccess(rt.sess); e != nil {
-			rt.sess.Log().Error(e.Error(), slog.String("action", "AfterSuccess"))
-			rt.Exit(1)
-			return
-		}
-	}
-
-	if canRecover {
-		err = nil
-	}
-	if e := rt.cmd.ExecAfterAlways(rt.sess, err); e != nil {
-		rt.sess.Log().Error(e.Error(), slog.String("action", "AfterAlways"))
-		rt.Exit(1)
-		return
-	}
-	if rt.execlvl < logging.LevelQuiet {
-		rt.sess.Log().SetLevel(rt.execlvl)
-	}
-
-	if err != nil {
-		rt.Exit(1)
-		return
-	}
-	rt.Exit(0)
-}
-
 func (rt *Runtime) recover(r any, msg string) {
 	// Log the panic message
 	var errMessage string
@@ -325,10 +413,10 @@ func (rt *Runtime) recover(r any, msg string) {
 	// Obtain and log the stack trace
 	stackTrace := string(stack)
 
-	rt.log(3, logging.LevelBUG, fmt.Sprintf("panic: %s (recovered)", msg),
+	rt.Log(3, logging.LevelBUG, fmt.Sprintf("panic: %s (recovered)", msg),
 		slog.String("msg", errMessage),
 	)
-	rt.log(3, logging.LevelOut, stackTrace)
+	rt.Log(3, logging.LevelOut, stackTrace)
 	rt.Exit(1)
 }
 
@@ -513,71 +601,6 @@ func (rt *Runtime) executeDoAction() error {
 	return err
 }
 
-type ShutDown struct{}
-
-// ExitCh return blocking channel that will reveive a signal when the runtime exits
-func (rt *Runtime) ExitCh() <-chan ShutDown {
-	if testing.Testing() && rt.exitCh == nil {
-		rt.exitCh = make(chan ShutDown, 1)
-	}
-	return rt.exitCh
-}
-
-func (rt *Runtime) SetExecLogLevel(lvl logging.Level) {
-	rt.execlvl = lvl
-}
-
-func (rt *Runtime) Exit(code int) {
-	rt.log(0, internal.LogLevelHappy, "shutting down", slog.Int("exit.code", code))
-
-	if rt.engine != nil {
-		if err := rt.engine.Stop(rt.sess); err != nil {
-			rt.sess.Log().Error("failed to stop engine", slog.String("err", err.Error()))
-		}
-	}
-
-	if rt.sess != nil {
-		for _, fn := range rt.exitActions {
-			if err := fn(rt.sess, code); err != nil {
-				rt.log(0, logging.LevelError, "exit func", slog.String("err", err.Error()))
-				code = 1
-			}
-		}
-
-		if rt.sess.Get("app.stats.enabled").Bool() && rt.sess.Log().Level() <= logging.LevelDebug {
-			if rt.engine != nil {
-				rt.sess.Log().Log(rt.sess.Context(), logging.LevelOut.Level(), rt.engine.Stats().State().String())
-			}
-		}
-
-		rt.sess.Destroy(nil)
-		if err := rt.sess.Err(); err != nil && !errors.Is(err, session.ErrExitSuccess) {
-			rt.log(0, logging.LevelError, err.Error())
-			code = 1
-		}
-
-		// Final session cleanup, close channels
-		rt.sess.Dispatch(internal.TerminateSessionEvent)
-	}
-
-	if rt.exitCh != nil {
-		rt.exitCh <- struct{}{}
-	}
-
-	if !rt.startedAt.IsZero() {
-		rt.log(1, logging.LevelDebug, i18n.PTD(i18np, "shutdown_complete", "shutdown complete"), slog.String("uptime", time.Since(rt.startedAt).String()), slog.Int("exit.code", code))
-	} else {
-		rt.log(1, logging.LevelDebug, i18n.PTD(i18np, "shutdown_complete", "shutdown complete"), slog.Int("exit.code", code))
-	}
-
-	rt.disposeLogger()
-
-	// If we are not testing, exit the main process
-	if !testing.Testing() {
-		os.Exit(code)
-	}
-}
-
 func (rt *Runtime) disposeLogger() {
 	if rt.sess != nil {
 		logger := rt.sess.Log()
@@ -587,19 +610,4 @@ func (rt *Runtime) disposeLogger() {
 			}
 		}
 	}
-}
-
-func (rt *Runtime) log(depth int, lvl logging.Level, msg string, attrs ...slog.Attr) {
-	// try to log with session logger
-	if rt.sess != nil {
-		_ = rt.sess.Log().LogDepth(depth+1, lvl, msg, attrs...)
-		return
-	}
-	if rt.tmplogger != nil {
-		_ = rt.tmplogger.LogDepth(depth+1, lvl, msg, attrs...)
-		return
-	}
-
-	// log with slog
-	slog.LogAttrs(context.Background(), slog.Level(lvl), msg, attrs...)
 }

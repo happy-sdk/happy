@@ -128,13 +128,7 @@ func (l *Logger) Consume(queue *QueueLogger) (int, error) {
 		return 0, fmt.Errorf("%w: QueueLogger disposed", ErrAdapter)
 	}
 
-	if err := queue.adapter.Flush(); err != nil {
-		return 0, err
-	}
-
-	queue.queue.mu.Lock()
-	records := queue.queue.buf
-	queue.queue.mu.Unlock()
+	records := queue.Records()
 
 	processed, err := l.handler.queueHandle(records)
 	if err != nil {

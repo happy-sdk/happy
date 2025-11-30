@@ -831,14 +831,12 @@ func (init *Initializer) configureLogger() (err error) {
 		adapters.NewBufferedConsoleAdapter(os.Stdout, adapters.ConsoleAdapterDefaultTheme()))
 
 	if _, err := logger.Consume(init.log); err != nil {
-		fmt.Println("setup logger", err)
 		return fmt.Errorf("%w: failed to consume log queue: %s", Error, err)
 	}
 
 	init.log = nil
 
 	init.logger = logger
-
 	return nil
 }
 

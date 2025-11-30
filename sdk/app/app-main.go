@@ -131,6 +131,7 @@ func (m *Main) Run() {
 			stackTrace := string(debug.Stack())
 			_ = m.log.LogDepth(1, logging.LevelBUG, "panic (recovered)", slog.String("msg", errMessage))
 			fmt.Println(stackTrace)
+			m.rt.ConsumeLogs(m.log)
 			m.rt.Exit(1)
 		}
 	}()
@@ -144,9 +145,11 @@ func (m *Main) Run() {
 	if err := m.init.Configure(); err != nil {
 
 		if errors.Is(err, application.ErrExitSuccess) {
+			m.rt.ConsumeLogs(m.log)
 			m.rt.Exit(0)
 			return
 		}
+
 		m.log.Error(err.Error())
 		{
 			// rare case where logger is not available, then use slog
@@ -157,7 +160,7 @@ func (m *Main) Run() {
 				}
 			}
 		}
-
+		m.rt.ConsumeLogs(m.log)
 		m.rt.Exit(1)
 		return
 	}
@@ -166,6 +169,7 @@ func (m *Main) Run() {
 	{
 		if err := m.init.Finalize(); err != nil {
 			m.log.Error("disposing initializer failed", slog.String("error", err.Error()))
+			m.rt.ConsumeLogs(m.log)
 			m.rt.Exit(1)
 			return
 		}
@@ -175,6 +179,7 @@ func (m *Main) Run() {
 	exitCh := m.rt.ExitCh()
 
 	go func() {
+		m.rt.ConsumeLogs(m.log)
 		m.rt.Start()
 	}()
 	osmain(exitCh)
