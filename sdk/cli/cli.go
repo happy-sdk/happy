@@ -135,24 +135,23 @@ func run(sess *session.Context, cmd *exec.Cmd) error {
 		_ = sess.Log().LogDepth(4, logging.LevelOut, cmd.String())
 	}
 
-	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
+	scmd := exec.CommandContext(sess.Context(), cmd.Path, cmd.Args[1:]...) //nolint: gosec
 	scmd.Env = cmd.Env
 	scmd.Dir = cmd.Dir
 	scmd.Stdin = cmd.Stdin
-	scmd.Stdout = cmd.Stdout
-	scmd.Stderr = cmd.Stderr
 	scmd.ExtraFiles = cmd.ExtraFiles
+
+	stderr, err := scmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	stdout, err := scmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+
 	cmd = scmd
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
 
 	stdopipe := bufio.NewScanner(stdout)
 	go func() {
@@ -193,7 +192,9 @@ func execCommandRaw(sess *session.Context, cmd *exec.Cmd) ([]byte, error) {
 		_ = sess.Log().LogDepth(4, logging.LevelOut, cmd.String())
 	}
 
-	scmd := exec.CommandContext(sess, cmd.Path, cmd.Args[1:]...) //nolint: gosec
+	// Use sess.Context() instead of sess directly to avoid TTY allocation issues in CI
+	// sess.Context() returns a lightweight context without TTY-related functionality
+	scmd := exec.CommandContext(sess.Context(), cmd.Path, cmd.Args[1:]...) //nolint: gosec
 	scmd.Env = cmd.Env
 	scmd.Dir = cmd.Dir
 
