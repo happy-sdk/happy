@@ -15,6 +15,7 @@
 **/VERSION
 tools/tools.go
 __debug*
+go.work.sum
 
 ################################################################################
 # DIRECTORIES to ignore
