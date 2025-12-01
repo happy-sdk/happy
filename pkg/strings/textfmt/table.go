@@ -7,7 +7,6 @@ package textfmt
 import (
 	"strings"
 	"sync"
-	"unicode/utf8"
 )
 
 // Pre-allocated slices pool for reuse
@@ -216,7 +215,7 @@ func (t *Table) calculateGlobalWidth() int {
 
 	maxW := 0
 	if t.title != "" {
-		maxW = utf8.RuneCountInString(t.title) + 4
+		maxW = displayWidth(t.title) + 4
 	}
 
 	cw := t.calculateLocalColumnWidths()
@@ -272,7 +271,7 @@ func (t *Table) calculateLocalColumnWidths() []int {
 			if i >= len(cw) {
 				break
 			}
-			colLen := utf8.RuneCountInString(col) + 2
+			colLen := displayWidth(col) + 2
 			if colLen > cw[i] {
 				cw[i] = colLen
 			}
@@ -329,7 +328,7 @@ func (t *Table) writeContent(b *strings.Builder, globalWidth int, isSub bool, pa
 				topBorder = strings.ReplaceAll(topBorder, "┘", "┤")
 			}
 			b.WriteString(topBorder)
-			suffixlen := globalWidth - utf8.RuneCountInString(t.title) - 4
+			suffixlen := globalWidth - displayWidth(t.title) - 4
 			if suffixlen >= 0 {
 				b.WriteString("│ ")
 				b.WriteString(t.title)
@@ -368,7 +367,7 @@ func (t *Table) writeContent(b *strings.Builder, globalWidth int, isSub bool, pa
 	} else {
 		if t.title != "" {
 			b.WriteString(t.buildBorder('┌', '─', '┐', []int{globalWidth - 2}))
-			suffixlen := globalWidth - utf8.RuneCountInString(t.title) - 4
+			suffixlen := globalWidth - displayWidth(t.title) - 4
 			if suffixlen >= 0 {
 				b.WriteString("│ ")
 				b.WriteString(t.title)
@@ -477,7 +476,7 @@ func (t *Table) formatRow(row []string, colWidths []int) string {
 	} else {
 		for i := 0; i < len(row) && i < len(colWidths)-1; i++ {
 			col := row[i]
-			colDisplayWidth := utf8.RuneCountInString(col)
+			colDisplayWidth := displayWidth(col)
 			padding := colWidths[i] - colDisplayWidth - 1
 
 			b.WriteString(" ")
@@ -492,7 +491,7 @@ func (t *Table) formatRow(row []string, colWidths []int) string {
 		if len(row) > 0 {
 			lastIdx := min(len(row)-1, len(colWidths)-1)
 			col := row[lastIdx]
-			colDisplayWidth := utf8.RuneCountInString(col)
+			colDisplayWidth := displayWidth(col)
 
 			lastWidth := 0
 			for j := lastIdx; j < len(colWidths); j++ {
