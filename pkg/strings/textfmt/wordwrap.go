@@ -61,9 +61,7 @@ func WordWrapWithPrefixes(text string, lineWidth int, firstPrefix, contPrefix st
 	}
 
 	// Split on whitespace and process words
-	words := strings.Fields(text)
-
-	for _, word := range words {
+	for word := range strings.FieldsSeq(text) {
 		wordWidth := len(word)
 		effectiveWidth := getCurrentEffectiveWidth()
 

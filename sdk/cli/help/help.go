@@ -386,12 +386,11 @@ func (h *Help) printBanner() error {
 func (h *Help) printInfo() error {
 	if len(h.info.Info) > 0 {
 		for _, info := range h.info.Info {
-			fmt.Println("")
-			// Translate info if it looks like an i18n key (starts with "com.github.")
-			translatedInfo := info
-			if strings.HasPrefix(info, "com.github.") {
-				translatedInfo = i18n.T(info)
+			if info == "" {
+				fmt.Println("")
+				continue
 			}
+			translatedInfo := i18n.T(info)
 			fmt.Println(h.style.Info.String(textfmt.WordWrapWithPrefixes(translatedInfo, 72, "    ", "  ")))
 		}
 	}
