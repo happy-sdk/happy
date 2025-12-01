@@ -4,5 +4,5 @@ github.com/happy-sdk/happy/pkg/i18n v0.2.1 h1:s4FSxkUP0D9i0ajcK+6TFPoWCClk4DsAIM
 github.com/happy-sdk/happy/pkg/i18n v0.2.1/go.mod h1:bIJDBoDaqpm7I59Pp3Z14x1+b2JWBlWxomJDWuLXp5k=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.6.0 h1:JdMHLzQVmna4UazonUc4PXPocGL5hmY2sD8Sn/hNMb4=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.6.0/go.mod h1:ku3eAaLYiAnDme43HtZuvDFOHkBqqs4wEU5E1x4/YjI=
-golang.org/x/text v0.29.0 h1:1neNs90w9YzJ9BocxfsQNHKuAT4pkghyXc4nhZ6sJvk=
-golang.org/x/text v0.29.0/go.mod h1:7MhJOA9CD2qZyOKYazxdYMF85OwPdEr9jTtBpO7ydH4=
+golang.org/x/text v0.31.0 h1:aC8ghyu4JhP8VojJ2lEHBnochRno1sgL6nEi9WGFGMM=
+golang.org/x/text v0.31.0/go.mod h1:tKRAlv61yKIjGGHX/4tP1LTbc13YSec1pxVEWXzfoeM=

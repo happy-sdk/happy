@@ -1,3 +1,3 @@
 module github.com/happy-sdk/happy/pkg/tui
 
-go 1.24
+go 1.25

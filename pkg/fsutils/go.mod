@@ -1,8 +1,8 @@
 module github.com/happy-sdk/happy/pkg/fsutils
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.2.0
-	golang.org/x/sys v0.36.0
+	golang.org/x/sys v0.38.0
 )

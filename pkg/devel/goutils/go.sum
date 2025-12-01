@@ -1,4 +1,4 @@
 github.com/happy-sdk/happy/pkg/version v0.5.0 h1:XL1XdlvMNgt+k3/ycdfcJbX7Ud7PVb6WR+UUQuo5zW8=
 github.com/happy-sdk/happy/pkg/version v0.5.0/go.mod h1:jcFczYY+S46nQ+TkaRTsR2H7DrsihguS1vg1UvxdkH4=
-golang.org/x/mod v0.27.0 h1:kb+q2PyFnEADO2IEF935ehFUXlWiNjJWtRNgBLSfbxQ=
-golang.org/x/mod v0.27.0/go.mod h1:rWI627Fq0DEoudcK+MBkNkCe0EetEaDSwJJkCcjpazc=
+golang.org/x/mod v0.30.0 h1:fDEXFVZ/fmCKProc/yAXXUijritrDzahmwwefnjoPFk=
+golang.org/x/mod v0.30.0/go.mod h1:lAsf5O2EvJeSFMiBxXDki7sCgAxEUcZHXoXMKT4GJKc=

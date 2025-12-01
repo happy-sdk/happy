@@ -1,3 +1,3 @@
 module github.com/happy-sdk/happy/pkg/devel/testutils
 
-go 1.24
+go 1.25
