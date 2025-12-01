@@ -31,6 +31,16 @@ jobs:
           go-version: ">=1.25.0"
           golangci-lint-version: latest
 
+  i18n:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ">=1.25.0"
+      - run: go run ./tools/happy-sdk/cmd/happy-sdk/ i18n report -t 95
+
   list-modules:
     needs: lint
     runs-on: ubuntu-latest

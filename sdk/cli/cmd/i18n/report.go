@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/settings"
@@ -93,6 +94,9 @@ func i18nReport() *command.Command {
 			return fmt.Errorf("failed to get dependency identifiers: %w", err)
 		}
 
+		// Get fallback language - it should always be considered 100% translated
+		fallbackLang := i18n.GetFallbackLanguage()
+
 		if excludeDeps {
 			// Only show app translations
 			// Add rows for each language
@@ -100,6 +104,13 @@ func i18nReport() *command.Command {
 				report := i18n.GetTranslationReport(lang)
 				// Filter to only app keys (exclude dependency keys)
 				filteredReport := filterReportByDependencies(sess, report, deps)
+
+				// Fallback language is always 100% translated (it's the base language)
+				if lang == fallbackLang {
+					filteredReport.Percentage = 100.0
+					filteredReport.Translated = filteredReport.Total
+					filteredReport.Missing = 0
+				}
 
 				percentageStr := fmt.Sprintf("%.1f%%", filteredReport.Percentage)
 				rootKeysCount := len(filteredReport.RootKeys)
@@ -166,6 +177,13 @@ func i18nReport() *command.Command {
 				// Separate app translations from dependency translations
 				appReport := filterReportByDependencies(sess, report, deps)
 				
+				// Fallback language is always 100% translated (it's the base language)
+				if lang == fallbackLang {
+					appReport.Percentage = 100.0
+					appReport.Translated = appReport.Total
+					appReport.Missing = 0
+				}
+				
 				// Calculate dependency statistics by subtracting app stats from total
 				depReport := i18n.TranslationReport{
 					Language:       report.Language,
@@ -179,6 +197,12 @@ func i18nReport() *command.Command {
 				}
 				if depReport.Total > 0 {
 					depReport.Percentage = float64(depReport.Translated) / float64(depReport.Total) * 100.0
+				}
+				// Fallback language dependencies are also 100% (base language)
+				if lang == fallbackLang && depReport.Total > 0 {
+					depReport.Percentage = 100.0
+					depReport.Translated = depReport.Total
+					depReport.Missing = 0
 				}
 
 				// Create dependency table only if there are missing dependency translations
@@ -318,7 +342,13 @@ func filterReportByDependencies(sess *session.Context, report i18n.TranslationRe
 		appEntries = append(appEntries, entry)
 		rootKey := entry.RootKey
 		if rootKey == "" {
-			rootKey = "unknown"
+			// Extract root key from the key itself (first segment before first dot)
+			parts := strings.Split(entry.Key, ".")
+			if len(parts) > 0 {
+				rootKey = parts[0]
+			} else {
+				rootKey = "unknown"
+			}
 		}
 		rootKeysSet[rootKey] = true
 

@@ -608,13 +608,19 @@ func (m *manager) getAllTranslations() []TranslationEntry {
 
 // extractRootKey extracts the root key from a full translation key.
 // For example: "com.github.happy-sdk.happy.sdk.cli.flags.version" -> "com.github.happy-sdk.happy.sdk.cli"
+// For flat keys like "app.description" -> "app"
 func (m *manager) extractRootKey(fullKey string) string {
-	// Root keys are typically the first 5-6 parts separated by dots
-	// e.g., "com.github.happy-sdk.happy.sdk.cli" or "com.github.happy-sdk.happy.pkg.vars.varflag"
 	parts := strings.Split(fullKey, ".")
-	if len(parts) < 5 {
+	if len(parts) == 0 {
 		return ""
 	}
+	
+	// For short keys (less than 5 parts), return the first segment as root key
+	// e.g., "app.description" -> "app"
+	if len(parts) < 5 {
+		return parts[0]
+	}
+	
 	// Common pattern: com.github.happy-sdk.happy.{pkg|sdk}.{name}
 	// So root is typically first 5-6 parts
 	if len(parts) >= 6 {

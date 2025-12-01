@@ -852,31 +852,43 @@ func TestManager_GetTranslationReport_EmptyRootKey(t *testing.T) {
 
 	report := GetTranslationReport(language.English)
 
-	// Should handle empty root keys gracefully
+	// Should extract first segment as root key for flat keys
+	// "flat.key" should have root key "flat"
 	var found bool
 	for _, entry := range report.MissingEntries {
-		if entry.RootKey == "" {
+		if entry.Key == "flat.key" && entry.RootKey == "flat" {
 			found = true
+			break
 		}
 	}
-	testutils.Assert(t, found, "expected empty root key")
+	// Also check all entries to verify root key extraction
+	allEntries := GetAllTranslations()
+	for _, entry := range allEntries {
+		if entry.Key == "flat.key" {
+			testutils.Equal(t, "flat", entry.RootKey, "expected root key 'flat' for 'flat.key'")
+			found = true
+			break
+		}
+	}
+	testutils.Assert(t, found, "expected to find entry with root key 'flat'")
 }
 
 func TestManager_GetTranslationReport_UnknownRootKey(t *testing.T) {
 	Initialize(language.English)
 
-	// Register translation with short key (no extractable root)
+	// Register translation with short key
 	_ = RegisterTranslation(language.English, "short.key", "Value")
 
 	report := GetTranslationReport(language.English)
 
-	// Should handle unknown root keys
-	foundUnknown := false
+	// Should extract first segment as root key for short keys
+	// "short.key" should have root key "short"
+	foundShort := false
 	for rootKey := range report.PerRootKey {
-		if rootKey == "unknown" {
-			foundUnknown = true
+		if rootKey == "short" {
+			foundShort = true
+			break
 		}
 	}
-	// May or may not have "unknown" depending on extraction
-	_ = foundUnknown
+	testutils.Assert(t, foundShort, "expected root key 'short' for 'short.key'")
 }

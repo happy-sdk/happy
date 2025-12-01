@@ -182,8 +182,8 @@ func TestManager_ExtractRootKey(t *testing.T) {
 	}{
 		{"com.github.happy-sdk.happy.sdk.cli.flags.version", "com.github.happy-sdk.happy.sdk.cli"},
 		{"com.github.happy-sdk.happy.pkg.vars.varflag.ErrFlag", "com.github.happy-sdk.happy.pkg.vars"}, // parts[4] is "pkg", so returns first 6 parts
-		{"short.key", ""},
-		{"com.github.test", ""},
+		{"short.key", "short"}, // Short keys return first segment
+		{"com.github.test", "com"}, // Short keys return first segment
 		{"com.github.happy-sdk.happy.sdk.app.name", "com.github.happy-sdk.happy.sdk.app"},
 		{"com.github.happy-sdk.happy.sdk.cli.flags", "com.github.happy-sdk.happy.sdk.cli"}, // parts[4] is "sdk", so returns first 6 parts
 	}
@@ -404,8 +404,8 @@ func TestManager_ExtractRootKey_EdgeCases(t *testing.T) {
 		{"6 parts with sdk", "com.github.happy-sdk.happy.sdk.cli.key", "com.github.happy-sdk.happy.sdk.cli"},
 		{"7 parts with pkg", "com.github.happy-sdk.happy.pkg.vars.varflag.key", "com.github.happy-sdk.happy.pkg.vars"},
 		{"7 parts with sdk", "com.github.happy-sdk.happy.sdk.cli.flags.key", "com.github.happy-sdk.happy.sdk.cli"},
-		{"4 parts (too short)", "com.github.happy-sdk.test", ""},
-		{"3 parts (too short)", "com.github.test", ""},
+		{"4 parts (too short)", "com.github.happy-sdk.test", "com"}, // Short keys return first segment
+		{"3 parts (too short)", "com.github.test", "com"}, // Short keys return first segment
 		{"6 parts without pkg/sdk", "com.github.happy-sdk.happy.other.key", "com.github.happy-sdk.happy.other"},
 	}
 	for _, tt := range tests {
