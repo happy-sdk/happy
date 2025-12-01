@@ -7,6 +7,7 @@ package settings
 import (
 	"fmt"
 
+	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"golang.org/x/text/language"
 )
@@ -49,6 +50,8 @@ type SettingSpec struct {
 	Settings    *Blueprint
 	validators  []validator
 	i18n        map[language.Tag]string
+	isI18n      bool   // true if field has i18n:"true" tag
+	i18nKey     string // the i18n key to use for translation
 }
 
 func (s SettingSpec) Validate() error {
@@ -94,6 +97,8 @@ func (s SettingSpec) setting() (Setting, error) {
 		mutability: s.Mutability,
 		persistent: s.Persistent,
 		desc:       s.i18n[language.English],
+		isI18n:     s.isI18n,
+		i18nKey:    s.i18nKey,
 	}
 
 	var err error
@@ -117,13 +122,45 @@ type Setting struct {
 	mutability Mutability
 	persistent bool
 	desc       string
+	isI18n     bool   // true if this setting uses i18n
+	i18nKey    string // the i18n key to use for translation
 }
 
 func (s Setting) String() string {
 	return s.vv.String()
 }
 
+// Display returns the translated value for display purposes.
+// If the setting uses i18n and i18n is initialized, it returns the translated string.
+// Otherwise, it returns the raw value (same as String()).
+// For Persistent settings that are user-defined (isSet=true), i18n is not applied.
 func (s Setting) Display() string {
+	if !s.isI18n || s.i18nKey == "" {
+		return s.vv.Display()
+	}
+
+	// Don't apply i18n to user-defined Persistent settings
+	if s.persistent && s.isSet {
+		return s.vv.Display()
+	}
+
+	// Try to resolve via i18n if available
+	// This uses a build-tagged helper function
+	translated := resolveI18n(s.i18nKey)
+	// If translation was found (different from key), use it
+	// Otherwise, if the value itself is the i18n key, return the translation attempt
+	// (which might be the key if not found, but i18n.T() will try fallback)
+	if translated != s.i18nKey {
+		return translated
+	}
+
+	// If translation not found and value is the i18n key, return the translation attempt
+	// (i18n.T() already tried fallback, so this is the best we can do)
+	rawValue := s.vv.String()
+	if rawValue == s.i18nKey {
+		return translated
+	}
+
 	return s.vv.Display()
 }
 
@@ -157,6 +194,21 @@ func (s Setting) Mutability() Mutability {
 
 func (s Setting) Description() string {
 	return s.desc
+}
+
+// IsI18n returns true if this setting uses i18n translation.
+func (s Setting) IsI18n() bool {
+	return s.isI18n
+}
+
+// I18nKey returns the i18n key for this setting, or empty string if not using i18n.
+func (s Setting) I18nKey() string {
+	return s.i18nKey
+}
+
+// resolveI18n resolves an i18n key to a translated string using the i18n package.
+func resolveI18n(key string) string {
+	return i18n.T(key)
 }
 
 func UnmarshalValue[T Value](data []byte, v T) error {

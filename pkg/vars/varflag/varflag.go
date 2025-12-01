@@ -20,7 +20,7 @@ import (
 
 	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/vars"
-	_ "github.com/happy-sdk/happy/pkg/vars/varflag/lang"
+	_ "github.com/happy-sdk/happy/pkg/vars/varflag/i18n"
 )
 
 const (

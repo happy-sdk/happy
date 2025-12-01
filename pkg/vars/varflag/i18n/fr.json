@@ -1,0 +1,16 @@
+{
+  "com.github.happy-sdk.happy.pkg.vars.varflag": {
+    "ErrInvalidArguments": "arguments invalides",
+    "ErrInvalidCommandOrArgs": "%s n'accepte ni la commande ni l'argument %s",
+    "ErrFlag": "erreur de drapeau",
+    "ErrFlagExists": "le drapeau existe déjà",
+    "ErrAliasShadow": "alias de drapeau ombragé",
+    "ErrParse": "erreur d'analyse de drapeau",
+    "ErrMissingValue": "valeur de drapeau manquante",
+    "ErrInvalidValue": "valeur de drapeau invalide",
+    "ErrFlagAlreadyParsed": "le drapeau a déjà été analysé",
+    "ErrMissingRequired": "drapeau requis manquant",
+    "ErrMissingOptions": "options manquantes",
+    "ErrNoNamedFlag": "aucun drapeau de ce nom"
+  }
+}

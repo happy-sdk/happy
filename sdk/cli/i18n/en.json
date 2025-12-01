@@ -1,0 +1,103 @@
+{
+  "com.github.happy-sdk.happy.sdk.cli": {
+    "cmd": {
+      "config": {
+        "category": "Configuration",
+        "description": "Manage and configure application settings",
+        "info": "This command allows you to manage the application configuration settings and settings profiles.",
+        "ls": {
+          "description": "List settings for current profile",
+          "usage_flags": "[-a|--all]",
+          "usage": "--profile=<profile-name> [flags]",
+          "flag_all": "List all settings (default current profile), including internal settings",
+          "flag_describe": "Describe settings",
+          "flag_prefix": "Display settings with a specific prefix",
+          "table_settings_descriptions": "Settings Descriptions",
+          "table_configuration_of": "Configuration of %s",
+          "table_settings_for_profile": "Settings for current PROFILE: %s",
+          "table_application_config": "Application Config",
+          "header_key": "KEY",
+          "header_description": "DESCRIPTION",
+          "header_kind": "KIND",
+          "header_is_set": "IS SET",
+          "header_mutability": "MUTABILITY",
+          "header_value": "VALUE",
+          "header_default": "DEFAULT"
+        },
+        "set": {
+          "description": "Set a setting value",
+          "usage": "--profile=<profile-name>",
+          "error_not_exists": "setting %q does not exist"
+        },
+        "get": {
+          "description": "Get a setting or option value",
+          "usage": "--profile=<profile-name>",
+          "flag_secret": "Prompts to enter Secrets password to display value. If password is not set it prints secret value instead <redacted> without the prompt",
+          "error_not_exists": "setting %q does not exist",
+          "error_invalid_password": "invalid password",
+          "redacted": "<redacted>"
+        },
+        "add": {
+          "description": "Add given value to setting value",
+          "usage": "--profile=<profile-name>",
+          "error_not_exists": "setting %q does not exist",
+          "error_not_slice": "setting %q is not a slice",
+          "error_already_exists": "%q value %q already exists"
+        },
+        "remove": {
+          "description": "Remove given value from setting value",
+          "usage": "--profile=<profile-name>",
+          "error_not_exists": "setting %q does not exist",
+          "error_not_slice": "setting %q is not a slice",
+          "error_value_not_exists": "%q value %q does not exist"
+        },
+        "reset": {
+          "description": "Reset a setting to its default value",
+          "usage": "--profile=<profile-name>",
+          "flag_all": "reset all settings",
+          "error_not_exists": "setting %q does not exist"
+        },
+        "prompt_secrets_password": "enter secrets password"
+      },
+      "i18n": {
+        "category": "Internationalization",
+        "description": "Manage application translations",
+        "info": "This command allows you to manage and translate application strings.",
+        "report": {
+          "description": "Show translation status report",
+          "flag_threshold": "Exit with code 1 if any language has lower than threshold percentage",
+          "flag_lang": "Display report for a specific language only",
+          "flag_without_deps": "Exclude dependency translations (show only current project translations)"
+        },
+        "list": {
+          "description": "List all translation keys",
+          "flag_lang": "Display list for a specific language only",
+          "flag_missing": "Display only keys with missing translations",
+          "flag_json": "Output JSON response instead of table",
+          "flag_without_deps": "Exclude dependency translations (show only current project translations)"
+        },
+        "translate": {
+          "description": "Translate missing translation keys"
+        }
+      }
+    },
+    "help": {
+      "commands": " COMMANDS:",
+      "flags": " FLAGS:",
+      "shared_flags": " SHARED FLAGS:",
+      "global_flags": " GLOBAL FLAGS:",
+      "copyright": "Copyright ©",
+      "license": "License: ",
+      "default": "default"
+    },
+    "flags": {
+      "version": "print application version",
+      "help": "display help or help for the command. [...command --help]",
+      "show_exec": "the -x flag prints all the cli commands as they are executed.",
+      "system_debug": "enable system debug log level (very verbose)",
+      "debug": "enable debug log level",
+      "verbose": "enable verbose log level",
+      "x_prod": "DEV ONLY: force app into production mode setting app_is_devel false when running from source."
+    }
+  }
+}

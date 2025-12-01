@@ -18,6 +18,8 @@ import (
 	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/sdk/session"
 	"golang.org/x/term"
+
+	_ "github.com/happy-sdk/happy/sdk/cli/i18n"
 )
 
 var (

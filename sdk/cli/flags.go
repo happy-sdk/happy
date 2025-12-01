@@ -15,17 +15,17 @@ type Flag = varflag.FlagCreateFunc
 // Common CLI flags which are automatically attached to the CLI ubnless disabled ins settings.
 // You still can manually add them to your CLI if you want to.
 var (
-	FlagVersion     = varflag.BoolFunc("version", false, "print application version")
-	FlagHelp        = varflag.BoolFunc("help", false, "display help or help for the command. [...command --help]", "h")
-	FlagX           = varflag.BoolFunc("show-exec", false, "the -x flag prints all the cli commands as they are executed.", "x")
-	FlagSystemDebug = varflag.BoolFunc("system-debug", false, "enable system debug log level (very verbose)")
-	FlagDebug       = varflag.BoolFunc("debug", false, "enable debug log level")
-	FlagVerbose     = varflag.BoolFunc("verbose", false, "enable verbose log level", "v")
+	FlagVersion     = varflag.BoolFunc("version", false, "com.github.happy-sdk.happy.sdk.cli.flags.version")
+	FlagHelp        = varflag.BoolFunc("help", false, "com.github.happy-sdk.happy.sdk.cli.flags.help", "h")
+	FlagX           = varflag.BoolFunc("show-exec", false, "com.github.happy-sdk.happy.sdk.cli.flags.show_exec", "x")
+	FlagSystemDebug = varflag.BoolFunc("system-debug", false, "com.github.happy-sdk.happy.sdk.cli.flags.system_debug")
+	FlagDebug       = varflag.BoolFunc("debug", false, "com.github.happy-sdk.happy.sdk.cli.flags.debug")
+	FlagVerbose     = varflag.BoolFunc("verbose", false, "com.github.happy-sdk.happy.sdk.cli.flags.verbose", "v")
 )
 
 // FlagProd is a flag that forces the application into production mode.
 var (
-	FlagXProd = varflag.BoolFunc("x-prod", false, "DEV ONLY: force app into production mode setting app_is_devel false when running from source.")
+	FlagXProd = varflag.BoolFunc("x-prod", false, "com.github.happy-sdk.happy.sdk.cli.flags.x_prod")
 )
 
 func NewStringFlag(name string, value string, usage string, aliases ...string) Flag {

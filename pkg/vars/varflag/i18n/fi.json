@@ -1,0 +1,17 @@
+{
+  "com.github.happy-sdk.happy.pkg.vars.varflag": {
+    "ErrInvalidArguments": "virheelliset argumentit",
+    "ErrInvalidCommandOrArgs": "%s ei hyväksy komentoa tai argumenttia %s",
+    "ErrFlag": "lippuvirhe",
+    "ErrFlagExists": "lippu on jo olemassa",
+    "ErrAliasShadow": "lippualias varjostettu",
+    "ErrParse": "lippujen jäsennysvirhe",
+    "ErrMissingValue": "lippuarvon puuttuminen",
+    "ErrInvalidValue": "virheellinen lippuarvo",
+    "ErrFlagAlreadyParsed": "lippu on jo jäsennetty",
+    "ErrMissingRequired": "pakollinen lippu puuttuu",
+    "ErrMissingOptions": "vaihtoehdot puuttuvat",
+    "ErrNoNamedFlag": "ei tällaista lippua"
+  }
+}
+

@@ -293,9 +293,9 @@ func (rt *Runtime) Log(depth int, lvl logging.Level, msg string, attrs ...slog.A
 
 func (rt *Runtime) ConsumeLogs(log *logging.QueueLogger) {
 	if rt.sess != nil {
-		rt.sess.Log().Consume(log)
+		_, _ = rt.sess.Log().Consume(log)
 	} else if rt.tmplogger != nil {
-		rt.tmplogger.Consume(log)
+		_, _ = rt.tmplogger.Consume(log)
 	}
 }
 
@@ -477,7 +477,7 @@ func (rt *Runtime) showHelp() error {
 
 	helpInfo := help.Info{
 		Name:           rt.sess.Get("app.name").String(),
-		Description:    rt.sess.Get("app.description").String(),
+		Description:    rt.sess.Settings().Get("app.description").Display(),
 		Version:        rt.sess.Get("app.version").String(),
 		CopyrightBy:    rt.sess.Get("app.copyright_by").String(),
 		CopyrightSince: rt.sess.Get("app.copyright_since").Int(),
@@ -522,7 +522,8 @@ func (rt *Runtime) showHelp() error {
 
 	}
 
-	desc := rt.cmd.Config().Get("description").String()
+	descSetting := rt.cmd.Config().Get("description")
+	desc := descSetting.Display()
 	if desc != "" && !hideDisabled {
 		helpInfo.Usage = append(
 			helpInfo.Usage,
@@ -547,6 +548,16 @@ func (rt *Runtime) showHelp() error {
 	for _, scmd := range rt.cmd.SubCommands() {
 		name := scmd.Name
 		desc := scmd.Description
+		// Translate description on-the-fly if it looks like an i18n key
+		// (starts with "com.github." which is our i18n key prefix)
+		if strings.HasPrefix(desc, "com.github.") {
+			desc = i18n.T(desc)
+		}
+		category := scmd.Category
+		// Translate category on-the-fly if it looks like an i18n key
+		if strings.HasPrefix(category, "com.github.") {
+			category = i18n.T(category)
+		}
 		if scmd.Disabled {
 			if hideDisabled {
 				continue
@@ -554,7 +565,7 @@ func (rt *Runtime) showHelp() error {
 			name = ansicolor.Format(name, ansicolor.Strike)
 			desc += ansicolor.Text(" (disabled)", theme.Warning, ansicolor.Color{}, 0)
 		}
-		h.AddCommand(scmd.Category, name, desc)
+		h.AddCommand(category, name, desc)
 	}
 
 	h.AddCategoryDescriptions(rt.cmd.Categories())

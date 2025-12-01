@@ -7,7 +7,8 @@ package app
 import (
 	"errors"
 
-	_ "github.com/happy-sdk/happy/sdk/app/lang"
+	_ "github.com/happy-sdk/happy/i18n" // register i18n translations what applications can override
+	_ "github.com/happy-sdk/happy/sdk/app/i18n"
 )
 
 const i18np = "com.github.happy-sdk.happy.sdk.app"

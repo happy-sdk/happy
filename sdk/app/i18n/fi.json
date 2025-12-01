@@ -1,0 +1,18 @@
+{
+  "com.github.happy-sdk.happy.sdk.app": {
+    "internal": {
+      "initializer": {
+        "initializing": "alustetaan",
+        "initialization_completed": "alustus valmis"
+      },
+      "application": {
+        "booting_application": "sovellus käynnistetään",
+        "application_booted": "sovellus käynnistetty",
+        "starting_application": "sovellus käynnistetään",
+        "shutdown_complete": "sammutus valmis"
+      }
+    },
+    "preparing_runtime": "ajoympäristöä valmistellaan"
+  }
+}
+

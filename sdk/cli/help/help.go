@@ -13,10 +13,13 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/happy-sdk/happy/pkg/i18n"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
 	"github.com/happy-sdk/happy/pkg/vars/varflag"
 )
+
+const i18np = "com.github.happy-sdk.happy.sdk.cli.help"
 
 type Help struct {
 	style       Style
@@ -135,7 +138,7 @@ func (h *Help) printCommands() error {
 	// commands
 	if len(h.cmds) > 0 {
 		fmt.Println("")
-		fmt.Println(h.style.Primary.String(" COMMANDS:"))
+		fmt.Println(h.style.Primary.String(i18n.T(i18np + ".commands")))
 		var categories []string
 
 		var maxNameLength int
@@ -172,7 +175,12 @@ func (h *Help) printCommands() error {
 		// Print other categories
 		for _, category := range categories {
 			fmt.Println("")
-			fmt.Println(" ", h.style.Category.String(strings.ToUpper(category))+h.getCategoryDesc(category))
+			// Translate category if it looks like an i18n key (starts with "com.github.")
+			categoryDisplay := category
+			if strings.HasPrefix(category, "com.github.") {
+				categoryDisplay = i18n.T(category)
+			}
+			fmt.Println(" ", h.style.Category.String(strings.ToUpper(categoryDisplay))+h.getCategoryDesc(category))
 			fmt.Println("")
 			commands := h.cmds[category]
 
@@ -192,7 +200,7 @@ func (h *Help) printCommands() error {
 func (h *Help) printCommandFlags() error {
 	if len(h.flags) > 0 {
 		fmt.Println("")
-		fmt.Println(h.style.Primary.String(" FLAGS:"))
+		fmt.Println(h.style.Primary.String(i18n.T(i18np + ".flags")))
 		fmt.Println("")
 
 		// Sort the globalFlags by flag name
@@ -220,7 +228,7 @@ func (h *Help) printCommandFlags() error {
 
 	if len(h.sharedFlags) > 0 {
 		fmt.Println("")
-		fmt.Println(h.style.Primary.String(" SHARED FLAGS:"))
+		fmt.Println(h.style.Primary.String(i18n.T(i18np + ".shared_flags")))
 		fmt.Println("")
 
 		// Sort the globalFlags by flag name
@@ -251,7 +259,7 @@ func (h *Help) printCommandFlags() error {
 func (h *Help) printGlobalFlags() error {
 	if len(h.globalFlags) > 0 {
 		fmt.Println("")
-		fmt.Println(h.style.Primary.String(" GLOBAL FLAGS:"))
+		fmt.Println(h.style.Primary.String(i18n.T(i18np + ".global_flags")))
 		fmt.Println("")
 
 		// Sort the globalFlags by flag name
@@ -291,7 +299,28 @@ func (h *Help) printFlag(maxFlagLength, maxAliasLength int, flag flagInfo) {
 	)
 
 	prefix := strings.Repeat(" ", maxFlagLength+maxAliasLength+7)
-	desc := wordWrapWithPrefix(flag.Usage, prefix, 80)
+	// Try to translate the usage string - if it's an i18n key, translate it
+	// Otherwise use as-is (for backwards compatibility)
+	// Extract base usage (before "- default:") for translation
+	var usage string
+	baseUsage := flag.Usage
+	defaultSuffix := ""
+	if idx := strings.Index(flag.Usage, " - default:"); idx > 0 {
+		baseUsage = flag.Usage[:idx]
+		defaultSuffix = flag.Usage[idx:]
+	}
+	translatedBase := i18n.TD(baseUsage, baseUsage)
+	if defaultSuffix != "" {
+		// Translate the "default" word in the suffix
+		// Pattern: " - default: %q"
+		defaultWord := i18n.TD(i18np+".default", "default")
+		// Replace "default" with translated version
+		translatedSuffix := strings.Replace(defaultSuffix, "default", defaultWord, 1)
+		usage = translatedBase + translatedSuffix
+	} else {
+		usage = translatedBase
+	}
+	desc := wordWrapWithPrefix(usage, prefix, 80)
 
 	fmt.Println(fstr, desc)
 }
@@ -327,7 +356,29 @@ func (h *Help) printBanner() error {
 	}
 	fmt.Println("")
 	for _, usage := range h.info.Usage {
-		fmt.Println(" ", ansicolor.Format(usage, ansicolor.Bold))
+		// Try to translate the entire usage string first
+		translatedUsage := i18n.TD(usage, usage)
+
+		// If translation didn't change the string, try to extract and translate
+		// the i18n key part (typically at the end after the command name)
+		if translatedUsage == usage {
+			// Split by spaces to find potential i18n key at the end
+			parts := strings.Fields(usage)
+			if len(parts) > 0 {
+				// Check if the last part looks like an i18n key (contains dots)
+				lastPart := parts[len(parts)-1]
+				if strings.Contains(lastPart, ".") {
+					// Try to translate just the last part
+					translatedLastPart := i18n.TD(lastPart, lastPart)
+					if translatedLastPart != lastPart {
+						// Translation found - reconstruct usage with translated part
+						parts[len(parts)-1] = translatedLastPart
+						translatedUsage = strings.Join(parts, " ")
+					}
+				}
+			}
+		}
+		fmt.Println(" ", ansicolor.Format(translatedUsage, ansicolor.Bold))
 	}
 	return nil
 }
@@ -336,7 +387,12 @@ func (h *Help) printInfo() error {
 	if len(h.info.Info) > 0 {
 		for _, info := range h.info.Info {
 			fmt.Println("")
-			fmt.Println(h.style.Info.String(textfmt.WordWrapWithPrefixes(info, 72, "    ", "  ")))
+			// Translate info if it looks like an i18n key (starts with "com.github.")
+			translatedInfo := info
+			if strings.HasPrefix(info, "com.github.") {
+				translatedInfo = i18n.T(info)
+			}
+			fmt.Println(h.style.Info.String(textfmt.WordWrapWithPrefixes(translatedInfo, 72, "    ", "  ")))
 		}
 	}
 	return nil
@@ -370,7 +426,7 @@ func (i *Info) copyright() string {
 	if i.CopyrightBy == "" {
 		return ""
 	}
-	str := "Copyright ©"
+	str := i18n.T(i18np + ".copyright")
 	year := time.Now().Year()
 	if i.CopyrightSince > 0 && year != i.CopyrightSince {
 		str += " " + fmt.Sprint(i.CopyrightSince) + " - " + fmt.Sprint(year)
@@ -383,7 +439,7 @@ func (i *Info) license() string {
 	if i.License == "" {
 		return ""
 	}
-	return "License: " + i.License
+	return i18n.T(i18np+".license") + i.License
 }
 
 func (i *Info) description() string {

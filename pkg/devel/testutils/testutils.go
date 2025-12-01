@@ -124,7 +124,7 @@ func HasSuffix(tt TestingIface, s, suffix string, msgAndArgs ...any) bool {
 
 func NotEqual[V comparable](tt TestingIface, want, got V, msgAndArgs ...any) bool {
 	tt.Helper()
-	if got == got {
+	if got == want {
 		return fail(tt, fmt.Sprintf("Equal: \n"+
 			"expected: %v != %v", want, got), msgAndArgs...)
 	}

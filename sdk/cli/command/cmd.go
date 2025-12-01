@@ -99,9 +99,20 @@ func Compile(root *Command) (*Cmd, *logging.QueueLogger, error) {
 	maps.Copy(catdesc, cmd.catdesc)
 
 	for _, scmd := range acmd.subCommands {
+		// Store i18n key instead of translated description so we can translate on-the-fly
+		// when displaying help (after language is set)
+		descSetting := scmd.cnf.Get("description")
+		var desc string
+		if descSetting.IsI18n() && descSetting.I18nKey() != "" {
+			// Store the i18n key, will be translated when displaying help
+			desc = descSetting.I18nKey()
+		} else {
+			// Not an i18n setting, use the value as-is
+			desc = descSetting.String()
+		}
 		cmd.subcmds = append(cmd.subcmds, &SubCmdInfo{
 			Name:          scmd.name,
-			Description:   scmd.cnf.Get("description").String(),
+			Description:   desc,
 			Category:      scmd.cnf.Get("category").String(),
 			Disabled:      scmd.cnf.Get("disabled").Value().Bool(),
 			disableAction: scmd.disableAction,

@@ -1,6 +1,0 @@
-{
-  "com.github.happy-sdk.happy.pkg.vars.varflag": {
-    "ErrInvalidArguments": "vigased argumendid",
-    "ErrInvalidCommandOrArgs": "%s ei aktsepteeri käsku ega argumenti %s"
-  }
-}

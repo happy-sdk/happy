@@ -43,11 +43,24 @@ func (p *Preferences) GobDecode(data []byte) error {
 		temp []string
 	)
 
-	data = bytes.TrimSpace(data)
+	// Handle empty file - return empty preferences
+	if len(data) == 0 {
+		p.data = make(map[string]string)
+		p.version = version.Version("v1.0.0")
+		return nil
+	}
+
+	// Don't trim data - gob encoding is binary and trimming would corrupt it
 	buf := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(buf)
-	if err := decoder.Decode(&temp); err != nil && !errors.Is(err, io.EOF) {
-		return fmt.Errorf("%w: failed to decode preferences %s", ErrPreferences, err.Error())
+	if err := decoder.Decode(&temp); err != nil {
+		if errors.Is(err, io.EOF) {
+			// Empty or incomplete file - return empty preferences
+			p.data = make(map[string]string)
+			p.version = version.Version("v1.0.0")
+			return nil
+		}
+		return fmt.Errorf("%w: failed to decode preferences: %s (data length: %d)", ErrPreferences, err.Error(), len(data))
 	}
 
 	prefsMap, err := vars.ParseMapFromSlice(temp)

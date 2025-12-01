@@ -1,5 +1,7 @@
 github.com/happy-sdk/happy/pkg/devel/testutils v1.2.0 h1:1IF+woKuNvwSVFyUD3iHoyiQYfmIMwJ8CgNLf4CTC8Q=
 github.com/happy-sdk/happy/pkg/devel/testutils v1.2.0/go.mod h1:ux/Evw6T4V6oUdWTEn+2VaXcStdS+BgqshsVf4IxnN0=
+github.com/happy-sdk/happy/pkg/i18n v0.2.1 h1:s4FSxkUP0D9i0ajcK+6TFPoWCClk4DsAIMCzKZrOfVw=
+github.com/happy-sdk/happy/pkg/i18n v0.2.1/go.mod h1:bIJDBoDaqpm7I59Pp3Z14x1+b2JWBlWxomJDWuLXp5k=
 github.com/happy-sdk/happy/pkg/vars v0.20.0 h1:6eXUCP43yjx8Iibu+BJu39NAo8wecj2X8cf/duZCTfE=
 github.com/happy-sdk/happy/pkg/vars v0.20.0/go.mod h1:wDVCufLDjva+wfh9YVdcLw7BUrETWOAEOAhCOfZb9Xk=
 github.com/happy-sdk/happy/pkg/version v0.5.0 h1:XL1XdlvMNgt+k3/ycdfcJbX7Ud7PVb6WR+UUQuo5zW8=

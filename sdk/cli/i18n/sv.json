@@ -1,0 +1,103 @@
+{
+  "com.github.happy-sdk.happy.sdk.cli": {
+    "cmd": {
+      "config": {
+        "category": "Konfiguration",
+        "description": "Hantera och konfigurera applikationsinställningar",
+        "info": "Detta kommando låter dig hantera applikationskonfigurationsinställningar och inställningsprofiler.",
+        "ls": {
+          "description": "Lista inställningar för aktuell profil",
+          "usage_flags": "[-a|--all]",
+          "usage": "--profile=<profil-namn> [flaggor]",
+          "flag_all": "Lista alla inställningar (standard aktuell profil), inklusive interna inställningar",
+          "flag_describe": "Beskriv inställningar",
+          "flag_prefix": "Visa inställningar med ett specifikt prefix",
+          "table_settings_descriptions": "Inställningsbeskrivningar",
+          "table_configuration_of": "Konfiguration av %s",
+          "table_settings_for_profile": "Inställningar för aktuell PROFIL: %s",
+          "table_application_config": "Applikationskonfiguration",
+          "header_key": "NYCKEL",
+          "header_description": "BESKRIVNING",
+          "header_kind": "TYP",
+          "header_is_set": "ÄR INSTÄLLD",
+          "header_mutability": "MUTERBARHET",
+          "header_value": "VÄRDE",
+          "header_default": "STANDARD"
+        },
+        "set": {
+          "description": "Sätt ett inställningsvärde",
+          "usage": "--profile=<profil-namn>",
+          "error_not_exists": "inställning %q finns inte"
+        },
+        "get": {
+          "description": "Hämta ett inställnings- eller alternativvärde",
+          "usage": "--profile=<profil-namn>",
+          "flag_secret": "Frågar efter att ange hemligt lösenord för att visa värde. Om lösenordet inte är inställt skriver det ut hemligt värde istället <redacted> utan prompten",
+          "error_not_exists": "inställning %q finns inte",
+          "error_invalid_password": "ogiltigt lösenord",
+          "redacted": "<redacted>"
+        },
+        "add": {
+          "description": "Lägg till givet värde till inställningsvärde",
+          "usage": "--profile=<profil-namn>",
+          "error_not_exists": "inställning %q finns inte",
+          "error_not_slice": "inställning %q är inte en lista",
+          "error_already_exists": "%q värde %q finns redan"
+        },
+        "remove": {
+          "description": "Ta bort givet värde från inställningsvärde",
+          "usage": "--profile=<profil-namn>",
+          "error_not_exists": "inställning %q finns inte",
+          "error_not_slice": "inställning %q är inte en lista",
+          "error_value_not_exists": "%q värde %q finns inte"
+        },
+        "reset": {
+          "description": "Återställ en inställning till dess standardvärde",
+          "usage": "--profile=<profil-namn>",
+          "flag_all": "återställ alla inställningar",
+          "error_not_exists": "inställning %q finns inte"
+        },
+        "prompt_secrets_password": "ange hemligt lösenord"
+      },
+      "i18n": {
+        "category": "Internationalisering",
+        "description": "Hantera applikationsöversättningar",
+        "info": "Detta kommando låter dig hantera och översätta applikationssträngar.",
+        "report": {
+          "description": "Visa översättningsstatusrapport",
+          "flag_threshold": "Avsluta med kod 1 om ett språk har en lägre procentsats än tröskelvärdet",
+          "flag_lang": "Visa rapport endast för ett specifikt språk",
+          "flag_without_deps": "Exkludera beroendeöversättningar (visa endast nuvarande projektöversättningar)"
+        },
+        "list": {
+          "description": "Lista alla översättningsnycklar",
+          "flag_lang": "Visa lista endast för ett specifikt språk",
+          "flag_missing": "Visa endast nycklar med saknade översättningar",
+          "flag_json": "Skriv ut JSON-svar istället för tabell",
+          "flag_without_deps": "Exkludera beroendeöversättningar (visa endast nuvarande projektöversättningar)"
+        },
+        "translate": {
+          "description": "Översätt saknade översättningsnycklar"
+        }
+      }
+    },
+    "help": {
+      "commands": " KOMMANDON:",
+      "flags": " FLAGGOR:",
+      "shared_flags": " DELADE FLAGGOR:",
+      "global_flags": " GLOBALA FLAGGOR:",
+      "copyright": "Copyright ©",
+      "license": "Licens: ",
+      "default": "standard"
+    },
+    "flags": {
+      "version": "skriv ut applikationsversion",
+      "help": "visa hjälp eller hjälp för kommandot. [...kommando --help]",
+      "show_exec": "flaggan -x skriver ut alla CLI-kommandon när de körs.",
+      "system_debug": "aktivera systemdebug-lognivå (mycket utförlig)",
+      "debug": "aktivera debug-lognivå",
+      "verbose": "aktivera utförlig lognivå",
+      "x_prod": "ENDAST UTVECKLING: tvinga app i produktionsläge genom att sätta app_is_devel till false vid körning från källa."
+    }
+  }
+}

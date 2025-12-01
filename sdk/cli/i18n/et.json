@@ -1,0 +1,103 @@
+{
+  "com.github.happy-sdk.happy.sdk.cli": {
+    "cmd": {
+      "config": {
+        "category": "Konfiguratsioon",
+        "description": "Halda ja seadista rakenduse seadeid",
+        "info": "See käsk võimaldab teil hallata rakenduse konfiguratsiooniseadeid ja seadistusprofiile.",
+        "ls": {
+          "description": "Näita praeguse profiili seadeid",
+          "usage_flags": "[-a|--all]",
+          "usage": "--profile=<profiili-nimi> [lipud]",
+          "flag_all": "Näita kõiki seadeid (vaikimisi praegune profiil), sealhulgas sisemisi seadeid",
+          "flag_describe": "Kirjelda seadeid",
+          "flag_prefix": "Näita seadeid kindla eesliitega",
+          "table_settings_descriptions": "Seadete kirjeldused",
+          "table_configuration_of": "%s konfiguratsioon",
+          "table_settings_for_profile": "Seaded praeguse PROFIILI jaoks: %s",
+          "table_application_config": "Rakenduse konfiguratsioon",
+          "header_key": "VÕTI",
+          "header_description": "KIRJELDUS",
+          "header_kind": "TÜÜP",
+          "header_is_set": "ON SEADETUD",
+          "header_mutability": "MUUTMISVÕIME",
+          "header_value": "VÄÄRTUS",
+          "header_default": "VAIKE"
+        },
+        "set": {
+          "description": "Määra seadistuse väärtus",
+          "usage": "--profile=<profiili-nimi>",
+          "error_not_exists": "seade %q ei eksisteeri"
+        },
+        "get": {
+          "description": "Hangi seadistuse või valiku väärtus",
+          "usage": "--profile=<profiili-nimi>",
+          "flag_secret": "Küsib salajase parooli sisestamist väärtuse kuvamiseks. Kui parool pole määratud, prindib see salajase väärtuse asemel <redacted> ilma küsimuseta",
+          "error_not_exists": "seade %q ei eksisteeri",
+          "error_invalid_password": "vale parool",
+          "redacted": "<redacted>"
+        },
+        "add": {
+          "description": "Lisa antud väärtus seadistuse väärtusele",
+          "usage": "--profile=<profiili-nimi>",
+          "error_not_exists": "seade %q ei eksisteeri",
+          "error_not_slice": "seade %q ei ole loend",
+          "error_already_exists": "%q väärtus %q on juba olemas"
+        },
+        "remove": {
+          "description": "Eemalda antud väärtus seadistuse väärtusest",
+          "usage": "--profile=<profiili-nimi>",
+          "error_not_exists": "seade %q ei eksisteeri",
+          "error_not_slice": "seade %q ei ole loend",
+          "error_value_not_exists": "%q väärtus %q ei eksisteeri"
+        },
+        "reset": {
+          "description": "Lähtesta seade vaikeväärtusele",
+          "usage": "--profile=<profiili-nimi>",
+          "flag_all": "lähtesta kõik seaded",
+          "error_not_exists": "seade %q ei eksisteeri"
+        },
+        "prompt_secrets_password": "sisesta salajane parool"
+      },
+      "i18n": {
+        "category": "Rahvusvaheline",
+        "description": "Halda rakenduse tõlkeid",
+        "info": "See käsk võimaldab teil hallata ja tõlkida rakenduse stringe.",
+        "report": {
+          "description": "Näita tõlkestaatuse aruannet",
+          "flag_threshold": "Välju koodiga 1, kui mõnel keelel on protsent alla läve",
+          "flag_lang": "Näita aruannet ainult kindla keele jaoks",
+          "flag_without_deps": "Jäta sõltuvuste tõlked välja (näita ainult praeguse projekti tõlkeid)"
+        },
+        "list": {
+          "description": "Näita kõiki tõlkevõtmeid",
+          "flag_lang": "Näita loendit ainult kindla keele jaoks",
+          "flag_missing": "Näita ainult võtmeid, millel puuduvad tõlked",
+          "flag_json": "Väljasta JSON vastus tabeli asemel",
+          "flag_without_deps": "Jäta sõltuvuste tõlked välja (näita ainult praeguse projekti tõlkeid)"
+        },
+        "translate": {
+          "description": "Tõlgi puuduvad tõlkevõtmed"
+        }
+      }
+    },
+    "help": {
+      "commands": " KÄSUD:",
+      "flags": " LIPUD:",
+      "shared_flags": " JAGATUD LIPUD:",
+      "global_flags": " GLOBAALSED LIPUD:",
+      "copyright": "Autoriõigus ©",
+      "license": "Litsents: ",
+      "default": "vaikimisi"
+    },
+    "flags": {
+      "version": "prindi rakenduse versioon",
+      "help": "kuva abi või käsu abi. [...käsk --help]",
+      "show_exec": "lipu -x prindib kõik CLI käsud nende täitmisel.",
+      "system_debug": "luba süsteemi silumise logi tase (väga üksikasjalik)",
+      "debug": "luba silumise logi tase",
+      "verbose": "luba üksikasjaliku logi tase",
+      "x_prod": "AINULT ARENDUS: sunni rakendus tootmisrežiimi, seades app_is_devel false allikast käivitamisel."
+    }
+  }
+}

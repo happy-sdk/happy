@@ -155,6 +155,12 @@ func settingSpecFromField(field reflect.StructField, value reflect.Value) (Setti
 			}
 			spec.i18n[language.English] = desc
 		}
+
+		// Check for i18n tag
+		if field.Tag.Get("i18n") == "true" {
+			spec.isI18n = true
+		}
+
 		spec.Default = field.Tag.Get("default")
 		if spec.Kind == KindBool && (spec.Default != "" && spec.Default != "false") {
 			return spec, fmt.Errorf("boolean field %q can have default value only false", spec.Key)
@@ -167,6 +173,20 @@ func settingSpecFromField(field reflect.StructField, value reflect.Value) (Setti
 			spec.Default = val
 		} else {
 			spec.Value = spec.Default
+		}
+
+		// Determine i18n key if this field uses i18n
+		if spec.isI18n {
+			// If value/default is explicitly set and non-empty, use it as i18n key
+			// Otherwise, infer from the resolved settings key
+			if spec.Value != "" && spec.Value != "0" {
+				spec.i18nKey = spec.Value
+			} else if spec.Default != "" && spec.Default != "0" {
+				spec.i18nKey = spec.Default
+			} else {
+				// Infer i18n key from resolved settings key
+				spec.i18nKey = spec.Key
+			}
 		}
 
 		// Check if value implements Marshaller and Unmarshaller

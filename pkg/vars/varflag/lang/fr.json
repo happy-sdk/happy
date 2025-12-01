@@ -1,6 +1,0 @@
-{
-  "com.github.happy-sdk.happy.pkg.vars.varflag": {
-    "ErrInvalidArguments": "arguments invalides",
-    "ErrInvalidCommandOrArgs": "%s n'accepte ni la commande ni l'argument %s"
-  }
-}

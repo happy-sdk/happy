@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"syscall"
 )
 
 var (
@@ -87,12 +86,4 @@ func (pf *File) Remove() error {
 		return err
 	}
 	return os.Remove(pf.Name())
-}
-
-func lock(fd uintptr) error {
-	return syscall.Flock(int(fd), syscall.LOCK_EX|syscall.LOCK_NB)
-}
-
-func unlock(fd uintptr) error {
-	return syscall.Flock(int(fd), syscall.LOCK_UN)
 }

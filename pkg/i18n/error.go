@@ -112,6 +112,25 @@ func (e *LocalizedError) Error() string {
 	return fmt.Sprintf("%d: %s", e.code, result)
 }
 
+// processFunctionName processes a function name to remove init function indices.
+// This is extracted for testability.
+func processFunctionName(fnName string) string {
+	lastDotIndex := strings.LastIndex(fnName, ".")
+	if lastDotIndex != -1 {
+		fnNameNew := fnName[:lastDotIndex]
+		removed := fnName[lastDotIndex+1:]
+		fnName = fnNameNew
+		// check if we removed pkg init function index
+		if strings.IndexFunc(removed, func(c rune) bool { return c < '0' || c > '9' }) == -1 {
+			lastDotIndex := strings.LastIndex(fnName, ".")
+			if lastDotIndex != -1 {
+				fnName = fnName[:lastDotIndex]
+			}
+		}
+	}
+	return fnName
+}
+
 func composePackageKey(key string, depth int) string {
 	pc, _, _, ok := runtime.Caller(depth)
 	if !ok {
@@ -122,18 +141,7 @@ func composePackageKey(key string, depth int) string {
 		return key
 	}
 	fnName := fn.Name()
-	lastDotIndex := strings.LastIndex(fnName, ".")
-	if lastDotIndex != -1 {
-		fnNameNew := fnName[:lastDotIndex]
-		removed := fnName[lastDotIndex+1:]
-		fnName = fnNameNew
-		// check if we removed pkg init function index
-		if strings.IndexFunc(removed, func(c rune) bool { return c < '0' || c > '9' }) == -1 {
-			lastDotIndex := strings.LastIndex(fnName, ".")
-			fnName = fnName[:lastDotIndex]
-		}
-
-	}
+	fnName = processFunctionName(fnName)
 	fnName = reverseDns(fnName)
 	if key == "" {
 		return fnName

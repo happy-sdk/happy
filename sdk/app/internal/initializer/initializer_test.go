@@ -50,7 +50,9 @@ func TestDefault(t *testing.T) {
 		testutils.Equal(t, "Happy Prototype", sess.Get("app.name").String(), "app.name")
 		testutils.Equal(t, "com-github-happy-sdk-happy-sdk-app-internal-initializer-test-test", sess.Get("app.slug").String(), "app.slug")
 		testutils.Equal(t, "com.github.happy-sdk.happy.sdk.app.internal.initializer.test-test", sess.Get("app.identifier").String(), "app.identifier")
-		testutils.Equal(t, "This application is built using the Happy-SDK to provide enhanced functionality and features.", sess.Get("app.description").String(), "app.description")
+		testutils.Equal(t,
+			"This application is built using the Happy-SDK to provide enhanced functionality and features.",
+			sess.Settings().Get("app.description").Display(), "app.description")
 		testutils.Equal(t, "Anonymous", sess.Get("app.copyright_by").String(), "app.copyright_by")
 		testutils.Equal(t, time.Now().Year(), sess.Get("app.copyright_since").Int(), "app.year")
 		testutils.Equal(t, "NOASSERTION", sess.Get("app.license").String(), "app.license")

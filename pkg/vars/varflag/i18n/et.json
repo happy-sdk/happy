@@ -1,0 +1,16 @@
+{
+  "com.github.happy-sdk.happy.pkg.vars.varflag": {
+    "ErrInvalidArguments": "vigased argumendid",
+    "ErrInvalidCommandOrArgs": "%s ei aktsepteeri käsku ega argumenti %s",
+    "ErrFlag": "lipu viga",
+    "ErrFlagExists": "lipp on juba olemas",
+    "ErrAliasShadow": "lipu alias on varjutatud",
+    "ErrParse": "lipu sõelumise viga",
+    "ErrMissingValue": "lipu väärtus puudub",
+    "ErrInvalidValue": "vigane lipu väärtus",
+    "ErrFlagAlreadyParsed": "lipp on juba sõelutud",
+    "ErrMissingRequired": "nõutav lipp puudub",
+    "ErrMissingOptions": "valikud puuduvad",
+    "ErrNoNamedFlag": "sellist lippu pole"
+  }
+}

@@ -211,6 +211,12 @@ func (p *Profile) load(prefs *Preferences) (err error) {
 		if err != nil {
 			return fmt.Errorf("%w: %s", ErrProfile, err.Error())
 		}
+		// Validate all settings when initially loaded, including defaults
+		for _, v := range spec.validators {
+			if err := v.fn(setting); err != nil {
+				return fmt.Errorf("%w: validation failed for %s: %s", ErrProfile, spec.Key, err.Error())
+			}
+		}
 		p.settings[spec.Key] = setting
 	}
 

@@ -1,0 +1,104 @@
+{
+  "com.github.happy-sdk.happy.sdk.cli": {
+    "cmd": {
+      "config": {
+        "category": "Configuration",
+        "description": "Gérer et configurer les paramètres de l'application",
+        "info": "Cette commande vous permet de gérer les paramètres de configuration de l'application et les profils de paramètres.",
+        "ls": {
+          "description": "Lister les paramètres du profil actuel",
+          "usage_flags": "[-a|--all]",
+          "usage": "--profile=<nom-profil> [flags]",
+          "flag_all": "Lister tous les paramètres (par défaut profil actuel), y compris les paramètres internes",
+          "flag_describe": "Décrire les paramètres",
+          "flag_prefix": "Afficher les paramètres avec un préfixe spécifique",
+          "table_settings_descriptions": "Descriptions des paramètres",
+          "table_configuration_of": "Configuration de %s",
+          "table_settings_for_profile": "Paramètres pour le PROFIL actuel : %s",
+          "table_application_config": "Configuration de l'application",
+          "header_key": "CLÉ",
+          "header_description": "DESCRIPTION",
+          "header_kind": "TYPE",
+          "header_is_set": "EST DÉFINI",
+          "header_mutability": "MUTABILITÉ",
+          "header_value": "VALEUR",
+          "header_default": "PAR DÉFAUT"
+        },
+        "set": {
+          "description": "Définir une valeur de paramètre",
+          "usage": "--profile=<nom-profil>",
+          "error_not_exists": "le paramètre %q n'existe pas"
+        },
+        "get": {
+          "description": "Obtenir une valeur de paramètre ou d'option",
+          "usage": "--profile=<nom-profil>",
+          "flag_secret": "Demande de saisir le mot de passe des secrets pour afficher la valeur. Si le mot de passe n'est pas défini, il affiche la valeur secrète <redacted> sans la demande",
+          "error_not_exists": "le paramètre %q n'existe pas",
+          "error_invalid_password": "mot de passe invalide",
+          "redacted": "<redacted>"
+        },
+        "add": {
+          "description": "Ajouter une valeur donnée à la valeur du paramètre",
+          "usage": "--profile=<nom-profil>",
+          "error_not_exists": "le paramètre %q n'existe pas",
+          "error_not_slice": "le paramètre %q n'est pas une liste",
+          "error_already_exists": "la valeur %q pour %q existe déjà"
+        },
+        "remove": {
+          "description": "Retirer une valeur donnée de la valeur du paramètre",
+          "usage": "--profile=<nom-profil>",
+          "error_not_exists": "le paramètre %q n'existe pas",
+          "error_not_slice": "le paramètre %q n'est pas une liste",
+          "error_value_not_exists": "la valeur %q pour %q n'existe pas"
+        },
+        "reset": {
+          "description": "Réinitialiser un paramètre à sa valeur par défaut",
+          "usage": "--profile=<nom-profil>",
+          "flag_all": "réinitialiser tous les paramètres",
+          "error_not_exists": "le paramètre %q n'existe pas"
+        },
+        "prompt_secrets_password": "entrer le mot de passe des secrets"
+      },
+      "i18n": {
+        "category": "Internationalisation",
+        "description": "Gérer les traductions de l'application",
+        "info": "Cette commande vous permet de gérer et traduire les chaînes de l'application.",
+        "report": {
+          "description": "Afficher le rapport d'état des traductions",
+          "flag_threshold": "Quitter avec le code 1 si une langue a un pourcentage inférieur au seuil",
+          "flag_lang": "Afficher le rapport pour une langue spécifique uniquement",
+          "flag_without_deps": "Exclure les traductions des dépendances (afficher uniquement les traductions du projet actuel)"
+        },
+        "list": {
+          "description": "Lister toutes les clés de traduction",
+          "flag_lang": "Afficher la liste pour une langue spécifique uniquement",
+          "flag_missing": "Afficher uniquement les clés avec des traductions manquantes",
+          "flag_json": "Sortir une réponse JSON au lieu d'un tableau",
+          "flag_without_deps": "Exclure les traductions des dépendances (afficher uniquement les traductions du projet actuel)"
+        },
+        "translate": {
+          "description": "Traduire les clés de traduction manquantes"
+        }
+      }
+    },
+    "help": {
+      "commands": " COMMANDES :",
+      "flags": " DRAPEAUX :",
+      "shared_flags": " DRAPEAUX PARTAGÉS :",
+      "global_flags": " DRAPEAUX GLOBAUX :",
+      "copyright": "Copyright ©",
+      "license": "Licence : ",
+      "default": "par défaut"
+    },
+    "flags": {
+      "version": "afficher la version de l'application",
+      "help": "afficher l'aide ou l'aide pour la commande. [...commande --help]",
+      "show_exec": "le drapeau -x affiche toutes les commandes CLI au fur et à mesure de leur exécution.",
+      "system_debug": "activer le niveau de journalisation de débogage système (très verbeux)",
+      "debug": "activer le niveau de journalisation de débogage",
+      "verbose": "activer le niveau de journalisation verbeux",
+      "x_prod": "DÉVELOPPEMENT UNIQUEMENT : forcer l'application en mode production en définissant app_is_devel sur false lors de l'exécution depuis la source."
+    }
+  }
+}
+

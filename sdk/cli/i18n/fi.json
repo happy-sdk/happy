@@ -1,0 +1,103 @@
+{
+  "com.github.happy-sdk.happy.sdk.cli": {
+    "cmd": {
+      "config": {
+        "category": "Konfiguraatio",
+        "description": "Hallitse ja konfiguroi sovelluksen asetuksia",
+        "info": "Tämä komento antaa sinun hallita sovelluksen konfiguraatioasetuksia ja asetusprofiileja.",
+        "ls": {
+          "description": "Listaa nykyisen profiilin asetukset",
+          "usage_flags": "[-a|--all]",
+          "usage": "--profile=<profiili-nimi> [liput]",
+          "flag_all": "Listaa kaikki asetukset (oletus nykyinen profiili), mukaan lukien sisäiset asetukset",
+          "flag_describe": "Kuvaa asetukset",
+          "flag_prefix": "Näytä asetukset tietyllä etuliitteellä",
+          "table_settings_descriptions": "Asetusten kuvaukset",
+          "table_configuration_of": "%s konfiguraatio",
+          "table_settings_for_profile": "Asetukset nykyiselle PROFIILILLE: %s",
+          "table_application_config": "Sovelluksen konfiguraatio",
+          "header_key": "AVAIN",
+          "header_description": "KUVAUS",
+          "header_kind": "TYYPPI",
+          "header_is_set": "ON ASETETTU",
+          "header_mutability": "MUUTETTAVUUS",
+          "header_value": "ARVO",
+          "header_default": "Oletus"
+        },
+        "set": {
+          "description": "Aseta asetuksen arvo",
+          "usage": "--profile=<profiili-nimi>",
+          "error_not_exists": "asetus %q ei ole olemassa"
+        },
+        "get": {
+          "description": "Hae asetuksen tai vaihtoehdon arvo",
+          "usage": "--profile=<profiili-nimi>",
+          "flag_secret": "Pyytää syöttämään salaisuuden salasanan arvon näyttämiseksi. Jos salasanaa ei ole asetettu, se tulostaa salaisen arvon sijaan <redacted> ilman kehotusta",
+          "error_not_exists": "asetus %q ei ole olemassa",
+          "error_invalid_password": "virheellinen salasana",
+          "redacted": "<redacted>"
+        },
+        "add": {
+          "description": "Lisää annettu arvo asetuksen arvoon",
+          "usage": "--profile=<profiili-nimi>",
+          "error_not_exists": "asetus %q ei ole olemassa",
+          "error_not_slice": "asetus %q ei ole lista",
+          "error_already_exists": "%q arvo %q on jo olemassa"
+        },
+        "remove": {
+          "description": "Poista annettu arvo asetuksen arvosta",
+          "usage": "--profile=<profiili-nimi>",
+          "error_not_exists": "asetus %q ei ole olemassa",
+          "error_not_slice": "asetus %q ei ole lista",
+          "error_value_not_exists": "%q arvo %q ei ole olemassa"
+        },
+        "reset": {
+          "description": "Palauta asetus oletusarvoon",
+          "usage": "--profile=<profiili-nimi>",
+          "flag_all": "palauta kaikki asetukset",
+          "error_not_exists": "asetus %q ei ole olemassa"
+        },
+        "prompt_secrets_password": "syötä salaisuuden salasana"
+      },
+      "i18n": {
+        "category": "Kansainvälistäminen",
+        "description": "Hallitse sovelluksen käännöksiä",
+        "info": "Tämä komento antaa sinun hallita ja kääntää sovelluksen merkkijonoja.",
+        "report": {
+          "description": "Näytä käännösstatuksen raportti",
+          "flag_threshold": "Poistu koodilla 1, jos jollakin kielellä on prosenttiosuus alle kynnysarvon",
+          "flag_lang": "Näytä raportti vain tietylle kielelle",
+          "flag_without_deps": "Jätä riippuvuuskäännökset pois (näytä vain nykyisen projektin käännökset)"
+        },
+        "list": {
+          "description": "Listaa kaikki käännösavaimet",
+          "flag_lang": "Näytä lista vain tietylle kielelle",
+          "flag_missing": "Näytä vain avaimet, joilta puuttuu käännöksiä",
+          "flag_json": "Tulosta JSON-vastaus taulukon sijaan",
+          "flag_without_deps": "Jätä riippuvuuskäännökset pois (näytä vain nykyisen projektin käännökset)"
+        },
+        "translate": {
+          "description": "Käännä puuttuvat käännösavaimet"
+        }
+      }
+    },
+    "help": {
+      "commands": " KOMENNOT:",
+      "flags": " LIPUT:",
+      "shared_flags": " JAETUT LIPUT:",
+      "global_flags": " GLOBAALIT LIPUT:",
+      "copyright": "Tekijänoikeus ©",
+      "license": "Lisenssi: ",
+      "default": "oletus"
+    },
+    "flags": {
+      "version": "tulosta sovelluksen versio",
+      "help": "näytä ohje tai komennon ohje. [...komento --help]",
+      "show_exec": "lippu -x tulostaa kaikki CLI-komennot niiden suorituksen aikana.",
+      "system_debug": "ota käyttöön järjestelmän debug-lokitaso (erittäin yksityiskohtainen)",
+      "debug": "ota käyttöön debug-lokitaso",
+      "verbose": "ota käyttöön yksityiskohtainen lokitaso",
+      "x_prod": "VAIN KEHITYS: pakota sovellus tuotantotilaan asettamalla app_is_devel false lähdekoodista ajettaessa."
+    }
+  }
+}

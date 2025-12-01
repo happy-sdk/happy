@@ -1,0 +1,16 @@
+{
+  "com.github.happy-sdk.happy.pkg.vars.varflag": {
+    "ErrInvalidArguments": "недопустимые аргументы",
+    "ErrInvalidCommandOrArgs": "%s не принимает команду или аргумент %s",
+    "ErrFlag": "ошибка флага",
+    "ErrFlagExists": "флаг уже существует",
+    "ErrAliasShadow": "псевдоним флага затенён",
+    "ErrParse": "ошибка разбора флага",
+    "ErrMissingValue": "отсутствует значение флага",
+    "ErrInvalidValue": "недопустимое значение флага",
+    "ErrFlagAlreadyParsed": "флаг уже разобран",
+    "ErrMissingRequired": "отсутствует обязательный флаг",
+    "ErrMissingOptions": "отсутствуют опции",
+    "ErrNoNamedFlag": "нет такого флага"
+  }
+}

@@ -23,7 +23,7 @@ type Settings struct {
 	Name           settings.String `key:"app.name" default:"Happy Prototype" desc:"Application name"`
 	Slug           settings.String `key:"app.slug" default:"" desc:"Application slug"`
 	Identifier     settings.String `key:"app.identifier" desc:"Application identifier"`
-	Description    settings.String `key:"app.description" default:"This application is built using the Happy-SDK to provide enhanced functionality and features." desc:"Application description"`
+	Description    settings.String `key:"app.description" desc:"Application description" i18n:"true"`
 	CopyrightBy    settings.String `key:"app.copyright_by" default:"Anonymous" desc:"Application author"`
 	CopyrightSince settings.Uint   `key:"app.copyright_since" default:"0" desc:"Application copyright since"`
 	License        settings.String `key:"app.license" default:"NOASSERTION" desc:"Application license"`
@@ -182,6 +182,7 @@ type CliSettings struct {
 	MainMinArgs          settings.Uint `default:"0" desc:"Minimum number of arguments for a application main"`
 	MainMaxArgs          settings.Uint `default:"0" desc:"Maximum number of arguments for a application main"`
 	WithConfigCmd        settings.Bool `default:"false" desc:"Add the config command in the CLI"`
+	WithI18nCmd          settings.Bool `default:"false" desc:"Add the i18n command in the CLI"`
 	WithGlobalFlags      settings.Bool `default:"false" desc:"Add the default global flags automatically in the CLI"`
 	HideDisabledCommands settings.Bool `default:"false" desc:"Hide disabled commands"`
 }

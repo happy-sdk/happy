@@ -1,0 +1,103 @@
+{
+  "com.github.happy-sdk.happy.sdk.cli": {
+    "cmd": {
+      "config": {
+        "category": "Configuratie",
+        "description": "Beheer en configureer applicatie-instellingen",
+        "info": "Met dit commando kunt u de applicatieconfiguratie-instellingen en instellingsprofielen beheren.",
+        "ls": {
+          "description": "Lijst instellingen voor huidig profiel",
+          "usage_flags": "[-a|--all]",
+          "usage": "--profile=<profiel-naam> [flags]",
+          "flag_all": "Lijst alle instellingen (standaard huidig profiel), inclusief interne instellingen",
+          "flag_describe": "Beschrijf instellingen",
+          "flag_prefix": "Toon instellingen met een specifiek voorvoegsel",
+          "table_settings_descriptions": "Instellingsbeschrijvingen",
+          "table_configuration_of": "Configuratie van %s",
+          "table_settings_for_profile": "Instellingen voor huidig PROFIEL: %s",
+          "table_application_config": "Applicatieconfiguratie",
+          "header_key": "SLEUTEL",
+          "header_description": "BESCHRIJVING",
+          "header_kind": "SOORT",
+          "header_is_set": "IS INGESTELD",
+          "header_mutability": "MUTEERBAARHEID",
+          "header_value": "WAARDE",
+          "header_default": "STANDAARD"
+        },
+        "set": {
+          "description": "Stel een instellingswaarde in",
+          "usage": "--profile=<profiel-naam>",
+          "error_not_exists": "instelling %q bestaat niet"
+        },
+        "get": {
+          "description": "Haal een instellings- of optiewaarde op",
+          "usage": "--profile=<profiel-naam>",
+          "flag_secret": "Vraagt om het geheime wachtwoord in te voeren om de waarde weer te geven. Als het wachtwoord niet is ingesteld, wordt in plaats daarvan de geheime waarde <redacted> afgedrukt zonder de prompt",
+          "error_not_exists": "instelling %q bestaat niet",
+          "error_invalid_password": "ongeldig wachtwoord",
+          "redacted": "<redacted>"
+        },
+        "add": {
+          "description": "Voeg gegeven waarde toe aan instellingswaarde",
+          "usage": "--profile=<profiel-naam>",
+          "error_not_exists": "instelling %q bestaat niet",
+          "error_not_slice": "instelling %q is geen lijst",
+          "error_already_exists": "%q waarde %q bestaat al"
+        },
+        "remove": {
+          "description": "Verwijder gegeven waarde uit instellingswaarde",
+          "usage": "--profile=<profiel-naam>",
+          "error_not_exists": "instelling %q bestaat niet",
+          "error_not_slice": "instelling %q is geen lijst",
+          "error_value_not_exists": "%q waarde %q bestaat niet"
+        },
+        "reset": {
+          "description": "Herstel een instelling naar de standaardwaarde",
+          "usage": "--profile=<profiel-naam>",
+          "flag_all": "herstel alle instellingen",
+          "error_not_exists": "instelling %q bestaat niet"
+        },
+        "prompt_secrets_password": "voer geheim wachtwoord in"
+        },
+      "i18n": {
+        "category": "Internationalisatie",
+        "description": "Beheer applicatievertalingen",
+        "info": "Met dit commando kunt u applicatiestrings beheren en vertalen.",
+        "report": {
+          "description": "Vertalingsstatusrapport weergeven",
+          "flag_threshold": "Afsluiten met code 1 als een taal een lager percentage dan de drempel heeft",
+          "flag_lang": "Rapport alleen voor een specifieke taal weergeven",
+          "flag_without_deps": "Afhankelijkheidsvertalingen uitsluiten (toon alleen huidige projectvertalingen)"
+        },
+        "list": {
+          "description": "Alle vertaalsleutels weergeven",
+          "flag_lang": "Lijst alleen voor een specifieke taal weergeven",
+          "flag_missing": "Alleen sleutels met ontbrekende vertalingen weergeven",
+          "flag_json": "JSON-antwoord uitvoeren in plaats van tabel",
+          "flag_without_deps": "Afhankelijkheidsvertalingen uitsluiten (toon alleen huidige projectvertalingen)"
+        },
+        "translate": {
+          "description": "Ontbrekende vertaalsleutels vertalen"
+        }
+      }
+    },
+    "help": {
+      "commands": " COMMANDO'S:",
+      "flags": " FLAGS:",
+      "shared_flags": " GEDEELDE FLAGS:",
+      "global_flags": " GLOBALE FLAGS:",
+      "copyright": "Copyright ©",
+      "license": "Licentie: ",
+      "default": "standaard"
+    },
+    "flags": {
+      "version": "toon applicatieversie",
+      "help": "toon help of help voor het commando. [...commando --help]",
+      "show_exec": "de vlag -x drukt alle CLI-commando's af terwijl ze worden uitgevoerd.",
+      "system_debug": "schakel systeem debug logniveau in (zeer uitgebreid)",
+      "debug": "schakel debug logniveau in",
+      "verbose": "schakel uitgebreid logniveau in",
+      "x_prod": "ALLEEN ONTWIKKELING: dwing app in productiemodus door app_is_devel op false te zetten bij uitvoeren vanuit bron."
+    }
+  }
+}

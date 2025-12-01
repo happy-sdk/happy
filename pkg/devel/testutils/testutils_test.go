@@ -18,4 +18,6 @@ func TestShouldSucceed(t *testing.T) {
 	Equal(t, 1, 1)
 	Equal(t, true, true)
 	Equal(t, "nil", "nil")
+	NotEqual(t, 1, 2, "1 should not equal 2")
+	NotEqual(t, "a", "b", "a should not equal b")
 }

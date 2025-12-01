@@ -1,0 +1,103 @@
+{
+  "com.github.happy-sdk.happy.sdk.cli": {
+    "cmd": {
+      "config": {
+        "category": "Konfiguration",
+        "description": "Anwendungseinstellungen verwalten und konfigurieren",
+        "info": "Dieser Befehl ermöglicht es Ihnen, die Anwendungskonfigurationseinstellungen und Einstellungsprofile zu verwalten.",
+        "ls": {
+          "description": "Einstellungen für aktuelles Profil auflisten",
+          "usage_flags": "[-a|--all]",
+          "usage": "--profile=<profil-name> [flags]",
+          "flag_all": "Alle Einstellungen auflisten (Standard: aktuelles Profil), einschließlich interner Einstellungen",
+          "flag_describe": "Einstellungen beschreiben",
+          "flag_prefix": "Einstellungen mit einem bestimmten Präfix anzeigen",
+          "table_settings_descriptions": "Einstellungsbeschreibungen",
+          "table_configuration_of": "Konfiguration von %s",
+          "table_settings_for_profile": "Einstellungen für aktuelles PROFIL: %s",
+          "table_application_config": "Anwendungskonfiguration",
+          "header_key": "SCHLÜSSEL",
+          "header_description": "BESCHREIBUNG",
+          "header_kind": "ART",
+          "header_is_set": "IST GESETZT",
+          "header_mutability": "MUTIERBARKEIT",
+          "header_value": "WERT",
+          "header_default": "STANDARD"
+        },
+        "set": {
+          "description": "Einen Einstellungswert setzen",
+          "usage": "--profile=<profil-name>",
+          "error_not_exists": "Einstellung %q existiert nicht"
+        },
+        "get": {
+          "description": "Einen Einstellungs- oder Optionswert abrufen",
+          "usage": "--profile=<profil-name>",
+          "flag_secret": "Fordert zur Eingabe des Geheimnis-Passworts auf, um den Wert anzuzeigen. Wenn kein Passwort gesetzt ist, wird stattdessen der Geheimniswert <redacted> ohne Aufforderung ausgegeben",
+          "error_not_exists": "Einstellung %q existiert nicht",
+          "error_invalid_password": "ungültiges Passwort",
+          "redacted": "<redacted>"
+        },
+        "add": {
+          "description": "Gegebenen Wert zum Einstellungswert hinzufügen",
+          "usage": "--profile=<profil-name>",
+          "error_not_exists": "Einstellung %q existiert nicht",
+          "error_not_slice": "Einstellung %q ist keine Liste",
+          "error_already_exists": "Wert %q für %q existiert bereits"
+        },
+        "remove": {
+          "description": "Gegebenen Wert vom Einstellungswert entfernen",
+          "usage": "--profile=<profil-name>",
+          "error_not_exists": "Einstellung %q existiert nicht",
+          "error_not_slice": "Einstellung %q ist keine Liste",
+          "error_value_not_exists": "Wert %q für %q existiert nicht"
+        },
+        "reset": {
+          "description": "Eine Einstellung auf ihren Standardwert zurücksetzen",
+          "usage": "--profile=<profil-name>",
+          "flag_all": "alle Einstellungen zurücksetzen",
+          "error_not_exists": "Einstellung %q existiert nicht"
+        },
+        "prompt_secrets_password": "Geheimnis-Passwort eingeben"
+        },
+      "i18n": {
+        "category": "Internationalisierung",
+        "description": "Anwendungsübersetzungen verwalten",
+        "info": "Dieser Befehl ermöglicht es Ihnen, Anwendungszeichenfolgen zu verwalten und zu übersetzen.",
+        "report": {
+          "description": "Übersetzungsstatusbericht anzeigen",
+          "flag_threshold": "Mit Code 1 beenden, wenn eine Sprache einen niedrigeren Prozentsatz als den Schwellenwert hat",
+          "flag_lang": "Bericht nur für eine bestimmte Sprache anzeigen",
+          "flag_without_deps": "Abhängigkeitsübersetzungen ausschließen (nur aktuelle Projektübersetzungen anzeigen)"
+        },
+        "list": {
+          "description": "Alle Übersetzungsschlüssel auflisten",
+          "flag_lang": "Liste nur für eine bestimmte Sprache anzeigen",
+          "flag_missing": "Nur Schlüssel mit fehlenden Übersetzungen anzeigen",
+          "flag_json": "JSON-Antwort statt Tabelle ausgeben",
+          "flag_without_deps": "Abhängigkeitsübersetzungen ausschließen (nur aktuelle Projektübersetzungen anzeigen)"
+        },
+        "translate": {
+          "description": "Fehlende Übersetzungsschlüssel übersetzen"
+        }
+      }
+    },
+    "help": {
+      "commands": " BEFEHLE:",
+      "flags": " FLAGS:",
+      "shared_flags": " GEMEINSAME FLAGS:",
+      "global_flags": " GLOBALE FLAGS:",
+      "copyright": "Copyright ©",
+      "license": "Lizenz: ",
+      "default": "Standard"
+    },
+    "flags": {
+      "version": "Anwendungsversion ausgeben",
+      "help": "Hilfe oder Hilfe für den Befehl anzeigen. [...befehl --help]",
+      "show_exec": "das Flag -x gibt alle CLI-Befehle aus, während sie ausgeführt werden.",
+      "system_debug": "System-Debug-Log-Level aktivieren (sehr ausführlich)",
+      "debug": "Debug-Log-Level aktivieren",
+      "verbose": "ausführliches Log-Level aktivieren",
+      "x_prod": "NUR ENTWICKLUNG: App in Produktionsmodus zwingen, app_is_devel auf false setzen, wenn von Quelle ausgeführt."
+    }
+  }
+}

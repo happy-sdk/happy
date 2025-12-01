@@ -1,0 +1,7 @@
+{
+  "com.github.happy-sdk.happy.pkg.i18n": {
+    "name": "Suomi",
+    "set_default": "kieli asetettu arvoon %s"
+  }
+}
+

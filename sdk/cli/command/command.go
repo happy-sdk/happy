@@ -32,7 +32,7 @@ type Config struct {
 	Usage            settings.String `key:"usage" mutation:"once"`
 	HideDefaultUsage settings.Bool   `key:"hide_default_usage" default:"false"`
 	Category         settings.String `key:"category"`
-	Description      settings.String `key:"description"`
+	Description      settings.String `key:"description" i18n:"true"`
 	// MinArgs Minimum argument count for command
 	MinArgs    settings.Uint `key:"min_args" default:"0" mutation:"once"`
 	MinArgsErr settings.String

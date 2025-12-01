@@ -105,7 +105,6 @@ func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger)
 
 	init.context, init.cancelFunc = context.WithCancel(context.Background())
 
-	if i18n.Enabled {
 		fallbackLang := language.English
 		if langGetter, ok := s.(fallbackLanguageGetter); ok {
 			lang, err := language.Parse(langGetter.GetFallbackLanguage())
@@ -115,7 +114,6 @@ func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger)
 		}
 		_ = init.log.LogDepth(3, logging.LevelHappy, "loading i18n")
 		i18n.Initialize(fallbackLang)
-	}
 
 	_ = init.log.LogDepth(3, logging.LevelDebug, i18n.PTD(i18np, "initializing", "initializing"), slog.String("pid", fmt.Sprint(init.pid)))
 	init.initialize()
