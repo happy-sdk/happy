@@ -21,10 +21,16 @@ runs:
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $GITHUB_WORKSPACE/bin ${{ inputs.golangci-lint-version }}
       shell: bash
 
-    - name: Install gohappy
-      run: go install github.com/happy-sdk/cmd/gohappy@latest
+    - name: Setup project
       shell: bash
+      run: |
+        git config --global user.email "happy-sdk@happy-sdk.dev"
+        git config --global user.name "Happy SDK"
+
+    - name: Install gohappy
+      shell: bash
+      run: go install github.com/happy-sdk/cmd/gohappy@latest
 
     - name: Lint all modules
-      run: gohappy --system-debug -x lint
       shell: bash
+      run: gohappy --system-debug -x lint
