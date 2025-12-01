@@ -1,16 +1,16 @@
-name: 'Go Lint Monorepo'
-description: 'Run golangci-lint on a monorepo with multiple Go modules'
+name: "Go Lint Monorepo"
+description: "Run golangci-lint on a monorepo with multiple Go modules"
 inputs:
   golangci-lint-version:
-    description: 'GolangCI-Lint version'
+    description: "GolangCI-Lint version"
     required: true
-    default: 'latest'
+    default: "latest"
   go-version:
-    description: 'The Go version to download (if necessary) and use. Supports semver spec and ranges. Be sure to enclose this option in single quotation marks.'
+    description: "The Go version to download (if necessary) and use. Supports semver spec and ranges. Be sure to enclose this option in single quotation marks."
     required: true
-    default: '>=1.23.0'
+    default: ">=1.23.0"
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - uses: actions/setup-go@v5
       with:
@@ -21,6 +21,10 @@ runs:
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $GITHUB_WORKSPACE/bin ${{ inputs.golangci-lint-version }}
       shell: bash
 
+    - name: Install gohappy
+      run: go install github.com/happy-sdk/cmd/gohappy@latest
+      shell: bash
+
     - name: Lint all modules
-      run: ./.github/actions/golangci-lint-monorepo-action/golangci-lint-monorepo-action.sh
+      run: gohappy lint
       shell: bash
