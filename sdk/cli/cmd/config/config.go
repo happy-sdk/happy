@@ -229,12 +229,12 @@ func configLs(hiddenKeys, disabledKeys, secrets []string) *command.Command {
 		appNameSetting := sess.Settings().Get("app.name")
 		appName := appNameSetting.Display()
 		configTable := textfmt.NewTable(
-			textfmt.TableTitle(fmt.Sprintf(i18n.T(i18np+".ls.table_configuration_of"), appName)),
+			textfmt.TableTitle(i18n.T(i18np+".ls.table_configuration_of", appName)),
 		)
 		// Profile settings
 
 		profileTable := textfmt.NewTable(
-			textfmt.TableTitle(fmt.Sprintf(i18n.T(i18np+".ls.table_settings_for_profile"), sess.Settings().Name())),
+			textfmt.TableTitle(i18n.T(i18np+".ls.table_settings_for_profile", sess.Settings().Name())),
 			textfmt.TableWithHeader(),
 		)
 		profileTable.AddRow(
@@ -303,7 +303,7 @@ func configSet(disabledKeys []string) *command.Command {
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		key := args.Arg(0).String()
 		if slices.Contains(disabledKeys, key) || !sess.Settings().Has(key) {
-			return fmt.Errorf(i18n.T(i18np+".set.error_not_exists"), key)
+			return errors.New(i18n.T(i18np+".set.error_not_exists", key))
 		}
 		value := args.Arg(1).String()
 
@@ -332,7 +332,7 @@ func configAdd(disabledKeys []string) *command.Command {
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		key := args.Arg(0).String()
 		if slices.Contains(disabledKeys, key) || !sess.Settings().Has(key) {
-			return fmt.Errorf(i18n.T(i18np+".add.error_not_exists"), key)
+			return errors.New(i18n.T(i18np+".add.error_not_exists", key))
 		}
 		value := args.Arg(1).String()
 
@@ -342,11 +342,11 @@ func configAdd(disabledKeys []string) *command.Command {
 
 		curr := sess.Settings().Get(key)
 		if curr.Kind() != settings.KindStringSlice {
-			return fmt.Errorf(i18n.T(i18np+".add.error_not_slice"), key)
+			return errors.New(i18n.T(i18np+".add.error_not_slice", key))
 		}
 		values := curr.Value().Fields()
 		if slices.Contains(values, value) {
-			return fmt.Errorf(i18n.T(i18np+".add.error_already_exists"), key, value)
+			return errors.New(i18n.T(i18np+".add.error_already_exists", key, value))
 		}
 		values = append(values, value)
 
@@ -371,17 +371,17 @@ func configRemove(disabledKeys []string) *command.Command {
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		key := args.Arg(0).String()
 		if slices.Contains(disabledKeys, key) || !sess.Settings().Has(key) {
-			return fmt.Errorf(i18n.T(i18np+".remove.error_not_exists"), key)
+			return errors.New(i18n.T(i18np+".remove.error_not_exists", key))
 		}
 		value := args.Arg(1).String()
 
 		curr := sess.Settings().Get(key)
 		if curr.Kind() != settings.KindStringSlice {
-			return fmt.Errorf(i18n.T(i18np+".remove.error_not_slice"), key)
+			return errors.New(i18n.T(i18np+".remove.error_not_slice", key))
 		}
 		oldValues := curr.Value().Fields()
 		if !slices.Contains(oldValues, value) {
-			return fmt.Errorf(i18n.T(i18np+".remove.error_value_not_exists"), key, value)
+			return errors.New(i18n.T(i18np+".remove.error_value_not_exists", key, value))
 		}
 		values := slices.DeleteFunc(oldValues, func(v string) bool {
 			return v == value
@@ -411,7 +411,7 @@ func configGet(disabledKeys, secrets []string, secretsPassword string) *command.
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		key := args.Arg(0).String()
 		if slices.Contains(disabledKeys, key) || !sess.Has(key) {
-			return fmt.Errorf(i18n.T(i18np+".get.error_not_exists"), key)
+			return errors.New(i18n.T(i18np+".get.error_not_exists", key))
 		}
 		if !slices.Contains(secrets, key) {
 			// Use Display() to get translated value if i18n is enabled
@@ -472,7 +472,7 @@ func configReset() *command.Command {
 
 		key := args.Arg(0).String()
 		if !sess.Settings().Has(key) {
-			return fmt.Errorf(i18n.T(i18np+".reset.error_not_exists"), key)
+			return errors.New(i18n.T(i18np+".reset.error_not_exists", key))
 		}
 
 		// Get current preferences and remove the key
