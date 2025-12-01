@@ -3,7 +3,6 @@
 // Copyright © 2020 The Happy Authors
 
 //go:build !windows && !plan9
-// +build !windows,!plan9
 
 package bexp_test
 
