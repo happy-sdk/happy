@@ -29,7 +29,7 @@ runs:
 
     - name: Install gohappy
       shell: bash
-      run: go install github.com/happy-sdk/cmd/gohappy@latest
+      run: go install github.com/happy-sdk/cmd/gohappy@v0.1.6
 
     - name: Lint all modules
       shell: bash
