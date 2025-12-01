@@ -33,4 +33,4 @@ runs:
 
     - name: Lint all modules
       shell: bash
-      run: gohappy --system-debug -x lint
+      run: script -q -e -c "gohappy --system-debug -x lint" /dev/stdout
