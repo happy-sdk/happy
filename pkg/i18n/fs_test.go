@@ -19,7 +19,7 @@ var testFS embed.FS
 func TestNewFS(t *testing.T) {
 	fs := NewFS(testFS)
 	testutils.NotNil(t, fs)
-	testutils.Equal(t, "lang", fs.prefix)
+	testutils.Equal(t, "i18n", fs.prefix)
 }
 
 func TestFS_WithPrefix(t *testing.T) {
@@ -265,7 +265,7 @@ func TestRegisterTranslationsFS_ReadRootError(t *testing.T) {
 	fs.prefix = "nonexistent_root_directory_abc123"
 	err := RegisterTranslationsFS(fs)
 	testutils.Error(t, err, "expected error for non-existent root directory")
-	testutils.ContainsString(t, err.Error(), "loading translations from fs failed")
+	testutils.ContainsString(t, err.Error(), "i18n loading translations from fs")
 }
 
 func TestRegisterTranslationsFS_NonJSONFileSkip(t *testing.T) {

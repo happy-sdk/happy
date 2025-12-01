@@ -18,14 +18,14 @@ import (
 
 type FS struct {
 	// Prefix directory path where language subdirectories are stored.
-	// Default is "lang".
+	// Default is "i18n".
 	prefix  string
 	content embed.FS
 }
 
 func NewFS(fs embed.FS) *FS {
 	return &FS{
-		prefix:  "lang",
+		prefix:  "i18n",
 		content: fs,
 	}
 }
@@ -70,7 +70,7 @@ func (f *FS) loadFile(lang language.Tag, fpath string) error {
 	if err := json.Unmarshal(content, &translations); err != nil {
 		return fmt.Errorf("i18n(%s): could not parse translation file %s: %s", lang.String(), name, err.Error())
 	}
-	
+
 	if err := RegisterTranslations(lang, translations); err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func registerTranslationsFS(fs *FS) (res error) {
 	}()
 	langDirs, err := fs.readRoot()
 	if err != nil {
-		res = fmt.Errorf("i18n loading translations from fs failed: %s", err.Error())
+		res = fmt.Errorf("i18n loading translations from fs ./%s failed: %s", fs.prefix, err.Error())
 		return
 	}
 	for _, entry := range langDirs {

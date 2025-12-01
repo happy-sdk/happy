@@ -455,9 +455,17 @@ func TestQueueTranslationDuplicate(t *testing.T) {
 	err := QueueTranslation(language.German, "duplicate.key", "Value 1")
 	testutils.NoError(t, err)
 
-	// Try to queue duplicate (should fail)
+	// Queue duplicate (should succeed - allows overwriting)
 	err = QueueTranslation(language.German, "duplicate.key", "Value 2")
-	testutils.Error(t, err, "expected error for duplicate queued translation")
+	testutils.NoError(t, err, "expected overwriting to be allowed")
+
+	// Reload to process queue
+	Reload()
+
+	// Verify the overwritten value is used
+	_ = SetLanguage(language.German)
+	result := T("duplicate.key")
+	testutils.Equal(t, "Value 2", result, "expected overwritten value")
 }
 
 func TestLanguageFallback(t *testing.T) {

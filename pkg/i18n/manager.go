@@ -269,17 +269,39 @@ func (m *manager) registerTranslation(lang language.Tag, prefix string, key stri
 	return nil
 }
 
+// mergeTranslationValues merges newValue into existingValue.
+// If both are maps, they are merged recursively.
+// Otherwise, newValue replaces existingValue.
+func mergeTranslationValues(existingValue, newValue any) any {
+	existingMap, existingIsMap := existingValue.(map[string]any)
+	newMap, newIsMap := newValue.(map[string]any)
+
+	// If both are maps, merge them recursively
+	if existingIsMap && newIsMap {
+		merged := make(map[string]any)
+		// Copy existing values
+		for k, v := range existingMap {
+			merged[k] = v
+		}
+		// Merge new values (recursively for nested maps)
+		for k, v := range newMap {
+			if existingVal, exists := merged[k]; exists {
+				merged[k] = mergeTranslationValues(existingVal, v)
+			} else {
+				merged[k] = v
+			}
+		}
+		return merged
+	}
+
+	// If either is not a map, replace (overwrite)
+	return newValue
+}
+
 func (m *manager) queueTranslation(lang language.Tag, key string, value any) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	dictionary, ok := m.dictionaries[lang]
-	if !ok {
-		dictionary = make(map[string]any)
-	}
-	if _, ok := dictionary[key]; ok {
-		return fmt.Errorf("%s: translation key %q already exists in dictionary", lang.String(), key)
-	}
 	if m.queue == nil {
 		mngr.queue = make(map[language.Tag]map[string]any)
 	}
@@ -288,10 +310,14 @@ func (m *manager) queueTranslation(lang language.Tag, key string, value any) err
 		queuedict = make(map[string]any)
 		mngr.queue[lang] = queuedict
 	}
-	if _, ok := queuedict[key]; ok {
-		return fmt.Errorf("%s: translation key %q already exists in queue", lang.String(), key)
+
+	// If key already exists and both values are maps, merge them.
+	// Otherwise, replace (overwrite) with new value.
+	if existingValue, exists := queuedict[key]; exists {
+		queuedict[key] = mergeTranslationValues(existingValue, value)
+	} else {
+		queuedict[key] = value
 	}
-	queuedict[key] = value
 	return nil
 }
 

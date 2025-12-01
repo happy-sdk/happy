@@ -151,15 +151,26 @@ func TestManager_RegisterTranslation_NestedMap(t *testing.T) {
 	testutils.Equal(t, "Deep Value", result)
 }
 
-func TestManager_QueueTranslation_DuplicateInDictionary(t *testing.T) {
+func TestManager_QueueTranslation_OverwriteRegistered(t *testing.T) {
 	Initialize(language.English)
 
-	// Register translation first
-	_ = RegisterTranslation(language.English, "duplicate.key", "Value 1")
+	// Register translation first (this triggers reload automatically)
+	err := RegisterTranslation(language.English, "duplicate.key", "Value 1")
+	testutils.NoError(t, err)
+	result := T("duplicate.key")
+	testutils.Equal(t, "Value 1", result, "expected original value")
 
-	// Try to queue same key (should fail)
-	err := QueueTranslation(language.English, "duplicate.key", "Value 2")
-	testutils.Error(t, err, "expected error for duplicate key in dictionary")
+	// Queue same key (should succeed - allows overwriting)
+	// This simulates application translations overriding SDK defaults
+	err = QueueTranslation(language.English, "duplicate.key", "Value 2")
+	testutils.NoError(t, err, "expected overwriting to be allowed")
+
+	// Reload to process queue and overwrite existing translation
+	Reload()
+
+	// Verify the overwritten value is used (application translation overrides SDK default)
+	result = T("duplicate.key")
+	testutils.Equal(t, "Value 2", result, "expected overwritten value")
 }
 
 func TestManager_ExtractRootKey(t *testing.T) {
@@ -500,16 +511,22 @@ func TestManager_SetCurrentLanguage_NotSupported(t *testing.T) {
 	testutils.ContainsString(t, err.Error(), "language not supported")
 }
 
-func TestQueueTranslations_Error(t *testing.T) {
+func TestQueueTranslations_Overwrite(t *testing.T) {
 	Initialize(language.English)
-	// Test queueTranslations when queueTranslation returns error
-	// Queue a duplicate key to trigger error
+	// Test queueTranslations allows overwriting existing keys
 	_ = QueueTranslation(language.English, "duplicate.queue.key", "Value 1")
 	translations := map[string]any{
-		"duplicate.queue.key": "Value 2", // Duplicate key
+		"duplicate.queue.key": "Value 2", // Overwrite existing key
 	}
 	err := QueueTranslations(language.English, translations)
-	testutils.Error(t, err, "expected error for duplicate key in queue")
+	testutils.NoError(t, err, "expected overwriting to be allowed")
+
+	// Reload to process queue
+	Reload()
+
+	// Verify the overwritten value is used
+	result := T("duplicate.queue.key")
+	testutils.Equal(t, "Value 2", result, "expected overwritten value")
 }
 
 func TestSetLanguage_NotSupported(t *testing.T) {
