@@ -42,7 +42,6 @@ jobs:
       - run: go run ./tools/happy-sdk/cmd/happy-sdk/ i18n report -t 95
 
   list-modules:
-    needs: lint
     runs-on: ubuntu-latest
     outputs:
       modules: ${{ steps.modulelist.outputs.modules }}
@@ -56,7 +55,10 @@ jobs:
           only-module-list: true
 
   test-and-coverage:
-    needs: list-modules
+    needs:
+      - lint
+      - i18n
+      - list-modules
     strategy:
       matrix:
         # https://github.com/actions/runner-images?tab=readme-ov-file
