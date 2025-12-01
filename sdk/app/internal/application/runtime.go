@@ -320,6 +320,7 @@ func (rt *Runtime) boot() (err error) {
 	if rt.cmd.IsImmediate() {
 		rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(), "skip application boot for immediate command")
 		if err := rt.executeBeforeActions(); err != nil {
+			rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(), "before actions failed", slog.String("err", err.Error()))
 			return err
 		}
 		rt.sess.Dispatch(rt.sessionReadyEvent)
@@ -330,7 +331,8 @@ func (rt *Runtime) boot() (err error) {
 
 	// Create a new instance
 	if rt.inst, err = instance.New(rt.sess); err != nil {
-		return fmt.Errorf("failed to boot instance: %w", err)
+		rt.sess.Log().Log(rt.sess.Context(), logging.LevelHappy.Level(), "failed to create instance", slog.String("err", err.Error()))
+		return fmt.Errorf("failed to create instance: %w", err)
 	}
 	rt.exitActions = append(rt.exitActions, func(sess *session.Context, code int) error {
 		return rt.inst.Dispose()

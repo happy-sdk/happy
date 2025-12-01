@@ -26,5 +26,5 @@ runs:
       shell: bash
 
     - name: Lint all modules
-      run: gohappy lint --debug
+      run: gohappy --system-debug -x lint
       shell: bash
