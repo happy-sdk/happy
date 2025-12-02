@@ -148,3 +148,71 @@ func (l *Logger) ts() time.Time {
 	state := l.handler.state.Load()
 	return time.Now().In(state.config.TimeLocation)
 }
+
+// defaultCallerDepth is the stack depth used by convenience methods so that
+// the reported source location points to the caller of the helper, not the
+// helper itself.
+const defaultCallerDepth = 2
+
+// logAt is a small helper that logs at the given level with proper depth and attributes.
+func (l *Logger) logAt(depth int, lvl Level, msg string, attrs ...slog.Attr) {
+	if l == nil {
+		return
+	}
+	_ = l.LogDepth(depth, lvl, msg, attrs...)
+}
+
+// Happy logs a message at the Happy SDK "happy" level.
+func (l *Logger) Happy(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelHappy, msg, attrs...)
+}
+
+// DebugPkg logs a message at the package-debug level.
+func (l *Logger) DebugPkg(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelDebugPkg, msg, attrs...)
+}
+
+// DebugAddon logs a message at the addon-debug level.
+func (l *Logger) DebugAddon(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelDebugAddon, msg, attrs...)
+}
+
+// Trace logs a message at the trace level.
+func (l *Logger) Trace(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelTrace, msg, attrs...)
+}
+
+// Notice logs a message at the notice level.
+func (l *Logger) Notice(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelNotice, msg, attrs...)
+}
+
+// Success logs a message at the success level.
+func (l *Logger) Success(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelSuccess, msg, attrs...)
+}
+
+// NotImpl logs a message at the NotImpl level, for unimplemented features.
+func (l *Logger) NotImpl(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelNotImpl, msg, attrs...)
+}
+
+// NotImplemented is an alias for NotImpl.
+func (l *Logger) NotImplemented(msg string, attrs ...slog.Attr) {
+	l.NotImpl(msg, attrs...)
+}
+
+// Deprecated logs a message at the Deprecated level.
+func (l *Logger) Deprecated(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelDepr, msg, attrs...)
+}
+
+// Out logs a message at the Out level, intended for stdout/stderr style output.
+func (l *Logger) Out(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelOut, msg, attrs...)
+}
+
+// BUG logs a message at the BUG level, intended for critical bugs.
+func (l *Logger) BUG(msg string, attrs ...slog.Attr) {
+	l.logAt(defaultCallerDepth, LevelBUG, msg, attrs...)
+}

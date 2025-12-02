@@ -39,7 +39,7 @@ func Addon() *addon.Addon {
 		if err != nil {
 			return err
 		}
-		fmt.Println(fmt.Sprintf("Hello, %s!", greet))
+		fmt.Printf("Hello, %s!\n", greet)
 		return nil
 	})
 
