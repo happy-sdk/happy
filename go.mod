@@ -9,7 +9,7 @@ require (
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.0
 	github.com/happy-sdk/happy/pkg/fsutils v1.0.0
 	github.com/happy-sdk/happy/pkg/i18n v1.0.0
-	github.com/happy-sdk/happy/pkg/logging v0.4.0
+	github.com/happy-sdk/happy/pkg/logging v0.5.0
 	github.com/happy-sdk/happy/pkg/networking v0.3.0
 	github.com/happy-sdk/happy/pkg/options v0.8.0
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.7.0
