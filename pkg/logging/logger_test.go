@@ -13,6 +13,10 @@ import (
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
 
+type testContextKeyType string
+
+var testContextKey = testContextKeyType("test")
+
 var errLoggingTest = errors.New("logging:test")
 
 func defaultTestConfig() Config {

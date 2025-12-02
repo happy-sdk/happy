@@ -83,3 +83,79 @@ func TestLoggerConvenienceLevels(t *testing.T) {
 		})
 	}
 }
+
+func TestLoggerConvenienceWithArgs(t *testing.T) {
+	logger, ch := newCaptureLogger(t)
+
+	// Test that args are properly converted and included
+	logger.Happy("test message", "key1", "value1", "key2", 42, "key3", true)
+	testutils.Equal(t, slog.Level(LevelHappy), ch.last.Level, "level mismatch")
+	testutils.Equal(t, "test message", ch.last.Message, "message mismatch")
+
+	// Verify attributes were added
+	ch.last.Attrs(func(a slog.Attr) bool {
+		switch a.Key {
+		case "key1":
+			testutils.Equal(t, "value1", a.Value.String(), "key1 value mismatch")
+		case "key2":
+			testutils.Equal(t, int64(42), a.Value.Any().(int64), "key2 value mismatch")
+		case "key3":
+			testutils.Equal(t, true, a.Value.Any().(bool), "key3 value mismatch")
+		}
+		return true
+	})
+}
+
+func TestLoggerConvenienceContextVariants(t *testing.T) {
+	logger, ch := newCaptureLogger(t)
+
+	ctx := context.WithValue(context.Background(), testContextKey, "value")
+
+	type tc struct {
+		name   string
+		call   func()
+		expect Level
+	}
+
+	tests := []tc{
+		{"HappyContext", func() { logger.HappyContext(ctx, "x") }, LevelHappy},
+		{"DebugPkgContext", func() { logger.DebugPkgContext(ctx, "x") }, LevelDebugPkg},
+		{"DebugAddonContext", func() { logger.DebugAddonContext(ctx, "x") }, LevelDebugAddon},
+		{"TraceContext", func() { logger.TraceContext(ctx, "x") }, LevelTrace},
+		{"NoticeContext", func() { logger.NoticeContext(ctx, "x") }, LevelNotice},
+		{"SuccessContext", func() { logger.SuccessContext(ctx, "x") }, LevelSuccess},
+		{"NotImplContext", func() { logger.NotImplContext(ctx, "x") }, LevelNotImpl},
+		{"NotImplementedContext", func() { logger.NotImplementedContext(ctx, "x") }, LevelNotImpl},
+		{"DeprecatedContext", func() { logger.DeprecatedContext(ctx, "x") }, LevelDepr},
+		{"OutContext", func() { logger.OutContext(ctx, "x") }, LevelOut},
+		{"BUGContext", func() { logger.BUGContext(ctx, "x") }, LevelBUG},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.call()
+			testutils.Equal(t, slog.Level(tt.expect), ch.last.Level, "level mismatch")
+		})
+	}
+}
+
+func TestLoggerConvenienceContextWithArgs(t *testing.T) {
+	logger, ch := newCaptureLogger(t)
+	ctx := context.WithValue(context.Background(), testContextKey, "value")
+
+	// Test that Context variants work with args
+	logger.HappyContext(ctx, "test message", "key1", "value1", "key2", 42)
+	testutils.Equal(t, slog.Level(LevelHappy), ch.last.Level, "level mismatch")
+	testutils.Equal(t, "test message", ch.last.Message, "message mismatch")
+
+	// Verify attributes were added
+	ch.last.Attrs(func(a slog.Attr) bool {
+		switch a.Key {
+		case "key1":
+			testutils.Equal(t, "value1", a.Value.String(), "key1 value mismatch")
+		case "key2":
+			testutils.Equal(t, int64(42), a.Value.Any().(int64), "key2 value mismatch")
+		}
+		return true
+	})
+}

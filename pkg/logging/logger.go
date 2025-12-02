@@ -154,65 +154,143 @@ func (l *Logger) ts() time.Time {
 // helper itself.
 const defaultCallerDepth = 2
 
-// logAt is a small helper that logs at the given level with proper depth and attributes.
-func (l *Logger) logAt(depth int, lvl Level, msg string, attrs ...slog.Attr) {
+// logAt is a small helper that logs at the given level with proper depth and arguments.
+// It converts args to slog.Attr using the same logic as slog.Logger methods.
+func (l *Logger) logAt(depth int, lvl Level, msg string, args ...any) {
 	if l == nil {
 		return
 	}
-	_ = l.LogDepth(depth, lvl, msg, attrs...)
+	if !l.Enabled(context.Background(), slog.Level(lvl)) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(depth+2, pcs[:])
+	r := slog.NewRecord(l.ts(), slog.Level(lvl), msg, pcs[0])
+	r.Add(args...)
+	_ = l.Handler().Handle(context.Background(), r)
+}
+
+// logAtContext is a small helper that logs at the given level with context, proper depth and arguments.
+func (l *Logger) logAtContext(ctx context.Context, depth int, lvl Level, msg string, args ...any) {
+	if l == nil {
+		return
+	}
+	if !l.Enabled(ctx, slog.Level(lvl)) {
+		return
+	}
+	var pcs [1]uintptr
+	runtime.Callers(depth+2, pcs[:])
+	r := slog.NewRecord(l.ts(), slog.Level(lvl), msg, pcs[0])
+	r.Add(args...)
+	_ = l.Handler().Handle(ctx, r)
 }
 
 // Happy logs a message at the Happy SDK "happy" level.
-func (l *Logger) Happy(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelHappy, msg, attrs...)
+func (l *Logger) Happy(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelHappy, msg, args...)
+}
+
+// HappyContext logs a message at the Happy SDK "happy" level with context.
+func (l *Logger) HappyContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelHappy, msg, args...)
 }
 
 // DebugPkg logs a message at the package-debug level.
-func (l *Logger) DebugPkg(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelDebugPkg, msg, attrs...)
+func (l *Logger) DebugPkg(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelDebugPkg, msg, args...)
+}
+
+// DebugPkgContext logs a message at the package-debug level with context.
+func (l *Logger) DebugPkgContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelDebugPkg, msg, args...)
 }
 
 // DebugAddon logs a message at the addon-debug level.
-func (l *Logger) DebugAddon(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelDebugAddon, msg, attrs...)
+func (l *Logger) DebugAddon(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelDebugAddon, msg, args...)
+}
+
+// DebugAddonContext logs a message at the addon-debug level with context.
+func (l *Logger) DebugAddonContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelDebugAddon, msg, args...)
 }
 
 // Trace logs a message at the trace level.
-func (l *Logger) Trace(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelTrace, msg, attrs...)
+func (l *Logger) Trace(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelTrace, msg, args...)
+}
+
+// TraceContext logs a message at the trace level with context.
+func (l *Logger) TraceContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelTrace, msg, args...)
 }
 
 // Notice logs a message at the notice level.
-func (l *Logger) Notice(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelNotice, msg, attrs...)
+func (l *Logger) Notice(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelNotice, msg, args...)
+}
+
+// NoticeContext logs a message at the notice level with context.
+func (l *Logger) NoticeContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelNotice, msg, args...)
 }
 
 // Success logs a message at the success level.
-func (l *Logger) Success(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelSuccess, msg, attrs...)
+func (l *Logger) Success(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelSuccess, msg, args...)
+}
+
+// SuccessContext logs a message at the success level with context.
+func (l *Logger) SuccessContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelSuccess, msg, args...)
 }
 
 // NotImpl logs a message at the NotImpl level, for unimplemented features.
-func (l *Logger) NotImpl(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelNotImpl, msg, attrs...)
+func (l *Logger) NotImpl(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelNotImpl, msg, args...)
+}
+
+// NotImplContext logs a message at the NotImpl level with context.
+func (l *Logger) NotImplContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelNotImpl, msg, args...)
 }
 
 // NotImplemented is an alias for NotImpl.
-func (l *Logger) NotImplemented(msg string, attrs ...slog.Attr) {
-	l.NotImpl(msg, attrs...)
+func (l *Logger) NotImplemented(msg string, args ...any) {
+	l.NotImpl(msg, args...)
+}
+
+// NotImplementedContext is an alias for NotImplContext.
+func (l *Logger) NotImplementedContext(ctx context.Context, msg string, args ...any) {
+	l.NotImplContext(ctx, msg, args...)
 }
 
 // Deprecated logs a message at the Deprecated level.
-func (l *Logger) Deprecated(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelDepr, msg, attrs...)
+func (l *Logger) Deprecated(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelDepr, msg, args...)
+}
+
+// DeprecatedContext logs a message at the Deprecated level with context.
+func (l *Logger) DeprecatedContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelDepr, msg, args...)
 }
 
 // Out logs a message at the Out level, intended for stdout/stderr style output.
-func (l *Logger) Out(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelOut, msg, attrs...)
+func (l *Logger) Out(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelOut, msg, args...)
+}
+
+// OutContext logs a message at the Out level with context.
+func (l *Logger) OutContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelOut, msg, args...)
 }
 
 // BUG logs a message at the BUG level, intended for critical bugs.
-func (l *Logger) BUG(msg string, attrs ...slog.Attr) {
-	l.logAt(defaultCallerDepth, LevelBUG, msg, attrs...)
+func (l *Logger) BUG(msg string, args ...any) {
+	l.logAt(defaultCallerDepth, LevelBUG, msg, args...)
+}
+
+// BUGContext logs a message at the BUG level with context.
+func (l *Logger) BUGContext(ctx context.Context, msg string, args ...any) {
+	l.logAtContext(ctx, defaultCallerDepth, LevelBUG, msg, args...)
 }
