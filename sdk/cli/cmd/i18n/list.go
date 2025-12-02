@@ -39,27 +39,28 @@ func i18nList() *command.Command {
 		varflag.StringFunc("lang", "", i18np+".list.flag_lang", "l"),
 		varflag.BoolFunc("missing", false, i18np+".list.flag_missing", "m"),
 		varflag.BoolFunc("json", false, i18np+".list.flag_json"),
-		varflag.BoolFunc("without-deps", false, i18np+".list.flag_without_deps", "Exclude dependency translations (show only current project translations)"),
+		// By default, list only application translations. Use --with-deps to include dependencies.
+		varflag.BoolFunc("with-deps", false, i18np+".list.flag_with_deps"),
 	)
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		langFlag := args.Flag("lang").String()
 		missingOnly := args.Flag("missing").Var().Bool()
 		jsonOutput := args.Flag("json").Var().Bool()
-		excludeDeps := args.Flag("without-deps").Var().Bool()
+		includeDeps := args.Flag("with-deps").Var().Bool()
 
 		allEntries := i18n.GetAllTranslations()
-		
+
 		// Get dependency identifiers from go.mod to distinguish app vs dependency keys
 		deps, err := getDependencyIdentifiers(sess)
 		if err != nil {
 			return fmt.Errorf("failed to get dependency identifiers: %w", err)
 		}
-		
+
 		// Separate translation entries into app and dependency categories
 		appEntries := make([]i18n.TranslationEntry, 0)
 		depEntries := make([]i18n.TranslationEntry, 0)
-		
+
 		for _, entry := range allEntries {
 			isDep, err := isDependencyKeyForEntry(entry.Key, deps)
 			if err != nil {
@@ -71,16 +72,15 @@ func i18nList() *command.Command {
 				appEntries = append(appEntries, entry)
 			}
 		}
-		
-		// When --without-deps is set, only process app entries
-		if excludeDeps {
-			allEntries = appEntries
-		}
-		
+
+		// By default, operate only on application entries.
+		// When --with-deps is set, dependency entries are handled in a separate section.
+		allEntries = appEntries
+
 		// Determine which languages to check based on app configuration
 		appSupportedLangs := getAppSupportedLanguages(sess)
 		fallbackLang := i18n.GetFallbackLanguage()
-		
+
 		var translatableLangs []language.Tag
 		if len(appSupportedLangs) > 0 {
 			// Use app's configured supported languages
@@ -108,6 +108,16 @@ func i18nList() *command.Command {
 
 		// Process entries to determine translation status for each key
 		keyStatuses := processEntriesForDisplay(allEntries, translatableLangs, targetLang, fallbackLang, missingOnly)
+
+	// When --missing is used and there are no missing keys, show a friendly message
+	if missingOnly && len(keyStatuses) == 0 && !includeDeps {
+		if targetLang != language.Und {
+			fmt.Printf("All application translations are complete for %s.\n", targetLang.String())
+		} else {
+			fmt.Println("All application translations are complete for all configured languages.")
+		}
+		return nil
+	}
 
 		// JSON output
 		if jsonOutput {
@@ -154,8 +164,8 @@ func i18nList() *command.Command {
 		}
 
 		// Generate table output based on flags
-		if excludeDeps {
-			// When --without-deps is set, show only application translations
+		if !includeDeps {
+			// Default: show only application translations
 			if targetLang != language.Und {
 				// Single language mode: show key and status
 				if missingOnly {

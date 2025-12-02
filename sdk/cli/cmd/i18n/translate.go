@@ -5,6 +5,7 @@
 package i18n
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -29,10 +30,13 @@ func i18nTranslate() *command.Command {
 
 	cmd.WithFlags(
 		varflag.StringFunc("lang", "", i18np+".translate.flag_lang", "l"),
+		// By default, prompt only for application translations. Use --with-deps to include dependency keys.
+		varflag.BoolFunc("with-deps", false, i18np+".translate.flag_with_deps"),
 	)
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		langFlag := args.Flag("lang").String()
+		includeDeps := args.Flag("with-deps").Var().Bool()
 		positionalArgs := args.Args()
 
 		// Non-interactive mode: both i18n_key and value provided with --lang flag
@@ -49,7 +53,7 @@ func i18nTranslate() *command.Command {
 
 		// Interactive mode: no arguments provided, loop through all missing translations
 		if len(positionalArgs) == 0 {
-			return interactiveMode(sess)
+			return interactiveMode(sess, includeDeps)
 		}
 
 		// Single key mode: translate specific key for missing languages
@@ -73,24 +77,57 @@ func i18nTranslate() *command.Command {
 	return cmd
 }
 
-func interactiveMode(sess *session.Context) error {
+func interactiveMode(sess *session.Context, includeDeps bool) error {
 	fmt.Println("Starting interactive translation for all missing keys...")
-	languages := i18n.GetLanguages()
+	// Determine languages based on app configuration, falling back to all i18n languages.
+	appSupportedLangs := getAppSupportedLanguages(sess)
 	fallbackLang := i18n.GetFallbackLanguage()
+	var languages []language.Tag
+	if len(appSupportedLangs) > 0 {
+		languages = appSupportedLangs
+	} else {
+		all := i18n.GetLanguages()
+		for _, lang := range all {
+			if lang == fallbackLang {
+				continue
+			}
+			languages = append(languages, lang)
+		}
+	}
 
 	for _, lang := range languages {
 		if lang == fallbackLang {
 			continue
 		}
 		report := i18n.GetTranslationReport(lang)
-		if len(report.MissingEntries) > 0 {
-			fmt.Printf("\n--- Missing translations for %s (%d entries) ---\n", lang.String(), len(report.MissingEntries))
-			for _, entry := range report.MissingEntries {
+
+		// Filter missing entries based on whether they belong to the app or dependencies.
+		deps, err := getDependencyIdentifiers(sess)
+		if err != nil {
+			return fmt.Errorf("failed to get dependency identifiers: %w", err)
+		}
+
+		missingEntries := make([]i18n.TranslationEntry, 0, len(report.MissingEntries))
+		for _, entry := range report.MissingEntries {
+			isDep, err := isDependencyKeyForEntry(entry.Key, deps)
+			if err != nil {
+				return err
+			}
+			if !includeDeps && isDep {
+				continue
+			}
+			if includeDeps || !isDep {
+				missingEntries = append(missingEntries, entry)
+			}
+		}
+
+		if len(missingEntries) > 0 {
+			fmt.Printf("\n--- Missing translations for %s (%d entries) ---\n", lang.String(), len(missingEntries))
+			for _, entry := range missingEntries {
 				fmt.Printf("Key: %q\n", entry.Key)
 				fmt.Printf("Fallback (%s): %q\n", fallbackLang.String(), entry.Fallback)
 				fmt.Printf("Enter translation for %q in %s (leave empty to skip): ", entry.Key, lang.String())
-				var input string
-				_, err := fmt.Scanln(&input)
+				input, err := readLine()
 				if err != nil {
 					return err
 				}
@@ -131,8 +168,22 @@ func translateSpecificKeyInteractive(sess *session.Context, key string) error {
 		return fmt.Errorf("key %q not found", key)
 	}
 
-	languages := i18n.GetLanguages()
+	// Use app configuration for languages where possible
+	appSupportedLangs := getAppSupportedLanguages(sess)
 	fallbackLang := i18n.GetFallbackLanguage()
+	var languages []language.Tag
+	if len(appSupportedLangs) > 0 {
+		languages = appSupportedLangs
+	} else {
+		all := i18n.GetLanguages()
+		for _, lang := range all {
+			if lang == fallbackLang {
+				continue
+			}
+			languages = append(languages, lang)
+		}
+	}
+
 	for _, lang := range languages {
 		if lang == fallbackLang {
 			continue // Skip fallback language as it's the source
@@ -140,8 +191,7 @@ func translateSpecificKeyInteractive(sess *session.Context, key string) error {
 		if _, ok := targetEntry.Translations[lang]; !ok {
 			fmt.Printf("Missing translation for %s (Fallback: %q):\n", lang.String(), targetEntry.Fallback)
 			fmt.Printf("Enter translation for %q in %s: ", key, lang.String())
-			var input string
-			_, err := fmt.Scanln(&input)
+			input, err := readLine()
 			if err != nil {
 				return err
 			}
@@ -175,8 +225,7 @@ func translateSpecificKeyForLang(sess *session.Context, lang language.Tag, key s
 	}
 
 	fmt.Printf("Enter translation for %q in %s (Fallback: %q): ", key, lang.String(), targetEntry.Fallback)
-	var input string
-	_, err := fmt.Scanln(&input)
+	input, err := readLine()
 	if err != nil {
 		return err
 	}
@@ -184,6 +233,16 @@ func translateSpecificKeyForLang(sess *session.Context, lang language.Tag, key s
 		return updateTranslation(sess, lang, key, input)
 	}
 	return nil
+}
+
+// readLine reads a full line from stdin, allowing empty input to be treated as "skip".
+func readLine() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadString('\n')
+	if err != nil && err.Error() != "EOF" {
+		return "", err
+	}
+	return strings.TrimRight(line, "\r\n"), nil
 }
 
 // updateTranslation saves a translation to the appropriate JSON file based on whether

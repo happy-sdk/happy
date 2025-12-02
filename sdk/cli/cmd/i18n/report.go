@@ -30,42 +30,50 @@ func i18nReport() *command.Command {
 	cmd.WithFlags(
 		varflag.Float64Func("threshold", 0.0, i18np+".report.flag_threshold", "t"),
 		varflag.StringFunc("lang", "", i18np+".report.flag_lang", "l"),
-		varflag.BoolFunc("without-deps", false, i18np+".report.flag_without_deps", "Exclude dependency translations (show only current project translations)"),
+		// By default, report only on application translations. Use --with-deps to include dependencies.
+		varflag.BoolFunc("with-deps", false, i18np+".report.flag_with_deps"),
 	)
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
 		threshold := args.Flag("threshold").Var().Float64()
 		langFlag := args.Flag("lang").String()
-		excludeDeps := args.Flag("without-deps").Var().Bool()
+		includeDeps := args.Flag("with-deps").Var().Bool()
 
-		// Get all registered languages from i18n system
-		allLanguages := i18n.GetLanguages()
-		if len(allLanguages) == 0 {
-			return fmt.Errorf("no languages found")
-		}
-
-		// Determine which languages to report on
+		// Determine which languages to report on based on app configuration.
+		appSupportedLangs := getAppSupportedLanguages(sess)
 		var languages []language.Tag
+
 		if langFlag != "" {
 			// Filter to specific language when --lang flag is provided
 			targetLang, err := language.Parse(langFlag)
 			if err != nil {
 				return fmt.Errorf("invalid language: %w", err)
 			}
-			// Verify the language is actually registered
-			found := false
-			for _, lang := range allLanguages {
-				if lang == targetLang {
-					languages = []language.Tag{targetLang}
-					found = true
-					break
+
+			// If app has configured supported languages, ensure the requested one is among them.
+			if len(appSupportedLangs) > 0 {
+				found := false
+				for _, lang := range appSupportedLangs {
+					if lang == targetLang {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("language %s is not supported by this application", langFlag)
 				}
 			}
-			if !found {
-				return fmt.Errorf("language %s is not supported", langFlag)
-			}
+
+			languages = []language.Tag{targetLang}
+		} else if len(appSupportedLangs) > 0 {
+			// Use only application-supported languages
+			languages = appSupportedLangs
 		} else {
-			// Report on all registered languages
+			// Fallback: use all registered languages from i18n system
+			allLanguages := i18n.GetLanguages()
+			if len(allLanguages) == 0 {
+				return fmt.Errorf("no languages found")
+			}
 			languages = allLanguages
 			// Sort for consistent output ordering
 			sort.Slice(languages, func(i, j int) bool {
@@ -97,8 +105,8 @@ func i18nReport() *command.Command {
 		// Get fallback language - it should always be considered 100% translated
 		fallbackLang := i18n.GetFallbackLanguage()
 
-		if excludeDeps {
-			// Only show app translations
+		if !includeDeps {
+			// Default: only show app translations
 			// Add rows for each language
 			for _, lang := range languages {
 				report := i18n.GetTranslationReport(lang)
