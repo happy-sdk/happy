@@ -326,15 +326,24 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (err
 	// what was before the flag including flag it self
 
 	// default is global
-
-	f.global = f.command == "" || f.command == "/" || f.command == filepath.Base(os.Args[0])
+	rootName := filepath.Base(os.Args[0])
+	f.global = f.command == "" || f.command == "/" || f.command == rootName
+	
+	// If flag is attached to root binary name or "/", treat it as global and always parse it
+	// This allows global flags to work in all positions (before command, after command, etc.)
+	// Note: flags with AttachTo("*") should still go through command matching to update their command
+	isGlobalFlag := f.command == "/" || f.command == rootName
+	
 	if len(pargs) < poses[0] {
 		return nil
 	}
 
 	pre := pargs[:poses[0]]
-	if f.command != "" {
+	// For global flags (attached to root binary name or "/"), always parse them without command matching
+	// For other flags (including "*"), check if their command appears before the flag
+	if f.command != "" && !isGlobalFlag {
 		var cmd string
+		commandFound := false
 
 		opts := 0
 		for _, arg := range pre {
@@ -343,16 +352,38 @@ func (f *Common) parseArgs(args []string, read func([]vars.Variable) error) (err
 				continue
 			}
 			opts++
+			// Check if this non-flag arg matches the command this flag is attached to
+			// This handles the case where flag appears immediately after command (e.g., "mariadb -v")
+			// For flags with AttachTo("*"), match any command (but prefer when opts > 1 to skip binary name)
+			if f.command == "*" || arg == f.command {
+				// For AttachTo("*"), only set command when opts > 1 to skip the binary name
+				if f.command == "*" && opts == 1 {
+					continue
+				}
+				cmd = arg
+				// Global flags have to be set before any cmnd args
+				f.global = false
+				f.command = cmd
+				commandFound = true
+				break
+			}
 			if opts > 1 {
 				cmd = arg
 				// Global flags have to be set before any cmnd args
 				f.global = false
+				// found portential command
+				if f.command == "*" || cmd == f.command {
+					f.command = cmd
+					commandFound = true
+					break
+				}
 			}
-			// found portential command
-			if len(cmd) > 0 && (f.command == "*" || cmd == f.command) {
-				f.command = cmd
-				break
-			}
+		}
+		// If flag is attached to a specific command (not "*") and that command
+		// doesn't appear before the flag, don't parse it.
+		// This prevents root command from parsing flags meant for subcommands.
+		if !commandFound && f.command != "*" {
+			return nil
 		}
 	}
 

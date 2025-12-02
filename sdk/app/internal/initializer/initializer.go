@@ -772,20 +772,26 @@ func (init *Initializer) configureLogger() (err error) {
 	}
 
 	if init.cmd != nil {
-		if init.cmd.Flag("system-debug").Var().Bool() {
-			if init.cmd.Flag("system-debug").Global() {
+		// Check flags in order of precedence: system-debug > debug > verbose
+		// Check Present() first to ensure the flag was actually set, regardless of position
+		systemDebugFlag := init.cmd.Flag("system-debug")
+		debugFlag := init.cmd.Flag("debug")
+		verboseFlag := init.cmd.Flag("verbose")
+
+		if systemDebugFlag.Present() && systemDebugFlag.Var().Bool() {
+			if systemDebugFlag.Global() {
 				lvl = internal.LogLevelHappy
 			} else {
 				init.execlvl = internal.LogLevelHappy
 			}
-		} else if init.cmd.Flag("debug").Var().Bool() {
-			if init.cmd.Flag("debug").Global() {
+		} else if debugFlag.Present() && debugFlag.Var().Bool() {
+			if debugFlag.Global() {
 				lvl = logging.LevelDebug
 			} else {
 				init.execlvl = logging.LevelDebug
 			}
-		} else if init.cmd.Flag("verbose").Var().Bool() {
-			if init.cmd.Flag("verbose").Global() {
+		} else if verboseFlag.Present() && verboseFlag.Var().Bool() {
+			if verboseFlag.Global() {
 				lvl = logging.LevelInfo
 			} else {
 				init.execlvl = logging.LevelInfo
