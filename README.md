@@ -6,6 +6,12 @@ Happy SDK is an open-source Go framework designed to make building applications 
 
 :warning: *Until v1.0.0, API changes may break compatibility, so pin your Happy version and update cautiously.*  
 
+**Update your project to latest**
+
+```bash
+go get -u github.com/happy-sdk/happy
+```
+
 ![GitHub Release](https://img.shields.io/github/v/release/happy-sdk/happy) [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy)](https://pkg.go.dev/github.com/happy-sdk/happy) [![Coverage Status](https://coveralls.io/repos/github/happy-sdk/happy/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/happy?branch=main) ![GitHub License](https://img.shields.io/github/license/happy-sdk/happy)
 
 ## Creating application
@@ -106,9 +112,40 @@ func main() {
 //  --version            print application version - default: "false"
 ```
 
-For more examples, take a look at the [examples](#examples) section and the examples in the ./examples/ directory."
+For more examples, take a look at the [examples](#examples) section and the examples in the `./examples/` directory.
 
-### Application api
+## Examples
+
+Below are a few small examples to help you get started quickly.  
+You can run them directly from the repository root using `go run`.
+
+- **Minimal application**
+
+  ```bash
+  go run ./examples/apps/minimal
+  ```
+
+- **Basic application with built-in CLI features**
+
+  ```bash
+  go run ./examples/apps/basic
+  ```
+
+- **Application using an addon**
+
+  ```bash
+  go run ./examples/apps/hello
+  ```
+
+- **Showcase application (multiple features together)**
+
+  ```bash
+  go run ./examples/apps/showcase
+  ```
+
+See the full source in the `./examples/` directory for more patterns.
+
+### Application API
 
 More details of api read happy Godoc  
  [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/app)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/app)
@@ -212,9 +249,9 @@ import (
 )
 
 func main() {
-  app := happy.New(happy.Settings{})
+  app := happy.New(&happy.Settings{})
   app.WithAddons(helloworld.Addon())
-  app.Main()
+  app.Run()
 }
 
 ```
@@ -234,32 +271,31 @@ type HelloWorldAPI struct {
 }
 
 func Addon() *happy.Addon {
-  addon := addon.New(addon.Config{
-    Name: "Releaser",
-  }, 
-    addon.Option("my-opt", "default-val", "custom option", false, nil),
-  )
+  ad := addon.New("Hello World").
+    WithOptions(
+      addon.Option("my-opt", "default-val"),
+    )
 
 
   // Optional: Register commands provided by the addon
-  addon.ProvideCommands(/* provide command(s) */)
+  ad.ProvideCommands(/* provide command(s) */)
 
   // Optional: Register services provided by the addon
-  addon.ProvideServices(/* provide service(s) */)
+  ad.ProvideServices(/* provide service(s) */)
 
   // Optional: Make a custom API accessible across the application 
-  addon.ProvideAPI(&HelloWorldAPI{}) 
+  ad.ProvideAPI(&HelloWorldAPI{}) 
 
   // Register all events that the addon may emit ()
-  addon.Emits(/* events what addon emits */)
+  ad.WithEvents(/* events what addon emits */)
 
   // Optional callback to be called when the addon is registered
-  addon.OnRegister(func(sess session.Register) error {
+  ad.OnRegister(func(sess session.Register) error {
     sess.Log().Notice("hello-world addon registered")
     return nil
   })
 
-  return addon
+  return ad
 }
 ```
 
