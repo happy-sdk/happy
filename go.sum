@@ -20,8 +20,8 @@ github.com/happy-sdk/happy/pkg/options v0.8.0 h1:dYSb+66rAc0PGncZoiKMHSpcYqpjf7F
 github.com/happy-sdk/happy/pkg/options v0.8.0/go.mod h1:yrllzXnOxOm6T6bjEGXEpkholwZnV0F4/N4Aw4EksR0=
 github.com/happy-sdk/happy/pkg/scheduling/cron v0.7.0 h1:/Y0E9LnHQVCTnuFhc5m1zUB8UfdVcdRKQqYDdGj9nPQ=
 github.com/happy-sdk/happy/pkg/scheduling/cron v0.7.0/go.mod h1:1SQXaBz1SXmXLqlW0BI4RGfvAXC4V4UD2mAfiJTD1dU=
-github.com/happy-sdk/happy/pkg/settings v1.0.0 h1:5cySSVSfthbPGWwvrGxusvmUtnkcwkssOnsOn/JDW+Q=
-github.com/happy-sdk/happy/pkg/settings v1.0.0/go.mod h1:TO2aDLShKIil9bgLoNHAkNzDNyf8Pj7BD9FL7RXwMbo=
+github.com/happy-sdk/happy/pkg/settings v1.1.0 h1:9LoizchGeXRPbao0NOUzTE5xCG7axQGlB0hIoAuGDcM=
+github.com/happy-sdk/happy/pkg/settings v1.1.0/go.mod h1:TO2aDLShKIil9bgLoNHAkNzDNyf8Pj7BD9FL7RXwMbo=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.7.0 h1:0QfT/GcrXMHu6yLKYTH57eFyufb0pOpxatQSFV8VhPQ=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.7.0/go.mod h1:u380brsbamc15bBxYzEHAkDDBI6r/Sug5NHqaXTXrEw=
 github.com/happy-sdk/happy/pkg/strings/slug v0.3.0 h1:pL8UpFJZ0hbqs/7BfqjdyAo4b2LRjA6HGSsvh3jLYpo=

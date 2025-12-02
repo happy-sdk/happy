@@ -13,7 +13,7 @@ require (
 	github.com/happy-sdk/happy/pkg/networking v0.3.0
 	github.com/happy-sdk/happy/pkg/options v0.8.0
 	github.com/happy-sdk/happy/pkg/scheduling/cron v0.7.0
-	github.com/happy-sdk/happy/pkg/settings v1.0.0
+	github.com/happy-sdk/happy/pkg/settings v1.1.0
 	github.com/happy-sdk/happy/pkg/strings/slug v0.3.0
 	github.com/happy-sdk/happy/pkg/strings/textfmt v0.7.0
 	github.com/happy-sdk/happy/pkg/tui v0.3.0
