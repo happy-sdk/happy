@@ -48,6 +48,7 @@ type SettingSpec struct {
 	Unmarchaler Unmarshaller
 	Marchaler   Marshaller
 	Settings    *Blueprint
+	Secret      bool // true if field has secret:"true" tag
 	validators  []validator
 	i18n        map[language.Tag]string
 	isI18n      bool   // true if field has i18n:"true" tag
@@ -99,6 +100,7 @@ func (s SettingSpec) setting() (Setting, error) {
 		desc:       s.i18n[language.English],
 		isI18n:     s.isI18n,
 		i18nKey:    s.i18nKey,
+		isSecret:   s.Secret,
 	}
 
 	var err error
@@ -124,6 +126,7 @@ type Setting struct {
 	desc       string
 	isI18n     bool   // true if this setting uses i18n
 	i18nKey    string // the i18n key to use for translation
+	isSecret   bool   // true if this setting is marked as secret via struct tag
 }
 
 func (s Setting) String() string {
@@ -194,6 +197,12 @@ func (s Setting) Mutability() Mutability {
 
 func (s Setting) Description() string {
 	return s.desc
+}
+
+// IsSecret reports whether this setting has been marked as secret via struct tag.
+// Secrets are intended to be redacted by higher-level tooling (e.g. CLI config commands).
+func (s Setting) IsSecret() bool {
+	return s.isSecret
 }
 
 // IsI18n returns true if this setting uses i18n translation.

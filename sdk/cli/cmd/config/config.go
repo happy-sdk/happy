@@ -153,7 +153,7 @@ func configLs(hiddenKeys, disabledKeys, secrets []string) *command.Command {
 			if s.Default().String() != s.Value().String() {
 				defval = s.Default().Display() // Use Display() for default too
 			}
-			if slices.Contains(secrets, s.Key()) {
+			if slices.Contains(secrets, s.Key()) || s.IsSecret() {
 				defval = ""
 				value = i18n.T(i18np + ".get.redacted")
 			}
@@ -413,7 +413,15 @@ func configGet(disabledKeys, secrets []string, secretsPassword string) *command.
 		if slices.Contains(disabledKeys, key) || !sess.Has(key) {
 			return errors.New(i18n.T(i18np+".get.error_not_exists", key))
 		}
-		if !slices.Contains(secrets, key) {
+		// Determine if the key should be treated as secret either via explicit Secrets list
+		// or via the settings schema using the secret:\"true\" struct tag.
+		settingIsSecret := false
+		if sess.Settings().Has(key) {
+			setting := sess.Settings().Get(key)
+			settingIsSecret = setting.IsSecret()
+		}
+
+		if !slices.Contains(secrets, key) && !settingIsSecret {
 			// Use Display() to get translated value if i18n is enabled
 			if sess.Settings().Has(key) {
 				setting := sess.Settings().Get(key)

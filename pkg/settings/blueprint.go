@@ -161,6 +161,11 @@ func settingSpecFromField(field reflect.StructField, value reflect.Value) (Setti
 			spec.isI18n = true
 		}
 
+		// Check for secret tag
+		if field.Tag.Get("secret") == "true" {
+			spec.Secret = true
+		}
+
 		spec.Default = field.Tag.Get("default")
 		if spec.Kind == KindBool && (spec.Default != "" && spec.Default != "false") {
 			return spec, fmt.Errorf("boolean field %q can have default value only false", spec.Key)
