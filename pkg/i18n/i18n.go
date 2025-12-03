@@ -180,6 +180,13 @@ func T(key string, args ...any) string {
 	return t(key, args...)
 }
 
+// TL is a convenience function for translation with an explicit language tag.
+// It uses cached printers per language and falls back to the fallback language
+// when necessary.
+func TL(lang language.Tag, key string, args ...any) string {
+	return tForLanguage(lang, key, args...)
+}
+
 func TD(key string, fallback string, args ...any) string {
 	result := t(key, args...)
 	// If translation not found (result equals key), use fallback

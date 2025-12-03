@@ -473,6 +473,7 @@ func reload() {
 	mngr.reload()
 }
 
+// t translates using the current language (and falls back to the fallback language).
 func t(key string, args ...any) string {
 	printer := getPrinter()
 	result := printer.Sprintf(key, args...)
@@ -480,6 +481,33 @@ func t(key string, args ...any) string {
 		if !mngr.usingFallbackLanguage() {
 			printer = getFallbackPrinter()
 			result = printer.Sprintf(key, args...)
+		}
+	}
+	return result
+}
+
+// tForLanguage translates using the explicitly provided language tag.
+// It is optimized by reusing cached printers and only falling back to the
+// fallback language when necessary.
+func tForLanguage(lang language.Tag, key string, args ...any) string {
+	printer, err := getPrinterFor(lang)
+	if err != nil || printer == nil {
+		// Fallback to standard behavior if language is not supported
+		return t(key, args...)
+	}
+
+	result := printer.Sprintf(key, args...)
+	if result == key {
+		// Try fallback language if different from requested
+		fallback := getFallbackLanguage()
+		if lang != fallback {
+			fbPrinter := getFallbackPrinter()
+			if fbPrinter != nil {
+				res2 := fbPrinter.Sprintf(key, args...)
+				if res2 != key {
+					return res2
+				}
+			}
 		}
 	}
 	return result
@@ -614,13 +642,13 @@ func (m *manager) extractRootKey(fullKey string) string {
 	if len(parts) == 0 {
 		return ""
 	}
-	
+
 	// For short keys (less than 5 parts), return the first segment as root key
 	// e.g., "app.description" -> "app"
 	if len(parts) < 5 {
 		return parts[0]
 	}
-	
+
 	// Common pattern: com.github.happy-sdk.happy.{pkg|sdk}.{name}
 	// So root is typically first 5-6 parts
 	if len(parts) >= 6 {
