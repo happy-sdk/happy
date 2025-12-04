@@ -109,7 +109,7 @@ func (p *attrProcessor) process(ctx context.Context, src slog.Record) (r *Record
 	// Create a fresh Record per call to avoid sharing pooled instances
 	// across goroutines while adapters are still using them.
 	r = &Record{
-		Ctx: ctx,
+		Ctx:    ctx,
 		Record: slog.NewRecord(src.Time, src.Level, src.Message, src.PC),
 	}
 
