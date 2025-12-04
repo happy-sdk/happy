@@ -11,11 +11,11 @@ import (
 	"github.com/happy-sdk/happy/pkg/logging/internal"
 )
 
-// attrProcessor caches attribute processing logic
+// attrProcessor caches attribute processing logic.
+// It is safe for concurrent use by multiple goroutines.
 type attrProcessor struct {
-	config     Config
-	attrPool   sync.Pool // Pool for []slog.Attr
-	recordPool sync.Pool // Pool for *Record
+	config   Config
+	attrPool sync.Pool // Pool for []slog.Attr
 }
 
 func newAttrProcessor(config Config) *attrProcessor {
@@ -23,9 +23,6 @@ func newAttrProcessor(config Config) *attrProcessor {
 		config: config,
 		attrPool: sync.Pool{
 			New: func() any { return &[]slog.Attr{} }, // Return pointer to slice
-		},
-		recordPool: sync.Pool{
-			New: func() any { return &Record{} },
 		},
 	}
 }
@@ -109,15 +106,11 @@ func (p *attrProcessor) processAttrs(in []slog.Attr) []slog.Attr {
 }
 
 func (p *attrProcessor) process(ctx context.Context, src slog.Record) (r *Record) {
-	r = p.recordPool.Get().(*Record)
-	*r = Record{ // Reset fields to avoid stale data
+	// Create a fresh Record per call to avoid sharing pooled instances
+	// across goroutines while adapters are still using them.
+	r = &Record{
 		Ctx: ctx,
-		Record: slog.Record{
-			Time:    src.Time,
-			Level:   src.Level,
-			Message: src.Message,
-			PC:      src.PC,
-		},
+		Record: slog.NewRecord(src.Time, src.Level, src.Message, src.PC),
 	}
 
 	if src.NumAttrs() == 0 {
@@ -129,7 +122,6 @@ func (p *attrProcessor) process(ctx context.Context, src slog.Record) (r *Record
 	defer func() {
 		*attrsPtr = (*attrsPtr)[:0] // Reset slice via pointer
 		p.attrPool.Put(attrsPtr)    // Put pointer back to pool
-		p.recordPool.Put(r)         // Return record to pool
 	}()
 
 	src.Attrs(func(a slog.Attr) bool {
