@@ -19,6 +19,7 @@ import (
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/vars"
+	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/api"
 	"github.com/happy-sdk/happy/sdk/events"
 	"github.com/happy-sdk/happy/sdk/internal"
@@ -529,4 +530,75 @@ var readyEvent = events.New("session", "ready")
 
 func ReadyEvent() events.Event {
 	return readyEvent.Create(time.Now().UnixNano(), nil)
+}
+
+type testSettings struct {
+	settings.Settings
+}
+
+func (s *testSettings) Blueprint() (*settings.Blueprint, error) {
+	return settings.New(s)
+}
+
+func CreateTestSession(s settings.Settings, opts ...*options.OptionSpec) (sess *Context, buf *logging.Buffer, cleanup func(), err error) {
+	buf = logging.NewBuffer()
+	logConfig := logging.DefaultConfig()
+	logConfig.SetSlogOutput = false
+	logConfig.Level = logging.LevelInfo
+	logger := logging.New(logConfig, logging.NewTextAdapter(buf))
+
+	if s == nil {
+		s = &testSettings{}
+	}
+	bp, err := s.Blueprint()
+	if err != nil {
+		return nil, nil, func() {}, err
+	}
+	schema, err := bp.Schema("test.module", version.Version("v1.0.0"))
+	if err != nil {
+		return nil, nil, func() {}, err
+	}
+	profile, err := schema.Profile("test", nil)
+	if err != nil {
+		return nil, nil, func() {}, err
+	}
+	optsSpec, err := options.New("test", opts...)
+	if err != nil {
+		return nil, nil, func() {}, err
+	}
+	sealedOpts, err := optsSpec.Seal()
+	if err != nil {
+		return nil, nil, func() {}, err
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	evch := make(chan events.Event, 100)
+	readyEvent := ReadyEvent()
+
+	// Create session config
+	config := Config{
+		Logger:     logger,
+		Profile:    profile,
+		Opts:       sealedOpts,
+		ReadyEvent: readyEvent,
+		EventCh:    evch,
+		APIs:       make(map[string]api.Provider),
+		Context:    ctx,
+		CancelFunc: cancel,
+	}
+
+	// Initialize session
+	sess, err = config.Init()
+	if err != nil {
+		return nil, nil, func() {}, err
+	}
+
+	cleanup = func() {
+		cancel()
+		if sess != nil {
+			sess.Destroy(nil)
+		}
+		_ = logger.Dispose()
+	}
+
+	return sess, buf, cleanup, nil
 }
