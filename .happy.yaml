@@ -16,3 +16,6 @@ git:
   branch: main
   remote:
     url: git@github.com:happy-sdk/happy.git
+
+ignore:
+  - pkg/logging/internal/bench
