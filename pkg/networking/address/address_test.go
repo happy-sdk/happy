@@ -32,6 +32,26 @@ func TestFromModuleEmptyModulePath(t *testing.T) {
 	}
 }
 
+// TestFromModuleSingleSegmentHasReverseDNS is a regression test: FromModule
+// early-returned for a single-segment module path (e.g. "hello", as produced
+// by a bare `go mod init hello`) without ever setting Module()/ReverseDNS(),
+// even though reverseDns("hello") correctly computes "hello". Since
+// ReverseDNS() is the common way callers derive an app identifier (see
+// sdk/app/internal/initializer), this broke app identifier derivation for
+// the single most common `go mod init` invocation.
+func TestFromModuleSingleSegmentHasReverseDNS(t *testing.T) {
+	a, err := FromModule("example.com", "hello")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if a.Module() != "hello" {
+		t.Errorf("expected module %q, got %q", "hello", a.Module())
+	}
+	if a.ReverseDNS() != "hello" {
+		t.Errorf("expected non-empty ReverseDNS() %q, got %q", "hello", a.ReverseDNS())
+	}
+}
+
 func TestFromModuleAndResolveService(t *testing.T) {
 	a, err := FromModule("example.com", "github.com/happy-sdk/happy")
 	if err != nil {

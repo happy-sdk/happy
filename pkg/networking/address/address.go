@@ -154,14 +154,29 @@ func (a *Address) ResolveService(svc string) (*Address, error) {
 
 // FromModule returns a new Address created from the given go module path.
 // If the module is empty, the resulting address has an empty path component
-// (host only). If the module is not an empty string, it must be a valid
-// module path that conforms to Go's package name syntax and will be used to
-// create a new address.
+// (host only) and an empty Module()/ReverseDNS(). If the module is not an
+// empty string, it must be a valid module path that conforms to Go's
+// package name syntax; both single-segment paths (e.g. "hello", as produced
+// by a bare `go mod init hello`) and fully-qualified paths (e.g.
+// "github.com/user/hello") are supported, and both populate Module() and
+// ReverseDNS() on the returned Address.
 func FromModule(host, modulepath string) (*Address, error) {
 	// fully qualified ?
 	sl := strings.Split(modulepath, "/")
 	if len(sl) == 1 {
-		return Parse("happy://" + host + "/" + ensure(modulepath))
+		addr, err := Parse("happy://" + host + "/" + ensure(modulepath))
+		if err != nil {
+			return nil, err
+		}
+		// A single-segment module path (e.g. "hello", the result of a bare
+		// `go mod init hello`) has no domain to reverse, but it is still a
+		// valid module identity: Module() and ReverseDNS() must not come
+		// back empty for it, or callers deriving an app identifier from
+		// ReverseDNS() (the common case) fail on the single most common
+		// `go mod init` invocation.
+		addr.module = modulepath
+		addr.reversedns = reverseDns(modulepath)
+		return addr, nil
 	}
 	reversedns := reverseDns(modulepath)
 	addr, err := Parse("happy://" + host + "/" + strings.ReplaceAll(reversedns, ".", "-"))
