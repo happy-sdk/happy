@@ -376,6 +376,14 @@ includessubset:
 
 	sargs := slicediff(args, used)
 	for _, arg := range sargs {
+		// A leftover token that looks like a flag was never consumed by
+		// any known flag above, so it's an unknown flag, not a positional
+		// argument; see looksLikeFlag's doc comment in flagset.go for why
+		// (and the corresponding fix in FlagSet.extractArgs, which this
+		// mirrors).
+		if looksLikeFlag(arg) {
+			return fmt.Errorf("%w: %s does not accept flag %s", ErrInvalidArguments, s.name, arg)
+		}
 		a, err := vars.New(s.name, arg, true)
 		a1 := vars.AsVariable[VAR, VAL](a)
 		if err != nil {

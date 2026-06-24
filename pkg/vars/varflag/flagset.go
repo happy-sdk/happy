@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -281,7 +282,7 @@ includessubset:
 	sargs := slicediff(args, used)
 
 	if s.argn == 0 && len(sargs) > 0 {
-		if strings.HasPrefix(sargs[0], "-") {
+		if looksLikeFlag(sargs[0]) {
 			return fmt.Errorf("%w: %s does not accept flag %s", ErrInvalidArguments, s.name, sargs[0])
 		}
 
@@ -289,6 +290,15 @@ includessubset:
 	}
 
 	for _, arg := range sargs {
+		// A leftover token that looks like a flag (and isn't a negative
+		// number, which is a legitimate positional value) was never
+		// consumed by any known flag above, so it's an unknown flag --
+		// not a positional argument. Without this check it was silently
+		// accepted as one, defeating typo protection for any command that
+		// accepts at least one positional argument.
+		if looksLikeFlag(arg) {
+			return fmt.Errorf("%w: %s does not accept flag %s", ErrInvalidArguments, s.name, arg)
+		}
 		a, err := vars.NewValue(arg)
 		if err != nil {
 			return err
@@ -300,6 +310,20 @@ includessubset:
 		}
 	}
 	return nil
+}
+
+// looksLikeFlag reports whether s is shaped like a CLI flag (e.g. "-v" or
+// "--verbose") rather than a positional argument. A leading "-" followed by
+// a valid number (e.g. "-5", "-3.14") is treated as a negative numeric
+// value, not a flag.
+func looksLikeFlag(s string) bool {
+	if !strings.HasPrefix(s, "-") || s == "-" || s == "--" {
+		return false
+	}
+	if _, err := strconv.ParseFloat(s, 64); err == nil {
+		return false
+	}
+	return true
 }
 
 func (s *FlagSet) checkAliasShadowing(flag Flag) error {

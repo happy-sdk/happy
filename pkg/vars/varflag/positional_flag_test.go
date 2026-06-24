@@ -163,3 +163,68 @@ func TestPositionalCommandFlag(t *testing.T) {
 	}
 }
 
+// TestUnknownFlagRejectedAsPositionalArg is a regression test:
+// FlagSet.extractArgs accepted any leftover token as a positional argument
+// once the command accepted at least one (argn > 0), with no check for
+// whether it looked like a flag. A typo'd/unknown flag (e.g. "--bogus") was
+// silently treated as a positional value instead of erroring, defeating
+// typo protection for any command that takes args.
+func TestUnknownFlagRejectedAsPositionalArg(t *testing.T) {
+	binName := filepath.Base(os.Args[0])
+
+	tests := []struct {
+		name        string
+		args        []string
+		expectError bool
+		wantArg     string
+	}{
+		{
+			name:        "unknown long flag rejected",
+			args:        []string{binName, "cmd", "--bogus=value"},
+			expectError: true,
+		},
+		{
+			name:        "unknown short flag rejected",
+			args:        []string{binName, "cmd", "-x"},
+			expectError: true,
+		},
+		{
+			name:        "genuine positional arg accepted",
+			args:        []string{binName, "cmd", "hello"},
+			expectError: false,
+			wantArg:     "hello",
+		},
+		{
+			name:        "negative number accepted as positional arg, not a flag",
+			args:        []string{binName, "cmd", "-5"},
+			expectError: false,
+			wantArg:     "-5",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root, err := NewFlagSet("/", 0)
+			testutils.NoError(t, err)
+
+			cmd, err := NewFlagSet("cmd", 1)
+			testutils.NoError(t, err)
+
+			testutils.NoError(t, root.AddSet(cmd))
+
+			err = root.Parse(tt.args)
+			if tt.expectError {
+				if err == nil {
+					t.Error("expected error but got nil")
+				}
+				return
+			}
+			testutils.NoError(t, err)
+
+			if len(cmd.Args()) != 1 || cmd.Args()[0].String() != tt.wantArg {
+				t.Errorf("expected args %v, got %v", []string{tt.wantArg}, cmd.Args())
+			}
+		})
+	}
+}
+
