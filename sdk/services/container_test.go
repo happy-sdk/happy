@@ -37,6 +37,24 @@ func newTestContainer(t *testing.T) (*Container, *session.Context, func()) {
 	return c, sess, cleanup
 }
 
+// TestContainerStart is a regression test for dead code in Start: an
+// `if err != nil` check against the named return `err` could never fire,
+// since every preceding error path returned its own shadowed local `err`
+// directly (returning before that check is ever reached) -- this exercises
+// the happy path through to its end to confirm removing that dead block
+// didn't change behavior.
+func TestContainerStart(t *testing.T) {
+	c, sess, cleanup := newTestContainer(t)
+	defer cleanup()
+
+	if err := c.Start(sess.Context(), sess); err != nil {
+		t.Fatalf("Start returned error: %v", err)
+	}
+	if !c.Info().Running() {
+		t.Error("expected service to be running after Start")
+	}
+}
+
 // TestForceShutdownAlreadyLockedDoesNotPanic is a regression test for a bug
 // where ForceShutdown unconditionally called c.mu.Unlock() even when the
 // container's mutex was already held by another goroutine (the !IsLocked()

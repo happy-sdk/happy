@@ -215,14 +215,6 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 
 	payload := new(vars.Map)
 
-	if err != nil {
-		service.MarkStopped(c.info)
-		service.AddError(c.info, err)
-		if errset := payload.Store("err", err); errset != nil {
-			return errors.Join(errset, err)
-		}
-	}
-
 	kv := map[string]any{
 		"addr":       c.info.Addr().String(),
 		"running":    c.info.Running(),

@@ -5,6 +5,7 @@
 package services
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/happy-sdk/happy/sdk/action"
@@ -59,6 +60,10 @@ func (s *Service) Slug() string {
 func (s *Service) OnRegister(action action.Action) *Service {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.registerAction != nil {
+		s.errs = append(s.errs, fmt.Errorf("%w: attempt to override OnRegister action", Error))
+		return s
+	}
 	s.registerAction = action
 	return s
 }
@@ -74,6 +79,10 @@ func (s *Service) OnRegister(action action.Action) *Service {
 func (s *Service) OnStart(action action.Action) *Service {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.startAction != nil {
+		s.errs = append(s.errs, fmt.Errorf("%w: attempt to override OnStart action", Error))
+		return s
+	}
 	s.startAction = action
 	return s
 }
@@ -82,6 +91,10 @@ func (s *Service) OnStart(action action.Action) *Service {
 func (s *Service) OnStop(action action.WithPrevErr) *Service {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.stopAction != nil {
+		s.errs = append(s.errs, fmt.Errorf("%w: attempt to override OnStop action", Error))
+		return s
+	}
 	s.stopAction = action
 	return s
 }
@@ -90,6 +103,10 @@ func (s *Service) OnStop(action action.WithPrevErr) *Service {
 func (s *Service) Tick(action action.Tick) *Service {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.tickAction != nil {
+		s.errs = append(s.errs, fmt.Errorf("%w: attempt to override Tick action", Error))
+		return s
+	}
 	s.tickAction = action
 	return s
 }
@@ -98,6 +115,10 @@ func (s *Service) Tick(action action.Tick) *Service {
 func (s *Service) Tock(action action.Tock) *Service {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.tockAction != nil {
+		s.errs = append(s.errs, fmt.Errorf("%w: attempt to override Tock action", Error))
+		return s
+	}
 	s.tockAction = action
 	return s
 }
@@ -130,6 +151,10 @@ func (s *Service) OnAnyEvent(cb events.ActionWithEvent[*session.Context]) *Servi
 func (s *Service) Cron(setupFunc func(schedule CronScheduler)) *Service {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.cronsetup != nil {
+		s.errs = append(s.errs, fmt.Errorf("%w: attempt to override Cron setup", Error))
+		return s
+	}
 	s.cronsetup = setupFunc
 	return s
 }
