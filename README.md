@@ -25,8 +25,6 @@ Happy SDK is designed to simplify your development process without introducing a
 package main
 
 import (
- "fmt"
-
  "github.com/happy-sdk/happy"
  "github.com/happy-sdk/happy/sdk/action"
  "github.com/happy-sdk/happy/sdk/session"
@@ -42,9 +40,9 @@ func main() {
 
  app.Run()
 }
-// go run . 
-// OUT: 
-// info  00:00:00.000 Hello, world!
+// go run .
+// OUT (timestamp and colors vary by terminal):
+// info        15:04:05.000 Hello, world!
 ```
 
 *Here's a example enabling builtin global flags including (help,version:*
@@ -54,9 +52,8 @@ func main() {
 package main
 
 import (
- "fmt"
-
  "github.com/happy-sdk/happy"
+ "github.com/happy-sdk/happy/pkg/logging"
  "github.com/happy-sdk/happy/sdk/action"
  "github.com/happy-sdk/happy/sdk/session"
 )
@@ -93,11 +90,11 @@ func main() {
  app.Run()
 }
 // go run . -h
-// OUT: 
-//  Happy Prototype - v0.0.1-devel+git.<hash>.<timestamp>
+// OUT (exact version string and colors vary):
+//  Happy Prototype - v0.0.1-devel+<pseudo-version-or-timestamp>
 //  Copyright © {year} Anonymous
 //  License: NOASSERTION
-//  
+//
 //  This application is built using the Happy-SDK to provide enhanced functionality and features.
 //
 //  yourcmd [flags]
@@ -108,7 +105,7 @@ func main() {
 //  --help         -h    display help or help for the command. [...command --help] - default: "false"
 //  --show-exec    -x    the -x flag prints all the cli commands as they are executed. - default: "false"
 //  --system-debug       enable system debug log level (very verbose) - default: "false"
-//  --verbose      -v    set log level info - default: "false"
+//  --verbose      -v    enable verbose log level - default: "false"
 //  --version            print application version - default: "false"
 ```
 
@@ -188,8 +185,8 @@ app.Tock(/* called after every tick*/)
 ```go
 import "github.com/happy-sdk/happy/sdk/cli/command"
 ...
-cmd := command.New(command.Config{
-  Name: "my-command"
+cmd := command.New("my-command", command.Config{
+  Description: "What my-command does",
 })
 
 cmd.Do(/* Main function for the command */)
@@ -199,7 +196,7 @@ cmd.AfterSuccess(/* Called when cmd.Do returns without errors */)
 cmd.AfterFailure(/* Called when cmd.Do returns with errors */)
 cmd.AfterAlways(/* Called always when cmd.Do returns */)
 
-cmd.Usage(/* add attitional usage lines to help menu */)
+cmd.AddUsage(/* add additional usage lines to help menu */)
 cmd.AddInfo(/* add long description paragraph for command */)
 cmd.WithSubCommands(/* Add a sub-command to the command */)
 cmd.WithFlags(/* add flag(s) to  command*/)
@@ -245,7 +242,7 @@ package main
 
 import (
   "github.com/happy-sdk/happy"
-  "helloworld"
+  "yourmodule/helloworld"
 )
 
 func main() {
@@ -261,32 +258,49 @@ func main() {
 package helloworld
 
 import (
+  "github.com/happy-sdk/happy/sdk/action"
   "github.com/happy-sdk/happy/sdk/addon"
+  "github.com/happy-sdk/happy/sdk/api"
+  "github.com/happy-sdk/happy/sdk/cli/command"
   "github.com/happy-sdk/happy/sdk/session"
-  "github.com/happy-sdk/happy/sdk/custom"
 )
 
+// HelloWorldAPI is made accessible elsewhere in the app via happy.API.
+// Embedding api.Provider (left as its zero value) is what satisfies the
+// api.Provider interface; see the sdk/api package doc for why.
 type HelloWorldAPI struct {
-  custom.API
+  api.Provider
 }
 
-func Addon() *happy.Addon {
+func Addon() *addon.Addon {
   ad := addon.New("Hello World").
     WithOptions(
       addon.Option("my-opt", "default-val"),
     )
 
+  helloCmd := command.New("hello", command.Config{
+    Description: "Prints Hello from addon",
+    MaxArgs:     1,
+  })
+  helloCmd.Do(func(sess *session.Context, args action.Args) error {
+    name, err := args.ArgDefault(0, "World")
+    if err != nil {
+      return err
+    }
+    sess.Log().Info("Hello, " + name.String() + "!")
+    return nil
+  })
 
   // Optional: Register commands provided by the addon
-  ad.ProvideCommands(/* provide command(s) */)
+  ad.ProvideCommands(helloCmd)
 
   // Optional: Register services provided by the addon
   ad.ProvideServices(/* provide service(s) */)
 
-  // Optional: Make a custom API accessible across the application 
-  ad.ProvideAPI(&HelloWorldAPI{}) 
+  // Optional: Make a custom API accessible across the application
+  ad.ProvideAPI(&HelloWorldAPI{})
 
-  // Register all events that the addon may emit ()
+  // Register all events that the addon may emit
   ad.WithEvents(/* events what addon emits */)
 
   // Optional callback to be called when the addon is registered

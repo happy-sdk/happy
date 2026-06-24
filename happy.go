@@ -26,6 +26,12 @@ import (
 
 var ErrNotImplemented = errors.New("not implemented")
 
+// New creates a new Happy application. c may be nil to use all default
+// settings. Any extend settings are merged into c, letting addons or the
+// caller layer additional settings groups onto the application without
+// modifying Settings itself. The returned *app.Main is configured via its
+// builder methods (Do, WithAddon, WithCommands, WithServices, etc.) and
+// started with Run.
 func New(c *Settings, extend ...settings.Settings) *app.Main {
 	if c == nil {
 		c = &Settings{}

@@ -19,19 +19,8 @@ func Addon() *addon.Addon {
 	// Provide a simple "hello" command.
 	helloCmd := command.New("hello",
 		command.Config{
-			// Usage            settings.String `key:"usage" mutation:"once"`
-			// HideDefaultUsage settings.Bool   `key:"hide_default_usage" default:"false"`
-			// Category         settings.String `key:"category"`
 			Description: "Prints Hello from addon",
-			// MinArgs    settings.Uint `key:"min_args" default:"0" mutation:"once"`
-			// MinArgsErr settings.String
-			MaxArgs: 1,
-			// MaxArgsErr settings.String
-			// SharedBeforeAction settings.Bool `key:"shared_before_action" default:"false"`
-			// Immediate settings.Bool `key:"immediate" default:"false"`
-			// SkipSharedBefore settings.Bool `key:"skip_shared_before" default:"false"`
-			// Disabled settings.Bool `key:"disabled" default:"false" mutation:"mutable"`
-			// FailDisabled settings.Bool `key:"fail_disabled" default:"false"`
+			MaxArgs:     1,
 		})
 
 	helloCmd.Do(func(sess *session.Context, args action.Args) error {

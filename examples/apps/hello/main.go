@@ -9,7 +9,11 @@ import (
 )
 
 func main() {
-	app := happy.New(nil)
+	app := happy.New(&happy.Settings{
+		CLI: happy.CliSettings{
+			WithGlobalFlags: true,
+		},
+	})
 	app.WithAddons(hello.Addon())
 	app.Run()
 }
