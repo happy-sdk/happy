@@ -37,7 +37,19 @@ var (
 	// ErrUnchangedBraceExpansion for any incorrectly formed brace expansion
 	// where input string is left unchanged.
 	ErrUnchangedBraceExpansion = errors.New("brace expansion left unchanged")
+	// ErrSequenceTooLarge is returned when a sequence expression would expand
+	// to more than maxSequenceExpansion elements. The matching brace
+	// expansion is left unchanged, consistent with other malformed input.
+	ErrSequenceTooLarge = errors.New("sequence expansion exceeds maximum allowed size")
 )
+
+// maxSequenceExpansion caps the number of elements a single numeric or
+// alphabetic sequence expression (e.g. {0..999999999}) may expand to.
+// Without this limit a wide range combined with a small/zero step can
+// allocate unbounded memory. The chosen value comfortably covers realistic
+// use (e.g. directory/file listing patterns) while keeping worst case
+// memory use bounded.
+const maxSequenceExpansion = 1_000_000
 
 const (
 	// token version.
@@ -187,9 +199,21 @@ func expand(str string, isTop bool) []string {
 	if isSequence {
 		n = strings.Split(m.Body, "..")
 		if len(n) == 3 {
-			n[2] = strings.TrimLeft(n[2], "0")
+			trimmed := strings.TrimLeft(n[2], "0")
+			if trimmed == "" {
+				// Step was "0", "00", etc. A zero step has no well defined
+				// meaning (it would never reach the end of the range), so
+				// treat it like any other malformed sequence and leave the
+				// brace expansion unchanged instead of panicking.
+				return []string{str}
+			}
+			n[2] = trimmed
 		}
-		n2 = expandSequence(n, isAlphaSequence)
+		var ok bool
+		n2, ok = expandSequence(n, isAlphaSequence)
+		if !ok {
+			return []string{str}
+		}
 	} else {
 		n = parseCommaParts(m.Body)
 		if len(n) == 1 {
@@ -201,7 +225,12 @@ func expand(str string, isTop bool) []string {
 	return expandToExpansionSlice(n2, post, m.Pre, isTop, isSequence)
 }
 
-func expandSequence(n []string, isAlphaSequence bool) []string {
+// expandSequence expands a numeric or alphabetic sequence expression into
+// its individual elements. ok is false when the expansion would exceed
+// maxSequenceExpansion elements, in which case the caller should leave the
+// originating brace expansion unchanged rather than allocate unbounded
+// memory.
+func expandSequence(n []string, isAlphaSequence bool) (result []string, ok bool) {
 	x := numeric(n[0]) //nolint: ifshort
 	y := numeric(n[1]) //nolint: ifshort
 	width := max(len(n[0]), len(n[1]))
@@ -220,6 +249,10 @@ func expandSequence(n []string, isAlphaSequence bool) []string {
 		test = gte
 	}
 
+	if count := sequenceLen(x, y, incr); count > maxSequenceExpansion {
+		return nil, false
+	}
+
 	pad := some(n, isPadded)
 
 	n2 := []string{}
@@ -236,7 +269,21 @@ func expandSequence(n []string, isAlphaSequence bool) []string {
 		}
 		n2 = append(n2, c)
 	}
-	return n2
+	return n2, true
+}
+
+// sequenceLen returns the number of elements a sequence from x to y
+// (inclusive) with the given non-zero increment would produce.
+func sequenceLen(x, y, incr int64) int64 {
+	diff := y - x
+	if incr < 0 {
+		diff = -diff
+		incr = -incr
+	}
+	if diff < 0 {
+		return 0
+	}
+	return diff/incr + 1
 }
 
 func expandNonAlphaSequence(i int64, width int, pad bool) string {

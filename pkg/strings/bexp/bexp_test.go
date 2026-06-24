@@ -489,6 +489,36 @@ func TestIsPadded(t *testing.T) {
 	}
 }
 
+// TestParseZeroStepSequence is a regression test: a sequence with a "0" (or
+// "00", etc.) step previously panicked with an index-out-of-range error
+// instead of being treated like any other malformed brace expansion.
+func TestParseZeroStepSequence(t *testing.T) {
+	tests := []string{
+		"{1..10..0}",
+		"{1..10..00}",
+		"{a..z..0}",
+	}
+	for _, pattern := range tests {
+		t.Run(pattern, func(t *testing.T) {
+			res := Parse(pattern)
+			if len(res) != 1 || res[0] != pattern {
+				t.Errorf("%q: expected unchanged result [%q], got %v", pattern, pattern, res)
+			}
+		})
+	}
+}
+
+// TestParseSequenceTooLarge is a regression test: a wide numeric range (e.g.
+// {0..999999999}) previously allocated unbounded memory with no upper bound.
+// It must now be rejected and left unchanged like other malformed input.
+func TestParseSequenceTooLarge(t *testing.T) {
+	const pattern = "{0..999999999}"
+	res := Parse(pattern)
+	if len(res) != 1 || res[0] != pattern {
+		t.Errorf("%q: expected unchanged result [%q], got len=%d", pattern, pattern, len(res))
+	}
+}
+
 func TestMkdirAllError(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip()
