@@ -182,11 +182,12 @@ func parseNested(key string, obj map[string]any) map[string]string {
 		subKey := fmt.Sprintf("%s.%s", key, k)
 		switch subValue := v.(type) {
 		case map[string]any:
+			// parseNested already returns keys fully-qualified with subKey
+			// as their prefix, so they must be copied as-is. Re-prepending
+			// subKey here would double it for every recursion past the
+			// first nested level (e.g. "root.key2.root.key2.key3...").
 			sdata := parseNested(subKey, subValue)
-			for k, v := range sdata {
-				nestedKey := fmt.Sprintf("%s.%s", subKey, k)
-				data[nestedKey] = v
-			}
+			maps.Copy(data, sdata)
 		case []string:
 			val, err := vars.NewValue(subValue)
 			if err != nil {

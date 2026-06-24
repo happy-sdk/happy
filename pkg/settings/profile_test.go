@@ -427,10 +427,14 @@ func TestProfile_Load_WithPreferences_NotFound(t *testing.T) {
 	prefs := NewPreferences(version.Version("v1.0.0"))
 	prefs.Set("nonexistent.key", "value")
 
+	// An unmatched preference key with no migration path must surface as an
+	// error instead of being silently dropped/zeroed - silently ignoring it
+	// would mask data loss for renamed/removed settings.
 	_, err := schema.Profile("test", prefs)
-	// Should not error, but should clear the nonexistent key
-	testutils.NoError(t, err)
-	testutils.Equal(t, "", prefs.data["nonexistent.key"])
+	testutils.Error(t, err)
+	testutils.ErrorIs(t, err, ErrProfile)
+	// The original value provided by the caller must be left untouched.
+	testutils.Equal(t, "value", prefs.data["nonexistent.key"])
 }
 
 func TestProfile_Load_WithPreferences_ValidationError(t *testing.T) {

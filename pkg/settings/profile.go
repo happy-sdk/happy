@@ -248,8 +248,7 @@ func (p *Profile) load(prefs *Preferences) (err error) {
 			}
 			p.settings[lkey] = s
 		} else {
-			// return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, lkey)
-			prefs.data[lkey] = ""
+			return fmt.Errorf("%w: preferences provided key(%s) not found", ErrProfile, lkey)
 		}
 	}
 	p.loaded = true
