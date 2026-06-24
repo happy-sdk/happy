@@ -333,11 +333,15 @@ func (c *Container) Tock(sess *session.Context, delta time.Duration, tps int) er
 
 func (c *Container) ForceShutdown(sess *session.Context, err error) error {
 	if !c.IsLocked() {
+		// We acquired the lock ourselves as a barrier to ensure no other
+		// operation is mid-flight; release it immediately since Stop below
+		// manages its own locking. Only this branch may call Unlock, since
+		// only this branch actually called lock.
 		c.lock("force shutdown")
+		c.mu.Unlock()
 	} else {
 		sess.Log().Warn(fmt.Sprintf("service previously locked when %s", c.lockInfo.Load().(string)))
 	}
-	c.mu.Unlock()
 	return c.Stop(sess, err)
 }
 
