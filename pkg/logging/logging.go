@@ -34,13 +34,13 @@
 //	config.Level = LevelInfo
 //	logger := New(config,
 //	    NewBufferedTextAdapter(os.Stdout, nil), // Block policy for reliable logs
-//	    NewBufferedJSONAdapter(os.Stderr, &AdapterConfig{Policy: AdapterPolicyDrop}), // Drop for metrics
+//	    NewBufferedJSONAdapter(os.Stderr, nil), // dropped *expvar.Int may be nil
 //	    adapters.NewConsoleAdapter(os.Stdout, adapters.ConsoleAdapterDefaultTheme()), // Synchronous
 //	)
 //	defer logger.Dispose()
 //	logger.Info("message", "key", "value")
-//	// Swap writer for BufferedTextAdapter (e.g., for log rotation)
-//	logger.ReplaceWriter(0, os.Stdout, newLogFile)
+//	// Swap stdout for every adapter currently writing to it (e.g., for log rotation)
+//	ReplaceAdaptersStdout(logger, newLogFile)
 //	logger.Flush()
 //
 // For memory-constrained environments, set BufferSize=2048 (~1.5 MiB) for minimal
@@ -71,8 +71,6 @@ const (
 	DefaultAdapterRetryTimeout = time.Second
 	// DefaultAdapterMaxRetries is the max retry attempts in AdapterPolicyBlock.
 	DefaultAdapterMaxRetries = 10
-	// DefaultAttrProcessorPoolSize is the default pool size for attribute processors.
-	DefaultAttrProcessorPoolSize uint8 = 4
 	// secretAttrValue is the placeholder for redacted secret attribute values.
 	secretAttrValue = "<redacted>"
 )
@@ -133,28 +131,26 @@ type ReplaceAttrFunc func(groups []string, a slog.Attr) slog.Attr
 // Config defines settings for a logging handler,
 // including level, attributes, and adapter behavior.
 type Config struct {
-	sealed                bool
-	lvl                   *slog.LevelVar  // Variable log level.
-	replaceAttr           ReplaceAttrFunc // Function to transform attributes.
-	AddSource             bool            // Include source information in logs.
-	AttrProcessorPoolSize uint8           // Size of attribute processor pool.
-	Adapter               AdapterConfig   // Buffered adapter configuration.
-	Level                 Level           // Minimum log level.
-	NoTimestamp           bool            // Omit timestamps in logs.
-	Secrets               []string        // Keys to redact as secrets.
-	SetSlogOutput         bool            // Enable slog output integration.
-	TimeFormat            string          // Timestamp format (empty if NoTimestamp).
-	TimeLocation          *time.Location  // Timezone for timestamps.
-	Omit                  []string        // Attribute keys to omit.
+	sealed        bool
+	lvl           *slog.LevelVar  // Variable log level.
+	replaceAttr   ReplaceAttrFunc // Function to transform attributes.
+	AddSource     bool            // Include source information in logs.
+	Adapter       AdapterConfig   // Buffered adapter configuration.
+	Level         Level           // Minimum log level.
+	NoTimestamp   bool            // Omit timestamps in logs.
+	Secrets       []string        // Keys to redact as secrets.
+	SetSlogOutput bool            // Enable slog output integration.
+	TimeFormat    string          // Timestamp format (empty if NoTimestamp).
+	TimeLocation  *time.Location  // Timezone for timestamps.
+	Omit          []string        // Attribute keys to omit.
 }
 
 // DefaultConfig returns a Config with default settings for logging.
 func DefaultConfig() Config {
 	c := Config{
-		lvl:                   new(slog.LevelVar),
-		AddSource:             false,
-		AttrProcessorPoolSize: DefaultAttrProcessorPoolSize,
-		Adapter:               DefaultAdapterConfig(),
+		lvl:       new(slog.LevelVar),
+		AddSource: false,
+		Adapter:   DefaultAdapterConfig(),
 		Level:                 LevelInfo,
 		NoTimestamp:           false,
 		SetSlogOutput:         true,

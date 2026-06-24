@@ -267,6 +267,7 @@ func (c *ConsoleAdapter) buildLine(buf *logging.LineBuffer, record slog.Record) 
 
 	// Merge adapter attributes with record attributes
 	attrs := NewAttrMap()
+	defer attrs.Free()
 	if len(c.attrs) > 0 {
 		for _, a := range c.attrs {
 			if c.group != "" {
@@ -350,6 +351,7 @@ func (c *ConsoleAdapter) buildHttpLine(buf *logging.LineBuffer, method string, s
 
 	// Merge adapter attributes with record attributes
 	attrs := NewAttrMap()
+	defer attrs.Free()
 	if len(c.attrs) > 0 {
 		for _, a := range c.attrs {
 			if c.group != "" {

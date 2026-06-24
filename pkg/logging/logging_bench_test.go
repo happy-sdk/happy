@@ -296,7 +296,6 @@ func BenchmarkLoggers(b *testing.B) {
 		config.Adapter.FlushInterval = tt.AdapterFlushInterval
 		config.Adapter.MaxRetries = tt.AdapterMaxRetries
 		config.Adapter.RetryTimeout = tt.AdapterRetryTimeout
-		config.AttrProcessorPoolSize = 4
 		config.SetSlogOutput = false
 		logger := New(
 			config,
