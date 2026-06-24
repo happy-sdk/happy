@@ -245,13 +245,17 @@ func TestCustomKinds(t *testing.T) {
 			Int16:      7616,
 			Int32:      -123456,
 			Int64:      -123456,
-			Uint:       18446744073709428160,
-			Uint8:      192,
-			Uint16:     7616,
-			Uint32:     4294843840,
-			Uint64:     18446744073709428160,
-			Uintptr:    0,
-			String:     "-123.456µs",
+			// Negative durations can't be represented as unsigned types;
+			// Uint/Uint8/Uint16/Uint32/Uint64 now correctly error (returning
+			// the zero value) instead of silently wrapping around to a huge
+			// garbage value as they previously did.
+			Uint:    0,
+			Uint8:   0,
+			Uint16:  0,
+			Uint32:  0,
+			Uint64:  0,
+			Uintptr: 0,
+			String:  "-123.456µs",
 		}},
 		{time.Duration(123456), time.Duration(123456), vars.KindDuration, "123.456µs", 10, kindTest{
 			Bool:       false,

@@ -361,6 +361,28 @@ func convert(raw any, from, to Kind) (Value, error) {
 				return v, nil
 			}
 		}
+	} else if from == KindBool {
+		// Custom kinds wrapping bool (e.g. a named bool type) are converted
+		// to their canonical int64 form (1/0) and routed through
+		// convertInt64, mirroring the int64/uint64/float64 branches above.
+		// This is the proper typed path for bool->numeric conversion; it
+		// must not be confused with parsing the literal text "true"/"false"
+		// out of an arbitrary KindString value, which is not a valid numeric
+		// conversion and is rejected by parseInt/parseUint/parseFloat.
+		underlying, _ := underlyingValueOf(raw, true)
+		if b, ok := underlying.(bool); ok {
+			var i int64
+			if b {
+				i = 1
+			}
+			if v, err := convertInt64(i, to); err == nil {
+				if _, err := p.parseValue(v); err != nil {
+					return EmptyValue, err
+				}
+				v.str = string(p.buf)
+				return v, nil
+			}
+		}
 	} else if to == KindDuration && from == KindString {
 		val, ok := raw.(string)
 		if ok {

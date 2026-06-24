@@ -98,12 +98,6 @@ func parseInts(val string, t Kind) (raw interface{}, v string, err error) {
 }
 
 func parseInt(str string, base, bitSize int) (r int64, s string, err error) {
-	if str == "true" {
-		return 1, "1", nil
-	}
-	if str == "false" {
-		return 0, "0", nil
-	}
 	r, e := parseIntFast(str, base, bitSize)
 	if e != nil {
 		err = errors.Join(ErrValueConv, e)
@@ -136,12 +130,6 @@ func parseUints(val string, t Kind) (raw interface{}, v string, err error) {
 }
 
 func parseUint(str string, base, bitSize int) (r uint64, s string, err error) {
-	if str == "true" {
-		return 1, "1", nil
-	}
-	if str == "false" {
-		return 0, "0", nil
-	}
 	r, e := strconvParseUint(str, base, bitSize)
 	if e != nil {
 		err = errors.Join(ErrValueConv, e)
@@ -152,12 +140,6 @@ func parseUint(str string, base, bitSize int) (r uint64, s string, err error) {
 }
 
 func parseFloat(str string, bitSize int) (r float64, s string, err error) {
-	if str == "true" {
-		return 1, "1", nil
-	}
-	if str == "false" {
-		return 0, "0", nil
-	}
 	r, e := parseFloatFast(str, bitSize)
 	if e != nil {
 		err = errors.Join(ErrValueConv, e)

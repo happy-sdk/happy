@@ -85,6 +85,24 @@ func (v Value) CloneAs(kind Kind) (Value, error) {
 	return NewValueAs(v.raw, kind)
 }
 
+// boolToInt64 converts a KindBool value (including custom kinds wrapping
+// bool, whose formatted string representation is always the literal text
+// "true"/"false") to its canonical int64 form: 1 for true, 0 for false. This
+// is the single place bool->numeric conversion happens; the generic numeric
+// parsers (parseInt/parseUint/parseFloat) must not special-case the literal
+// text "true"/"false" themselves, since that would incorrectly treat any
+// arbitrary KindString value spelled "true"/"false" as a valid number.
+func (v Value) boolToInt64() (int64, error) {
+	b, _, err := parseBool(v.str)
+	if err != nil {
+		return 0, err
+	}
+	if b {
+		return 1, nil
+	}
+	return 0, nil
+}
+
 // Bool returns boolean representation of the Value.
 func (v Value) Bool() (bool, error) {
 	if v.kind == KindBool {
@@ -106,6 +124,10 @@ func (v Value) Bool() (bool, error) {
 
 // Int returns int representation of the Value.
 func (v Value) Int() (int, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return int(i), err
+	}
 
 	switch v.kind {
 	case KindInt:
@@ -133,6 +155,10 @@ func (v Value) Int() (int, error) {
 
 // Int8 returns int8 representation of the Value.
 func (v Value) Int8() (int8, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return int8(i), err
+	}
 
 	switch v.kind {
 	case KindInt8:
@@ -160,6 +186,10 @@ func (v Value) Int8() (int8, error) {
 
 // Int16 returns int16 representation of the Value.
 func (v Value) Int16() (int16, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return int16(i), err
+	}
 	if v.kind == KindInt16 {
 		if vv, ok := v.raw.(int16); ok {
 			return vv, nil
@@ -196,6 +226,10 @@ func (v Value) Int16() (int16, error) {
 
 // Int32 returns int32 representation of the Value.
 func (v Value) Int32() (int32, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return int32(i), err
+	}
 	if v.kind == KindInt32 {
 		if vv, ok := v.raw.(int32); ok {
 			return vv, nil
@@ -243,6 +277,9 @@ func (v Value) Int32() (int32, error) {
 
 // Int64 returns int64 representation of the Value.
 func (v Value) Int64() (int64, error) {
+	if v.kind == KindBool {
+		return v.boolToInt64()
+	}
 	if v.kind == KindInt64 || v.kind == KindDuration {
 		if vv, ok := v.raw.(int64); ok {
 			return vv, nil
@@ -294,6 +331,10 @@ func (v Value) Int64() (int64, error) {
 
 // Uint returns uint representation of the Value.
 func (v Value) Uint() (uint, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return uint(i), err
+	}
 	switch v.kind {
 	case KindUint:
 		if vv, ok := v.raw.(uint); ok {
@@ -301,6 +342,9 @@ func (v Value) Uint() (uint, error) {
 		}
 	case KindDuration:
 		vi, _ := v.raw.(time.Duration)
+		if vi < 0 {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
 		return uint(vi), nil
 	}
 
@@ -317,6 +361,10 @@ func (v Value) Uint() (uint, error) {
 
 // Uint8 returns uint8 representation of the Value.
 func (v Value) Uint8() (uint8, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return uint8(i), err
+	}
 	if v.kind == KindUint8 {
 		if vv, ok := v.raw.(uint8); ok {
 			return vv, nil
@@ -330,7 +378,7 @@ func (v Value) Uint8() (uint8, error) {
 		return vv.Uint8()
 	} else if v.kind == KindDuration {
 		vi, _ := v.raw.(time.Duration)
-		if vi > math.MaxUint8 {
+		if vi < 0 || vi > math.MaxUint8 {
 			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
 		}
 		return uint8(vi), nil
@@ -341,6 +389,10 @@ func (v Value) Uint8() (uint8, error) {
 
 // Uint16 returns uint16 representation of the Value.
 func (v Value) Uint16() (uint16, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return uint16(i), err
+	}
 	if v.kind == KindUint16 {
 		if vv, ok := v.raw.(uint16); ok {
 			return vv, nil
@@ -358,7 +410,7 @@ func (v Value) Uint16() (uint16, error) {
 		return uint16(vi), err
 	} else if v.kind == KindDuration {
 		vi, _ := v.raw.(time.Duration)
-		if vi > math.MaxUint16 {
+		if vi < 0 || vi > math.MaxUint16 {
 			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
 		}
 		return uint16(vi), nil
@@ -377,6 +429,10 @@ func (v Value) Uint16() (uint16, error) {
 
 // Uint32 returns uint32 representation of the Value.
 func (v Value) Uint32() (uint32, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return uint32(i), err
+	}
 	if v.kind == KindUint32 {
 		if vv, ok := v.raw.(uint32); ok {
 			return vv, nil
@@ -403,7 +459,7 @@ func (v Value) Uint32() (uint32, error) {
 		i = uint32(vi)
 	case KindDuration:
 		vi, _ := v.raw.(time.Duration)
-		if vi > math.MaxUint32 {
+		if vi < 0 || vi > math.MaxUint32 {
 			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
 		}
 		i = uint32(vi)
@@ -424,6 +480,10 @@ func (v Value) Uint32() (uint32, error) {
 
 // Uint64 returns uint64 representation of the Value.
 func (v Value) Uint64() (uint64, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return uint64(i), err
+	}
 	if v.kind == KindUint64 {
 		if vv, ok := v.raw.(uint64); ok {
 			return vv, nil
@@ -453,6 +513,9 @@ func (v Value) Uint64() (uint64, error) {
 		i = uint64(vi)
 	case KindDuration:
 		vi, _ := v.raw.(time.Duration)
+		if vi < 0 {
+			return 0, fmt.Errorf("%w: from %s", ErrValueConv, v.raw)
+		}
 		i = uint64(vi)
 	default:
 		if v.isCustom {
@@ -469,6 +532,10 @@ func (v Value) Uint64() (uint64, error) {
 
 // Float32 returns float32 representation of the Value.
 func (v Value) Float32() (float32, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return float32(i), err
+	}
 	if v.kind == KindFloat32 {
 		if vv, ok := v.raw.(float32); ok {
 			return vv, nil
@@ -491,6 +558,10 @@ func (v Value) Float32() (float32, error) {
 
 // Float64 returns float64 representation of Value.
 func (v Value) Float64() (float64, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return float64(i), err
+	}
 	if v.kind == KindFloat64 {
 		if vv, ok := v.raw.(float64); ok {
 			return vv, nil
@@ -562,6 +633,10 @@ func (v Value) Complex128() (complex128, error) {
 
 // Uintptr returns uintptr representation of the Value.
 func (v Value) Uintptr() (uintptr, error) {
+	if v.kind == KindBool {
+		i, err := v.boolToInt64()
+		return uintptr(i), err
+	}
 	if v.kind == KindUintptr {
 		if vv, ok := v.raw.(uintptr); ok {
 			return vv, nil

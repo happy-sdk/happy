@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 	"github.com/happy-sdk/happy/pkg/vars"
@@ -78,6 +79,54 @@ func getBoolTests() []boolTest {
 		{"ATOB_14", "TRUE", true, nil},
 		{"ATOB_15", "true", true, nil},
 		{"ATOB_16", "True", true, nil},
+	}
+}
+
+// TestStringTrueFalseNotCoercedToNumber is a regression test: a plain
+// KindString value spelled "true"/"false" must not be silently treated as a
+// valid number by the numeric accessors. Only an actual KindBool value
+// (e.g. produced by parsing/constructing a bool) should convert "true"/
+// "false" text to 1/0.
+func TestStringTrueFalseNotCoercedToNumber(t *testing.T) {
+	for _, str := range []string{"true", "false"} {
+		v, err := vars.NewValue(str)
+		testutils.NoError(t, err)
+		testutils.Equal(t, vars.KindString, v.Kind())
+
+		if _, err := v.Int(); err == nil {
+			t.Errorf("Int(): expected error converting KindString %q to int, got nil", str)
+		}
+		if _, err := v.Uint64(); err == nil {
+			t.Errorf("Uint64(): expected error converting KindString %q to uint64, got nil", str)
+		}
+		if _, err := v.Float64(); err == nil {
+			t.Errorf("Float64(): expected error converting KindString %q to float64, got nil", str)
+		}
+	}
+}
+
+// TestNegativeDurationToUnsignedErrors is a regression test: converting a
+// negative time.Duration to an unsigned type must return an error instead of
+// silently wrapping around to a huge positive value.
+func TestNegativeDurationToUnsignedErrors(t *testing.T) {
+	v, err := vars.NewValue(-100 * time.Nanosecond)
+	testutils.NoError(t, err)
+	testutils.Equal(t, vars.KindDuration, v.Kind())
+
+	if u, err := v.Uint8(); err == nil {
+		t.Errorf("Uint8(): expected error for negative duration, got %d", u)
+	}
+	if u, err := v.Uint16(); err == nil {
+		t.Errorf("Uint16(): expected error for negative duration, got %d", u)
+	}
+	if u, err := v.Uint32(); err == nil {
+		t.Errorf("Uint32(): expected error for negative duration, got %d", u)
+	}
+	if u, err := v.Uint64(); err == nil {
+		t.Errorf("Uint64(): expected error for negative duration, got %d", u)
+	}
+	if u, err := v.Uint(); err == nil {
+		t.Errorf("Uint(): expected error for negative duration, got %d", u)
 	}
 }
 
