@@ -6,6 +6,7 @@ package humanize
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -16,8 +17,20 @@ const (
 )
 
 // Duration formats a time.Duration into a human-readable string.
-// It supports both full and short formats.
+// It supports both full and short formats. Negative durations are
+// formatted using their absolute value, prefixed with "-" (e.g.
+// Duration(-90*time.Minute, false) is "-1 hour 30 minutes").
 func Duration(d time.Duration, short bool) string {
+	if d < 0 {
+		if d == math.MinInt64 {
+			// Negating math.MinInt64 overflows back to itself, which would
+			// recurse forever; losing 1ns of precision here is immaterial
+			// for a human-readable duration string.
+			d++
+		}
+		return "-" + Duration(-d, short)
+	}
+
 	if d < time.Millisecond {
 		if short {
 			return now

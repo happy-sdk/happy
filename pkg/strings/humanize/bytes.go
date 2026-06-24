@@ -60,9 +60,6 @@ const (
 
 	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
 	EByte = PByte * 1000
-
-	// Deprecated: Use github.com/happy-sdk/happy/pkg/bytesize instead.
-	ZByte = EByte * 1000
 )
 
 var sizeSymbs = map[string]uint64{
