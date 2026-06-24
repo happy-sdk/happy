@@ -185,6 +185,14 @@ func TestNext(t *testing.T) {
 		// Test the scenario of DST resulting in midnight not being a valid time.
 		{"2018-10-17T05:00:00-0400", "TZ=America/Sao_Paulo 0 0 9 10 * ?", "2018-11-10T06:00:00-0500"},
 		{"2018-02-14T05:00:00-0500", "TZ=America/Sao_Paulo 0 0 9 22 * ?", "2018-02-22T07:00:00-0500"},
+
+		// Regression: @lastday/@lastweekday/@firstweekday rollover across a
+		// December->January year boundary used to leave a stale year,
+		// computing a date a year in the past instead of advancing into the
+		// next year.
+		{"Tue Dec 31 12:00 2024", "@lastday", "Fri Jan 31 00:00 2025"},
+		{"Tue Dec 31 12:00 2024", "@lastweekday", "Mon Jan 27 00:00 2025"},
+		{"Tue Dec 31 12:00 2024", "@firstweekday", "Mon Jan 6 00:00 2025"},
 	}
 
 	for _, c := range runs {

@@ -98,7 +98,11 @@ WRAP:
 		// If current day is past the last day or after midnight on the last day, move to next month's last day.
 		if day > lastDay || (day == lastDay && (t.Hour() > 0 || t.Minute() > 0 || t.Second() > 0)) {
 			t = time.Date(year, month+1, 1, 0, 0, 0, 0, loc)
-			month = t.Month()
+			// Re-derive year along with month: time.Date already rolled the
+			// year forward on a December->January overflow, but year here
+			// is a local copy that must be refreshed too, or the
+			// recalculated lastDay/t below silently use the old year.
+			year, month, _ = t.Date()
 			lastDay = time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
 			added = true
 		}
@@ -138,7 +142,9 @@ WRAP:
 		// If current day is past the last Dow or after midnight on that day, move to next month.
 		if day > lastDowDay || (day == lastDowDay && (t.Hour() > 0 || t.Minute() > 0 || t.Second() > 0)) {
 			t = time.Date(year, month+1, 1, 0, 0, 0, 0, loc)
-			month = t.Month()
+			// See the analogous fix above: year must be refreshed too on a
+			// December->January rollover, not just month.
+			year, month, _ = t.Date()
 			lastDay = time.Date(year, month+1, 0, 0, 0, 0, 0, loc).Day()
 			lastDowDay = lastDay
 			for {
@@ -175,7 +181,9 @@ WRAP:
 		// If current day is past the first Monday or after midnight on that day, move to next month.
 		if day > firstDowDay || (day == firstDowDay && (t.Hour() > 0 || t.Minute() > 0 || t.Second() > 0)) {
 			t = time.Date(year, month+1, 1, 0, 0, 0, 0, loc)
-			month = t.Month()
+			// See the analogous fix above: year must be refreshed too on a
+			// December->January rollover, not just month.
+			year, month, _ = t.Date()
 			firstDowDay = findFirstMonday(year, month, loc)
 			added = true
 		}
