@@ -225,7 +225,7 @@ func isNil(value any) bool {
 
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
 		return v.IsNil()
 	default:
 		return false
@@ -444,9 +444,9 @@ func buildErrorChainString(err error) string {
 	}
 
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("%q", err.Error()))
+	fmt.Fprintf(&builder, "%q", err.Error())
 	for e := errors.Unwrap(err); e != nil; e = errors.Unwrap(e) {
-		builder.WriteString(fmt.Sprintf("\n\t%q", e.Error()))
+		fmt.Fprintf(&builder, "\n\t%q", e.Error())
 	}
 	return builder.String()
 }
