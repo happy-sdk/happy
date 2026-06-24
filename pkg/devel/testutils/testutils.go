@@ -525,22 +525,32 @@ func truncatingFormat(data any) string {
 	return value
 }
 
+// ExtractCoverage extracts a coverage indicator from a single line of `go
+// test` output. It returns:
+//   - the coverage percentage (e.g. "85.3%") and a nil error, when the line
+//     contains a "coverage: X% of statements" segment;
+//   - ("no test files", nil) when the line is a `?  pkg  [no test files]`
+//     line;
+//   - ("", non-nil error) for a `FAIL ...` line, or for any other line
+//     (e.g. a passing `ok ...` line with no coverage info) where no
+//     coverage percentage can be determined.
 func ExtractCoverage(s string) (string, error) {
-	// Match coverage percentage
+	// Match coverage percentage.
 	covRe := regexp.MustCompile(`coverage: (\d+\.\d+%)`)
 	if match := covRe.FindStringSubmatch(s); len(match) > 1 {
 		return match[1], nil
 	}
 
-	fields := strings.Fields(s)
-	if len(fields) >= 3 {
-		return fields[2], nil
+	// Match "no test files" before falling back to generic field parsing:
+	// a "?  pkg  [no test files]" line also satisfies the >=3 fields check
+	// below, so this must be checked first or it's unreachable.
+	if strings.Contains(s, "[no test files]") {
+		return "no test files", nil
 	}
 
-	// Match "no test files"
-	noTestRe := regexp.MustCompile(`\[no test files\]`)
-	if noTestRe.MatchString(s) {
-		return "no test files", nil
+	fields := strings.Fields(s)
+	if len(fields) > 0 && fields[0] == "FAIL" {
+		return "", fmt.Errorf("test failed, no coverage info: %s", s)
 	}
 
 	return "", fmt.Errorf("no coverage info found")
