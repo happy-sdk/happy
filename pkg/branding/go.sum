@@ -1,2 +1,2 @@
-github.com/happy-sdk/happy/pkg/tui v0.3.0 h1:25mXKLQllAV0jOg8RPVdh8iVV6+cDLXWZlkCCuHoX2U=
-github.com/happy-sdk/happy/pkg/tui v0.3.0/go.mod h1:VfQ7XqaYHoJXtad6MJabmvno3oerVwJXiTjA8kGG8zk=
+github.com/happy-sdk/happy/pkg/tui v1.0.0 h1:2DiQB1wUgQ5p5mkQsy6ilGTGdjyvXf/D3quhqPZcrfA=
+github.com/happy-sdk/happy/pkg/tui v1.0.0/go.mod h1:VfQ7XqaYHoJXtad6MJabmvno3oerVwJXiTjA8kGG8zk=
