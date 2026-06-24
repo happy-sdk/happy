@@ -63,7 +63,7 @@ jobs:
       matrix:
         # https://github.com/actions/runner-images?tab=readme-ov-file
         # platform: [ubuntu-latest, , windows-latest]
-        platform: [ubuntu-latest, macos-15, windows-2025]
+        platform: [ubuntu-latest, macos-26, windows-2025]
       fail-fast: false
     runs-on: ${{ matrix.platform }}
     steps:
