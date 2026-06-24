@@ -554,9 +554,14 @@ func (c *Command) toInvalid() *Command {
 	defer c.mu.Unlock()
 
 	defer func() {
-		slog.Error("HAPPY COMMAND", slog.String("err", c.err.Error()))
+		// Log via this command's own queue logger (consistent with
+		// error()'s convention, see below), not the global slog default
+		// logger: a global slog.Error call here would bypass the
+		// application's configured logging entirely and unconditionally
+		// pollute stderr regardless of the app's log level/output.
+		c.cnflog.Error("HAPPY COMMAND", slog.String("err", c.err.Error()))
 		stackTrace := debug.Stack()
-		slog.Error(string(stackTrace))
+		c.cnflog.Error(string(stackTrace))
 	}()
 
 	// Ensure that the error field is set.
