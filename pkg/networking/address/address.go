@@ -110,7 +110,17 @@ func (a *Address) Module() string {
 // Parse takes a string representation of an address and returns a pointer to a new Address struct.
 // If the input string is not a valid representation of an address, an error is returned.
 func (a *Address) Parse(ref string) (*Address, error) {
-	refurl, err := a.url.Parse(ref)
+	var (
+		refurl *url.URL
+		err    error
+	)
+	if a.url == nil {
+		// Zero-value Address has no base URL to resolve ref against;
+		// parse ref directly instead of panicking on a nil receiver.
+		refurl, err = url.Parse(ref)
+	} else {
+		refurl, err = a.url.Parse(ref)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +153,10 @@ func (a *Address) ResolveService(svc string) (*Address, error) {
 }
 
 // FromModule returns a new Address created from the given go module path.
-// If the module is empty, the resulting address will be an empty address.
-// If the module is not an empty string, it must be a valid module path that
-// conforms to Go's package name syntax and will be used to create a new address.
+// If the module is empty, the resulting address has an empty path component
+// (host only). If the module is not an empty string, it must be a valid
+// module path that conforms to Go's package name syntax and will be used to
+// create a new address.
 func FromModule(host, modulepath string) (*Address, error) {
 	// fully qualified ?
 	sl := strings.Split(modulepath, "/")
