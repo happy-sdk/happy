@@ -2,6 +2,9 @@
 //
 // Copyright © 2025 The Happy Authors
 
+// Package goutils provides small helpers for inspecting a Go module's
+// go.mod and detecting how the program is being run, used by Happy's own
+// app/CLI bootstrap and maintainer tooling.
 package goutils
 
 import (
@@ -13,6 +16,8 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
+// ContainsGoModfile reports whether dir contains a go.mod file, returning
+// its path if so.
 func ContainsGoModfile(dir string) (string, bool) {
 	if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
 		return filepath.Join(dir, "go.mod"), true
@@ -20,6 +25,12 @@ func ContainsGoModfile(dir string) (string, bool) {
 	return "", false
 }
 
+// DependsOnHappy reports whether the Go module rooted at dir is the
+// github.com/happy-sdk/happy module itself, or requires it. If dir has no
+// go.mod, yes is false and err is nil. ver is the happy version: the
+// directory's own version (via version.OfDir) if dir is the happy module
+// itself, or the required version otherwise; ver is unset (yes is false)
+// if dir doesn't depend on happy at all.
 func DependsOnHappy(dir string) (ver version.Version, yes bool, err error) {
 	gomod, ok := ContainsGoModfile(dir)
 	if !ok {
