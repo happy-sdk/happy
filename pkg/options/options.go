@@ -3,11 +3,12 @@
 // Copyright © 2023 The Happy Authors
 
 // Package options provides a flexible framework for defining and managing
-// configuration options for application components in the Happy SDK or custom libraries.
-// It supports type-safe option storage, validation, and sealing, with features like readonly
-// options, default values, and prefix-based extraction. Options are backed by
-// vars.Map for thread-safe access and integrate with application components via
-// named option sets.
+// configuration options for application components in the Happy SDK or
+// custom libraries. It supports type-safe option storage (each value backed
+// by vars.Value), validation, parsing, and sealing, with features like
+// read-only options, default values, wildcard-accepted keys, and merging
+// option sets together via Spec.Extend (which namespaces the merged-in
+// spec's keys under its own name, e.g. "other.key").
 package options
 
 import (
@@ -183,12 +184,39 @@ func (spec *Spec) Extend(others ...*Spec) error {
 		if other == nil {
 			return fmt.Errorf("%w: attempt to extend %s with nil spec", ErrOptions, spec.opts.name)
 		}
-		if other.sealed {
+
+		// Snapshot everything needed from other while holding its own
+		// locks, rather than reading its fields directly: other is a
+		// different *Spec than the receiver, guarded by its own mu (and
+		// other.opts by its own, separate mu), so reading them without
+		// acquiring those locks raced with any concurrent call that
+		// mutates other (e.g. other.Set).
+		other.mu.RLock()
+		otherSealed := other.sealed
+		other.mu.RUnlock()
+		if otherSealed {
 			return fmt.Errorf("%w: %s already sealed", ErrOptions, other.opts.name)
 		}
 
-		for key, opt := range other.opts.db {
-			skey := strings.Join([]string{other.opts.name, key}, ".")
+		other.opts.mu.RLock()
+		otherName := other.opts.name
+		dbCopy := make(map[string]*Option, len(other.opts.db))
+		for k, v := range other.opts.db {
+			dbCopy[k] = v
+		}
+		parsersCopy := make(map[string]ValueParser, len(other.opts.parsers))
+		for k, v := range other.opts.parsers {
+			parsersCopy[k] = v
+		}
+		validatorsCopy := make(map[string]ValueValidator, len(other.opts.validators))
+		for k, v := range other.opts.validators {
+			validatorsCopy[k] = v
+		}
+		wildcardsCopy := append([]string(nil), other.opts.wildcards...)
+		other.opts.mu.RUnlock()
+
+		for key, opt := range dbCopy {
+			skey := strings.Join([]string{otherName, key}, ".")
 
 			if _, ok := spec.opts.db[skey]; ok {
 				return fmt.Errorf("%w(%s): key %s already exists", ErrOption, spec.opts.name, skey)
@@ -197,24 +225,24 @@ func (spec *Spec) Extend(others ...*Spec) error {
 			spec.opts.db[skey] = opt.withKey(skey)
 		}
 
-		for key, parser := range other.opts.parsers {
-			skey := strings.Join([]string{other.opts.name, key}, ".")
+		for key, parser := range parsersCopy {
+			skey := strings.Join([]string{otherName, key}, ".")
 			if _, ok := spec.opts.parsers[skey]; ok {
 				return fmt.Errorf("%w(%s): parser for key %s already exists", ErrOption, spec.opts.name, skey)
 			}
 			spec.opts.parsers[skey] = parser
 		}
 
-		for key, validator := range other.opts.validators {
-			skey := strings.Join([]string{other.opts.name, key}, ".")
+		for key, validator := range validatorsCopy {
+			skey := strings.Join([]string{otherName, key}, ".")
 			if _, ok := spec.opts.validators[skey]; ok {
 				return fmt.Errorf("%w(%s): validator for key %s already exists", ErrOption, spec.opts.name, skey)
 			}
 			spec.opts.validators[skey] = validator
 		}
 
-		for _, wildcard := range other.opts.wildcards {
-			swildcard := strings.Join([]string{other.opts.name, wildcard}, ".")
+		for _, wildcard := range wildcardsCopy {
+			swildcard := strings.Join([]string{otherName, wildcard}, ".")
 			spec.opts.wildcards = append(spec.opts.wildcards, swildcard)
 		}
 	}
@@ -304,15 +332,12 @@ func (opts *Options) Accepts(key string) bool {
 	if _, ok := opts.db[key]; ok {
 		return true
 	}
-	if len(opts.wildcards) == 0 {
-		return false
-	}
 	for _, wildcard := range opts.wildcards {
 		if wildcard == "" || strings.HasPrefix(key, wildcard) {
 			return true
 		}
 	}
-	return true
+	return false
 }
 
 func (opts *Options) Describe(key string) string {
@@ -591,107 +616,3 @@ func (arg *Arg) Key() string {
 func (arg *Arg) Value() any {
 	return arg.value
 }
-
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-///////////////////////////////////////////////////
-
-// func (opts *Options) set(key string, value any, override bool) error {
-// 	if key == "*" {
-// 		return nil
-// 	}
-
-// 	if !opts.Accepts(key) {
-// 		return fmt.Errorf(
-// 			"%w: %s does not accept option %s",
-// 			ErrOption,
-// 			opts.name,
-// 			key,
-// 		)
-// 	}
-// 	// Check is readonly
-// 	if opts.sealed && opts.db.Get(key).ReadOnly() {
-// 		if !override {
-// 			return fmt.Errorf(
-// 				"%w: can not set %s for %s, (opts sealed %t)",
-// 				ErrOptionReadOnly,
-// 				key,
-// 				opts.name,
-// 				opts.sealed,
-// 			)
-// 		}
-// 		// remove old readonly option
-// 	}
-
-// 	if override {
-// 		opts.db.Delete(key)
-// 	}
-
-// 	val, err := vars.NewValue(value)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	var cnf *OptionSpec
-// 	if c, ok := opts.config[key]; ok {
-// 		cnf = &c
-// 		if vv, ok := value.(vars.Variable); ok {
-// 			if vv.ReadOnly() {
-// 				cnf.kind |= ReadOnly
-// 			}
-// 		}
-// 	} else if c, ok := opts.config["*"]; ok {
-// 		cnf = &c
-// 	}
-
-// 	ro := cnf.kind&ReadOnly != 0
-// 	opt := Option{key: key, val: val, ro: ro}
-// 	if opts.sealed {
-// 		if cnf.parser != nil {
-// 			if newval, err := cnf.parser(opt); err != nil {
-// 				return err
-// 			} else {
-// 				opt.val = newval
-// 			}
-// 		}
-// 		if cnf.validator != nil {
-// 			if err := cnf.validator(opt); err != nil {
-// 				return err
-// 			}
-// 		}
-// 	}
-
-// 	return opts.db.StoreReadOnly(key, val, cnf.kind&ReadOnly != 0)
-// }
-
-// func (opts *Options) Set(key string, value any) error {
-// 	return opts.set(key, value, !opts.sealed)
-// }
-
-// // WithPrefix returns a new vars.Map with all options that have the given prefix.
-// func (opts *Options) WithPrefix(prefix string) *vars.Map {
-// 	return opts.db.ExtractWithPrefix(prefix)
-// }
-
-// // MergeOptions merges options from one or multiplce sources to dest.
-// func MergeOptions(dest *Options, srcs ...*Options) error {
-// 	if dest.sealed {
-// 		var sources []string
-// 		for _, src := range srcs {
-// 			sources = append(sources, src.name)
-// 		}
-// 		return fmt.Errorf("%w: can not add %s options to sealed destination %s", ErrOption, strings.Join(sources, ","), dest.name)
-// 	}
-
-// 	for _, src := range srcs {
-// 		for _, spec := range src.config {
-// 			spec.key = src.name + "." + spec.key
-// 			if err := dest.Add(spec); err != nil {
-// 				return err
-// 			}
-// 		}
-// 	}
-
-// 	return nil
-// }

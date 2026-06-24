@@ -5,9 +5,12 @@
 package options
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
+	"github.com/happy-sdk/happy/pkg/vars"
 )
 
 func TestSpec(t *testing.T) {
@@ -23,509 +26,349 @@ func TestSpec(t *testing.T) {
 	})
 }
 
-// func TestOptions_New(t *testing.T) {
-// 	specs := []Spec{
-// 		NewOption("key1", "val1", "desc1", KindConfig, NoopValueValidator),
-// 		NewOption("key2", 42, "desc2", KindReadOnly, nil),
-// 	}
-// 	opts, err := New("test", specs...)
-// 	if err != nil {
-// 		t.Fatalf("New failed: %v", err)
-// 	}
-// 	if opts.Name() != "test" || opts.String() != "test" {
-// 		t.Errorf("Name: got %q, want %q", opts.Name(), "test")
-// 	}
-// 	if opts.Len() != 2 {
-// 		t.Errorf("Len: got %d, want %d", opts.Len(), 2)
-// 	}
-// 	if !opts.Has("key1") || !opts.Has("key2") {
-// 		t.Error("Has: expected key1 and key2 to exist")
-// 	}
-// }
+func TestNewWithOptions(t *testing.T) {
+	spec, err := New("test",
+		NewOption("key1", "val1"),
+		NewOption("key2", 42),
+	)
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
+	testutils.Equal(t, "test", opts.Name())
+	testutils.Equal(t, 2, opts.Len())
+	testutils.Assert(t, opts.Accepts("key1"))
+	testutils.Assert(t, opts.Accepts("key2"))
+}
 
-// func TestNewDuplicatedSpec(t *testing.T) {
-// 	specs := []Spec{
-// 		NewOption("key1", "val1", "desc1", KindConfig, NoopValueValidator),
-// 		NewOption("key1", "val1", "desc1", KindConfig, NoopValueValidator),
-// 	}
-// 	_, err := New("test", specs...)
-// 	if err == nil {
-// 		t.Error("New: expected error for duplicated key, got nil")
-// 	}
-// }
+func TestNewDuplicatedKey(t *testing.T) {
+	_, err := New("test",
+		NewOption("key1", "val1"),
+		NewOption("key1", "val2"),
+	)
+	testutils.ErrorIs(t, err, ErrOption)
+}
 
-// func TestSetAndGet(t *testing.T) {
-// 	opts, _ := New("test")
+func TestSpecAddToSealed(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "val1"))
+	testutils.NoError(t, err)
+	_, err = spec.Seal()
+	testutils.NoError(t, err)
 
-// 	// Test setting and getting string option
-// 	err := opts.Set("key1", "value1")
-// 	if err == nil {
-// 		t.Error("Set: expected error for unaccepted key, got nil")
-// 	}
+	err = spec.Add(NewOption("key2", "val2"))
+	testutils.ErrorIs(t, err, ErrOption)
+}
 
-// 	// Add valid option spec
-// 	testutils.NoError(t, opts.Add(NewOption("key1", "default", "desc", KindConfig, NoopValueValidator)))
-// 	err = opts.Set("key1", "value1")
-// 	if err != nil {
-// 		t.Fatalf("Set failed: %v", err)
-// 	}
-// 	val := opts.Get("key1").String()
-// 	if val != "value1" {
-// 		t.Errorf("Get: got %q, want %q", val, "value1")
-// 	}
+func TestSetAndGet(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "default"))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// 	// Test readonly option
-// 	testutils.NoError(t, opts.Add(NewOption("key2", 42, "desc", KindReadOnly, nil)))
-// 	err = opts.Set("key2", 99)
-// 	if err != nil {
-// 		t.Fatalf("Set failed: %v", err)
-// 	}
-// 	testutils.NoError(t, opts.Seal())
-// 	err = opts.Set("key2", 100)
-// 	if !errors.Is(err, ErrOptionReadOnly) {
-// 		t.Errorf("Set readonly: expected ErrOptionReadOnly, got %v", err)
-// 	}
+	testutils.NoError(t, opts.Set("key1", "value1"))
+	testutils.Equal(t, "value1", opts.Get("key1").Value().String())
 
-// 	empty := opts.Get("empty").String()
-// 	if empty != "" {
-// 		t.Errorf("Get: got %q, want %q", val, "")
-// 	}
-// }
+	// Unknown key without a wildcard.
+	err = opts.Set("unknown", "value")
+	testutils.ErrorIs(t, err, ErrOptionNotExists)
+}
 
-// func TestValidation(t *testing.T) {
-// 	opts, _ := New("test")
-// 	validator := func(opt Option) error {
-// 		if opt.Value().String() == "invalid" {
-// 			return fmt.Errorf("%w: invalid value", ErrOptionValidation)
-// 		}
-// 		return nil
-// 	}
-// 	testutils.NoError(t, opts.Add(NewSpec("key1", "default", "desc", KindConfig, validator).Build()))
-// 	testutils.Error(t, opts.Add(NewSpec("key1", "default", "desc", KindConfig, validator).Build()))
+func TestReadOnlyOption(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "default").Flags(ReadOnly))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// 	// Test valid value
-// 	err := opts.Set("key1", "valid")
-// 	if err != nil {
-// 		t.Fatalf("Set valid value failed: %v", err)
-// 	}
+	err = opts.Set("key1", "value1")
+	testutils.ErrorIs(t, err, ErrOptionReadOnly)
+}
 
-// 	// Test invalid value
-// 	err = opts.Set("key1", "invalid")
-// 	if !errors.Is(err, ErrOptionValidation) {
-// 		t.Errorf("Set invalid value: expected ErrOptionValidation, got %v", err)
-// 	}
+func TestOnceOption(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "default").Flags(Mutable|Once))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// 	// Test not empty validator
-// 	testutils.NoError(t, opts.Add(NewSpec("key2", "default", "desc", KindConfig, OptionValidatorNotEmpty)))
-// 	err = opts.Set("key2", "")
-// 	if !errors.Is(err, ErrOption) {
-// 		t.Errorf("Set empty value: expected ErrOption, got %v", err)
-// 	}
-// }
+	testutils.NoError(t, opts.Set("key1", "value1"))
+	err = opts.Set("key1", "value2")
+	testutils.ErrorIs(t, err, ErrOptionOnce)
+}
 
-// func TestOptions_Seal(t *testing.T) {
-// 	t.Run("basic seal", func(t *testing.T) {
-// 		specs := []Spec{
-// 			NewOption("key1", "default1", "desc1", KindConfig, NoopValueValidator),
-// 			NewOption("key2", 42, "desc2", KindConfig, nil),
-// 		}
-// 		opts, _ := New("test", specs...)
-// 		testutils.NoError(t, opts.Set("key1", "value1"))
+func TestValidation(t *testing.T) {
+	validator := func(opt Option) error {
+		if opt.Value().String() == "invalid" {
+			return fmt.Errorf("%w: invalid value", ErrOptionValidation)
+		}
+		return nil
+	}
+	spec, err := New("test", NewOption("key1", "default").Validator(validator))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// 		err := opts.Seal()
-// 		if err != nil {
-// 			t.Fatalf("Seal failed: %v", err)
-// 		}
-// 		if !opts.sealed {
-// 			t.Error("Seal: expected sealed to be true")
-// 		}
-// 		if opts.Get("key2").Int() != 42 {
-// 			t.Errorf("Seal: got %d, want %d", opts.Get("key2").Int(), 42)
-// 		}
+	testutils.NoError(t, opts.Set("key1", "valid"))
+	err = opts.Set("key1", "invalid")
+	testutils.ErrorIs(t, err, ErrOptionValidation)
+}
 
-// 		// Test adding to sealed options
-// 		err = opts.Add(NewOption("key3", "val3", "desc3", KindConfig, nil))
-// 		if !errors.Is(err, ErrOption) {
-// 			t.Errorf("Add to sealed: expected ErrOption, got %v", err)
-// 		}
+func TestParser(t *testing.T) {
+	parser := func(opt Option, newval Value) (Value, error) {
+		return vars.NewValue("parsed:" + newval.String())
+	}
+	spec, err := New("test", NewOption("key1", "default").Parser(parser))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// 		// Test sealing already sealed options
-// 		err = opts.Seal()
-// 		if !errors.Is(err, ErrOption) {
-// 			t.Errorf("Seal already sealed: expected ErrOption, got %v", err)
-// 		}
-// 	})
+	testutils.Equal(t, "parsed:default", opts.Get("key1").Value().String())
 
-// 	t.Run("wildcard spec", func(t *testing.T) {
-// 		// Hit: continue for key == "*"
-// 		specs := []Spec{
-// 			NewOption("key1", "default1", "desc1", KindConfig, NoopValueValidator),
-// 			NewOption("*", nil, "any", KindConfig, NoopValueValidator),
-// 		}
-// 		opts, _ := New("test", specs...)
-// 		err := opts.Seal()
-// 		if err != nil {
-// 			t.Fatalf("Seal with wildcard failed: %v", err)
-// 		}
-// 		if !opts.sealed {
-// 			t.Error("Seal: expected sealed to be true")
-// 		}
-// 		if opts.Get("key1").String() != "default1" {
-// 			t.Errorf("Seal: got %q, want %q", opts.Get("key1").String(), "default1")
-// 		}
-// 	})
+	testutils.NoError(t, opts.Set("key1", "value1"))
+	testutils.Equal(t, "parsed:value1", opts.Get("key1").Value().String())
+}
 
-// 	t.Run("set default error", func(t *testing.T) {
-// 		// Hit: error in opts.Set(key, cnf.value)
-// 		specs := []Spec{
-// 			NewOption("key1", "invalid", "desc1", KindConfig, func(arg Arg) error {
-// 				return fmt.Errorf("%w: invalid default value", ErrOptionValidation)
-// 			}),
-// 		}
-// 		opts, err := New("test", specs...)
-// 		testutils.Error(t, err)
+func TestAccepts(t *testing.T) {
+	t.Run("no wildcard", func(t *testing.T) {
+		spec, err := New("test", NewOption("key1", "val1"))
+		testutils.NoError(t, err)
+		opts, err := spec.Seal()
+		testutils.NoError(t, err)
 
-// 		err = opts.Seal()
-// 		if err == nil || !errors.Is(err, ErrOptionValidation) {
-// 			t.Errorf("Seal: expected ErrOptionValidation, got %v", err)
-// 		}
-// 		if opts.sealed {
-// 			t.Error("Seal: expected sealed to be false on error")
-// 		}
-// 	})
-// }
+		testutils.Assert(t, opts.Accepts("key1"))
+		testutils.Assert(t, !opts.Accepts("random"))
+	})
 
-// func TestConcurrentAccess(t *testing.T) {
-// 	opts, _ := New("test")
-// 	testutils.NoError(t, opts.Add(NewOption("key1", "default", "desc", KindConfig, NoopValueValidator)))
-// 	var wg sync.WaitGroup
+	t.Run("empty string wildcard accepts anything", func(t *testing.T) {
+		spec, err := New("test", NewOption("key1", "val1"))
+		testutils.NoError(t, err)
+		spec.AllowWildcard()
+		opts, err := spec.Seal()
+		testutils.NoError(t, err)
 
-// 	// Test concurrent writes
-// 	for i := range 100 {
-// 		wg.Add(1)
-// 		go func(i int) {
-// 			defer wg.Done()
-// 			err := opts.Set("key1", fmt.Sprintf("value%d", i))
-// 			if err != nil {
-// 				t.Errorf("Concurrent Set failed: %v", err)
-// 			}
-// 		}(i)
-// 	}
-// 	wg.Wait()
+		testutils.Assert(t, opts.Accepts("key1"))
+		testutils.Assert(t, opts.Accepts("anything"))
+	})
+}
 
-// 	// Test concurrent reads
-// 	for range 100 {
-// 		wg.Add(1)
-// 		go func() {
-// 			defer wg.Done()
-// 			_ = opts.Get("key1").String()
-// 		}()
-// 	}
-// 	wg.Wait()
-// }
+// TestAcceptsPrefixWildcardRejectsNonMatching is a regression test: Accepts
+// unconditionally returned true after the wildcard loop regardless of
+// whether any wildcard actually matched, so once any non-empty prefix
+// wildcard was registered, every key was accepted -- not just keys matching
+// that prefix.
+func TestAcceptsPrefixWildcardRejectsNonMatching(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "val1"))
+	testutils.NoError(t, err)
+	spec.opts.wildcards = append(spec.opts.wildcards, "allowed.")
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// func TestOptions_MergeOptions(t *testing.T) {
-// 	t.Run("valid merge", func(t *testing.T) {
-// 		opts1, _ := New("dest", NewOption("key1", "val1", "desc1", KindConfig, NoopValueValidator))
-// 		opts2, _ := New("src", NewOption("key2", "val2", "desc2", KindConfig, NoopValueValidator))
+	testutils.Assert(t, opts.Accepts("key1"), "exact key must be accepted")
+	testutils.Assert(t, opts.Accepts("allowed.foo"), "key matching prefix wildcard must be accepted")
+	testutils.Assert(t, !opts.Accepts("unrelated.key"), "key not matching any wildcard or exact key must be rejected")
+}
 
-// 		err := MergeOptions(opts1, opts2)
-// 		if err != nil {
-// 			t.Fatalf("MergeOptions failed: %v", err)
-// 		}
-// 		if !opts1.Has("src.key2") {
-// 			t.Error("MergeOptions: expected src.key2 to exist")
-// 		}
-// 		if opts1.Get("src.key2").String() != "val2" {
-// 			t.Errorf("MergeOptions: got %q, want %q", opts1.Get("src.key2").String(), "val2")
-// 		}
+func TestExtend(t *testing.T) {
+	dest, err := New("dest", NewOption("key1", "val1"))
+	testutils.NoError(t, err)
 
-// 		// Test merging into sealed options
-// 		testutils.NoError(t, opts1.Seal())
-// 		err = MergeOptions(opts1, opts2)
-// 		if !errors.Is(err, ErrOption) {
-// 			t.Errorf("Merge into sealed: expected ErrOption, got %v", err)
-// 		}
-// 	})
-// 	t.Run("invalid merge", func(t *testing.T) {
-// 		opts1, _ := New("dest", NewOption("key1", "val1", "desc1", KindConfig, NoopValueValidator))
-// 		opts2, _ := New("src", NewOption("key2", vars.NilValue, "desc", KindConfig, NoopValueValidator))
+	src, err := New("src", NewOption("key2", "val2"))
+	testutils.NoError(t, err)
 
-// 		testutils.Error(t, MergeOptions(opts1, opts2))
+	testutils.NoError(t, dest.Extend(src))
 
-// 		if !opts1.Has("key1") {
-// 			t.Error("MergeOptions: expected key1 to exist")
-// 		}
-// 	})
-// }
+	opts, err := dest.Seal()
+	testutils.NoError(t, err)
 
-// func TestOptions_Range(t *testing.T) {
-// 	specs := []Spec{
-// 		NewOption("key1", "val1", "desc1", KindConfig, NoopValueValidator),
-// 		NewOption("key2", "val2", "desc2", KindConfig, NoopValueValidator),
-// 	}
-// 	opts, _ := New("test", specs...)
+	testutils.Assert(t, opts.Accepts("key1"))
+	testutils.Assert(t, opts.Accepts("src.key2"))
+	testutils.Equal(t, "val2", opts.Get("src.key2").Value().String())
+}
 
-// 	keys := []string{}
-// 	opts.Range(func(opt Option) bool {
-// 		keys = append(keys, opt.Name())
-// 		return true
-// 	})
-// 	slices.Sort(keys)
-// 	if !slices.Equal(keys, []string{"key1", "key2"}) {
-// 		t.Errorf("Range: got %v, want %v", keys, []string{"key1", "key2"})
-// 	}
-// }
+func TestExtendNilSpec(t *testing.T) {
+	dest, err := New("dest")
+	testutils.NoError(t, err)
+	err = dest.Extend(nil)
+	testutils.ErrorIs(t, err, ErrOptions)
+}
 
-// func TestOptions_Accepts(t *testing.T) {
-// 	opts, _ := New("test",
-// 		NewOption("key1", "val1", "desc1", KindConfig, NoopValueValidator),
-// 		NewOption("*", nil, "any", KindConfig, NoopValueValidator),
-// 	)
+func TestExtendSealedOther(t *testing.T) {
+	dest, err := New("dest")
+	testutils.NoError(t, err)
 
-// 	if !opts.Accepts("key1") {
-// 		t.Error("Accepts: expected key1 to be accepted")
-// 	}
-// 	if !opts.Accepts("random") {
-// 		t.Error("Accepts: expected random key to be accepted with wildcard")
-// 	}
+	src, err := New("src", NewOption("key1", "val1"))
+	testutils.NoError(t, err)
+	_, err = src.Seal()
+	testutils.NoError(t, err)
 
-// 	opts, _ = New("test", NewOption("key1", "val1", "desc1", KindConfig, NoopValueValidator))
-// 	if opts.Accepts("random") {
-// 		t.Error("Accepts: expected random key to be rejected without wildcard")
-// 	}
-// }
+	err = dest.Extend(src)
+	testutils.ErrorIs(t, err, ErrOptions)
+}
 
-// func TestOptions_WithPrefix(t *testing.T) {
-// 	opts, _ := New("test",
-// 		NewOption("prefix.key1", "val1", "desc1", KindConfig, NoopValueValidator),
-// 		NewOption("prefix.key2", "val2", "desc2", KindConfig, NoopValueValidator),
-// 		NewOption("other.key3", "val3", "desc3", KindConfig, NoopValueValidator),
-// 	)
+func TestExtendDuplicateKey(t *testing.T) {
+	dest, err := New("dest", NewOption("src.key1", "x"))
+	testutils.NoError(t, err)
 
-// 	m := opts.WithPrefix("prefix.")
-// 	if m.Len() != 2 {
-// 		t.Errorf("WithPrefix: got %d keys, want %d", m.Len(), 2)
-// 	}
-// 	if !m.Has("key1") || !m.Has("key2") {
-// 		t.Error("WithPrefix: expected key1 and key2 to exist")
-// 	}
-// }
+	src, err := New("src", NewOption("key1", "val1"))
+	testutils.NoError(t, err)
 
-// func TestOptions_Describe(t *testing.T) {
-// 	// Setup options with a single spec
-// 	specs := []Spec{
-// 		NewOption("key1", "default1", "description for key1", KindConfig, NoopValueValidator),
-// 	}
-// 	opts, err := New("test", specs...)
-// 	if err != nil {
-// 		t.Fatalf("New failed: %v", err)
-// 	}
+	err = dest.Extend(src)
+	testutils.ErrorIs(t, err, ErrOption)
+}
 
-// 	// Test existing key
-// 	desc := opts.Describe("key1")
-// 	if desc != "description for key1" {
-// 		t.Errorf("Describe: got %q, want %q", desc, "description for key1")
-// 	}
+// TestExtendConcurrentWithSet is a regression test: Extend read other's
+// fields (other.sealed, other.opts.db/parsers/validators/wildcards)
+// directly without acquiring other's locks, racing with any concurrent
+// call that mutates other (e.g. other.Set).
+func TestExtendConcurrentWithSet(t *testing.T) {
+	other, err := New("other", NewOption("key2", "val2"))
+	testutils.NoError(t, err)
 
-// 	// Test non-existent key
-// 	desc = opts.Describe("nonexistent")
-// 	if desc != "" {
-// 		t.Errorf("Describe: got %q, want %q", desc, "")
-// 	}
-// }
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		// Mutate the same Spec that's concurrently being extended, many
+		// times, to maximize the chance of overlapping with Extend's
+		// (previously unguarded) read window under -race.
+		for i := range 1000 {
+			_ = other.Set("key2", fmt.Sprintf("v%d", i))
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		dest, err := New("dest")
+		testutils.NoError(t, err)
+		_ = dest.Extend(other)
+	}()
+	wg.Wait()
+}
 
-// func TestOptions_Load(t *testing.T) {
-// 	// Setup options with a single spec
-// 	specs := []Spec{
-// 		NewOption("key1", "value1", "desc1", KindConfig, NoopValueValidator),
-// 	}
-// 	opts, err := New("test", specs...)
-// 	if err != nil {
-// 		t.Fatalf("New failed: %v", err)
-// 	}
+func TestSeal(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "default1"))
+	testutils.NoError(t, err)
 
-// 	// Test loading existing key
-// 	v, loaded := opts.Load("key1")
-// 	if !loaded {
-// 		t.Error("Load: expected key1 to exist")
-// 	}
-// 	if v.String() != "value1" {
-// 		t.Errorf("Load: got %q, want %q", v.String(), "value1")
-// 	}
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
+	testutils.Equal(t, "default1", opts.Get("key1").Value().String())
 
-// 	// Test loading non-existent key
-// 	v, loaded = opts.Load("nonexistent")
-// 	if loaded {
-// 		t.Error("Load: expected nonexistent key to return false")
-// 	}
-// 	if v != (vars.Variable{}) {
-// 		t.Errorf("Load: got %v, want zero value for non-existent key", v)
-// 	}
-// }
+	_, err = spec.Seal()
+	testutils.ErrorIs(t, err, ErrOptions)
+}
 
-// func TestOptions_set(t *testing.T) {
-// 	t.Run("invalid value", func(t *testing.T) {
-// 		opts, _ := New("test",
-// 			NewOption("invalid_opt", "default", "desc", KindConfig, NoopValueValidator),
-// 		)
-// 		err := opts.Set("invalid_opt", vars.NilValue)
-// 		if err == nil || !errors.Is(err, vars.ErrValueInvalid) {
-// 			t.Errorf("set: expected vars.ErrValueInvalid for invalid value, got %v", err)
-// 		}
-// 	})
+func TestRange(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "val1"), NewOption("key2", "val2"))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// 	t.Run("readonly variable", func(t *testing.T) {
-// 		opts, _ := New("test",
-// 			NewOption("key1", "default", "desc", KindConfig, NoopValueValidator),
-// 		)
+	var keys []string
+	opts.Range(func(opt Option) bool {
+		keys = append(keys, opt.Key())
+		return true
+	})
+	testutils.Equal(t, 2, len(keys))
+}
 
-// 		// Hit: cnf.kind |= KindReadOnly
-// 		readonlyVar, _ := vars.New("key1", "readonly", true)
-// 		err := opts.Set("key1", readonlyVar)
-// 		if err != nil {
-// 			t.Errorf("set: expected no error for readonly variable, got %v", err)
-// 		}
-// 		if !opts.Get("key1").ReadOnly() {
-// 			t.Error("set: expected key1 to be readonly")
-// 		}
-// 	})
+func TestAll(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "val1"), NewOption("key2", "val2"))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// 	t.Run("wildcard config", func(t *testing.T) {
-// 		opts, _ := New("test",
-// 			NewOption("*", nil, "any", KindConfig, NoopValueValidator),
-// 		)
+	count := 0
+	for range opts.All() {
+		count++
+	}
+	testutils.Equal(t, 2, count)
+}
 
-// 		// Hit: else if c, ok := opts.config["*"]
-// 		err := opts.Set("random", "value1")
-// 		if err != nil {
-// 			t.Errorf("set: expected no error with wildcard config, got %v", err)
-// 		}
-// 		if val := opts.Get("random").String(); val != "value1" {
-// 			t.Errorf("set: got %q, want %q", val, "value1")
-// 		}
-// 	})
-// }
+func TestDescribe(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "default1").Description("description for key1"))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// func TestOptions_Add_InvalidKey(t *testing.T) {
-// 	opts, err := New("test")
-// 	if err != nil {
-// 		t.Fatalf("New failed: %v", err)
-// 	}
+	testutils.Equal(t, "description for key1", opts.Describe("key1"))
+	testutils.Equal(t, UndefinedOptionDescription, opts.Describe("nonexistent"))
+}
 
-// 	// Test invalid key to hit vars.ParseKey error
-// 	invalidKey := "" // Empty key, assuming vars.ParseKey rejects it
-// 	spec := NewOption(invalidKey, "value", "desc", KindConfig, NoopValueValidator)
-// 	err = opts.Add(spec)
-// 	if err == nil {
-// 		t.Fatal("Add: expected error for invalid key, got nil")
-// 	}
-// 	if !errors.Is(err, ErrOption) {
-// 		t.Errorf("Add: expected ErrOption, got %v", err)
-// 	}
-// 	expectedMsg := fmt.Sprintf(
-// 		"%s \nkey error: key was empty string",
-// 		fmt.Errorf("%w(test): invalid key", ErrOption).Error(),
-// 	)
-// 	if err.Error() != expectedMsg {
-// 		t.Errorf("Add: got error %q, want %q", err.Error(), expectedMsg)
-// 	}
-// }
+func TestLoad(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "value1"))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// func TestArg_Methods(t *testing.T) {
-// 	t.Run("string value", func(t *testing.T) {
-// 		// Test NewArg, Key, and Value with a string
-// 		arg := NewArg("key1", "value1")
-// 		if key := arg.Key(); key != "key1" {
-// 			t.Errorf("Key: got %q, want %q", key, "key1")
-// 		}
-// 		if val := arg.Value(); val.String() != "value1" {
-// 			t.Errorf("Value: got %v, want %v", val, "value1")
-// 		}
-// 	})
+	opt, loaded := opts.Load("key1")
+	testutils.Assert(t, loaded)
+	testutils.Equal(t, "value1", opt.Value().String())
 
-// 	t.Run("non-string value", func(t *testing.T) {
-// 		// Test NewArg, Key, and Value with a non-string (int)
-// 		arg := NewArg("key2", 42)
-// 		if key := arg.Key(); key != "key2" {
-// 			t.Errorf("Key: got %q, want %q", key, "key2")
-// 		}
-// 		if val := arg.Value(); val.String() != "42" {
-// 			t.Errorf("Value: got %v, want %v", val, 42)
-// 		}
-// 	})
+	_, loaded = opts.Load("nonexistent")
+	testutils.Assert(t, !loaded)
+}
 
-// 	t.Run("empty key", func(t *testing.T) {
-// 		// Test NewArg with empty key
-// 		arg := NewArg("", nil)
-// 		if key := arg.Key(); key != "" {
-// 			t.Errorf("Key: got %q, want %q", key, "")
-// 		}
-// 		if val := arg.Value(); val.String() != "<nil>" {
-// 			t.Errorf("Value: got %v, want %v", val, nil)
-// 		}
-// 	})
-// }
+func TestIsSet(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "default"))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// func TestOption_Methods(t *testing.T) {
-// 	// Setup options with different kinds and readonly settings
-// 	specs := []Spec{
-// 		NewOption("key1", "value1", "desc1", KindConfig, NoopValueValidator),
-// 		NewOption("key2", 42, "desc2", KindReadOnly, NoopValueValidator),
-// 		NewOption("key3", true, "desc3", KindConfig, NoopValueValidator),
-// 	}
-// 	opts, err := New("test", specs...)
-// 	if err != nil {
-// 		t.Fatalf("New failed: %v", err)
-// 	}
+	testutils.Assert(t, !opts.IsSet("key1"))
+	testutils.NoError(t, opts.Set("key1", "value1"))
+	testutils.Assert(t, opts.IsSet("key1"))
+}
 
-// 	// Collect options via Range
-// 	options := make(map[string]Option)
-// 	opts.Range(func(opt Option) bool {
-// 		options[opt.Name()] = opt
-// 		return true
-// 	})
+func TestOptionMethods(t *testing.T) {
+	spec, err := New("test",
+		NewOption("key1", "value1").Description("desc1"),
+		NewOption("key2", 42).Flags(ReadOnly),
+	)
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
 
-// 	// Test Value
-// 	t.Run("Value", func(t *testing.T) {
-// 		if val := options["key1"].Value().String(); val != "value1" {
-// 			t.Errorf("Value: got %q, want %q", val, "value1")
-// 		}
-// 		val2, err := options["key2"].Value().Int()
-// 		testutils.NoError(t, err)
-// 		if val2 != 42 {
-// 			t.Errorf("Value: got %d, want %d", val2, 42)
-// 		}
-// 		val3, err := options["key3"].Value().Bool()
-// 		testutils.NoError(t, err)
-// 		if val3 != true {
-// 			t.Errorf("Value: got %v, want %v", val3, true)
-// 		}
-// 	})
+	opt1 := opts.Get("key1")
+	testutils.Equal(t, "key1", opt1.Key())
+	testutils.Equal(t, "value1", opt1.Value().String())
+	testutils.Equal(t, "value1", opt1.Default().String())
+	testutils.Equal(t, "desc1", opt1.Description())
+	testutils.Assert(t, !opt1.ReadOnly())
+	testutils.Assert(t, !opt1.IsSet())
+	testutils.Assert(t, opt1.HasFlag(Mutable))
+	testutils.Equal(t, "value1", opt1.String())
 
-// 	// Test ReadOnly
-// 	t.Run("ReadOnly", func(t *testing.T) {
-// 		if options["key1"].ReadOnly() {
-// 			t.Error("ReadOnly: expected key1 to be non-readonly")
-// 		}
-// 		if !options["key2"].ReadOnly() {
-// 			t.Error("ReadOnly: expected key2 to be readonly")
-// 		}
-// 		if options["key3"].ReadOnly() {
-// 			t.Error("ReadOnly: expected key3 to be non-readonly")
-// 		}
-// 	})
+	opt2 := opts.Get("key2")
+	testutils.Assert(t, opt2.ReadOnly())
+	v, err := opt2.Value().Int()
+	testutils.NoError(t, err)
+	testutils.Equal(t, 42, v)
+}
 
-// 	// Test Kind
-// 	t.Run("Kind", func(t *testing.T) {
-// 		if kind := options["key1"].Kind(); kind != vars.KindString {
-// 			t.Errorf("Kind: got %v, want %v", kind, vars.KindString)
-// 		}
-// 		if kind := options["key2"].Kind(); kind != vars.KindInt {
-// 			t.Errorf("Kind: got %v, want %v", kind, vars.KindInt)
-// 		}
-// 		if kind := options["key3"].Kind(); kind != vars.KindBool {
-// 			t.Errorf("Kind: got %v, want %v", kind, vars.KindBool)
-// 		}
-// 	})
-// }
+func TestArgMethods(t *testing.T) {
+	arg := NewArg("key1", "value1")
+	testutils.Equal(t, "key1", arg.Key())
+	testutils.Equal(t, "value1", arg.Value())
+}
+
+func TestConcurrentSetAndGet(t *testing.T) {
+	spec, err := New("test", NewOption("key1", "default"))
+	testutils.NoError(t, err)
+	opts, err := spec.Seal()
+	testutils.NoError(t, err)
+
+	var wg sync.WaitGroup
+	for i := range 50 {
+		wg.Add(2)
+		go func(i int) {
+			defer wg.Done()
+			_ = opts.Set("key1", fmt.Sprintf("value%d", i))
+		}(i)
+		go func() {
+			defer wg.Done()
+			_ = opts.Get("key1").Value().String()
+		}()
+	}
+	wg.Wait()
+}
+
+func TestNewOptionInvalidKey(t *testing.T) {
+	_, err := New("test", NewOption("", "value"))
+	testutils.ErrorIs(t, err, ErrOption)
+}
