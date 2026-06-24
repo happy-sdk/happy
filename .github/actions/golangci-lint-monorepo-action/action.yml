@@ -4,7 +4,7 @@ inputs:
   golangci-lint-version:
     description: "GolangCI-Lint version"
     required: true
-    default: "latest"
+    default: "v2.12.2"
   go-version:
     description: "The Go version to download (if necessary) and use. Supports semver spec and ranges. Be sure to enclose this option in single quotation marks."
     required: true
