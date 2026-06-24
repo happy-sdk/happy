@@ -26,6 +26,35 @@ func TestInitialize(t *testing.T) {
 	testutils.Equal(t, language.English, fallback)
 }
 
+// TestTDoesNotPanicWithNilPrinter is a regression test: t() called
+// printer.Sprintf(key, args...) without checking whether getPrinter()
+// returned nil -- which it does before Initialize has ever been called --
+// panicking deep inside golang.org/x/text/message.newPrinter instead of
+// returning key unchanged, the same fallback behavior a missing catalog
+// entry already produces once initialized.
+func TestTDoesNotPanicWithNilPrinter(test *testing.T) {
+	Initialize(language.English) // ensure the package is initialized for other tests
+
+	mngr.mu.Lock()
+	savedCurrent := mngr.currentPrinter
+	savedFallback := mngr.fallbackPrinter
+	mngr.currentPrinter = nil
+	mngr.fallbackPrinter = nil
+	mngr.mu.Unlock()
+	defer func() {
+		mngr.mu.Lock()
+		mngr.currentPrinter = savedCurrent
+		mngr.fallbackPrinter = savedFallback
+		mngr.mu.Unlock()
+	}()
+
+	const key = "some.untranslated.key"
+	got := t(key)
+	if got != key {
+		test.Errorf("t(%q) with nil printer = %q, want %q", key, got, key)
+	}
+}
+
 func TestRegisterTranslations(t *testing.T) {
 	Initialize(language.English)
 

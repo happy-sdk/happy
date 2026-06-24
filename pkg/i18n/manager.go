@@ -478,11 +478,21 @@ func reload() {
 // t translates using the current language (and falls back to the fallback language).
 func t(key string, args ...any) string {
 	printer := getPrinter()
+	if printer == nil {
+		// Not yet initialized (Initialize hasn't been called): there is no
+		// translation to apply. A missing catalog entry already makes
+		// Printer.Sprintf return key unchanged (see the "result == key"
+		// check below), so mirror that exactly here instead of panicking
+		// deep inside golang.org/x/text/message on a nil printer.
+		return key
+	}
 	result := printer.Sprintf(key, args...)
 	if result == key {
 		if !mngr.usingFallbackLanguage() {
 			printer = getFallbackPrinter()
-			result = printer.Sprintf(key, args...)
+			if printer != nil {
+				result = printer.Sprintf(key, args...)
+			}
 		}
 	}
 	return result
