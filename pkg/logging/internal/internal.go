@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"math"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -56,7 +57,11 @@ func NewHttpRecord(t time.Time, method string, statusCode int, path string, args
 	return r
 }
 
-// RingBuffer is a high-performance lock-free ring buffer for generic records.
+// RingBuffer is a high-performance ring buffer for generic records, safe for
+// multiple concurrent producers (Add/AddUnsafe) and a single consumer
+// (Take/TakeUnsafe/TakeBatch/Drain/TakePreallocatedBatch); the consumer-side
+// methods are not safe to call from more than one goroutine concurrently, and
+// no current caller does so.
 type RingBuffer[R any] struct {
 	// Records slice 24 bytes
 	buffer []R
@@ -68,6 +73,18 @@ type RingBuffer[R any] struct {
 	_    [56]byte      // Cache line padding
 	tail atomic.Uint64 // Read position
 	_    [56]byte      // Cache line padding
+
+	// addMu serializes producers. Claiming a slot and publishing it (write
+	// the record, then advance head) must happen as one atomic step: a bare
+	// Load-then-Store on head is not itself atomic, so two concurrent
+	// producers could load the same head value, both write into the same
+	// slot (silently dropping one record), and both advance head by only 1
+	// net instead of 2. That desyncs head from any external counter the
+	// caller tracks per Add call (e.g. a separate pending-count), which can
+	// make a consumer loop that waits for "pending count reaches the
+	// buffer's reported length" spin forever, since the buffer can never
+	// report the record that was lost.
+	addMu sync.Mutex
 }
 
 // NewRingBuffer creates a RingBuffer of size (power of 2)
@@ -92,18 +109,22 @@ func (b *RingBuffer[R]) Cap() int {
 	return len(b.buffer)
 }
 
-// Add appends an item to the buffer (optimized with relaxed ordering).
+// Add appends an item to the buffer. Safe for concurrent use by multiple
+// producers.
 func (b *RingBuffer[R]) Add(r R) {
+	b.addMu.Lock()
+	defer b.addMu.Unlock()
 	head := b.head.Load()
 	b.buffer[head&b.mask.Load()] = r
-	// Use relaxed memory ordering for better performance
-	// Only use if you can guarantee ordering through other means
 	b.head.Store(head + 1)
 }
 
-// AddUnsafe is a faster version that doesn't check for overflow
-// Use only when you can guarantee the buffer won't overflow
+// AddUnsafe is a faster version that doesn't check for overflow.
+// Use only when you can guarantee the buffer won't overflow. Safe for
+// concurrent use by multiple producers.
 func (b *RingBuffer[R]) AddUnsafe(r R) {
+	b.addMu.Lock()
+	defer b.addMu.Unlock()
 	head := b.head.Load()
 	*(*R)(unsafe.Pointer(uintptr(unsafe.Pointer(&b.buffer[0])) +
 		uintptr(head&b.mask.Load())*unsafe.Sizeof(r))) = r
