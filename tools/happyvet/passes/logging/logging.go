@@ -59,12 +59,11 @@ func run(pass *analysis.Pass) (any, error) {
 		if call.Ellipsis != token.NoPos {
 			return // skip calls with "..." args
 		}
-		skipArgs, ok := kvFuncSkipArgs(fn)
+		skipArgs, ok := kvFuncSkipArgs(pass, call, fn)
 		if !ok {
 			// Not a logger function that takes key-value pairs.
 			return
 		}
-		// Happy SDK logging doesn't use slog.Attr, just string keys
 
 		if isMethodExpr(pass.TypesInfo, call) {
 			// Call is to a method value. Skip the first argument.
@@ -83,10 +82,17 @@ func run(pass *analysis.Pass) (any, error) {
 			t := pass.TypesInfo.Types[arg].Type
 			switch pos {
 			case key:
-				// Expect a string key.
+				// Expect a string key or a complete slog.Attr (which,
+				// unlike a bare key, is self-contained and doesn't open a
+				// value slot: matches slog's own argsToAttr behavior,
+				// where an Attr is only special-cased where a key is
+				// expected, never as a value).
 				if t == stringType {
 					pos = value
 					badKeyArg = nil // reset since we found a good key
+				} else if isSlogAttr(t) {
+					badKeyArg = nil
+					// pos stays at key: this argument was self-contained.
 				} else if types.IsInterface(t) && types.AssignableTo(stringType, t) {
 					// Could be a string, treat as unknown
 					pos = unknown
@@ -139,15 +145,34 @@ func shortName(fn *types.Func) string {
 	return fmt.Sprintf("%s.%s%s", fn.Pkg().Path(), r, fn.Name())
 }
 
-// kvFuncSkipArgs checks if fn is a logging function that takes ...any for key-value pairs.
-func kvFuncSkipArgs(fn *types.Func) (int, bool) {
-	pkg := fn.Pkg()
-	if pkg == nil {
-		return 0, false
+// kvFuncSkipArgs checks if fn is a logging function that takes ...any for
+// key-value pairs.
+//
+// pkg/logging.Logger embeds *slog.Logger and does not define its own
+// Debug/Info/Warn/Error/Log/etc methods -- they are promoted from the
+// embedded *slog.Logger. typeutil.StaticCallee resolves a call like
+// logger.Info(...) to (*slog.Logger).Info, whose declaring package is
+// log/slog, not pkg/logging -- so fn.Pkg() alone can never match a call
+// through a promoted method. To handle that, this first checks the
+// statically-written receiver type of the call (via the call's
+// types.Selection, which reports the type of x in x.f as written, e.g.
+// *pkg/logging.Logger, regardless of which embedded type actually declares
+// f) before falling back to fn's own declaring package for calls that
+// aren't a promoted-method selector (e.g. a direct call to a
+// pkg/logging-declared method, or a method value/expression).
+func kvFuncSkipArgs(pass *analysis.Pass, call *ast.CallExpr, fn *types.Func) (int, bool) {
+	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+		if selection := pass.TypesInfo.Selections[sel]; selection != nil {
+			if pkgPath, recvName, ok := namedRecv(selection.Recv()); ok && isHappyLoggingPkg(pkgPath) {
+				if skip, ok := kvFuncs[recvName][fn.Name()]; ok {
+					return skip, true
+				}
+			}
+		}
 	}
-	// Accept both the real package path and test module paths
-	pkgPath := pkg.Path()
-	if pkgPath != "github.com/happy-sdk/happy/pkg/logging" && pkgPath != "happy/pkg/logging" {
+
+	pkg := fn.Pkg()
+	if pkg == nil || !isHappyLoggingPkg(pkg.Path()) {
 		return 0, false
 	}
 
@@ -163,21 +188,38 @@ func kvFuncSkipArgs(fn *types.Func) (int, bool) {
 	return skip, ok
 }
 
+// isHappyLoggingPkg accepts both the real package path and test module
+// paths used by analysistest fixtures.
+func isHappyLoggingPkg(pkgPath string) bool {
+	return pkgPath == "github.com/happy-sdk/happy/pkg/logging" || pkgPath == "happy/pkg/logging"
+}
+
+// namedRecv reports the package path and type name of t, the statically
+// written receiver type of a selection (see types.Selection.Recv),
+// unwrapping a pointer if present.
+func namedRecv(t types.Type) (pkgPath, name string, ok bool) {
+	if ptr, isPtr := t.(*types.Pointer); isPtr {
+		t = ptr.Elem()
+	}
+	named, isNamed := t.(*types.Named)
+	if !isNamed {
+		return "", "", false
+	}
+	pkg := named.Obj().Pkg()
+	if pkg == nil {
+		return "", "", false
+	}
+	return pkg.Path(), named.Obj().Name(), true
+}
+
+// isSlogAttr reports whether t is log/slog.Attr.
+func isSlogAttr(t types.Type) bool {
+	pkgPath, name, ok := namedRecv(t)
+	return ok && pkgPath == "log/slog" && name == "Attr"
+}
+
 // kvFuncs defines functions/methods in github.com/happy-sdk/happy/pkg/logging that take ...any for key-value pairs.
 var kvFuncs = map[string]map[string]int{
-	"": {
-		"Debug":        1,
-		"Info":         1,
-		"Warn":         1,
-		"Error":        1,
-		"DebugContext": 2,
-		"InfoContext":  2,
-		"WarnContext":  2,
-		"ErrorContext": 2,
-		"Log":          3,
-		"Logs":         3,
-		"Group":        1,
-	},
 	"Logger": {
 		"Debug":        1,
 		"Info":         1,
@@ -189,9 +231,6 @@ var kvFuncs = map[string]map[string]int{
 		"ErrorContext": 2,
 		"Log":          3,
 		"With":         0,
-	},
-	"Record": {
-		"Add": 0,
 	},
 }
 
