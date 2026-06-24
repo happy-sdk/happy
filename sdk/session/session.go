@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/happy-sdk/happy/pkg/logging"
@@ -181,7 +182,7 @@ func (c *Context) Value(key any) any {
 	return nil
 }
 
-// Release releases os.Interrupt and os.Kill signals.
+// Release releases os.Interrupt and SIGTERM signals.
 // Caller becomes responsible of signals.
 func (c *Context) Release() {
 	c.mu.Lock()
@@ -190,7 +191,7 @@ func (c *Context) Release() {
 	logger := c.logger
 	c.mu.Unlock()
 	sigCancel()
-	logger.Log(c.ctx, logging.LevelHappy.Level(), "session released SIGINT, SIGKILL signals")
+	logger.Log(c.ctx, logging.LevelHappy.Level(), "session released SIGINT, SIGTERM signals")
 }
 
 // Destroy can be called do destroy session.
@@ -400,7 +401,7 @@ func (c *Context) AttachAPI(slug string, api api.Provider) error {
 func (c *Context) start() (err error) {
 	c.ready, c.readyCancel = context.WithCancel(context.Background())
 
-	c.sigCtx, c.sigCancel = signal.NotifyContext(c, os.Interrupt, os.Kill)
+	c.sigCtx, c.sigCancel = signal.NotifyContext(c, os.Interrupt, syscall.SIGTERM)
 
 	if timelocStr := c.Get("app.datetime.location").String(); timelocStr != "" {
 		c.timeloc, err = time.LoadLocation(timelocStr)

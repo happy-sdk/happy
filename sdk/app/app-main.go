@@ -111,7 +111,6 @@ func (m *Main) Run() {
 
 	if m.booted {
 		_ = m.log.LogDepth(1, logging.LevelWarn, i18n.PTD(i18np, "application_already_booted", "application already booted"))
-		m.mu.Unlock()
 		return
 	}
 	m.booted = true
