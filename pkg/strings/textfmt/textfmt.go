@@ -10,8 +10,12 @@ import (
 	"unicode"
 )
 
-// RemoveNonPrintableChars removes non-printable characters
-// Uses Go's unicode package to determine if a character is printable
+// RemoveNonPrintableChars removes non-printable characters using Go's
+// unicode.IsPrint to determine printability. This includes control
+// characters such as tabs and newlines, which are stripped (not converted
+// to spaces) -- unlike wordwrap.go's word-wrapping logic, which treats tab
+// as meaningful whitespace for column alignment; the two functions serve
+// different purposes and intentionally disagree on tab handling.
 func RemoveNonPrintableChars(s string) string {
 	var result strings.Builder
 	for _, r := range s {

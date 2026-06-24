@@ -240,6 +240,37 @@ func TestTable_MixedWidthColumns(t *testing.T) {
 	testutils.Assert(t, strings.Contains(result, "Hi你好"), "table should contain mixed text")
 }
 
+// TestTable_RaggedRow is a regression test: formatRow's first loop and its
+// "last column" block both processed the same final row index whenever a
+// row had fewer columns than the table (e.g. a 1-column row in a 5-column
+// table), rendering that cell's content twice and corrupting the
+// right-hand box-drawing border.
+func TestTable_RaggedRow(t *testing.T) {
+	tbl := NewTable()
+	tbl.AddRow("a", "b", "c", "d", "e")
+	tbl.AddRow("short")
+
+	result := tbl.String()
+	lines := strings.Split(strings.TrimRight(result, "\n"), "\n")
+
+	testutils.Equal(t, 4, len(lines), "expected border, full row, short row, border")
+
+	shortRowLine := lines[2]
+	testutils.Equal(t, 1, strings.Count(shortRowLine, "short"), "short row content must not be duplicated")
+
+	// Every content line must have exactly two "│" (the row's own left and
+	// right borders) -- a duplicated short-row render leaves a stray
+	// mid-line "│" from the first loop's own closing border.
+	testutils.Equal(t, 2, strings.Count(shortRowLine, "│"), "short row must have exactly 2 border characters")
+
+	// All rendered lines (borders use ─ joined by ┌/┬/┐ etc, content lines
+	// use │) must be the same display width, confirming alignment.
+	width := len([]rune(lines[0]))
+	for i, line := range lines {
+		testutils.Equal(t, width, len([]rune(line)), "line %d must match table width", i)
+	}
+}
+
 func TestTable_EmptyTable(t *testing.T) {
 	tbl := NewTable()
 	result := tbl.String()

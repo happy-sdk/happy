@@ -11,13 +11,6 @@ import (
 
 // Pre-allocated slices pool for reuse
 var (
-	intSlicePool = sync.Pool{
-		New: func() any {
-			slice := make([]int, 0, 16)
-			return &slice
-		},
-	}
-
 	builderPool = sync.Pool{
 		New: func() any {
 			return &strings.Builder{}
@@ -248,23 +241,11 @@ func (t *Table) calculateLocalColumnWidths() []int {
 		return nil
 	}
 
-	cwPtr := intSlicePool.Get().(*[]int)
-	cw := *cwPtr
-	defer func() {
-		*cwPtr = (*cwPtr)[:0] // Reset slice but keep capacity
-		intSlicePool.Put(cwPtr)
-	}()
-
-	// Ensure we have enough capacity
-	if cap(cw) < t.cols {
-		cw = make([]int, t.cols)
-	} else {
-		cw = cw[:t.cols]
-		// Clear existing values
-		for i := range cw {
-			cw[i] = 0
-		}
-	}
+	// Callers keep and use the returned slice well past this function's
+	// return, so it can't be drawn from a sync.Pool without copying it
+	// before returning -- which previously happened unconditionally here,
+	// making the pool pure overhead with no benefit. Allocate directly.
+	cw := make([]int, t.cols)
 
 	for _, row := range t.rows {
 		for i, col := range row {
@@ -285,10 +266,7 @@ func (t *Table) calculateLocalColumnWidths() []int {
 		}
 	}
 
-	// Copy result since we're returning the slice from pool
-	result := make([]int, len(cw))
-	copy(result, cw)
-	return result
+	return cw
 }
 
 // adjustColumnWidths adjusts column widths to match global width
@@ -474,7 +452,13 @@ func (t *Table) formatRow(row []string, colWidths []int) string {
 		}
 		b.WriteString(strings.Repeat(" ", sumCw+len(colWidths)-1))
 	} else {
-		for i := 0; i < len(row) && i < len(colWidths)-1; i++ {
+		// lastIdx is the row index handled by the "last column" block below;
+		// it must be excluded from this loop's range, or a short row (fewer
+		// columns than the table has slots for) gets its final value
+		// rendered twice -- once here, once again as the "last column".
+		lastIdx := min(len(row)-1, len(colWidths)-1)
+
+		for i := 0; i < lastIdx; i++ {
 			col := row[i]
 			colDisplayWidth := displayWidth(col)
 			padding := colWidths[i] - colDisplayWidth - 1
@@ -489,7 +473,6 @@ func (t *Table) formatRow(row []string, colWidths []int) string {
 
 		// Handle last column
 		if len(row) > 0 {
-			lastIdx := min(len(row)-1, len(colWidths)-1)
 			col := row[lastIdx]
 			colDisplayWidth := displayWidth(col)
 
