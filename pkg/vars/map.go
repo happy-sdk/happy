@@ -498,8 +498,11 @@ func (m *ReadOnlyMap) Len() int {
 // and strip prefix from keys.
 func (m *ReadOnlyMap) WithPrefix(prefix string) (rmap *ReadOnlyMap, err error) {
 	rmap = new(ReadOnlyMap)
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	// Only m.db is read here; writes happen on the freshly-created rmap,
+	// not m, so a write lock on m needlessly serializes this against every
+	// other reader of m (every other method on this type uses RLock).
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
 	for _, v := range m.db {
 		key := v.Name()

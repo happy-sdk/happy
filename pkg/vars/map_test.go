@@ -237,6 +237,54 @@ func TestMapGetWithPrefix(t *testing.T) {
 	}
 }
 
+func TestReadOnlyMapWithPrefix(t *testing.T) {
+	collection := vars.NewMap()
+	testutils.NoError(t, collection.Store("key.v1", "value1"))
+	testutils.NoError(t, collection.Store("key.v2", "value2"))
+	testutils.NoError(t, collection.Store("other_key.v1", "other_value1"))
+
+	readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+	testutils.NoError(t, err)
+	testutils.Equal(t, 3, readOnlyMap.Len())
+
+	withPrefix, err := readOnlyMap.WithPrefix("key.")
+	testutils.NoError(t, err)
+	testutils.Equal(t, 2, withPrefix.Len())
+
+	v1, ok := withPrefix.Load("v1")
+	testutils.Assert(t, ok, "expected key v1 (prefix stripped) to exist")
+	testutils.Equal(t, "value1", v1.String())
+}
+
+// TestReadOnlyMapWithPrefixConcurrentReaders is a regression test: WithPrefix
+// took a write lock (m.mu.Lock) for what is purely a read of m.db --
+// writes happen on the freshly-created result map, not m -- needlessly
+// serializing it against every other reader of m. This runs many
+// concurrent readers (WithPrefix and Range) against the same map under
+// -race to confirm none of them block on or race with each other.
+func TestReadOnlyMapWithPrefixConcurrentReaders(t *testing.T) {
+	collection := vars.NewMap()
+	for i := range 20 {
+		testutils.NoError(t, collection.Store(fmt.Sprintf("key.%d", i), i))
+	}
+	readOnlyMap, err := vars.ReadOnlyMapFrom(collection)
+	testutils.NoError(t, err)
+
+	var wg sync.WaitGroup
+	for range 50 {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			_, _ = readOnlyMap.WithPrefix("key.")
+		}()
+		go func() {
+			defer wg.Done()
+			readOnlyMap.Range(func(v vars.Variable) bool { return true })
+		}()
+	}
+	wg.Wait()
+}
+
 func TestMapGetOrDefault(t *testing.T) {
 	collection, err := vars.ParseMapFromBytes([]byte{})
 	testutils.NoError(t, err)

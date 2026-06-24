@@ -79,8 +79,10 @@ func (v Value) Len() int {
 	return len(v.str)
 }
 
-// CloneAs takes argument Kind and tries to create new typed value from this value.
-// Error returned would be same as calling NewTypedValue(v.Underlying())
+// CloneAs returns a new Value of the given Kind, converted from this
+// value's underlying raw value (equivalent to calling
+// NewValueAs(v.Any(), kind)). It returns an error if the conversion is not
+// possible.
 func (v Value) CloneAs(kind Kind) (Value, error) {
 	return NewValueAs(v.raw, kind)
 }
