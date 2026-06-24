@@ -258,10 +258,6 @@ func (rt *Runtime) Exit(code int) {
 		rt.sess.Dispatch(internal.TerminateSessionEvent)
 	}
 
-	if rt.exitCh != nil {
-		rt.exitCh <- struct{}{}
-	}
-
 	if !rt.startedAt.IsZero() {
 		rt.Log(1, logging.LevelDebug, i18n.PTD(i18np, "shutdown_complete", "shutdown complete"), slog.String("uptime", time.Since(rt.startedAt).String()), slog.Int("exit.code", code))
 	} else {
@@ -269,6 +265,17 @@ func (rt *Runtime) Exit(code int) {
 	}
 
 	rt.disposeLogger()
+
+	// Signal osmain (and therefore Run) to unblock only once shutdown,
+	// including logger disposal, has fully completed; signaling earlier let
+	// Run's caller observe a "completed" shutdown while disposeLogger was
+	// still running concurrently on this goroutine -- harmless in
+	// production, where os.Exit below kills the process moments later, but
+	// a real, observable data race under testing.Testing(), where os.Exit
+	// is skipped and the caller keeps running.
+	if rt.exitCh != nil {
+		rt.exitCh <- struct{}{}
+	}
 
 	// If we are not testing, exit the main process
 	if !testing.Testing() {
