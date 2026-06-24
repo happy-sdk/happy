@@ -291,13 +291,17 @@ func TestPTD(t *testing.T) {
 	_ = RegisterTranslation(language.English, "prefix.local", "Prefixed Value")
 
 	result := PTD("prefix", "local", "Fallback")
-	// PTD doesn't use fallback, it just calls t() which returns key if not found
 	testutils.Equal(t, "Prefixed Value", result)
 
-	// Test with non-existent key (PTD doesn't use fallback parameter)
+	// Test with non-existent key: PTD should return the given fallback value,
+	// mirroring TD's behavior, instead of returning the untranslated key.
 	result = PTD("prefix", "nonexistent", "Fallback Value")
-	// PTD just calls t(), so it returns the key if not found
-	testutils.Equal(t, "prefix.nonexistent", result)
+	testutils.Equal(t, "Fallback Value", result)
+
+	// Test with format arguments on an existing key.
+	_ = RegisterTranslation(language.English, "prefix.format", "Hello %s")
+	result = PTD("prefix", "format", "Fallback %s", "World")
+	testutils.Equal(t, "Hello World", result)
 }
 
 func TestGetPackagePrefix(t *testing.T) {

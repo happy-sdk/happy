@@ -34,9 +34,11 @@ func initialize(fallback language.Tag) {
 			catalog.Fallback(fallback),
 		)
 
+		mngr.mu.Lock()
 		mngr.initialized = true
 		mngr.fallbackLang = fallback
 		mngr.currentLang = fallback
+		mngr.mu.Unlock()
 
 		if err := RegisterTranslationsFS(NewFS(translations)); err != nil {
 			slog.Error(err.Error())
@@ -663,6 +665,7 @@ func (m *manager) extractRootKey(fullKey string) string {
 
 func (m *manager) getTranslationReport(lang language.Tag) TranslationReport {
 	allEntries := m.getAllTranslations()
+	fallbackLang := m.getFallbackLanguage()
 
 	if len(allEntries) == 0 {
 		return TranslationReport{
@@ -698,7 +701,17 @@ func (m *manager) getTranslationReport(lang language.Tag) TranslationReport {
 		stats := perRootKeyStats[rootKey]
 		stats.total++
 
-		if _, hasTranslation := entry.Translations[lang]; hasTranslation {
+		// For the fallback language, the value lives in entry.Fallback rather
+		// than entry.Translations (see getAllTranslations), so check that
+		// field instead when the requested language is the fallback language.
+		var hasTranslation bool
+		if lang == fallbackLang {
+			hasTranslation = entry.Fallback != ""
+		} else {
+			_, hasTranslation = entry.Translations[lang]
+		}
+
+		if hasTranslation {
 			translatedCount++
 			stats.translated++
 		} else {

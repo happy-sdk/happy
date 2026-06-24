@@ -201,7 +201,13 @@ func PT(prefix, localKey string, args ...any) string {
 }
 
 func PTD(prefix, localKey, fallback string, args ...any) string {
-	return t(fmt.Sprintf("%s.%s", prefix, localKey), args...)
+	key := fmt.Sprintf("%s.%s", prefix, localKey)
+	result := t(key, args...)
+	// If translation not found (result equals key), use fallback
+	if result == key {
+		return fallback
+	}
+	return result
 }
 
 func GetPackagePrefix() string {

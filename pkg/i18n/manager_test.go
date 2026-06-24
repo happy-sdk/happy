@@ -5,6 +5,7 @@
 package i18n
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
@@ -683,6 +684,105 @@ func TestManager_GetAllTranslations_PrinterResultEqualsKey(t *testing.T) {
 		}
 	}
 	testutils.Assert(t, found, "expected to find englishonly.key2 in entries")
+}
+
+// TestManager_Initialize_ConcurrentReads is a regression test for a bug where
+// initialize() wrote mngr.initialized/fallbackLang/currentLang without holding
+// mngr.mu, while every reader (isInitialized, getCurrentLanguage,
+// getFallbackLanguage) takes mngr.mu.RLock. Under `go test -race` this caught a
+// real data race. Initialize uses sync.Once so the write only ever happens once
+// per process; this test still guards against a regression in the readers'
+// locking discipline by hammering them concurrently around an Initialize call.
+func TestManager_Initialize_ConcurrentReads(t *testing.T) {
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			Initialize(language.English)
+		}()
+		wg.Add(3)
+		go func() {
+			defer wg.Done()
+			_ = mngr.isInitialized()
+		}()
+		go func() {
+			defer wg.Done()
+			_ = mngr.getCurrentLanguage()
+		}()
+		go func() {
+			defer wg.Done()
+			_ = mngr.getFallbackLanguage()
+		}()
+	}
+	wg.Wait()
+}
+
+// TestManager_GetTranslationReport_FallbackLanguage is a regression test for a bug
+// where getAllTranslations stores the fallback language's value in entry.Fallback
+// (not entry.Translations[fallbackLang]), but getTranslationReport only checked
+// entry.Translations[lang]. This caused GetTranslationReport(fallbackLang) to
+// incorrectly report entries as untranslated/missing even though every key has
+// a value in the fallback language by construction.
+func TestManager_GetTranslationReport_FallbackLanguage(t *testing.T) {
+	Initialize(language.English)
+
+	// Register a key in both the fallback language (English) and French.
+	_ = RegisterTranslation(language.English, "fallbackreport.key1", "English Value 1")
+	_ = RegisterTranslation(language.French, "fallbackreport.key1", "Valeur Française 1")
+
+	englishReport := GetTranslationReport(language.English)
+	frenchReport := GetTranslationReport(language.French)
+
+	// Find our specific key in both reports' entries to compute targeted stats,
+	// since the report aggregates over every key registered in the package.
+	var englishMissingOurKey, frenchMissingOurKey bool
+	for _, entry := range englishReport.MissingEntries {
+		if entry.Key == "fallbackreport.key1" {
+			englishMissingOurKey = true
+		}
+	}
+	for _, entry := range frenchReport.MissingEntries {
+		if entry.Key == "fallbackreport.key1" {
+			frenchMissingOurKey = true
+		}
+	}
+
+	testutils.Assert(t, !englishMissingOurKey, "expected fallbackreport.key1 to be reported as translated for the fallback language (English)")
+	testutils.Assert(t, !frenchMissingOurKey, "expected fallbackreport.key1 to be reported as translated for French")
+
+	// The fallback language report should never have a worse percentage than 0
+	// when every registered key has a fallback value; assert it's > 0 here since
+	// at least one key (ours) is guaranteed to have a fallback value.
+	testutils.Assert(t, englishReport.Percentage > 0, "expected non-zero translated percentage for fallback language report, got %f", englishReport.Percentage)
+}
+
+// TestManager_GetTranslationReport_FallbackLanguage_FullyTranslated is a more
+// targeted regression test using an isolated manager instance (rather than the
+// shared global mngr) so the percentage assertion is exact and not affected by
+// other tests' registered keys.
+func TestManager_GetTranslationReport_FallbackLanguage_FullyTranslated(t *testing.T) {
+	m := newManager()
+	m.initialized = true
+	m.fallbackLang = language.English
+	m.currentLang = language.English
+	m.dictionaries[language.English] = map[string]any{
+		"isolated.key1": "Value 1",
+		"isolated.key2": "Value 2",
+	}
+	m.dictionaries[language.French] = map[string]any{
+		"isolated.key1": "Valeur 1",
+		"isolated.key2": "Valeur 2",
+	}
+	m.langs = []language.Tag{language.English, language.French}
+
+	report := m.getTranslationReport(language.English)
+
+	testutils.Equal(t, 2, report.Total)
+	testutils.Equal(t, 2, report.Translated)
+	testutils.Equal(t, 0, report.Missing)
+	testutils.Equal(t, 100.0, report.Percentage)
+	testutils.Equal(t, 0, len(report.MissingEntries))
 }
 
 func TestManager_GetAllTranslations_FallbackDictNilButPrinterExists(t *testing.T) {
