@@ -10,6 +10,11 @@ type Builder struct {
 	brand *Brand
 }
 
+// Build returns the configured Brand. The error return exists for forward
+// compatibility (e.g. future validation); it is currently always nil. An
+// empty Info (no name, no slug) is accepted, since some bootstrap paths
+// (e.g. under testing.Testing()) construct a Brand before a name or slug
+// has been resolved.
 func (b *Builder) Build() (*Brand, error) {
 	return b.brand, nil
 }
