@@ -69,7 +69,7 @@ func New[S Settings](s S) (*Blueprint, error) {
 	var isPointer bool
 
 	// Check if the provided interface is a pointer
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		if val.IsNil() {
 			return nil, errors.New("provided interface is nil")
 		}
@@ -167,7 +167,7 @@ func fieldImplementsSettings(field reflect.StructField) bool {
 	fieldType := field.Type
 
 	// Check if the field is a pointer and get the element type if so
-	if fieldType.Kind() == reflect.Ptr {
+	if fieldType.Kind() == reflect.Pointer {
 		fieldType = fieldType.Elem()
 	}
 
@@ -183,7 +183,7 @@ func fieldImplementsSetting(field reflect.StructField) bool {
 	fieldType := field.Type
 
 	// Check if the field is a pointer and get the element type if so
-	if fieldType.Kind() == reflect.Ptr {
+	if fieldType.Kind() == reflect.Pointer {
 		fieldType = fieldType.Elem()
 	}
 

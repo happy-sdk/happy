@@ -106,7 +106,7 @@ func settingSpecFromField(field reflect.StructField, value reflect.Value) (Setti
 
 		// Handle nested settings
 		var err error
-		if value.Kind() == reflect.Ptr {
+		if value.Kind() == reflect.Pointer {
 			// If the value is a nil pointer, initialize it
 			if value.IsNil() {
 				value.Set(reflect.New(value.Type().Elem()))
