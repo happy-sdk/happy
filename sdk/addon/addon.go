@@ -2,12 +2,17 @@
 //
 // Copyright © 2022 The Happy Authors
 
+// Package addon provides the Addon and Manager types used to bundle
+// commands, services, settings, options, events, and a custom API into a
+// single, shareable unit that an application registers via
+// app.WithAddon(s).
 package addon
 
 import (
 	"errors"
 	"fmt"
 	"path"
+	"reflect"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -32,6 +37,7 @@ var (
 	Error = errors.New("addon")
 )
 
+// Config controls how the application treats an addon once registered.
 type Config struct {
 	// Slug is the unique identifier for this addon.
 	Slug string
@@ -43,6 +49,8 @@ type Config struct {
 	WithoutServices bool
 }
 
+// Info identifies an addon: its name, slug, description, version, and the
+// Go module/package it was constructed from (auto-detected by New).
 type Info struct {
 	Name        string
 	Slug        string
@@ -51,10 +59,17 @@ type Info struct {
 	Module      string
 }
 
+// Option declares an option this addon accepts, with the given default
+// value. Pass the result to Addon.WithOptions.
 func Option(key string, dval any) *options.OptionSpec {
 	return options.NewOption(key, dval)
 }
 
+// Addon bundles commands, services, settings, options, events, and an
+// optional custom API into a single unit. Construct one with New, then
+// configure it with the With*/Provide* builder methods before passing it
+// to app.WithAddon(s); once attached to a Manager (which app.WithAddon(s)
+// does internally), further configuration calls are rejected.
 type Addon struct {
 	mu             sync.Mutex
 	info           Info
@@ -74,6 +89,17 @@ type Addon struct {
 	attached     bool
 }
 
+// addonPkgPath is this package's own import path, derived via reflect
+// rather than hardcoded so it can't drift if the package is ever moved.
+var addonPkgPath = reflect.TypeOf(Addon{}).PkgPath()
+
+// New creates a new Addon. It must be called from the addon's own
+// constructor function (the function an application calls to obtain the
+// *Addon, e.g. a package-level Addon() func): the addon's module/package
+// is auto-detected from the call stack as the first frame outside this
+// package, so wrapping New in a helper defined in a different package
+// (rather than calling it directly from the addon's own package) will
+// misattribute the addon's module to that helper's package instead.
 func New(name string) *Addon {
 	addon := &Addon{
 		info: Info{
@@ -84,6 +110,9 @@ func New(name string) *Addon {
 	return addon
 }
 
+// WithConfig sets the addon's Config, controlling how the application
+// treats it once registered. A non-empty cfg.Slug overrides the
+// auto-derived slug.
 func (addon *Addon) WithConfig(cfg Config) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
@@ -98,6 +127,8 @@ func (addon *Addon) WithConfig(cfg Config) *Addon {
 	return addon
 }
 
+// WithSettings extends the application's settings with s, namespaced under
+// this addon's slug.
 func (addon *Addon) WithSettings(s settings.Settings) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
@@ -110,6 +141,8 @@ func (addon *Addon) WithSettings(s settings.Settings) *Addon {
 	return addon
 }
 
+// WithOptions declares the runtime options this addon accepts, namespaced
+// under its slug. Use Option to build each *options.OptionSpec.
 func (addon *Addon) WithOptions(opts ...*options.OptionSpec) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
@@ -121,6 +154,9 @@ func (addon *Addon) WithOptions(opts ...*options.OptionSpec) *Addon {
 	return addon
 }
 
+// WithEvents registers every event this addon may emit. A nil event
+// records a pending error rather than panicking; that error surfaces when
+// the addon is registered.
 func (addon *Addon) WithEvents(evs ...events.Event) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
@@ -139,6 +175,12 @@ func (addon *Addon) WithEvents(evs ...events.Event) *Addon {
 	return addon
 }
 
+// ProvideAPI makes a custom API accessible from elsewhere in the
+// application via happy.API. api must implement api.Provider, which
+// (since its method is unexported) means embedding api.Provider as a
+// zero-value field in your own API type -- see the api package's doc
+// comment. At most one API may be provided per addon; a nil api or a
+// second call both record a pending error rather than panicking.
 func (addon *Addon) ProvideAPI(api api.Provider) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
@@ -160,6 +202,9 @@ func (addon *Addon) ProvideAPI(api api.Provider) *Addon {
 	return addon
 }
 
+// ProvideCommands registers the commands this addon makes available on the
+// application's CLI. A nil command records a pending error rather than
+// panicking.
 func (addon *Addon) ProvideCommands(cmds ...*command.Command) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
@@ -173,6 +218,8 @@ func (addon *Addon) ProvideCommands(cmds ...*command.Command) *Addon {
 	return addon
 }
 
+// ProvideServices registers the background services this addon provides.
+// A nil service records a pending error rather than panicking.
 func (addon *Addon) ProvideServices(svcs ...*services.Service) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
@@ -186,6 +233,8 @@ func (addon *Addon) ProvideServices(svcs ...*services.Service) *Addon {
 	return addon
 }
 
+// OnRegister sets a callback invoked once when the addon is registered
+// with the application (see Manager.Register).
 func (addon *Addon) OnRegister(action action.Register) *Addon {
 	addon.mu.Lock()
 	defer addon.mu.Unlock()
@@ -210,17 +259,11 @@ func (addon *Addon) tryConfigureAttached() bool {
 }
 
 func (addon *Addon) loadPackageInfo() {
-	pc, _, _, ok := runtime.Caller(2)
+	fnName, ok := callerOutsidePackage(addonPkgPath)
 	if !ok {
 		addon.perr(fmt.Errorf("%w: failed to get addon caller info", Error))
 		return
 	}
-	fn := runtime.FuncForPC(pc)
-	if fn == nil {
-		addon.perr(fmt.Errorf("%w: failed to get addon caller info for pc %d", Error, pc))
-		return
-	}
-	fnName := fn.Name()
 
 	lastDotIndex := strings.LastIndex(fnName, ".")
 	if lastDotIndex == -1 {
@@ -269,6 +312,35 @@ func (addon *Addon) loadPackageInfo() {
 	}
 	if addon.info.Slug == "" {
 		addon.info.Slug = slug.Create(addon.info.Name)
+	}
+}
+
+// callerOutsidePackage returns the fully-qualified function name of the
+// first stack frame outside pkgPath, walking up from this function's own
+// caller. This is robust to indirection within pkgPath itself (e.g. New
+// calling loadPackageInfo calling this), unlike a fixed-depth
+// runtime.Caller(n) call, which breaks if such an extra layer is ever
+// added. It cannot see through a wrapper defined in a different package,
+// since from this function's perspective that wrapper's package is
+// already "outside" pkgPath -- callers must invoke New directly from the
+// addon's own constructor, per New's doc comment.
+func callerOutsidePackage(pkgPath string) (string, bool) {
+	const maxDepth = 32
+	pcs := make([]uintptr, maxDepth)
+	// skip=2: skip runtime.Callers itself and this function's own frame.
+	n := runtime.Callers(2, pcs)
+	if n == 0 {
+		return "", false
+	}
+	frames := runtime.CallersFrames(pcs[:n])
+	for {
+		frame, more := frames.Next()
+		if frame.Function != "" && !strings.HasPrefix(frame.Function, pkgPath+".") {
+			return frame.Function, true
+		}
+		if !more {
+			return "", false
+		}
 	}
 }
 
