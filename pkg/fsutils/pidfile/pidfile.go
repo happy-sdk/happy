@@ -37,12 +37,15 @@ func New(name string, pid int, perm os.FileMode) (*File, error) {
 	}
 
 	if pidlen, err := fmt.Fprint(pf, pid); err != nil {
+		_ = pf.Remove()
 		return nil, fmt.Errorf("%w: set pid: %s", Error, err.Error())
 	} else if err = pf.Truncate(int64(pidlen)); err != nil {
+		_ = pf.Remove()
 		return nil, fmt.Errorf("%w: truncate pidfile: %w", Error, err)
 	}
 
 	if err := file.Sync(); err != nil {
+		_ = pf.Remove()
 		return nil, fmt.Errorf("%w: sync pidfile: %w", Error, err)
 	}
 	return &File{file}, nil

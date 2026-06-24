@@ -222,10 +222,13 @@ func (rf *File) rotate(force bool) (err error) {
 
 	if rf.file != nil {
 		rf.prevRotation = rf.btime
-		if err := rf.file.Close(); err != nil {
-			return fmt.Errorf("%w: failed to close file: %w", Error, err)
-		}
+		closeErr := rf.file.Close()
+		// Clear rf.file before checking the close error so that, on failure,
+		// we don't leave a stale closed handle for subsequent writes to hit.
 		rf.file = nil
+		if closeErr != nil {
+			return fmt.Errorf("%w: failed to close file: %w", Error, closeErr)
+		}
 	}
 
 	if rf.archiveDir != "" && !fsutils.IsDir(rf.archiveDir) {
@@ -263,8 +266,13 @@ func (rf *File) SELinuxContext() (string, error) {
 
 func (rf *File) open() (*File, error) {
 	if rf.file != nil {
-		if err := rf.file.Close(); err != nil {
-			return nil, fmt.Errorf("%w: failed to close previously opened file: %w", Error, err)
+		closeErr := rf.file.Close()
+		// Once closed, never leave rf.file pointing at a stale/closed fd:
+		// if the reopen below fails, writers must see a clean "not open"
+		// error instead of operating on a closed file descriptor.
+		rf.file = nil
+		if closeErr != nil {
+			return nil, fmt.Errorf("%w: failed to close previously opened file: %w", Error, closeErr)
 		}
 	}
 
@@ -276,6 +284,11 @@ func (rf *File) open() (*File, error) {
 	rf.file = file
 	stat, err := rf.stat()
 	if err != nil {
+		// The file was already opened above; close it and clear rf.file so
+		// the fd isn't leaked (relying on GC finalization) and so a caller
+		// that discards this *File on error doesn't leave a stale handle.
+		_ = rf.file.Close()
+		rf.file = nil
 		return nil, err
 	}
 	rf.btime = stat.Btime
@@ -285,6 +298,8 @@ func (rf *File) open() (*File, error) {
 		rotatedPath := rf.generateRotatedFileName(rf.btime)
 		last, rotations, err := rf.findLastRotatedFilePath(rotatedPath)
 		if err != nil {
+			_ = rf.file.Close()
+			rf.file = nil
 			return nil, err
 		}
 		if rstat, err := fsutils.Stat(last); err == nil {
