@@ -134,10 +134,21 @@ func Text(text string, fg, bg Color, flags Flag) string {
 	}
 
 	if fg.valid {
+		// A semicolon is only needed here if something preceding (a flag
+		// digit) didn't already leave a trailing separator; fg.fg itself
+		// always ends with its own trailing semicolon (see toAnsi), so it
+		// doesn't need needsSemi set afterwards.
+		if needsSemi {
+			result = append(result, semi)
+		}
 		result = append(result, fg.fg...)
+		needsSemi = false
 	}
 
 	if bg.valid {
+		if needsSemi {
+			result = append(result, semi)
+		}
 		result = append(result, bg.bg...)
 	}
 	lastIndex := len(result) - 1
@@ -159,7 +170,7 @@ func Format(text string, fmtf Flag) string {
 
 // HEX converts a hex color code to an Color.
 func HEX(hex string) (c Color) {
-	if hex[0] != '#' {
+	if len(hex) == 0 || hex[0] != '#' {
 		c = InvalidColor
 		c.err = fmt.Errorf("%w: %s", ErrInvalidHex, hex)
 		return
@@ -260,8 +271,12 @@ type Theme struct {
 	Muted          Color // Muted color
 }
 
+// toAnsi returns an SGR parameter fragment (e.g. "38;2;255;237;86;"), not a
+// standalone escape sequence: it is meant to be embedded inside the single
+// "\033[...m" sequence that Text builds, which already supplies the
+// "\033[" prefix and the parameter list's "m" terminator.
 func toAnsi(rgba color.RGBA, base byte) []byte {
-	ansi := []byte{'\033', '[', base}
+	ansi := []byte{base}
 	ansi = append(ansi, "8;2;"...)
 	ansi = append(ansi, coloritoa[rgba.R]...)
 	ansi = append(ansi, semi)
@@ -303,11 +318,13 @@ func StringHEX(str string) (hex string) {
 	return fmt.Sprintf("%x", []byte(str))
 }
 
+// ansiRegex matches ESC[ followed by any characters until 'm', i.e. an SGR
+// ANSI escape sequence. Compiled once at package init since StrippedString
+// is meant to be called on every line of terminal output.
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
 // StrippedString return clean string all
 // ANSI escape sequences removed.
 func StrippedString(str string) (stripped string) {
-	// Simple regex to remove ANSI escape sequences
-	// Pattern matches: ESC[ followed by any characters until 'm'
-	ansiRegex := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	return ansiRegex.ReplaceAllString(str, "")
 }

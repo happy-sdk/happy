@@ -45,6 +45,45 @@ func TestHEX(t *testing.T) {
 	}
 }
 
+// TestHEXEmptyStringDoesNotPanic is a regression test: HEX("") panicked
+// with an index-out-of-range error instead of returning InvalidColor, since
+// it indexed hex[0] without checking the string was non-empty.
+func TestHEXEmptyStringDoesNotPanic(t *testing.T) {
+	got := HEX("")
+	if got.Err() == nil {
+		t.Error("HEX(\"\") expected an error, got nil")
+	}
+	if got.Valid() {
+		t.Error("HEX(\"\") expected an invalid color")
+	}
+}
+
+// TestTextColorIsNotDoubleEscaped is a regression test: Text() prepends its
+// own "\033[" prefix, but toAnsi() also used to prepend its own "\033["
+// before the fg/bg color's SGR parameters, producing a malformed,
+// double-escaped sequence like "\x1b[\x1b[38;2;255;237;86mhello\x1b[0m"
+// instead of the well-formed "\x1b[38;2;255;237;86mhello\x1b[0m".
+func TestTextColorIsNotDoubleEscaped(t *testing.T) {
+	got := Text("hi", RGB(255, 237, 86), Color{}, 0)
+	want := "\x1b[38;2;255;237;86mhi\x1b[0m"
+	if got != want {
+		t.Errorf("Text() = %q, want %q", got, want)
+	}
+	if strings.Count(got, "\x1b[") != 2 {
+		t.Errorf("Text() = %q, expected exactly 2 escape sequences (open + reset), found %d", got, strings.Count(got, "\x1b["))
+	}
+}
+
+// TestTextColorAndFlagsIsNotDoubleEscaped covers the combined fg+bg+flags
+// path through the same bug.
+func TestTextColorAndFlagsIsNotDoubleEscaped(t *testing.T) {
+	got := Text("hi", RGB(255, 237, 86), RGB(0, 0, 0), Bold)
+	want := "\x1b[1;38;2;255;237;86;48;2;0;0;0mhi\x1b[0m"
+	if got != want {
+		t.Errorf("Text() = %q, want %q", got, want)
+	}
+}
+
 func TestRGB(t *testing.T) {
 	c := RGB(255, 255, 255)
 	if !c.Valid() {
