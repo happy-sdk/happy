@@ -26,9 +26,6 @@ type MyAPI struct {
 // rely on the package doc's example.
 func TestProviderEmbeddingSatisfiesInterface(t *testing.T) {
 	var p api.Provider = &MyAPI{Greeting: "hello"}
-	if p == nil {
-		t.Fatal("expected a non-nil Provider")
-	}
 
 	myAPI, ok := p.(*MyAPI)
 	if !ok {
@@ -40,13 +37,15 @@ func TestProviderEmbeddingSatisfiesInterface(t *testing.T) {
 }
 
 // TestProviderEmbeddingValueReceiver confirms the pattern also works for a
-// value (non-pointer) type embedding api.Provider.
+// value (non-pointer) type embedding api.Provider. The assertion is the
+// compile itself: ValueAPI must satisfy api.Provider via the embedded zero
+// value.
 func TestProviderEmbeddingValueReceiver(t *testing.T) {
 	type ValueAPI struct {
 		api.Provider
 	}
 	var p api.Provider = ValueAPI{}
-	if p == nil {
-		t.Fatal("expected a non-nil Provider")
+	if _, ok := p.(ValueAPI); !ok {
+		t.Fatal("expected to assert back to ValueAPI")
 	}
 }
