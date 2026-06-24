@@ -16,7 +16,7 @@ test_failed=0
 if [ -f ".happy.yaml" ]; then
   while IFS= read -r line; do
     # Extract value from lines like "  - path"
-    val="$(echo "$line" | sed -n 's/^[[:space:]]*-\s*\(.*\)$/\1/p')"
+    val="$(echo "$line" | sed -n 's/^[[:space:]]*-[[:space:]]*\(.*\)$/\1/p')"
     if [ -n "$val" ]; then
       # Normalize to ./relative/path to match go.mod module dirs
       ignore_modules+=("./$val")
