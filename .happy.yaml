@@ -3,12 +3,6 @@ version: "1"
 releaser:
   enabled: true
 
-go:
-  monorepo:
-    work:
-      use_recursive: true
-      sync: true
-
 git:
   author:
     email: hello@happy-sdk.dev
