@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/happy-sdk/addons/devel v0.3.0
-	github.com/happy-sdk/happy v1.0.0
+	github.com/happy-sdk/happy v1.1.0
 	github.com/happy-sdk/happy/pkg/branding v1.0.0
 	github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.0
 	github.com/happy-sdk/happy/pkg/version v1.0.0
