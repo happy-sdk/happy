@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/happy-sdk/addons/devel"
-	"github.com/happy-sdk/addons/devel/project"
-	"github.com/happy-sdk/addons/devel/projects"
+	"github.com/happy-sdk/happy/addons/devel"
+	"github.com/happy-sdk/happy/addons/devel/project"
+	"github.com/happy-sdk/happy/addons/devel/projects"
 	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/sdk/action"

@@ -7,7 +7,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/happy-sdk/addons/devel/project"
+	"github.com/happy-sdk/happy/addons/devel/project"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/session"
