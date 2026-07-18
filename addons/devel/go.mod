@@ -18,7 +18,6 @@ require (
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4
 	github.com/happy-sdk/happy/pkg/vars v1.1.6
 	github.com/happy-sdk/happy/pkg/version v1.0.2
-	github.com/happy-sdk/lib/taskrunner v0.8.1
 	golang.org/x/mod v0.38.0
 )
 

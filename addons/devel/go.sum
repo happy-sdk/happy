@@ -70,8 +70,6 @@ github.com/happy-sdk/happy/pkg/vars v1.1.6 h1:aL/15mDZIOneriqzOtvTCW1dwfTLH5Ne6O
 github.com/happy-sdk/happy/pkg/vars v1.1.6/go.mod h1:4b3Da+zt2Vw9qcEg8ziXWRx3m4KOBu7UrFy8jIQor40=
 github.com/happy-sdk/happy/pkg/version v1.0.2 h1:zYc+Zifn7Z31aY6PI7EWDnDZiZBxmT6onlvHzyNxvs4=
 github.com/happy-sdk/happy/pkg/version v1.0.2/go.mod h1:OsyLdy2SPkW01oj/9/vs3QqUTVg2SrzONWYd8jKzWVA=
-github.com/happy-sdk/lib/taskrunner v0.8.1 h1:0IGpWsEIPTaoV7BhOdOYKreZdXoplKWlGrdDLHzoN28=
-github.com/happy-sdk/lib/taskrunner v0.8.1/go.mod h1:MxUbc7HtIB3cd7XfrbGlhoM1we9nhKP8c/sTEU3aJSU=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=

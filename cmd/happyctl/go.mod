@@ -44,7 +44,6 @@ require (
 	github.com/happy-sdk/happy/pkg/strings/slug v1.0.1 // indirect
 	github.com/happy-sdk/happy/pkg/tui v1.0.1 // indirect
 	github.com/happy-sdk/happy/pkg/vars v1.1.6 // indirect
-	github.com/happy-sdk/lib/taskrunner v0.8.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

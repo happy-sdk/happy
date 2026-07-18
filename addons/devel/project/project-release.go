@@ -19,7 +19,7 @@ import (
 	"github.com/happy-sdk/happy/addons/devel/pkg/views"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/session"
-	tr "github.com/happy-sdk/lib/taskrunner"
+	tr "github.com/happy-sdk/happy/lib/taskrunner"
 )
 
 func (prj *Project) Release(sess *session.Context, allowDirty, skipRemoteChecks bool) (err error) {

@@ -12,7 +12,7 @@ import (
 
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/session"
-	tr "github.com/happy-sdk/lib/taskrunner"
+	tr "github.com/happy-sdk/happy/lib/taskrunner"
 )
 
 func (prj *Project) Lint(sess *session.Context) error {
