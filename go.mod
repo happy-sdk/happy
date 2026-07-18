@@ -6,7 +6,7 @@ require (
 	github.com/happy-sdk/happy/pkg/branding v1.0.0
 	github.com/happy-sdk/happy/pkg/bytesize v1.0.0
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.0
-	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.1
+	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.2
 	github.com/happy-sdk/happy/pkg/fsutils v1.0.1
 	github.com/happy-sdk/happy/pkg/i18n v1.1.1
 	github.com/happy-sdk/happy/pkg/logging v1.0.0
