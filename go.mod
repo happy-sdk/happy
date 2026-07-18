@@ -6,12 +6,12 @@ require (
 	github.com/happy-sdk/happy/pkg/branding v1.0.0
 	github.com/happy-sdk/happy/pkg/bytesize v1.0.1
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.1
-	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.2
+	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.3
 	github.com/happy-sdk/happy/pkg/fsutils v1.0.3
 	github.com/happy-sdk/happy/pkg/i18n v1.1.3
 	github.com/happy-sdk/happy/pkg/logging v1.0.2
 	github.com/happy-sdk/happy/pkg/networking v1.0.0
-	github.com/happy-sdk/happy/pkg/options v1.0.1
+	github.com/happy-sdk/happy/pkg/options v1.0.2
 	github.com/happy-sdk/happy/pkg/scheduling/cron v1.0.2
 	github.com/happy-sdk/happy/pkg/settings v1.1.5
 	github.com/happy-sdk/happy/pkg/strings/slug v1.0.0
@@ -27,7 +27,7 @@ require (
 require (
 	github.com/happy-sdk/happy/pkg/bitutils v1.0.1 // indirect
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.2 // indirect
-	github.com/happy-sdk/happy/tools/happyvet v1.0.1 // indirect
+	github.com/happy-sdk/happy/tools/happyvet v1.0.2 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
