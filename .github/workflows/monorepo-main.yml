@@ -91,6 +91,12 @@ jobs:
 
       - name: Upload primary monorepo coverage file
         if: success() || github.event.inputs.loose == 'true'
+        # HOMEBREW_NO_REQUIRE_TAP_TRUST works around coverallsapp/github-action's
+        # macOS install path failing under Homebrew 6.0's tap-trust enforcement
+        # (https://github.com/coverallsapp/github-action/issues, fix pending in
+        # PR #265). Remove once that's released and this action picks it up.
+        env:
+          HOMEBREW_NO_REQUIRE_TAP_TRUST: "1"
         uses: coverallsapp/github-action@v2
         with:
           flag-name: happy
