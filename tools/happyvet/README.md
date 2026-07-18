@@ -3,7 +3,7 @@
 `happyvet` is a [`go vet`](https://pkg.go.dev/cmd/vet)-style static analyzer for Happy SDK
 components. It currently ships one check:
 
-- **`happy_logging`** — flags calls to `*github.com/happy-sdk/happy/pkg/logging.Logger` methods
+- **`happy_logging`** - flags calls to `*github.com/happy-sdk/happy/pkg/logging.Logger` methods
   (`Debug`, `Info`, `Warn`, `Error`, their `*Context` variants, `Log`, `With`) that don't follow
   slog's alternating key/value convention: a non-string, non-`slog.Attr` key, or a trailing key
   with no value.
@@ -19,7 +19,7 @@ in editors via `gopls`, and as a `golangci-lint` v2 module plugin.
 
 ## Install
 
-As a per-project tool dependency (recommended — pins the version in `go.mod`, no global install).
+As a per-project tool dependency (recommended - pins the version in `go.mod`, no global install).
 Note the path: it must be the `cmd/happyvet` **binary** package, not the bare module path (that's
 the library entrypoint used for the golangci-lint plugin below, and has no `main` to run):
 
@@ -40,11 +40,11 @@ go install github.com/happy-sdk/happy/tools/happyvet/cmd/happyvet@latest
 ## Use
 
 > In a multi-module repo or workspace, `./...` never crosses a nested module boundary (a
-> subdirectory with its own `go.mod`) — this is standard Go behavior, not specific to `happyvet`.
+> subdirectory with its own `go.mod`) - this is standard Go behavior, not specific to `happyvet`.
 > Run it from inside each module you want checked, rather than once from a parent directory
 > expecting it to recurse into every module underneath.
 
-**Standalone**, like any linter — takes package patterns, `-fix` applies suggested fixes,
+**Standalone**, like any linter - takes package patterns, `-fix` applies suggested fixes,
 `-json` emits JSON diagnostics:
 
 ```bash
@@ -54,13 +54,13 @@ happyvet ./...
 happyvet -fix ./...
 ```
 
-**Through `go vet`** — works with the standard `-vettool` flag:
+**Through `go vet`** - works with the standard `-vettool` flag:
 
 ```bash
 go vet -vettool=$(go tool -n happyvet 2>/dev/null || which happyvet) ./...
 ```
 
-**In editors (gopls-based: VS Code, GoLand, ...)** — point the editor's `go vet` invocation at
+**In editors (gopls-based: VS Code, GoLand, ...)** - point the editor's `go vet` invocation at
 `happyvet` via its vet-flags setting. For the VS Code Go extension, in `settings.json`:
 
 ```json
@@ -72,7 +72,7 @@ go vet -vettool=$(go tool -n happyvet 2>/dev/null || which happyvet) ./...
 replacing the path with wherever `go build -o` (or `go env GOBIN`) put the binary. GoLand exposes
 the equivalent under its Go Linter / `go vet` tool configuration.
 
-**As a `golangci-lint` v2 module plugin** (v2.4.0+) — `happyvet` exports the
+**As a `golangci-lint` v2 module plugin** (v2.4.0+) - `happyvet` exports the
 `func New(settings any) ([]*analysis.Analyzer, error)` entrypoint golangci-lint's module plugin
 system expects. Add a `.custom-gcl.yml`:
 
@@ -90,6 +90,6 @@ golangci-lint custom      # produces ./custom-gcl
 ./custom-gcl run
 ```
 
-and enable it in `.golangci.yml` under `linters.settings.custom` — see golangci-lint's
+and enable it in `.golangci.yml` under `linters.settings.custom` - see golangci-lint's
 [module plugin docs](https://golangci-lint.run/plugins/module-plugins/) for the exact schema for
 your installed version, since it has changed across releases.

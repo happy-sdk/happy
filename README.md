@@ -2,9 +2,9 @@
 
 # Happy Prototyping Framework and SDK
 
-Happy SDK is an open-source Go framework designed to make building applications simple and fast. Its clear, modular structure and addon system promote code reuse, enabling anyone—coders or non-coders—to create prototypes or full projects efficiently. It integrates smoothly with projects using multiple programming languages, helping teams bring ideas to life with ease with built-in monorepo support.
+Happy SDK is an open-source Go framework designed to make building applications simple and fast. Its clear, modular structure and addon system promote code reuse, enabling anyone - coders or non-coders - to create prototypes or full projects efficiently. It integrates smoothly with projects using multiple programming languages, helping teams bring ideas to life with ease with built-in monorepo support.
 
-:warning: *Until v1.0.0, API changes may break compatibility, so pin your Happy version and update cautiously.*  
+:warning: _Until v1.0.0, API changes may break compatibility, so pin your Happy version and update cautiously._
 
 **Update your project to latest**
 
@@ -18,7 +18,7 @@ go get -u github.com/happy-sdk/happy
 
 Happy SDK is designed to simplify your development process without introducing any new or additional developer tools. Your applications built with Happy can be used, built, and tested with the standard Go build tools, such as 'go test', 'go build', and 'go run'. With Happy, you have complete control over your development environment, as it will not add any third-party dependencies to your project.
 
-*Here's a minimal example of how you can use Happy:*
+_Here's a minimal example of how you can use Happy:_
 
 ```go
 // main.go
@@ -45,7 +45,7 @@ func main() {
 // info        15:04:05.000 Hello, world!
 ```
 
-*Here's a example enabling builtin global flags including (help,version:*
+_Here's a example enabling builtin global flags including (help,version:_
 
 ```go
 // main.go
@@ -145,14 +145,14 @@ See the full source in the `./examples/` directory for more patterns.
 ### Application API
 
 More details of api read happy Godoc  
- [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/app)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/app)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/app)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/app)
 
 ```go
 
 ...
 app.AddInfo(/* add paragraph to app help */)
 app.WithOptions(/* adds allowed runtime option */)
-app.SetOptions(/* update default value for any application or addon option */) 
+app.SetOptions(/* update default value for any application or addon option */)
 app.Setup(/* optional setup action called only first time app is used */)
 app.WithAddon(/* adds addon to app */)
 app.WithBrand(/* customize branding of the app */)
@@ -180,7 +180,7 @@ app.Tock(/* called after every tick*/)
 ### Commands
 
 `command.Command` provides a universal API for attaching sub-commands directly to the application or providing them from an Addon.  
- [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/cli/command)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/cli/command)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/cli/command)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/cli/command)
 
 ```go
 import "github.com/happy-sdk/happy/sdk/cli/command"
@@ -206,7 +206,7 @@ cmd.WithFlags(/* add flag(s) to  command*/)
 ### Services
 
 The `services.Service` API provides a flexible way to add runtime-controllable background services to your application.  
- [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/services)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/services)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/services)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/services)
 
 ```go
 import (
@@ -234,7 +234,7 @@ app.WithServices(svc)
 ## Addons
 
 Addons provide a simple way to bundle commands and services into a single Go package, allowing for easy sharing between projects.  
- [![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/addon)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/addon)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/happy-sdk/happy/sdk/addon)](https://pkg.go.dev/github.com/happy-sdk/happy/sdk/addon)
 
 ```go
 // main.go

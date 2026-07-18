@@ -77,7 +77,7 @@ func TestExtractCoverage(t *testing.T) {
 
 // TestExtractTotalCoverage covers ExtractTotalCoverage, which parses the
 // `total: (statements) XX.X%` summary line produced by `go tool cover -func`
-// — a distinct format from what ExtractCoverage parses, and one that never
+// - a distinct format from what ExtractCoverage parses, and one that never
 // contains the word "coverage".
 func TestExtractTotalCoverage(t *testing.T) {
 	tests := []struct {

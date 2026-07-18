@@ -557,7 +557,7 @@ func ExtractCoverage(s string) (string, error) {
 }
 
 // ExtractTotalCoverage extracts the aggregate coverage percentage from the
-// summary line of `go tool cover -func` output — the trailing
+// summary line of `go tool cover -func` output - the trailing
 // `total: (statements) XX.X%` line. Unlike the `go test` lines ExtractCoverage
 // parses, this line never contains the word "coverage", so it needs its own
 // parser.
