@@ -1,6 +1,6 @@
-github.com/happy-sdk/happy/pkg/bitutils v1.0.1 h1:78bwvkIz5Sxc4ZIDiw6K/BHGUJtlwMDRaSu5a7yGciI=
-github.com/happy-sdk/happy/pkg/bitutils v1.0.1/go.mod h1:CnLW4KNYEAItLFL8tES8sIQLQCuueY4d0oOiZkJBcx0=
-github.com/happy-sdk/happy/pkg/devel/testutils v1.3.2 h1:FnYdWXGktM5E8mEYuYc6Y8bp+Uwr1Skf6hc3VTC5wzo=
-github.com/happy-sdk/happy/pkg/devel/testutils v1.3.2/go.mod h1:8x6zlUA0Ok4JUVN1XUcDcJ/cN4FCJb93SE635v4OmYc=
+github.com/happy-sdk/happy/pkg/bitutils v1.0.2 h1:VAlpGjIi/Tfy8txwFFLoFyR2GbE1q7tmscyHoEoZygY=
+github.com/happy-sdk/happy/pkg/bitutils v1.0.2/go.mod h1:/QQADzjnMfKgu4IWJeYBXgf9caSvrxsNaZONYFFV2tE=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.3.3 h1:V9YVzJiHP+2fa/EXOAeAhn2c9ZbfePtj8lg7vHMa05A=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.3.3/go.mod h1:8x6zlUA0Ok4JUVN1XUcDcJ/cN4FCJb93SE635v4OmYc=
 github.com/happy-sdk/happy/pkg/tui v1.0.0 h1:2DiQB1wUgQ5p5mkQsy6ilGTGdjyvXf/D3quhqPZcrfA=
 github.com/happy-sdk/happy/pkg/tui v1.0.0/go.mod h1:VfQ7XqaYHoJXtad6MJabmvno3oerVwJXiTjA8kGG8zk=
