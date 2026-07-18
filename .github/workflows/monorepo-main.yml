@@ -1,7 +1,7 @@
 name: monorepo-main
 
 concurrency:
-  group: main-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || 'main' }}
   cancel-in-progress: true
 
 on:
@@ -9,7 +9,7 @@ on:
     branches:
       - "main"
     tags-ignore:
-      - "*"
+      - "**"
   pull_request:
     branches:
       - "main"
