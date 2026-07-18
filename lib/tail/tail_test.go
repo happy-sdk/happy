@@ -17,9 +17,149 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/happy-sdk/happy/pkg/bytesize"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
+
+// fakeWatcher is a fully controllable fsWatcher: tests send exactly the
+// events/errors they want, deterministically, instead of racing against real
+// filesystem event timing. attached closes on the first Add() call, so a
+// test can wait for TailFile to have actually reached (and passed) its
+// initial Seek-to-end/watcher-attach step before mutating the file and
+// queuing an event - otherwise a mutation made too early is already baked
+// into that initial "end of file" position and the scanner finds nothing.
+type fakeWatcher struct {
+	mu           sync.Mutex
+	addCalls     int
+	failAddAt    int // 1-indexed Add() call to fail; 0 = never
+	events       chan fsnotify.Event
+	errors       chan error
+	attached     chan struct{}
+	attachedOnce sync.Once
+}
+
+func newFakeWatcher() *fakeWatcher {
+	return &fakeWatcher{
+		events:   make(chan fsnotify.Event, 16),
+		errors:   make(chan error, 16),
+		attached: make(chan struct{}),
+	}
+}
+
+func (f *fakeWatcher) Add(string) error {
+	f.mu.Lock()
+	f.addCalls++
+	failNow := f.failAddAt != 0 && f.addCalls == f.failAddAt
+	f.mu.Unlock()
+	f.attachedOnce.Do(func() { close(f.attached) })
+	if failNow {
+		return errors.New("add failure")
+	}
+	return nil
+}
+
+func (f *fakeWatcher) Close() error                  { return nil }
+func (f *fakeWatcher) Events() <-chan fsnotify.Event { return f.events }
+func (f *fakeWatcher) Errors() <-chan error          { return f.errors }
+
+// withFakeWatcher installs fake as TailFile's watcher for the duration of
+// the test.
+func withFakeWatcher(t *testing.T, fake *fakeWatcher) {
+	t.Helper()
+	old := newWatcher
+	newWatcher = func() (fsWatcher, error) { return fake, nil }
+	t.Cleanup(func() { newWatcher = old })
+}
+
+// flakyFile wraps a tailFile, failing its Stat/Seek/Read calls on demand.
+type flakyFile struct {
+	f          tailFile
+	statCalls  int
+	failStatAt int
+	seekCalls  int
+	failSeekAt int
+	readCalls  int
+	failReadAt int
+}
+
+func (w *flakyFile) Read(p []byte) (int, error) {
+	w.readCalls++
+	if w.failReadAt != 0 && w.readCalls == w.failReadAt {
+		return 0, errors.New("read failure")
+	}
+	return w.f.Read(p)
+}
+
+func (w *flakyFile) Close() error { return w.f.Close() }
+
+func (w *flakyFile) Stat() (os.FileInfo, error) {
+	w.statCalls++
+	if w.failStatAt != 0 && w.statCalls == w.failStatAt {
+		return nil, errors.New("stat failure")
+	}
+	return w.f.Stat()
+}
+
+func (w *flakyFile) Seek(offset int64, whence int) (int64, error) {
+	w.seekCalls++
+	if w.failSeekAt != 0 && w.seekCalls == w.failSeekAt {
+		return 0, errors.New("seek failure")
+	}
+	return w.f.Seek(offset, whence)
+}
+
+// withFlakyOpenFile installs an openFile that wraps every real file it opens
+// in a flakyFile, failing Stat/Seek on the Nth *open call* (1-indexed: 1 is
+// the initial open, 2 is a rotation reopen, ...) rather than the Nth
+// Stat/Seek call overall, so failures can target a specific file.
+func withFlakyOpenFile(t *testing.T, failStatOnOpenCall, failSeekOnOpenCall int) {
+	t.Helper()
+	old := openFile
+	var openCalls int
+	openFile = func(name string) (tailFile, error) {
+		openCalls++
+		real, err := old(name)
+		if err != nil {
+			return nil, err
+		}
+		fw := &flakyFile{f: real}
+		if openCalls == failStatOnOpenCall {
+			fw.failStatAt = 1
+		}
+		if openCalls == failSeekOnOpenCall {
+			fw.failSeekAt = 1
+		}
+		return fw, nil
+	}
+	t.Cleanup(func() { openFile = old })
+}
+
+// appendToFileNoErr appends content to the file at path, for use from
+// mutateAfterAttach's background goroutine (see its doc comment for why).
+func appendToFileNoErr(path, content string) {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	_, _ = f.WriteString(content)
+	_ = f.Close()
+}
+
+// mutateAfterAttach runs mutate in a goroutine once TailFile has attached
+// its watcher (i.e. past its initial Seek-to-end). A mutation applied any
+// earlier would already be baked into that initial "end of file" position,
+// so the scanner would never see it as new content. mutate must not call
+// any *testing.T method - by the time it observes fake.attached, the main
+// test goroutine may already be consuming (or have finished consuming) the
+// resulting event, so a T failure recorded here could race the test
+// completing.
+func mutateAfterAttach(fake *fakeWatcher, mutate func()) {
+	go func() {
+		<-fake.attached
+		mutate()
+	}()
+}
 
 func TestReadLastLines(t *testing.T) {
 	tests := []struct {
@@ -236,94 +376,534 @@ func TestTailFileInitialLines(t *testing.T) {
 	}
 }
 
-func TestTailFileStreamsAppendedLines(t *testing.T) {
+func TestTailFileWriteEvent(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "app.log")
 	testutils.NoError(t, os.WriteFile(path, []byte("first\n"), 0644))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		appendToFileNoErr(path, "second\n")
+		fake.events <- fsnotify.Event{Op: fsnotify.Write}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	lines := make(chan string, 8)
-	go func() {
-		for line, err := range TailFile(ctx, path, -1) {
-			if err != nil {
-				close(lines)
-				return
-			}
-			select {
-			case lines <- line:
-			case <-ctx.Done():
-				close(lines)
-				return
-			}
-		}
-		close(lines)
-	}()
-
-	// Give the watcher time to attach before writing.
-	time.Sleep(50 * time.Millisecond)
-
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
-	testutils.NoError(t, err)
-	_, err = f.WriteString("second\n")
-	testutils.NoError(t, err)
-	testutils.NoError(t, f.Close())
-
-	select {
-	case line, ok := <-lines:
-		testutils.Assert(t, ok, "expected a line, channel closed early")
-		testutils.Equal(t, "second", line, "unexpected streamed line")
-	case <-time.After(4 * time.Second):
-		t.Fatal("timed out waiting for appended line to be tailed")
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected exactly one streamed line")
+	if len(got) == 1 {
+		testutils.Equal(t, "second", got[0], "unexpected streamed line")
 	}
 }
 
-func TestTailFileHandlesRotation(t *testing.T) {
+// TestTailFileDebounceSkipsRapidWrites exercises the "rapid writes within
+// 10ms are debounced" branch: two Write events delivered back-to-back
+// (deterministically, no sleeps) fall well inside that window.
+func TestTailFileDebounceSkipsRapidWrites(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("first\n"), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		appendToFileNoErr(path, "second\n")
+		fake.events <- fsnotify.Event{Op: fsnotify.Write}
+		fake.events <- fsnotify.Event{Op: fsnotify.Write}
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Don't break on the first line: the second (debounced) event is still
+	// queued and only gets pulled off the channel once this iteration
+	// finishes and the outer loop goes back to select. Schedule the cancel
+	// asynchronously so that happens instead of returning immediately.
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		time.AfterFunc(20*time.Millisecond, cancel)
+	}
+	testutils.Equal(t, 1, len(got), "expected exactly one streamed line despite two rapid write events")
+}
+
+func TestTailFileWriteEventStatFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("first\n"), 0644))
+
+	// The 1st Stat() call (right after Add, to seed lastSize) tolerates
+	// errors silently; only the 2nd (inside the write-event handler) is
+	// fatal, so that's the one that needs to fail here.
+	old := openFile
+	openFile = func(name string) (tailFile, error) {
+		real, err := old(name)
+		if err != nil {
+			return nil, err
+		}
+		return &flakyFile{f: real, failStatAt: 2}, nil
+	}
+	t.Cleanup(func() { openFile = old })
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		fake.events <- fsnotify.Event{Op: fsnotify.Write}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the Stat error during write handling")
+}
+
+func TestTailFileTruncationDetected(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte(strings.Repeat("padding-line\n", 20)), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Truncate(path, 0)
+		appendToFileNoErr(path, "after-truncate\n")
+		fake.events <- fsnotify.Event{Op: fsnotify.Write}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected exactly one post-truncation line")
+	if len(got) == 1 {
+		testutils.Equal(t, "after-truncate", got[0], "unexpected line after truncation")
+	}
+}
+
+func TestTailFileTruncationSeekFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte(strings.Repeat("padding-line\n", 20)), 0644))
+
+	// The 1st Seek() call is the initial Seek-to-end (n=-1 startup); the
+	// truncation-detected seek-to-start is the 2nd.
+	old := openFile
+	openFile = func(name string) (tailFile, error) {
+		real, err := old(name)
+		if err != nil {
+			return nil, err
+		}
+		return &flakyFile{f: real, failSeekAt: 2}, nil
+	}
+	t.Cleanup(func() { openFile = old })
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Truncate(path, 0)
+		appendToFileNoErr(path, "after-truncate\n")
+		fake.events <- fsnotify.Event{Op: fsnotify.Write}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the Seek error during truncation handling")
+}
+
+func TestTailFileRotation(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "app.log")
 	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Rename(path, path+".1")
+		_ = os.WriteFile(path, []byte("after-rotate\n"), 0644)
+		fake.events <- fsnotify.Event{Op: fsnotify.Rename}
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	lines := make(chan string, 8)
-	go func() {
-		for line, err := range TailFile(ctx, path, -1) {
-			if err != nil {
-				close(lines)
-				return
-			}
-			select {
-			case lines <- line:
-			case <-ctx.Done():
-				close(lines)
-				return
-			}
-		}
-		close(lines)
-	}()
-
-	time.Sleep(50 * time.Millisecond)
-
-	// Simulate log rotation: move the old file aside, create a new one at
-	// the same path, and write to it.
-	testutils.NoError(t, os.Rename(path, path+".1"))
-	testutils.NoError(t, os.WriteFile(path, []byte("after-rotate\n"), 0644))
-
-	select {
-	case line, ok := <-lines:
-		testutils.Assert(t, ok, "expected a line after rotation, channel closed early")
-		testutils.Equal(t, "after-rotate", line, "unexpected line after rotation")
-	case <-time.After(4 * time.Second):
-		t.Fatal("timed out waiting for post-rotation line to be tailed")
+	// Don't break, and don't cancel synchronously: the content-reading loop
+	// checks ctx.Done() again immediately after every yield, so a cancel()
+	// called from directly within this callback races that same check and
+	// (if it wins, which it reliably does, being on the same goroutine) exits
+	// before the re-Add call below it ever runs. Schedule the cancel
+	// asynchronously instead, comfortably after the synchronous work
+	// (finishing the scan loop, then re-Add) has had time to complete.
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		time.AfterFunc(20*time.Millisecond, cancel)
 	}
+	testutils.Equal(t, 1, len(got), "expected exactly one post-rotation line")
+	if len(got) == 1 {
+		testutils.Equal(t, "after-rotate", got[0], "unexpected line after rotation")
+	}
+	testutils.Equal(t, 2, fake.addCalls, "expected watcher.Add to be called again after rotation")
+}
+
+func TestTailFileRotationReopenFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
+
+	old := openFile
+	var calls int
+	openFile = func(name string) (tailFile, error) {
+		calls++
+		if calls == 2 {
+			return nil, errors.New("reopen failure")
+		}
+		return old(name)
+	}
+	t.Cleanup(func() { openFile = old })
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Rename(path, path+".1")
+		_ = os.WriteFile(path, []byte("after-rotate\n"), 0644)
+		fake.events <- fsnotify.Event{Op: fsnotify.Rename}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the reopen error after rotation")
+}
+
+func TestTailFileRotationStatFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
+
+	withFlakyOpenFile(t, 2, 0) // fail Stat on the reopened (2nd) file only
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Rename(path, path+".1")
+		_ = os.WriteFile(path, []byte("after-rotate\n"), 0644)
+		fake.events <- fsnotify.Event{Op: fsnotify.Rename}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the Stat error after rotation reopen")
+}
+
+func TestTailFileRotationReAddFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
+
+	fake := newFakeWatcher()
+	fake.failAddAt = 2 // 1st Add (initial attach) succeeds, 2nd (post-rotation) fails
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Rename(path, path+".1")
+		_ = os.WriteFile(path, []byte("after-rotate\n"), 0644)
+		fake.events <- fsnotify.Event{Op: fsnotify.Rename}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the re-Add error after rotation")
+}
+
+func TestTailFileRotationConsumerStops(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Rename(path, path+".1")
+		_ = os.WriteFile(path, []byte("after-rotate\n"), 0644)
+		fake.events <- fsnotify.Event{Op: fsnotify.Rename}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected iteration to stop right after the first post-rotation line")
+}
+
+// TestTailFileWriteEventCtxCancelledMidScan exercises the ctx.Done() check
+// that runs between individual yields within one Write event's scan burst.
+// This is deterministic, not racy: TailFile's iterator and this test's
+// consumer run on the same goroutine (range-over-func), so a cancel() called
+// synchronously from inside the first yield is guaranteed to already be
+// visible to the very next ctx.Done() check, before any second line is ever
+// scanned.
+func TestTailFileWriteEventCtxCancelledMidScan(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("first\n"), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		appendToFileNoErr(path, "second\nthird\n")
+		fake.events <- fsnotify.Event{Op: fsnotify.Write}
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		cancel()
+	}
+	testutils.Equal(t, 1, len(got), "expected only the first of two scanned lines before ctx cancellation was observed")
+	if len(got) == 1 {
+		testutils.Equal(t, "second", got[0], "unexpected line")
+	}
+}
+
+func TestTailFileWriteEventScanFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("first\n"), 0644))
+
+	old := openFile
+	openFile = func(name string) (tailFile, error) {
+		real, err := old(name)
+		if err != nil {
+			return nil, err
+		}
+		// 1st Read is the initial n=-1 Seek's implicit read-none; reads
+		// actually start once the scanner in the write-handler runs, so
+		// fail on the very first Read the scanner performs.
+		return &flakyFile{f: real, failReadAt: 1}, nil
+	}
+	t.Cleanup(func() { openFile = old })
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		appendToFileNoErr(path, "second\n")
+		fake.events <- fsnotify.Event{Op: fsnotify.Write}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the scan error during write handling")
+}
+
+// TestTailFileRotationCtxCancelledMidScan is TestTailFileWriteEventCtxCancelledMidScan's
+// counterpart for the rotation content-read loop.
+func TestTailFileRotationCtxCancelledMidScan(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Rename(path, path+".1")
+		_ = os.WriteFile(path, []byte("after-rotate-1\nafter-rotate-2\n"), 0644)
+		fake.events <- fsnotify.Event{Op: fsnotify.Rename}
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		cancel()
+	}
+	testutils.Equal(t, 1, len(got), "expected only the first of two post-rotation lines before ctx cancellation was observed")
+	if len(got) == 1 {
+		testutils.Equal(t, "after-rotate-1", got[0], "unexpected line")
+	}
+}
+
+func TestTailFileRotationScanFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
+
+	old := openFile
+	var calls int
+	openFile = func(name string) (tailFile, error) {
+		calls++
+		real, err := old(name)
+		if err != nil {
+			return nil, err
+		}
+		if calls == 2 {
+			// Fail the reopened (post-rotation) file's first Read.
+			return &flakyFile{f: real, failReadAt: 1}, nil
+		}
+		return real, nil
+	}
+	t.Cleanup(func() { openFile = old })
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	mutateAfterAttach(fake, func() {
+		_ = os.Rename(path, path+".1")
+		_ = os.WriteFile(path, []byte("after-rotate\n"), 0644)
+		fake.events <- fsnotify.Event{Op: fsnotify.Rename}
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the scan error after rotation reopen")
+}
+
+func TestFsnotifyWatcherAdapter(t *testing.T) {
+	w, err := newWatcher()
+	testutils.NoError(t, err)
+	defer func() { _ = w.Close() }()
+
+	testutils.NotNil(t, w.Events(), "expected a non-nil Events channel")
+	testutils.NotNil(t, w.Errors(), "expected a non-nil Errors channel")
+}
+
+func TestTailFileEventsChannelClosed(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("line\n"), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	close(fake.events)
+
+	ctx := context.Background()
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface an error when the events channel closes")
+}
+
+func TestTailFileErrorsChannelClosed(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("line\n"), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	close(fake.errors)
+
+	ctx := context.Background()
+	var got []string
+	var sawErr bool
+	for line, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+			continue
+		}
+		got = append(got, line)
+	}
+	testutils.Assert(t, !sawErr, "expected no error when the errors channel simply closes")
+	testutils.Equal(t, 0, len(got), "expected no lines")
+}
+
+func TestTailFileErrorsChannelDelivers(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("line\n"), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
+	fake.errors <- errors.New("watcher error")
+
+	ctx := context.Background()
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the watcher's delivered error")
 }
 
 func TestTailFileContextCancellation(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "app.log")
 	testutils.NoError(t, os.WriteFile(path, []byte("line\n"), 0644))
+
+	fake := newFakeWatcher()
+	withFakeWatcher(t, fake)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -334,7 +914,9 @@ func TestTailFileContextCancellation(t *testing.T) {
 		close(done)
 	}()
 
-	time.Sleep(50 * time.Millisecond)
+	// No events are ever sent; TailFile is blocked on its select. Give the
+	// goroutine a moment to actually reach that select before canceling.
+	time.Sleep(20 * time.Millisecond)
 	cancel()
 
 	select {
@@ -342,6 +924,55 @@ func TestTailFileContextCancellation(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("TailFile did not stop after context cancellation")
 	}
+}
+
+func TestTailFileNewWatcherFails(t *testing.T) {
+	old := newWatcher
+	newWatcher = func() (fsWatcher, error) { return nil, errors.New("new watcher failure") }
+	t.Cleanup(func() { newWatcher = old })
+
+	ctx := context.Background()
+	var sawErr bool
+	for _, err := range TailFile(ctx, "irrelevant", 0) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the watcher construction error")
+}
+
+func TestTailFileResolveAbsPathFails(t *testing.T) {
+	old := resolveAbsPath
+	resolveAbsPath = func(string) (string, error) { return "", errors.New("abs failure") }
+	t.Cleanup(func() { resolveAbsPath = old })
+
+	ctx := context.Background()
+	var sawErr bool
+	for _, err := range TailFile(ctx, "irrelevant", 0) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the resolveAbsPath error")
+}
+
+func TestTailFileInitialAddFails(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("a\n"), 0644))
+
+	fake := newFakeWatcher()
+	fake.failAddAt = 1
+	withFakeWatcher(t, fake)
+
+	ctx := context.Background()
+	var sawErr bool
+	for _, err := range TailFile(ctx, path, 0) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailFile to surface the initial watcher.Add error")
 }
 
 func TestBufferSizes(t *testing.T) {
@@ -419,52 +1050,6 @@ func TestTailFileSeekEndErrorOnDirectory(t *testing.T) {
 		}
 	}
 	testutils.Assert(t, sawErr, "expected an error seeking a directory path")
-}
-
-func TestTailFileTruncationDetected(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "app.log")
-	testutils.NoError(t, os.WriteFile(path, []byte(strings.Repeat("padding-line\n", 20)), 0644))
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	lines := make(chan string, 8)
-	go func() {
-		for line, err := range TailFile(ctx, path, -1) {
-			if err != nil {
-				close(lines)
-				return
-			}
-			select {
-			case lines <- line:
-			case <-ctx.Done():
-				close(lines)
-				return
-			}
-		}
-		close(lines)
-	}()
-
-	time.Sleep(50 * time.Millisecond)
-
-	// Truncate to a size smaller than what was already read, then write new,
-	// shorter content: TailFile must detect the shrink and seek back to
-	// start rather than trying to read from a now out-of-range offset.
-	testutils.NoError(t, os.Truncate(path, 0))
-	f, err := os.OpenFile(path, os.O_WRONLY, 0644)
-	testutils.NoError(t, err)
-	_, err = f.WriteString("after-truncate\n")
-	testutils.NoError(t, err)
-	testutils.NoError(t, f.Close())
-
-	select {
-	case line, ok := <-lines:
-		testutils.Assert(t, ok, "expected a line after truncation, channel closed early")
-		testutils.Equal(t, "after-truncate", line, "unexpected line after truncation")
-	case <-time.After(4 * time.Second):
-		t.Fatal("timed out waiting for post-truncation line to be tailed")
-	}
 }
 
 func TestTailFileStopsWhenConsumerStopsIterating(t *testing.T) {
@@ -653,6 +1238,55 @@ func TestTailReaderNonSeekableInitialLinesConsumerStops(t *testing.T) {
 	testutils.Equal(t, 1, len(got), "expected iteration to stop after first buffered initial line")
 }
 
+// The following three tests exercise the ctx.Done() check that runs between
+// individual yields within TailReader's various multi-line loops. This is
+// deterministic, not racy: consumer and iterator run on the same goroutine
+// (range-over-func), so a cancel() called synchronously from inside the
+// first yield is guaranteed to already be visible to the very next
+// ctx.Done() check, before a second line is ever yielded.
+
+func TestTailReaderSeekableInitialLinesCtxCancelledMidLoop(t *testing.T) {
+	r := strings.NewReader("a\nb\nc\nd\ne\n")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var got []string
+	for line, err := range TailReader(ctx, r, 3) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		cancel()
+	}
+	testutils.Equal(t, 1, len(got), "expected only the first initial line before ctx cancellation was observed")
+}
+
+func TestTailReaderNonSeekableInitialLinesCtxCancelledMidLoop(t *testing.T) {
+	r := nonSeekableReader{strings.NewReader("a\nb\nc\nd\ne\n")}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var got []string
+	for line, err := range TailReader(ctx, r, 3) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		cancel()
+	}
+	testutils.Equal(t, 1, len(got), "expected only the first buffered initial line before ctx cancellation was observed")
+}
+
+func TestTailReaderNonSeekableStreamCtxCancelledMidLoop(t *testing.T) {
+	r := nonSeekableReader{strings.NewReader("a\nb\nc\n")}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var got []string
+	for line, err := range TailReader(ctx, r, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		cancel()
+	}
+	testutils.Equal(t, 1, len(got), "expected only the first streamed line before ctx cancellation was observed")
+}
+
 // growableSeeker is an io.ReadSeeker over an in-memory buffer that can grow
 // concurrently. Unlike an *os.File, Read blocks (briefly polling) instead of
 // returning io.EOF immediately when caught up to the current end, which is
@@ -734,6 +1368,37 @@ func TestTailReaderSeekableStreamsNewContentFromGrowingSource(t *testing.T) {
 	}
 }
 
+func TestTailReaderSeekableStreamCtxCancelledMidLoop(t *testing.T) {
+	g := &growableSeeker{data: []byte("a\nb\n")}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		g.Append("c\nd\n")
+	}()
+
+	// n=1: "b" is the initial line; "c" and "d" both become available in the
+	// same growth burst. Canceling synchronously right after "c" (the first
+	// streamed line) must stop the iteration before "d" is ever yielded -
+	// deterministic for the same same-goroutine reason as the other
+	// ctx-cancelled-mid-loop tests, once at least one streamed line exists.
+	var got []string
+	for line, err := range TailReader(ctx, g, 1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		if len(got) == 2 {
+			cancel()
+		}
+	}
+	testutils.Equal(t, 2, len(got), "expected initial line plus exactly one streamed line")
+	if len(got) == 2 {
+		testutils.Equal(t, "b", got[0], "unexpected initial line")
+		testutils.Equal(t, "c", got[1], "unexpected streamed line")
+	}
+}
+
 func TestTailLinesConsumerStopsIterating(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "app.log")
@@ -750,60 +1415,4 @@ func TestTailLinesConsumerStopsIterating(t *testing.T) {
 func TestTailReaderLinesStopsOnError(t *testing.T) {
 	got := slices.Collect(TailReaderLines(context.Background(), &brokenSeeker{}, 2))
 	testutils.Equal(t, 0, len(got), "expected TailReaderLines to stop without yielding on error")
-}
-
-func TestTailFileWriteEventConsumerStops(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "app.log")
-	testutils.NoError(t, os.WriteFile(path, []byte("first\n"), 0644))
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	go func() {
-		time.Sleep(50 * time.Millisecond)
-		f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
-		if err != nil {
-			return
-		}
-		_, _ = f.WriteString("second\n")
-		_ = f.Close()
-	}()
-
-	var got []string
-	for line, err := range TailFile(ctx, path, -1) {
-		testutils.NoError(t, err)
-		got = append(got, line)
-		break
-	}
-	testutils.Equal(t, 1, len(got), "expected iteration to stop right after the first streamed write-event line")
-	if len(got) == 1 {
-		testutils.Equal(t, "second", got[0], "unexpected streamed line")
-	}
-}
-
-func TestTailFileRotationEventConsumerStops(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "app.log")
-	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	go func() {
-		time.Sleep(50 * time.Millisecond)
-		_ = os.Rename(path, path+".1")
-		_ = os.WriteFile(path, []byte("after-rotate\n"), 0644)
-	}()
-
-	var got []string
-	for line, err := range TailFile(ctx, path, -1) {
-		testutils.NoError(t, err)
-		got = append(got, line)
-		break
-	}
-	testutils.Equal(t, 1, len(got), "expected iteration to stop right after the first post-rotation line")
-	if len(got) == 1 {
-		testutils.Equal(t, "after-rotate", got[0], "unexpected post-rotation line")
-	}
 }

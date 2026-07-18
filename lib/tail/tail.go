@@ -185,20 +185,62 @@ func newScannerWithPooledBuffer(r io.Reader) (*bufio.Scanner, func()) {
 	// e.g. (stack traces, etc.)
 	scanner.Buffer(*bufPtr, int(maxBufferSize.Bytes()))
 
-	// Return cleanup function
+	// Return cleanup function. Note: bufio.Scanner.Buffer never grows *bufPtr
+	// itself (it reallocates its own internal buffer instead), so cap(*bufPtr)
+	// never changes here regardless of line size - this just resets length.
 	cleanup := func() {
-		// Reset buffer size if it grew beyond reasonable size (>128 KiB)
-		if cap(*bufPtr) > int(128*bytesize.KiB) {
-			*bufPtr = make([]byte, int(bufferSize))
-		} else {
-			// Keep existing capacity, just reset length
-			*bufPtr = (*bufPtr)[:min(len(*bufPtr), int(bufferSize))]
-		}
+		*bufPtr = (*bufPtr)[:min(len(*bufPtr), int(bufferSize))]
 		bufferPool.Put(bufPtr)
 	}
 
 	return scanner, cleanup
 }
+
+// fsWatcher abstracts the subset of *fsnotify.Watcher's behavior TailFile
+// depends on. Tests substitute a fully controllable fake so file-rotation,
+// debounce, and error-handling paths can be exercised deterministically
+// instead of racing against real filesystem event timing.
+type fsWatcher interface {
+	Add(name string) error
+	Close() error
+	Events() <-chan fsnotify.Event
+	Errors() <-chan error
+}
+
+// fsnotifyWatcher adapts *fsnotify.Watcher (whose Events/Errors are fields,
+// not methods) to fsWatcher.
+type fsnotifyWatcher struct{ *fsnotify.Watcher }
+
+func (w *fsnotifyWatcher) Events() <-chan fsnotify.Event { return w.Watcher.Events }
+func (w *fsnotifyWatcher) Errors() <-chan error          { return w.Watcher.Errors }
+
+// tailFile abstracts the subset of *os.File's behavior TailFile depends on,
+// so tests can inject Stat/Seek failures (e.g. mid-tail, during rotation)
+// deterministically instead of needing to provoke real filesystem errors.
+type tailFile interface {
+	Read(p []byte) (int, error)
+	Seek(offset int64, whence int) (int64, error)
+	Stat() (os.FileInfo, error)
+	Close() error
+}
+
+// newWatcher, resolveAbsPath, and openFile are indirection points so tests
+// can inject controllable failures instead of depending on real OS/fsnotify
+// failure modes that are impractical or unsafe to trigger for real (e.g.
+// exhausting inotify instance limits, or making os.Getwd fail).
+var (
+	newWatcher = func() (fsWatcher, error) {
+		w, err := fsnotify.NewWatcher()
+		if err != nil {
+			return nil, err
+		}
+		return &fsnotifyWatcher{w}, nil
+	}
+	resolveAbsPath = filepath.Abs
+	openFile       = func(name string) (tailFile, error) {
+		return os.Open(name)
+	}
+)
 
 // TailFile watches the specified file for changes and returns an iterator over lines.
 // The parameter n specifies the number of most recent lines to read initially (default 10).
@@ -207,7 +249,7 @@ func newScannerWithPooledBuffer(r io.Reader) (*bufio.Scanner, func()) {
 func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, error] {
 	return func(yield func(string, error) bool) {
 		// Initialize file watcher
-		watcher, err := fsnotify.NewWatcher()
+		watcher, err := newWatcher()
 		if err != nil {
 			yield("", err)
 			return
@@ -215,14 +257,14 @@ func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, err
 		defer func() { _ = watcher.Close() }()
 
 		// Resolve absolute path to handle renames
-		absPath, err := filepath.Abs(filePath)
+		absPath, err := resolveAbsPath(filePath)
 		if err != nil {
 			yield("", err)
 			return
 		}
 
 		// Open the file
-		file, err := os.Open(absPath)
+		file, err := openFile(absPath)
 		if err != nil {
 			yield("", err)
 			return
@@ -267,7 +309,10 @@ func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, err
 		}
 
 		currentFile := file
-		lastWrite := time.Now()
+		// Zero value, not time.Now(): a real write landing within 10ms of
+		// attaching the watcher must never be debounced away just because
+		// it happens to be "recent" relative to startup.
+		var lastWrite time.Time
 		var lastSize int64 // Track file size
 
 		// Get initial file size
@@ -279,7 +324,7 @@ func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, err
 			select {
 			case <-ctx.Done():
 				return
-			case event, ok := <-watcher.Events:
+			case event, ok := <-watcher.Events():
 				if !ok {
 					yield("", fsnotify.ErrEventOverflow)
 					return
@@ -329,7 +374,7 @@ func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, err
 				if event.Has(fsnotify.Rename | fsnotify.Remove) {
 					// Handle log rotation: re-open the new file
 					_ = currentFile.Close()
-					newFile, err := os.Open(absPath)
+					newFile, err := openFile(absPath)
 					if err != nil {
 						yield("", err)
 						return
@@ -374,7 +419,7 @@ func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, err
 						return
 					}
 				}
-			case err, ok := <-watcher.Errors:
+			case err, ok := <-watcher.Errors():
 				if !ok {
 					return
 				}
