@@ -556,6 +556,19 @@ func ExtractCoverage(s string) (string, error) {
 	return "", fmt.Errorf("no coverage info found")
 }
 
+// ExtractTotalCoverage extracts the aggregate coverage percentage from the
+// summary line of `go tool cover -func` output — the trailing
+// `total: (statements) XX.X%` line. Unlike the `go test` lines ExtractCoverage
+// parses, this line never contains the word "coverage", so it needs its own
+// parser.
+func ExtractTotalCoverage(s string) (string, error) {
+	totalRe := regexp.MustCompile(`^total:\s+\(statements\)\s+(\d+\.\d+%)$`)
+	if match := totalRe.FindStringSubmatch(strings.TrimSpace(s)); len(match) > 1 {
+		return match[1], nil
+	}
+	return "", fmt.Errorf("no coverage info found")
+}
+
 // Containable defines types that can be searched for containment
 type Containable[T comparable] interface {
 	~[]T | ~string | ~map[T]any

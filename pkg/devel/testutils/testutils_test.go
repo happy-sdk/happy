@@ -75,6 +75,59 @@ func TestExtractCoverage(t *testing.T) {
 	}
 }
 
+// TestExtractTotalCoverage covers ExtractTotalCoverage, which parses the
+// `total: (statements) XX.X%` summary line produced by `go tool cover -func`
+// — a distinct format from what ExtractCoverage parses, and one that never
+// contains the word "coverage".
+func TestExtractTotalCoverage(t *testing.T) {
+	tests := []struct {
+		name      string
+		line      string
+		want      string
+		wantError bool
+	}{
+		{
+			name: "total line",
+			line: "total:\t\t\t\t\t\t\t\t\t\t(statements)\t\t\t43.7%",
+			want: "43.7%",
+		},
+		{
+			name: "total line, full coverage",
+			line: "total:\t\t\t\t\t\t\t\t\t\t(statements)\t\t\t100.0%",
+			want: "100.0%",
+		},
+		{
+			name:      "go test coverage line, not a total line",
+			line:      "ok  \tgithub.com/foo/bar\t0.123s\tcoverage: 85.3% of statements",
+			wantError: true,
+		},
+		{
+			name:      "empty line",
+			line:      "",
+			wantError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := ExtractTotalCoverage(test.line)
+			if test.wantError {
+				if err == nil {
+					t.Errorf("expected error, got result %q", got)
+				}
+				if got != "" {
+					t.Errorf("expected empty result on error, got %q", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+			Equal(t, test.want, got)
+		})
+	}
+}
+
 // fakeT is a minimal TestingIface that records failures instead of actually
 // failing the enclosing test, so we can assert on the false/failing path of
 // assertion helpers without the test runner itself reporting a failure.

@@ -8,9 +8,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/addons/devel"
 	"github.com/happy-sdk/happy/addons/devel/projects"
-	"github.com/happy-sdk/happy"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/cli"

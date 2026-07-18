@@ -103,7 +103,7 @@ func (prj *Project) testTasks(sess *session.Context) []tr.Task {
 				lastLine := lines[len(lines)-1]
 				sess.Log().Debug("detect test coverage", "module", gomodule.Import, "coverage", lastLine)
 
-				cov, err := testutils.ExtractCoverage(lastLine)
+				cov, err := testutils.ExtractTotalCoverage(lastLine)
 				if err != nil {
 					return tr.Failure(err.Error()).WithDesc(gomodule.Import)
 				}
