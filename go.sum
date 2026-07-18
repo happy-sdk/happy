@@ -34,11 +34,17 @@ github.com/happy-sdk/happy/pkg/vars v1.1.3 h1:O3MfNXG91MjVDq9ySAc/kY+4tcsz/TWBIB
 github.com/happy-sdk/happy/pkg/vars v1.1.3/go.mod h1:yZknzCL5iq7j1XyU6XgM6rsR30G7DQc0SlgAWr1XeK8=
 github.com/happy-sdk/happy/pkg/version v1.0.1 h1:wPxRYgjY2HrGBddKvPQgAW/irhk8aaFZ9XJrKCSwET8=
 github.com/happy-sdk/happy/pkg/version v1.0.1/go.mod h1:NoMULoF5v8DqfmbZCO5O8JbIGgEAbDQ6h7dVvg3t+Zo=
+github.com/happy-sdk/happy/tools/happyvet v1.0.1 h1:HgfmuVF3aIMHSm6/Sl6xSPLtM8VkbhNs+3dCQ9O8Vcw=
+github.com/happy-sdk/happy/tools/happyvet v1.0.1/go.mod h1:1YhSP7yIFUiVpcXjYH6ZGXibXzN2ma3B69uvRfnC63c=
 golang.org/x/mod v0.38.0 h1:MECBjubtXD7yj4HrhIUcywNaGeNVUdfVnxmPajOk4yk=
 golang.org/x/mod v0.38.0/go.mod h1:V6Xz0pq8TQ3dGqVQ1FVHuelZpAL0uNhSkk9ogYP3c40=
+golang.org/x/sync v0.22.0 h1:SZjpbeLmrCk4xhRSZFNZW5gFUeCeFgjekvI/+gfScek=
+golang.org/x/sync v0.22.0/go.mod h1:9xrNwdLfx4jkKbNva9FpL6vEN7evnE43NNNJQ2LF3+0=
 golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=
 golang.org/x/sys v0.47.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
 golang.org/x/term v0.45.0 h1:NwWyBmoJCbfTHpxrWoZ9C6/VxOf7ic219I8xZZFdrf0=
 golang.org/x/term v0.45.0/go.mod h1:9aqxs0blBcrm/n0L9QW0aRVD+ktan8ssZromtqJC43w=
 golang.org/x/text v0.40.0 h1:Ub2Z6/xjgF1WrYQz2nuITOEegKFtiIy+rieRJ5lHZKs=
 golang.org/x/text v0.40.0/go.mod h1:hpnzDAfGV753zIKo+wk3u1bVKCGPbrnF7+7LBF/UHVY=
+golang.org/x/tools v0.48.0 h1:3+hClM1aLL5mjMKm5ovokw9epgRXPuu2tILgismM6RE=
+golang.org/x/tools v0.48.0/go.mod h1:08xX0orndb/F7jJxGDicx061tyd5pcMto75YMAXr6lk=
