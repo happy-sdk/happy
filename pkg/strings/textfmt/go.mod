@@ -2,4 +2,4 @@ module github.com/happy-sdk/happy/pkg/strings/textfmt
 
 go 1.25
 
-require github.com/happy-sdk/happy/pkg/devel/testutils v1.3.2
+require github.com/happy-sdk/happy/pkg/devel/testutils v1.3.3
