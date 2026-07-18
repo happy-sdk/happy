@@ -17,7 +17,7 @@ require (
 	github.com/happy-sdk/happy/pkg/strings/slug v1.0.1
 	github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.3
 	github.com/happy-sdk/happy/pkg/tui v1.0.1
-	github.com/happy-sdk/happy/pkg/vars v1.1.5
+	github.com/happy-sdk/happy/pkg/vars v1.1.6
 	github.com/happy-sdk/happy/pkg/version v1.0.2
 	golang.org/x/mod v0.38.0
 	golang.org/x/term v0.45.0

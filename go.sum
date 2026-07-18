@@ -32,8 +32,8 @@ github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.3 h1:Bu7bTDJ3pcciCOabVHw5HqQ
 github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.3/go.mod h1:JX49a4ZAtjZVI2zlVqEuqW/lMyAyhUxRXCPdYs3rTxo=
 github.com/happy-sdk/happy/pkg/tui v1.0.1 h1:4vF7IuMyCzc4GQsSA3No5bRS/rk7pLKzGxIH6cl1VQk=
 github.com/happy-sdk/happy/pkg/tui v1.0.1/go.mod h1:sDj6JC40L4eKYCfD+H/HDaM6nAZrywo0wos7EXDqaB4=
-github.com/happy-sdk/happy/pkg/vars v1.1.5 h1:UumXgR4/z8TvDkjQIKJmuVFOQIyFraYCYtkk5uTn7ag=
-github.com/happy-sdk/happy/pkg/vars v1.1.5/go.mod h1:4b3Da+zt2Vw9qcEg8ziXWRx3m4KOBu7UrFy8jIQor40=
+github.com/happy-sdk/happy/pkg/vars v1.1.6 h1:aL/15mDZIOneriqzOtvTCW1dwfTLH5Ne6OxAUNgxiu8=
+github.com/happy-sdk/happy/pkg/vars v1.1.6/go.mod h1:4b3Da+zt2Vw9qcEg8ziXWRx3m4KOBu7UrFy8jIQor40=
 github.com/happy-sdk/happy/pkg/version v1.0.2 h1:zYc+Zifn7Z31aY6PI7EWDnDZiZBxmT6onlvHzyNxvs4=
 github.com/happy-sdk/happy/pkg/version v1.0.2/go.mod h1:OsyLdy2SPkW01oj/9/vs3QqUTVg2SrzONWYd8jKzWVA=
 github.com/happy-sdk/happy/tools/happyvet v1.0.3 h1:5Ck1pTm5FsO320K7Rh+ustjjQjcTKuK/h8UK7Sa8/DY=
