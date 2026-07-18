@@ -51,6 +51,12 @@ func (c *GitConfig) Blueprint() (*settings.Blueprint, error) {
 	return settings.New(c)
 }
 
+// newGitConfig reads committer/branch/remote metadata for changelog and
+// release attribution. Every field here is optional best-effort data used
+// only by commands that actually commit or tag (e.g. release) - a project
+// dir without a configured git identity, a detached HEAD, or no remote must
+// not stop any other happyctl command from booting, so each lookup degrades
+// independently to its zero value instead of aborting the whole function.
 func newGitConfig(sess *session.Context, dir string) (gitcnf GitConfig, err error) {
 	gitbin, err := exec.LookPath("git")
 	if err != nil {
@@ -59,39 +65,31 @@ func newGitConfig(sess *session.Context, dir string) (gitcnf GitConfig, err erro
 	// Get committer name
 	committerCmd := exec.Command(gitbin, "config", "user.name")
 	committerCmd.Dir = dir
-	committer, err := cli.Exec(sess, committerCmd)
-	if err != nil {
-		return
+	if committer, cerr := cli.Exec(sess, committerCmd); cerr == nil {
+		gitcnf.CommitterName = settings.String(committer)
+		gitcnf.AuthorName = gitcnf.CommitterName
 	}
-	gitcnf.CommitterName = settings.String(committer)
-	gitcnf.AuthorName = gitcnf.CommitterName
 
 	// Get committer email
 	emailCmd := exec.Command(gitbin, "config", "user.email")
 	emailCmd.Dir = dir
-	email, err := cli.Exec(sess, emailCmd)
-	if err != nil {
-		return
+	if email, eerr := cli.Exec(sess, emailCmd); eerr == nil {
+		gitcnf.CommitterEmail = settings.String(email)
+		gitcnf.AuthorEmail = gitcnf.CommitterEmail
 	}
-	gitcnf.CommitterEmail = settings.String(email)
-	gitcnf.AuthorEmail = gitcnf.CommitterEmail
 
 	// Get current branch
-	branch, err := gitutils.CurrentBranch(sess, dir)
-	if err != nil {
-		return
+	if branch, berr := gitutils.CurrentBranch(sess, dir); berr == nil {
+		gitcnf.Branch = settings.String(branch)
 	}
-	gitcnf.Branch = settings.String(branch)
 
 	// Get remote
-	remoteName, remoteURL, err := gitutils.CurrentRemote(sess, dir)
-	if err != nil {
-		return
+	if remoteName, remoteURL, rerr := gitutils.CurrentRemote(sess, dir); rerr == nil {
+		gitcnf.RemoteName = settings.String(remoteName)
+		gitcnf.RemoteURL = settings.String(remoteURL)
 	}
-	gitcnf.RemoteName = settings.String(remoteName)
-	gitcnf.RemoteURL = settings.String(remoteURL)
 
-	return
+	return gitcnf, nil
 }
 
 type LinterConfig struct {

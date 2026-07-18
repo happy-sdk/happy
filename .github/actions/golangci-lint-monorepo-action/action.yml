@@ -20,12 +20,6 @@ runs:
       shell: bash
       run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${{ inputs.golangci-lint-version }}
 
-    - name: Setup project
-      shell: bash
-      run: |
-        git config --global user.email "happy-sdk@happy-sdk.dev"
-        git config --global user.name "Happy SDK"
-
     - name: Install happyctl
       shell: bash
       run: go install github.com/happy-sdk/happy/cmd/happyctl@latest
