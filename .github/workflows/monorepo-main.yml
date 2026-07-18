@@ -55,6 +55,7 @@ jobs:
           only-module-list: true
 
   happyvet:
+    needs: list-modules
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -62,6 +63,7 @@ jobs:
         uses: ./.github/actions/happyvet-monorepo-action
         with:
           go-version: ">=1.26.0"
+          modules: ${{ needs.list-modules.outputs.modules }}
 
   test-and-coverage:
     needs:

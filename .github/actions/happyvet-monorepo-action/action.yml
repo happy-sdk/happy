@@ -5,6 +5,9 @@ inputs:
     description: "The Go version to download (if necessary) and use. Supports semver spec and ranges. Be sure to enclose this option in single quotation marks."
     required: true
     default: ">=1.26.0"
+  modules:
+    description: "JSON array of module directories, as produced by go-test-monorepo-action's only-module-list output"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -19,45 +22,13 @@ runs:
     - name: Run happyvet on every module
       shell: bash
       run: |
-        # Respect the same .happy.yaml ignore list as go-test-monorepo-action,
-        # so internal/non-workspace modules (e.g. pkg/logging/internal/bench)
-        # aren't checked here either.
-        ignore_modules=()
-        if [ -f ".happy.yaml" ]; then
-          while IFS= read -r line; do
-            val="$(echo "$line" | sed -n 's/^[[:space:]]*-[[:space:]]*\(.*\)$/\1/p')"
-            if [ -n "$val" ]; then
-              ignore_modules+=("./$val")
-            fi
-          done < <(
-            awk '
-              /^ignore:/      {in_ignore=1; next}
-              /^[^[:space:]]/ {if (in_ignore) exit}
-              in_ignore && /^[[:space:]]*-/ {print}
-            ' .happy.yaml
-          )
-        fi
-
-        should_ignore_module() {
-          local mod="$1"
-          for ig in "${ignore_modules[@]}"; do
-            if [ "$mod" = "$ig" ] || [[ "$mod" == "$ig/"* ]]; then
-              return 0
-            fi
-          done
-          return 1
-        }
-
         status=0
-        while IFS= read -r module; do
-          if should_ignore_module "$module"; then
-            echo "Skipping ignored module: $module"
-            continue
-          fi
+        modules='${{ inputs.modules }}'
+        while read -r module; do
           echo "::group::happyvet: $module"
           if ! (cd "$module" && /tmp/happyvet ./...); then
             status=1
           fi
           echo "::endgroup::"
-        done < <(find . -type f -name 'go.mod' -exec dirname {} \;)
+        done < <(echo "$modules" | jq -r '.[]')
         exit $status
