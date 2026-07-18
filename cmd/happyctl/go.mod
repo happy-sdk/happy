@@ -3,7 +3,7 @@ module github.com/happy-sdk/happy/cmd/happyctl
 go 1.26.4
 
 require (
-	github.com/happy-sdk/happy v1.4.0
+	github.com/happy-sdk/happy v1.4.1
 	github.com/happy-sdk/happy/pkg/branding v1.0.1
 	github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.3
 	github.com/happy-sdk/happy/pkg/version v1.0.2
@@ -28,7 +28,7 @@ require (
 	github.com/go-git/go-git/v5 v5.19.1 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/happy-sdk/happy/addons/devel v1.1.0
+	github.com/happy-sdk/happy/addons/devel v1.1.1
 	github.com/happy-sdk/happy/pkg/bitutils v1.0.3 // indirect
 	github.com/happy-sdk/happy/pkg/bytesize v1.0.3 // indirect
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.2 // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4 // indirect
 	github.com/happy-sdk/happy/pkg/strings/slug v1.0.1 // indirect
 	github.com/happy-sdk/happy/pkg/tui v1.0.1 // indirect
-	github.com/happy-sdk/happy/pkg/vars v1.1.5 // indirect
+	github.com/happy-sdk/happy/pkg/vars v1.1.6 // indirect
 	github.com/happy-sdk/lib/taskrunner v0.8.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
