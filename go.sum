@@ -1,3 +1,5 @@
+github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
+github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/happy-sdk/happy/pkg/bitutils v1.0.1 h1:78bwvkIz5Sxc4ZIDiw6K/BHGUJtlwMDRaSu5a7yGciI=
 github.com/happy-sdk/happy/pkg/bitutils v1.0.1/go.mod h1:CnLW4KNYEAItLFL8tES8sIQLQCuueY4d0oOiZkJBcx0=
 github.com/happy-sdk/happy/pkg/branding v1.0.0 h1:HV5x3yCl5bTIgfJpsobdTGeQ7nYghenqHI8VFH8bmCY=

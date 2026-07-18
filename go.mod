@@ -1,6 +1,6 @@
 module github.com/happy-sdk/happy
 
-go 1.25.0
+go 1.26.4
 
 require (
 	github.com/happy-sdk/happy/pkg/branding v1.0.0
