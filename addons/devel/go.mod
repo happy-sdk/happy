@@ -8,13 +8,13 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/goccy/go-yaml v1.19.2
-	github.com/happy-sdk/happy v1.4.1
+	github.com/happy-sdk/happy v1.4.2
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.2
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4
 	github.com/happy-sdk/happy/pkg/fsutils v1.0.5
 	github.com/happy-sdk/happy/pkg/logging v1.0.4
-	github.com/happy-sdk/happy/pkg/options v1.0.5
-	github.com/happy-sdk/happy/pkg/settings v1.1.8
+	github.com/happy-sdk/happy/pkg/options v1.0.6
+	github.com/happy-sdk/happy/pkg/settings v1.1.9
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4
 	github.com/happy-sdk/happy/pkg/vars v1.1.6
 	github.com/happy-sdk/happy/pkg/version v1.0.2
