@@ -18,6 +18,10 @@ var (
 )
 
 type Settings struct {
+	// Projects holds the project discovery configuration (search paths and
+	// ignore patterns). It's not read directly in this package - WithSettings
+	// below registers these values as the "devel.projects.*" runtime options,
+	// which the projects API reads via sess.Get(...) when listing projects.
 	Projects projects.Settings `key:"projects"`
 }
 

@@ -47,27 +47,31 @@ func main() {
 			WithSource: true,
 		},
 		Instance: happy.InstanceSettings{},
-	}).
-		AddInfo("The Happy CLI is an experimental command-line tool designed to streamline management of Happy SDK-based projects. It simplifies project initialization, configuration, addon management, and release processes for single projects and monorepos. Additionally, it supports defining and running project-wide tasks to enhance development efficiency.").
-		WithBrand(brand).
-		WithAddon(
-			devel.Addon(
-				devel.Settings{
-					Projects: projects.Settings{
-						SearchPathIgnore: []string{
-							"**/.Trash*",
-							"**/vendor/*",
-							"**/node_modules/*",
-							"**/tmp/*",
-							"**/.git/*",
-						},
+	})
+
+	app.AddInfo("The Happy CLI is an command-line tool designed to streamline management of Happy SDK-based projects. It simplifies project initialization, configuration, addon management, and release processes for single projects and monorepos. Additionally, it supports defining and running project-wide tasks to enhance development efficiency.")
+
+	app.WithBrand(brand)
+
+	app.WithAddon(
+		devel.Addon(
+			devel.Settings{
+				Projects: projects.Settings{
+					SearchPathIgnore: []string{
+						"**/.Trash*",
+						"**/vendor/*",
+						"**/node_modules/*",
+						"**/tmp/*",
+						"**/.git/*",
 					},
 				},
-			),
-		).
-		WithFlags(
-			cli.NewStringFlag("wd", ".", "Working directory"),
-		)
+			},
+		),
+	)
+
+	app.WithFlags(
+		cli.NewStringFlag("wd", ".", "Working directory"),
+	)
 
 	configCmdCnf := config.DefaultCommandConfig()
 	configCmdCnf.DisableKeys = []string{
