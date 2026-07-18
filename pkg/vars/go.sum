@@ -1,8 +1,8 @@
-github.com/happy-sdk/happy/pkg/devel/testutils v1.3.3 h1:V9YVzJiHP+2fa/EXOAeAhn2c9ZbfePtj8lg7vHMa05A=
-github.com/happy-sdk/happy/pkg/devel/testutils v1.3.3/go.mod h1:8x6zlUA0Ok4JUVN1XUcDcJ/cN4FCJb93SE635v4OmYc=
-github.com/happy-sdk/happy/pkg/i18n v1.1.4 h1:aYCbPNxLJicubfYp+3FqMwDhRQXqToozLffRraiyid0=
-github.com/happy-sdk/happy/pkg/i18n v1.1.4/go.mod h1:H34XB3cCVsZf9+I/znXu9cPZOFn1V+mbDC7gbvO67/A=
-github.com/happy-sdk/happy/pkg/strings/bexp v1.7.3 h1:dtA5EENf8svp27+BrNebVRZOSry6E813nbR79TPvtkE=
-github.com/happy-sdk/happy/pkg/strings/bexp v1.7.3/go.mod h1:7tApXqytBmM/XfijIAHsC/Zv4JxqZkKzSafc647i0e4=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4 h1:Y399fmaEl6Dod6i9S2mG7tBd8aEyaLe1xNfoQjMPEt8=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4/go.mod h1:oUfrdQ/nRMMKseZ9UV5XyKN48f2Qhs53WEMv/E6rlP8=
+github.com/happy-sdk/happy/pkg/i18n v1.1.5 h1:ZJQg5v8sLiW5f0/pq4C0g2T/JwB1yHWwrSjAwdada1E=
+github.com/happy-sdk/happy/pkg/i18n v1.1.5/go.mod h1:gHrn+oGii1WnlkwH7wUjS1i8p+Wx9nihA/vw7jiWT2k=
+github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4 h1:eSul7tzqa3RpwJ38R+8KIyzYcBqZJW38xgoq4JVYZJI=
+github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4/go.mod h1:o4rW7Nx3vkCyryzs0QIYs2eBKrFgGqpujCO8VdRK9M8=
 golang.org/x/text v0.40.0 h1:Ub2Z6/xjgF1WrYQz2nuITOEegKFtiIy+rieRJ5lHZKs=
 golang.org/x/text v0.40.0/go.mod h1:hpnzDAfGV753zIKo+wk3u1bVKCGPbrnF7+7LBF/UHVY=
