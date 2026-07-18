@@ -26,10 +26,10 @@ runs:
         git config --global user.email "happy-sdk@happy-sdk.dev"
         git config --global user.name "Happy SDK"
 
-    - name: Install gohappy
+    - name: Install happyctl
       shell: bash
-      run: go install github.com/happy-sdk/cmd/gohappy@v0.2.0
+      run: go install github.com/happy-sdk/happy/cmd/happyctl@latest
 
     - name: Lint all modules
       shell: bash
-      run: script -q -e -c "gohappy --system-debug -x lint" /dev/stdout
+      run: script -q -e -c "happyctl --system-debug -x lint" /dev/stdout
