@@ -18,12 +18,12 @@ github.com/happy-sdk/happy/pkg/logging v1.0.4 h1:5mWXllZML2RuqNqqhSlpvCaV19BNG73
 github.com/happy-sdk/happy/pkg/logging v1.0.4/go.mod h1:zQdW1ED9iTaAzp2/EjE2iQApPgubhgD0T1l6cTZUi2U=
 github.com/happy-sdk/happy/pkg/networking v1.0.1 h1:xUB0xAPHgOrNTO3KKiWpcrM7cPcIGm0/WMTf5epeHFk=
 github.com/happy-sdk/happy/pkg/networking v1.0.1/go.mod h1:tXM37la6e1imaxrjhtK5MCWG/mxz7TOldjzch7/m4Jc=
-github.com/happy-sdk/happy/pkg/options v1.0.5 h1:yC0SCbMm8HkbLRm9kBdX8DqrypJLywC4v9pKgayiYl8=
-github.com/happy-sdk/happy/pkg/options v1.0.5/go.mod h1:AK7Wgj030iBv1BWVKdgEe8yuKyARqPN8JjuK7foiehI=
+github.com/happy-sdk/happy/pkg/options v1.0.6 h1:qrB7ataAfaCVgu9/GcOT62V8PcSnvGywHLOLISZtyzE=
+github.com/happy-sdk/happy/pkg/options v1.0.6/go.mod h1:n20MkN3TOUsBN0juksOUpoe07lDbUI1QgoySHfRroSA=
 github.com/happy-sdk/happy/pkg/scheduling/cron v1.0.4 h1:Kn3C2syOesMcEiD4ztjNjpP0EgRJYF02YyqC0AE1r0U=
 github.com/happy-sdk/happy/pkg/scheduling/cron v1.0.4/go.mod h1:UwSy73qdFkdD61IJoOAuhAhPgdK4TgjeM5LUeCh01I4=
-github.com/happy-sdk/happy/pkg/settings v1.1.8 h1:iqZZgPVWftswYS3JBgixt7uYTsHo8kDvIuzN/8dRA30=
-github.com/happy-sdk/happy/pkg/settings v1.1.8/go.mod h1:5APtGJUQtEbs1bTLLievN47/884169A9fl9LwyjUHek=
+github.com/happy-sdk/happy/pkg/settings v1.1.9 h1:dfR+jXAh6Z1LQ5UEwOEgHuH0nyYdVmWZi4yRyDRS2LA=
+github.com/happy-sdk/happy/pkg/settings v1.1.9/go.mod h1:UanuPlQG9ohRDmT1Lr+W1AYzCoHpaEDqWTa771aSZmw=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4 h1:eSul7tzqa3RpwJ38R+8KIyzYcBqZJW38xgoq4JVYZJI=
 github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4/go.mod h1:o4rW7Nx3vkCyryzs0QIYs2eBKrFgGqpujCO8VdRK9M8=
 github.com/happy-sdk/happy/pkg/strings/slug v1.0.1 h1:Qdf4oySbHAw557MU4kM4DN58hCHKNJk+LdIgngdq+Nk=
