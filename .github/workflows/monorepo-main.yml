@@ -39,7 +39,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: ">=1.26.0"
-      - run: go run ./cmd/happyctl/ i18n report -t 95
+      - run: go run ./cmd/happyctl/ --system-debug -x i18n report -t 95
 
   list-modules:
     runs-on: ubuntu-latest
