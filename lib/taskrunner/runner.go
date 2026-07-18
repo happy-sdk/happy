@@ -26,6 +26,19 @@ const (
 	progressTaskSteps float64 = 100.0
 )
 
+// newProgram is an indirection point so tests can substitute a headless
+// program (no real controlling terminal, which most CI/sandboxed test
+// environments simply don't have) instead of the real tea.NewProgram.
+var newProgram = func(m tea.Model, opts ...tea.ProgramOption) *tea.Program {
+	return tea.NewProgram(m, opts...)
+}
+
+// newPipe is an indirection point so tests can inject a Pipe failure (os.Pipe
+// itself essentially never fails in practice - it'd take fd exhaustion) or a
+// pipe whose Close returns an error, deterministically instead of needing to
+// provoke either for real.
+var newPipe = os.Pipe
+
 type Runner struct {
 	tasks         []Task
 	mu            sync.Mutex
@@ -102,7 +115,7 @@ func (tr *Runner) Run() error {
 	defer done()
 
 	// Create pipe to capture stdout
-	pr, pw, err := os.Pipe()
+	pr, pw, err := newPipe()
 	if err != nil {
 		return err
 	}
@@ -112,7 +125,7 @@ func (tr *Runner) Run() error {
 	// Start bubbletea program
 	tr.model.progressTotalSteps = float64(tr.model.totalTasks) * progressTaskSteps
 
-	tr.program = tea.NewProgram(tr.model, tea.WithFPS(120))
+	tr.program = newProgram(tr.model, tea.WithFPS(120))
 
 	// Start output capture goroutine
 	os.Stdout = pw
