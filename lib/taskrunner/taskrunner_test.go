@@ -18,8 +18,10 @@ func TestErrCompletedWithFailuresWrapsError(t *testing.T) {
 func TestStateOrdering(t *testing.T) {
 	// executor.go and runner.go rely on state comparisons (res.state > state)
 	// to pick the "worst" outcome across tasks/subtasks - this ordering must
-	// hold for that logic to behave correctly.
-	states := []State{SKIPPED, SUCCESS, INFO, NOTICE, WARNING, FAILURE}
+	// hold for that logic to behave correctly. SKIPPED ranks above SUCCESS
+	// (a skipped subtask is not a clean success) despite being the mildest
+	// non-success outcome otherwise.
+	states := []State{SUCCESS, SKIPPED, INFO, NOTICE, WARNING, FAILURE}
 	for i := 1; i < len(states); i++ {
 		testutils.Assert(t, states[i] > states[i-1], "expected %d > %d", states[i], states[i-1])
 	}

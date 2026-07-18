@@ -69,9 +69,13 @@ var (
 
 type State uint
 
+// The ordering here matters: executor.go/runner.go pick the "worst" outcome
+// across tasks/subtasks via a plain res.state > state comparison, so SKIPPED
+// must rank above SUCCESS (a skipped subtask is not a clean success) even
+// though it's otherwise the mildest non-success outcome.
 const (
-	SKIPPED State = iota
-	SUCCESS
+	SUCCESS State = iota
+	SKIPPED
 	INFO
 	NOTICE
 	WARNING

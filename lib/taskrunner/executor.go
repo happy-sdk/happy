@@ -107,6 +107,9 @@ func (e *Executor) runSubtasks(trFailedTasks []TaskID) (state State, failedTasks
 			res.subtaskProgressTaskSteps = subtaskProgressTaskSteps
 			failedTasks = append(failedTasks, task.id)
 			e.program.Send(res)
+			if res.state > state {
+				state = res.state
+			}
 			continue
 		}
 

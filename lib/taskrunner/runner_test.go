@@ -129,6 +129,28 @@ func TestRunnerExecuteTasksAggregatesSubtaskFailure(t *testing.T) {
 	testutils.Equal(t, 2, len(tr.failedTasks), "expected both the subtask's and the parent task's ids recorded")
 }
 
+// TestRunnerExecuteTasksAllSubtasksSkippedElevatesParent is the end-to-end
+// version of the runSubtasks fix: a parent task that itself runs fine but
+// whose only subtask never actually runs (because that subtask depends on
+// an unrelated, already-failed earlier task) must have its own result
+// elevated to SKIPPED - not silently reported as if it were a plain success.
+func TestRunnerExecuteTasksAllSubtasksSkippedElevatesParent(t *testing.T) {
+	tr := New("root")
+	failID := tr.Add("fails", func(ex *Executor) (res Result) { return Failure("boom") })
+	tr.Add("parent", func(ex *Executor) (res Result) {
+		ex.SubtaskD(failID, "child", func(ex *Executor) (res Result) {
+			return Success("should not run")
+		})
+		return Success("parent ok")
+	})
+
+	final := newRunnerWithHeadlessProgram(t, tr, func(p *tea.Program) {
+		tr.executeTasks(os.Stdout)
+	})
+
+	testutils.Assert(t, final.skipped >= 1, "expected the parent's result to be elevated to SKIPPED")
+}
+
 func TestRunnerExecuteTasksTicksDuringSlowAction(t *testing.T) {
 	tr := New("root")
 	tr.Add("slow", func(ex *Executor) (res Result) {

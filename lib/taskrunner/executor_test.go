@@ -143,15 +143,11 @@ func TestExecutorRunSubtasksAggregatesWorstState(t *testing.T) {
 	}
 }
 
-// TestExecutorRunSubtasksSkipsOnUnmetDependencyFromCaller documents a subtle
-// behavior: a subtask skipped because its dependency was already in
-// trFailedTasks (the caller-supplied list) hits a `continue` before the
-// `if res.state > state` aggregation runs, so it's recorded in the returned
-// failedTasks slice but does NOT elevate the returned state - unlike a
-// subtask that runs its own action and returns FAILURE/SKIPPED, which does.
-// If every subtask in a run is skipped this way, runSubtasks reports
-// SUCCESS even though nothing actually ran. Not something this test suite
-// changes - just pinning down what the current code actually does.
+// TestExecutorRunSubtasksSkipsOnUnmetDependencyFromCaller covers a subtask
+// skipped because its dependency was already in trFailedTasks (the
+// caller-supplied list): it must be recorded in the returned failedTasks
+// slice AND elevate the returned state to (at least) SKIPPED, even though
+// its action never actually runs.
 func TestExecutorRunSubtasksSkipsOnUnmetDependencyFromCaller(t *testing.T) {
 	var state State
 	var failed []TaskID
@@ -167,7 +163,7 @@ func TestExecutorRunSubtasksSkipsOnUnmetDependencyFromCaller(t *testing.T) {
 		state, failed = e.runSubtasks([]TaskID{upstreamFailedID})
 	})
 
-	testutils.Equal(t, SUCCESS, state, "a dependency-skip alone does not elevate the returned state (see comment above)")
+	testutils.Equal(t, SKIPPED, state, "expected a dependency-skip to elevate the returned state to SKIPPED")
 	testutils.Assert(t, !ranAction, "expected the dependent subtask's action never to run")
 	testutils.Equal(t, 1, len(failed), "expected the skipped subtask to be recorded as failed")
 }
