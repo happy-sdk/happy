@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/session"
-	tr "github.com/happy-sdk/happy/lib/taskrunner"
 )
 
 func (prj *Project) Lint(sess *session.Context) error {

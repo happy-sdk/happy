@@ -13,13 +13,13 @@ import (
 	"slices"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gomodule"
 	"github.com/happy-sdk/happy/addons/devel/pkg/views"
+	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/session"
-	tr "github.com/happy-sdk/happy/lib/taskrunner"
 )
 
 func (prj *Project) Release(sess *session.Context, allowDirty, skipRemoteChecks bool) (err error) {
@@ -336,7 +336,6 @@ func (prj *Project) releaseGomodules(sess *session.Context, r *tr.Runner, dep tr
 		m, err := tea.NewProgram(
 			view,
 			tea.WithOutput(stdout),
-			tea.WithAltScreen(),
 		).Run()
 		if err != nil {
 			fmt.Println("Error running program:", err)

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/charmbracelet/bubbles/table"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/table"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gomodule"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -92,7 +92,7 @@ func (m ConfirmReleasablesView) Init() tea.Cmd {
 func (m ConfirmReleasablesView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "y", "Y":
 			m.err = ""
@@ -115,15 +115,19 @@ func (m ConfirmReleasablesView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m ConfirmReleasablesView) View() string {
+func (m ConfirmReleasablesView) View() tea.View {
 	if m.answered {
-		return ""
+		v := tea.NewView("")
+		v.AltScreen = true
+		return v
 	}
 	view := "PACKAGES\n\n"
 	view += configTableStyle(m.table.View()) + "\n\n"
 	view += "Do you want to continue? [y/n]: \n"
 	if m.err != "" {
-		return view + "\n" + statusMessageStyle(m.err)
+		view += "\n" + statusMessageStyle(m.err)
 	}
-	return view
+	v := tea.NewView(view)
+	v.AltScreen = true
+	return v
 }

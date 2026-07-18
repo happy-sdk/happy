@@ -19,10 +19,10 @@ import (
 
 	"github.com/happy-sdk/happy/addons/devel/pkg/changelog"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
+	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/session"
-	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/semver"
 )

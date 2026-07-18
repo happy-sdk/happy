@@ -3,9 +3,9 @@ module github.com/happy-sdk/happy/addons/devel
 go 1.26.4
 
 require (
-	github.com/charmbracelet/bubbles v1.0.0
-	github.com/charmbracelet/bubbletea v1.3.10
-	github.com/charmbracelet/lipgloss v1.1.0
+	charm.land/bubbles/v2 v2.1.1
+	charm.land/bubbletea/v2 v2.0.8
+	charm.land/lipgloss/v2 v2.0.5
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/happy-sdk/happy v1.5.1
@@ -19,6 +19,16 @@ require (
 	github.com/happy-sdk/happy/pkg/vars v1.1.6
 	github.com/happy-sdk/happy/pkg/version v1.0.2
 	golang.org/x/mod v0.38.0
+)
+
+require (
+	github.com/charmbracelet/bubbles v1.0.0 // indirect
+	github.com/charmbracelet/bubbletea v1.3.10 // indirect
+	github.com/charmbracelet/lipgloss v1.1.0 // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260703014108-f5a850f9c2b7 // indirect
+	github.com/charmbracelet/x/termios v0.1.1 // indirect
+	github.com/charmbracelet/x/windows v0.2.2 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 )
 
 require (

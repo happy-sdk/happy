@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 	"github.com/happy-sdk/happy/pkg/vars"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/session"
-	tr "github.com/happy-sdk/happy/lib/taskrunner"
 )
 
 func (prj *Project) Test(sess *session.Context) error {
