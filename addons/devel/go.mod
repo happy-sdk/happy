@@ -6,8 +6,8 @@ require (
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/go-git/go-git/v5 v5.16.4
-	github.com/goccy/go-yaml v1.19.0
+	github.com/go-git/go-git/v5 v5.19.1
+	github.com/goccy/go-yaml v1.19.2
 	github.com/happy-sdk/happy v1.3.2
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.1
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.3
@@ -34,7 +34,7 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.6.2 // indirect
+	github.com/go-git/go-billy/v5 v5.9.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/happy-sdk/happy/pkg/bitutils v1.0.2 // indirect
 	github.com/happy-sdk/happy/pkg/i18n v1.1.4 // indirect
