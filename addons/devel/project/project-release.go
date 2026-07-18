@@ -170,6 +170,14 @@ func (prj *Project) releaseGomodules(sess *session.Context, r *tr.Runner, dep tr
 
 	remoteName := prj.Config().Get("git.remote.name").String()
 
+	var rootGoVersion string
+	for _, pkg := range gomodules {
+		if pkg.TagPrefix == "" && pkg.Modfile.Go != nil {
+			rootGoVersion = pkg.Modfile.Go.Version
+			break
+		}
+	}
+
 	var goDepsLatest = make(map[string]version.Version)
 
 	r.AddD(dep, "check dep updates",
@@ -217,6 +225,12 @@ func (prj *Project) releaseGomodules(sess *session.Context, r *tr.Runner, dep tr
 							}
 							break
 						}
+					}
+				}
+
+				if pkg.TagPrefix != "" {
+					if err := pkg.SyncGoVersion(rootGoVersion); err != nil {
+						return tr.Failure(fmt.Sprintf("failed to sync go version: %s", err.Error()))
 					}
 				}
 

@@ -160,6 +160,37 @@ func (p *Package) SetDep(dep string, ver version.Version) error {
 	return nil
 }
 
+// SyncGoVersion updates the module's go directive to match the root
+// module's go version, so introducing a new Go-version-gated feature at
+// the root (e.g. bumping to 1.27 for new generic methods) rolls out to
+// every module in the monorepo on the next release, not just the ones
+// whose own code happened to change. Must be called after LoadReleaseInfo,
+// since it relies on LastReleaseTag being populated.
+func (p *Package) SyncGoVersion(rootGoVersion string) error {
+	if p.IsInternal || rootGoVersion == "" {
+		return nil
+	}
+	if p.Modfile.Go != nil && p.Modfile.Go.Version == rootGoVersion {
+		return nil
+	}
+
+	if err := p.Modfile.AddGoStmt(rootGoVersion); err != nil {
+		return fmt.Errorf("failed to sync go version for(%s): %w", p.Import, err)
+	}
+	p.NeedsRelease = true
+
+	if p.NextReleaseTag == "" || p.LastReleaseTag == p.NextReleaseTag {
+		nextver, err := bumpPatch(p.TagPrefix, p.LastReleaseTag)
+		if err != nil {
+			return fmt.Errorf("failed to bump patch version for(%s): %w", p.Import, err)
+		}
+		p.NextReleaseTag = nextver
+	}
+
+	p.Modfile.Cleanup()
+	return nil
+}
+
 func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, remoteName string, checkRemote bool) error {
 	sess.Log().Debug(
 		"getting latest release",
