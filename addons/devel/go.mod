@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/goccy/go-yaml v1.19.2
-	github.com/happy-sdk/happy v1.4.0
+	github.com/happy-sdk/happy v1.4.1
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.2
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4
 	github.com/happy-sdk/happy/pkg/fsutils v1.0.5
@@ -16,7 +16,7 @@ require (
 	github.com/happy-sdk/happy/pkg/options v1.0.5
 	github.com/happy-sdk/happy/pkg/settings v1.1.8
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4
-	github.com/happy-sdk/happy/pkg/vars v1.1.5
+	github.com/happy-sdk/happy/pkg/vars v1.1.6
 	github.com/happy-sdk/happy/pkg/version v1.0.2
 	github.com/happy-sdk/lib/taskrunner v0.8.1
 	golang.org/x/mod v0.38.0
