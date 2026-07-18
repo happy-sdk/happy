@@ -3,9 +3,9 @@ module github.com/happy-sdk/happy/cmd/happyctl
 go 1.26.4
 
 require (
-	github.com/happy-sdk/happy v1.3.0
+	github.com/happy-sdk/happy v1.3.1
 	github.com/happy-sdk/happy/pkg/branding v1.0.0
-	github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.1
+	github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.2
 	github.com/happy-sdk/happy/pkg/version v1.0.1
 )
 
@@ -28,22 +28,22 @@ require (
 	github.com/go-git/go-git/v5 v5.16.4 // indirect
 	github.com/goccy/go-yaml v1.19.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/happy-sdk/happy/addons/devel v1.0.3
-	github.com/happy-sdk/happy/pkg/bitutils v1.0.1 // indirect
-	github.com/happy-sdk/happy/pkg/bytesize v1.0.1 // indirect
+	github.com/happy-sdk/happy/addons/devel v1.0.4
+	github.com/happy-sdk/happy/pkg/bitutils v1.0.2 // indirect
+	github.com/happy-sdk/happy/pkg/bytesize v1.0.2 // indirect
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.1 // indirect
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.3 // indirect
-	github.com/happy-sdk/happy/pkg/fsutils v1.0.3 // indirect
-	github.com/happy-sdk/happy/pkg/i18n v1.1.3 // indirect
-	github.com/happy-sdk/happy/pkg/logging v1.0.2 // indirect
+	github.com/happy-sdk/happy/pkg/fsutils v1.0.4 // indirect
+	github.com/happy-sdk/happy/pkg/i18n v1.1.4 // indirect
+	github.com/happy-sdk/happy/pkg/logging v1.0.3 // indirect
 	github.com/happy-sdk/happy/pkg/networking v1.0.0 // indirect
-	github.com/happy-sdk/happy/pkg/options v1.0.2 // indirect
-	github.com/happy-sdk/happy/pkg/scheduling/cron v1.0.2 // indirect
-	github.com/happy-sdk/happy/pkg/settings v1.1.5 // indirect
-	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.2 // indirect
+	github.com/happy-sdk/happy/pkg/options v1.0.3 // indirect
+	github.com/happy-sdk/happy/pkg/scheduling/cron v1.0.3 // indirect
+	github.com/happy-sdk/happy/pkg/settings v1.1.6 // indirect
+	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.3 // indirect
 	github.com/happy-sdk/happy/pkg/strings/slug v1.0.0 // indirect
 	github.com/happy-sdk/happy/pkg/tui v1.0.0 // indirect
-	github.com/happy-sdk/happy/pkg/vars v1.1.3 // indirect
+	github.com/happy-sdk/happy/pkg/vars v1.1.4 // indirect
 	github.com/happy-sdk/lib/taskrunner v0.8.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
