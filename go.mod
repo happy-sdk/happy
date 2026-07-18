@@ -1,6 +1,6 @@
 module github.com/happy-sdk/happy
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/happy-sdk/happy/pkg/branding v1.0.0
@@ -19,13 +19,13 @@ require (
 	github.com/happy-sdk/happy/pkg/tui v1.0.0
 	github.com/happy-sdk/happy/pkg/vars v1.1.1
 	github.com/happy-sdk/happy/pkg/version v1.0.0
-	golang.org/x/mod v0.30.0
-	golang.org/x/term v0.37.0
-	golang.org/x/text v0.31.0
+	golang.org/x/mod v0.38.0
+	golang.org/x/term v0.45.0
+	golang.org/x/text v0.40.0
 )
 
 require (
 	github.com/happy-sdk/happy/pkg/bitutils v1.0.0 // indirect
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.1 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 )
