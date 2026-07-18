@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
 
@@ -53,24 +53,28 @@ func TestModelUpdateProgressFrame(t *testing.T) {
 }
 
 func TestModelUpdateKeyMsgQuits(t *testing.T) {
-	for _, key := range []string{"q", "ctrl+c"} {
-		t.Run(key, func(t *testing.T) {
+	tests := []struct {
+		name string
+		key  tea.KeyPressMsg
+	}{
+		{"q", tea.KeyPressMsg{Text: "q", Code: 'q'}},
+		{"ctrl+c", tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			m := newTestModel()
-			_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
-			if key == "ctrl+c" {
-				_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
-			}
-			testutils.Assert(t, cmd != nil, "expected a quit command for key %q", key)
+			_, cmd := m.Update(tt.key)
+			testutils.Assert(t, cmd != nil, "expected a quit command for key %q", tt.name)
 			msg := cmd()
 			_, isQuit := msg.(tea.QuitMsg)
-			testutils.Assert(t, isQuit, "expected tea.QuitMsg for key %q, got %T", key, msg)
+			testutils.Assert(t, isQuit, "expected tea.QuitMsg for key %q, got %T", tt.name, msg)
 		})
 	}
 }
 
 func TestModelUpdateOtherKeyDoesNotQuit(t *testing.T) {
 	m := newTestModel()
-	newM, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("x")})
+	newM, cmd := m.Update(tea.KeyPressMsg{Text: "x", Code: 'x'})
 	nm := newM.(model)
 	testutils.Equal(t, m.finished, nm.finished, "unrelated key must not change finished")
 	if cmd != nil {
@@ -209,13 +213,13 @@ func TestModelUpdateResultStateCounts(t *testing.T) {
 func TestModelViewFinishedIsEmpty(t *testing.T) {
 	m := newTestModel()
 	m.finished = true
-	testutils.Equal(t, "", m.View(), "expected empty view once finished")
+	testutils.Equal(t, "", m.View().Content, "expected empty view once finished")
 }
 
 func TestModelViewNotFinished(t *testing.T) {
 	m := newTestModel()
 	m.statusMessage = "working"
-	testutils.Assert(t, m.View() != "", "expected a non-empty status view")
+	testutils.Assert(t, m.View().Content != "", "expected a non-empty status view")
 }
 
 func TestGetFinalRaport(t *testing.T) {

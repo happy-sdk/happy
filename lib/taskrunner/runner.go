@@ -15,10 +15,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/uuid"
 )
 
@@ -60,7 +60,8 @@ func New(name string) *Runner {
 	)
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffed56"))
 	p := progress.New(
-		progress.WithScaledGradient("#ff9800", "#4caf50"),
+		progress.WithColors(lipgloss.Color("#ff9800"), lipgloss.Color("#4caf50")),
+		progress.WithScaled(true),
 		progress.WithWidth(50),
 		progress.WithFillCharacters('▰', '▱'),
 		progress.WithSpringOptions(120.0, 1.0),

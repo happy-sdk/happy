@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbles/progress"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 	"github.com/google/uuid"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
@@ -39,7 +39,7 @@ func runHeadless(t *testing.T, m tea.Model, drive func(p *tea.Program)) model {
 		done <- fm
 	}()
 	drive(p)
-	p.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	p.Send(tea.KeyPressMsg{Text: "q", Code: 'q'})
 	fm := <-done
 	return fm.(model)
 }

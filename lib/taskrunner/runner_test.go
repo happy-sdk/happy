@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/google/uuid"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
@@ -191,7 +191,7 @@ func (m *recorderModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	return m, nil
 }
-func (m *recorderModel) View() string { return "" }
+func (m *recorderModel) View() tea.View { return tea.NewView("") }
 
 func TestRunnerCaptureOutputSplitsAndTrimsLines(t *testing.T) {
 	rec, st := newRecorderModel()
@@ -223,7 +223,7 @@ func TestRunnerCaptureOutputSplitsAndTrimsLines(t *testing.T) {
 	// false) and quit the program.
 	time.Sleep(50 * time.Millisecond)
 	cancel()
-	p.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	p.Send(tea.KeyPressMsg{Text: "q", Code: 'q'})
 	<-done
 	_ = pr.Close()
 
@@ -275,7 +275,7 @@ func TestRunnerCaptureOutputStopsOnContextDone(t *testing.T) {
 		t.Fatal("captureOutput did not stop after ctx cancellation")
 	}
 
-	p.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	p.Send(tea.KeyPressMsg{Text: "q", Code: 'q'})
 	<-done
 }
 
@@ -320,7 +320,7 @@ type quitsImmediatelyModel struct{}
 
 func (quitsImmediatelyModel) Init() tea.Cmd                         { return tea.Quit }
 func (m quitsImmediatelyModel) Update(tea.Msg) (tea.Model, tea.Cmd) { return m, tea.Quit }
-func (quitsImmediatelyModel) View() string                          { return "" }
+func (quitsImmediatelyModel) View() tea.View                        { return tea.NewView("") }
 
 func TestRunnerRunUnexpectedModelType(t *testing.T) {
 	old := newProgram
