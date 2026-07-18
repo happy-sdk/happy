@@ -440,7 +440,8 @@ func (prj *Project) releaseChangelog(sess *session.Context, r *tr.Runner, dep tr
 				if i == 0 {
 					cldata.WriteString("**Changes**\n")
 				}
-				cldata.WriteString(change + "\n")
+				cldata.WriteString(change)
+				cldata.WriteRune('\n')
 			}
 		}
 
