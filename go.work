@@ -5,6 +5,7 @@ use (
 	./addons/devel
 	./cmd/happyctl
 	./lib/tail
+	./lib/taskrunner
 	./pkg/bitutils
 	./pkg/branding
 	./pkg/bytesize
