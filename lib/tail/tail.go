@@ -212,7 +212,7 @@ func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, err
 			yield("", err)
 			return
 		}
-		defer watcher.Close()
+		defer func() { _ = watcher.Close() }()
 
 		// Resolve absolute path to handle renames
 		absPath, err := filepath.Abs(filePath)
@@ -227,7 +227,7 @@ func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, err
 			yield("", err)
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		// Read initial lines if n >= 0
 		if n >= 0 {
@@ -328,7 +328,7 @@ func TailFile(ctx context.Context, filePath string, n int) iter.Seq2[string, err
 				}
 				if event.Has(fsnotify.Rename | fsnotify.Remove) {
 					// Handle log rotation: re-open the new file
-					currentFile.Close()
+					_ = currentFile.Close()
 					newFile, err := os.Open(absPath)
 					if err != nil {
 						yield("", err)
