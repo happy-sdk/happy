@@ -5,6 +5,7 @@ go 1.26.4
 require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/happy-sdk/happy/pkg/bytesize v1.0.3
+	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4
 )
 
 require golang.org/x/sys v0.47.0 // indirect
