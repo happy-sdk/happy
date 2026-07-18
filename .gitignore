@@ -16,7 +16,7 @@
 tools/tools.go
 __debug*
 go.work.sum
-happyctl
+/happyctl
 
 ################################################################################
 # DIRECTORIES to ignore
