@@ -707,6 +707,9 @@ type ModuleInfo struct {
 
 // AddMissing adds missing dependencies to the modfile
 func (p *Package) addMissing(sess *session.Context) error {
+	if p.IsInternal {
+		return nil
+	}
 	// Get all dependencies with their module info in one command
 	cmd := exec.Command("go", "list", "-deps", "-json", "./...")
 	cmd.Dir = p.Dir
