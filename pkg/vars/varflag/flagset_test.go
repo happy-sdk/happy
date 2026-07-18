@@ -108,6 +108,136 @@ func TestFlagSet(t *testing.T) {
 	testutils.Equal(t, 2, subcmd.Pos(), "expected subcmd pos to be 2")
 }
 
+// TestFlagSetCommandNameCollision is a regression test for a real bug:
+// a command name that collides with some OTHER command's name anywhere
+// else in the tree (not just among its own siblings) must not cause
+// mis-dispatch. Concretely: given a tree
+//
+//	root -> info                  (root-level "info")
+//	root -> agentic -> info       (nested "info", same name, different branch)
+//
+// invoking `root agentic info` must resolve to agentic's nested "info",
+// never to root's own "info", even though root's own "info" flag set will
+// (unavoidably) find the literal token "info" somewhere in the argv.
+func TestFlagSetCommandNameCollision(t *testing.T) {
+	newTree := func() (root, rootInfo, agentic, agenticInfo *FlagSet) {
+		var err error
+		root, err = NewFlagSet("root", 0)
+		testutils.NoError(t, err)
+		rootInfo, err = NewFlagSet("info", 0)
+		testutils.NoError(t, err)
+		agentic, err = NewFlagSet("agentic", 0)
+		testutils.NoError(t, err)
+		agenticInfo, err = NewFlagSet("info", 0)
+		testutils.NoError(t, err)
+		testutils.NoError(t, agentic.AddSet(agenticInfo))
+		testutils.NoError(t, root.AddSet(rootInfo, agentic))
+		return
+	}
+
+	t.Run("nested info resolves to agentic's info, not root's", func(t *testing.T) {
+		root, rootInfo, agentic, agenticInfo := newTree()
+		args := []string{"root", "agentic", "info"}
+		testutils.NoError(t, root.Parse(args))
+
+		if rootInfo.Present() {
+			t.Error("expected root-level info NOT to be present when invoking agentic info")
+		}
+		if !agentic.Present() {
+			t.Error("expected agentic to be present")
+		}
+		if !agenticInfo.Present() {
+			t.Error("expected agentic's nested info to be present")
+		}
+
+		active := root.GetActiveSets()
+		testutils.Equal(t, 3, len(active), "active set len should be 3")
+		testutils.Equal(t, "root", active[0].Name(), "unexpected 1st active set")
+		testutils.Equal(t, "agentic", active[1].Name(), "unexpected 2nd active set")
+		testutils.Equal(t, "info", active[2].Name(), "unexpected 3rd active set")
+	})
+
+	t.Run("root-level info still resolves when invoked directly", func(t *testing.T) {
+		root, rootInfo, agentic, agenticInfo := newTree()
+		args := []string{"root", "info"}
+		testutils.NoError(t, root.Parse(args))
+
+		if !rootInfo.Present() {
+			t.Error("expected root-level info to be present")
+		}
+		if agentic.Present() {
+			t.Error("expected agentic NOT to be present")
+		}
+		if agenticInfo.Present() {
+			t.Error("expected agentic's nested info NOT to be present")
+		}
+	})
+}
+
+// TestFlagSetCommandNameCollisionWithGlobalFlags combines the command-name
+// collision scenario above with global flags placed at arbitrary positions,
+// since that "global flag can be any place" behavior (critical for things
+// like -v/--debug verbosity flags) must keep working alongside the fix for
+// the collision bug.
+func TestFlagSetCommandNameCollisionWithGlobalFlags(t *testing.T) {
+	root, err := NewFlagSet("root", 0)
+	testutils.NoError(t, err)
+	v, _ := Bool("verbose", false, "increase verbosity", "v")
+	testutils.NoError(t, root.Add(v))
+
+	rootInfo, err := NewFlagSet("info", 0)
+	testutils.NoError(t, err)
+	agentic, err := NewFlagSet("agentic", 0)
+	testutils.NoError(t, err)
+	agenticInfo, err := NewFlagSet("info", 0)
+	testutils.NoError(t, err)
+	testutils.NoError(t, agentic.AddSet(agenticInfo))
+	testutils.NoError(t, root.AddSet(rootInfo, agentic))
+
+	// global flag placed between the parent command and the nested
+	// colliding subcommand name.
+	args := []string{"root", "agentic", "-v", "info"}
+	testutils.NoError(t, root.Parse(args))
+
+	if !v.Present() || !v.Value() {
+		t.Error("expected verbose flag to be present and true", v.Present(), v.Value())
+	}
+	if rootInfo.Present() {
+		t.Error("expected root-level info NOT to be present")
+	}
+	if !agentic.Present() {
+		t.Error("expected agentic to be present")
+	}
+	if !agenticInfo.Present() {
+		t.Error("expected agentic's nested info to be present")
+	}
+}
+
+// TestFlagSetArgValueMatchesOwnName is a regression test for a related bug:
+// FlagSet.Parse used to scan the *entire* remaining argv for its own name
+// and kept scanning past the first match, so if a command's own positional
+// argument value happened to equal the command's own name, the position
+// (and therefore the extracted argument) would be wrong.
+func TestFlagSetArgValueMatchesOwnName(t *testing.T) {
+	root, err := NewFlagSet("root", 0)
+	testutils.NoError(t, err)
+	echo, err := NewFlagSet("echo", 1)
+	testutils.NoError(t, err)
+	testutils.NoError(t, root.AddSet(echo))
+
+	args := []string{"root", "echo", "echo"}
+	testutils.NoError(t, root.Parse(args))
+
+	if !echo.Present() {
+		t.Error("expected echo to be present")
+	}
+	testutils.Equal(t, 1, echo.Pos(), "expected echo pos to be 1")
+	testutils.Equal(t, 1, len(echo.Args()), "expected echo to have 1 arg")
+	if len(echo.Args()) == 1 {
+		testutils.Equal(t, "echo", echo.Args()[0].String(), "expected echo's arg value to be 'echo'")
+	}
+}
+
 func TestFlagSetName(t *testing.T) {
 	for _, tt := range testflags() {
 		t.Run(tt.name, func(t *testing.T) {

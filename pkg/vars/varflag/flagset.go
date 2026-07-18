@@ -202,6 +202,7 @@ func (s *FlagSet) Parse(args []string) error {
 				s.pos = i
 				currargs = args[i:]
 				s.present = true
+				break
 			}
 		}
 	} else {
@@ -227,27 +228,37 @@ func (s *FlagSet) Parse(args []string) error {
 		}
 	}
 
-	// parse flags for sets
-	for _, set := range s.sets {
-		err := set.Parse(currargs)
-		if err != nil {
+	// Parse flags for sets. A command name can legitimately repeat
+	// elsewhere in the tree (e.g. two different subcommands both having
+	// their own "info" child), so we must not let each set independently
+	// scan the whole remaining argv for its own name -- that would let a
+	// set whose name merely occurs *somewhere* later in argv shadow the
+	// set that the argv actually addresses. Instead we scan currargs once,
+	// left to right, and dispatch to whichever direct child's name is the
+	// first one encountered; every earlier or unrelated occurrence of some
+	// other set's name deeper in argv is irrelevant.
+	if set := s.firstMatchingSet(currargs); set != nil {
+		if err := set.Parse(currargs); err != nil {
 			return err
-		}
-		if set.Present() {
-			if s.name == filepath.Base(os.Args[0]) {
-				// update global flag command names
-				for _, flag := range s.flags {
-					if !flag.Present() {
-						continue
-					}
-				}
-			}
-			break
 		}
 	}
 
 	// since we did not have errors we can look up args
 	return s.extractArgs(currargs)
+}
+
+// firstMatchingSet returns the direct child set whose name is the first
+// (left-to-right) token match in args, or nil if none of the direct
+// children's names occur in args at all.
+func (s *FlagSet) firstMatchingSet(args []string) Flags {
+	for _, arg := range args {
+		for _, set := range s.sets {
+			if arg == set.Name() {
+				return set
+			}
+		}
+	}
+	return nil
 }
 
 func (s *FlagSet) extractArgs(args []string) error {
@@ -273,13 +284,14 @@ includessubset:
 		}
 	}
 
-	// filter flags
-	used := []string{}
+	// Drop this set's own leading identifier token, by position, not by
+	// value: a positional argument whose value happens to equal s.name (or
+	// os.Args[0]) must still be kept, not stripped as if it were another
+	// occurrence of the identifier.
+	sargs := args
 	if args[0] == s.name || args[0] == os.Args[0] {
-		used = append(used, args[0])
+		sargs = args[1:]
 	}
-
-	sargs := slicediff(args, used)
 
 	if s.argn == 0 && len(sargs) > 0 {
 		if looksLikeFlag(sargs[0]) {
