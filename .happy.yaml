@@ -3,6 +3,13 @@ version: "1"
 releaser:
   enabled: true
 
+deps:
+  go:
+    latest:
+      - charm.land/bubbles/v2
+      - charm.land/bubbletea/v2
+      - charm.land/lipgloss/v2
+
 git:
   author:
     email: hello@happy-sdk.dev
