@@ -5,6 +5,7 @@
 package tail
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -349,4 +351,459 @@ func TestBufferSizes(t *testing.T) {
 	bufSize, maxBufSize := BufferSizes()
 	testutils.Equal(t, uint64((4 * bytesize.KiB).Bytes()), uint64(bufSize.Bytes()), "unexpected buffer size")
 	testutils.Equal(t, uint64((2 * bytesize.MiB).Bytes()), uint64(maxBufSize.Bytes()), "unexpected max buffer size")
+}
+
+// Note: cleanup's "reset if grown past 128 KiB" branch in
+// newScannerWithPooledBuffer is not covered here. bufio.Scanner.Buffer never
+// grows the slice it was seeded with in place (it reallocates its own
+// internal buffer instead), so that branch can't be reached through actual
+// scanning - and reaching it by priming the shared sync.Pool directly turned
+// out to be flaky (its per-P fast-path retrieval isn't a reliable guarantee
+// under race-detector scheduling). See the conversation for the fix options
+// considered instead of a flaky test.
+func TestNewScannerWithPooledBufferKeepsNormalCapacity(t *testing.T) {
+	scanner, cleanup := newScannerWithPooledBuffer(strings.NewReader("line"))
+	testutils.Assert(t, scanner.Scan(), "expected to scan the line")
+	testutils.Equal(t, "line", scanner.Text(), "unexpected scanned content")
+	cleanup()
+}
+
+func TestTailFileDefaultN(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	var lines []string
+	for i := range 15 {
+		lines = append(lines, "line-"+string(rune('a'+i)))
+	}
+	testutils.NoError(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0644))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var got []string
+	for line, err := range TailFile(ctx, path, 0) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		if len(got) == DefaultInitialLines {
+			cancel()
+		}
+	}
+	testutils.Equal(t, DefaultInitialLines, len(got), "n=0 should default to DefaultInitialLines")
+}
+
+func TestTailFileInitialLinesErrorOnDirectory(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+
+	var sawErr bool
+	for line, err := range TailFile(ctx, dir, 1) {
+		if err != nil {
+			sawErr = true
+			testutils.Equal(t, "", line, "expected empty line alongside error")
+			break
+		}
+	}
+	testutils.Assert(t, sawErr, "expected an error tailing a directory path")
+}
+
+func TestTailFileSeekEndErrorOnDirectory(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+
+	var sawErr bool
+	for line, err := range TailFile(ctx, dir, -1) {
+		if err != nil {
+			sawErr = true
+			testutils.Equal(t, "", line, "expected empty line alongside error")
+			break
+		}
+	}
+	testutils.Assert(t, sawErr, "expected an error seeking a directory path")
+}
+
+func TestTailFileTruncationDetected(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte(strings.Repeat("padding-line\n", 20)), 0644))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	lines := make(chan string, 8)
+	go func() {
+		for line, err := range TailFile(ctx, path, -1) {
+			if err != nil {
+				close(lines)
+				return
+			}
+			select {
+			case lines <- line:
+			case <-ctx.Done():
+				close(lines)
+				return
+			}
+		}
+		close(lines)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Truncate to a size smaller than what was already read, then write new,
+	// shorter content: TailFile must detect the shrink and seek back to
+	// start rather than trying to read from a now out-of-range offset.
+	testutils.NoError(t, os.Truncate(path, 0))
+	f, err := os.OpenFile(path, os.O_WRONLY, 0644)
+	testutils.NoError(t, err)
+	_, err = f.WriteString("after-truncate\n")
+	testutils.NoError(t, err)
+	testutils.NoError(t, f.Close())
+
+	select {
+	case line, ok := <-lines:
+		testutils.Assert(t, ok, "expected a line after truncation, channel closed early")
+		testutils.Equal(t, "after-truncate", line, "unexpected line after truncation")
+	case <-time.After(4 * time.Second):
+		t.Fatal("timed out waiting for post-truncation line to be tailed")
+	}
+}
+
+func TestTailFileStopsWhenConsumerStopsIterating(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("a\nb\nc\n"), 0644))
+
+	ctx := context.Background()
+	var got []string
+	for line, err := range TailFile(ctx, path, 3) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected iteration to stop after first yield returns false")
+}
+
+func TestTailLinesStopsWhenConsumerStopsIterating(t *testing.T) {
+	var got []string
+	for line := range TailLines(context.Background(), "", 0) {
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 0, len(got), "expected no lines for empty path")
+}
+
+func TestTailReaderLinesStopsWhenConsumerStopsIterating(t *testing.T) {
+	r := strings.NewReader("a\nb\nc\n")
+	var got []string
+	for line := range TailReaderLines(context.Background(), r, -1) {
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected iteration to stop after first yield returns false")
+}
+
+// seekFailsAfter wraps a *bytes.Reader whose Seek call fails once the call
+// counter exceeds failAfter (0 disables failing).
+type seekFailsAfter struct {
+	*bytes.Reader
+	calls     int
+	failAfter int
+}
+
+func (s *seekFailsAfter) Seek(offset int64, whence int) (int64, error) {
+	s.calls++
+	if s.calls > s.failAfter {
+		return 0, errors.New("seek failure")
+	}
+	return s.Reader.Seek(offset, whence)
+}
+
+// readFailsAfter wraps a *bytes.Reader whose Read call fails once the call
+// counter exceeds failAfter (0 disables failing).
+type readFailsAfter struct {
+	*bytes.Reader
+	calls     int
+	failAfter int
+}
+
+func (r *readFailsAfter) Read(p []byte) (int, error) {
+	r.calls++
+	if r.calls > r.failAfter {
+		return 0, errors.New("read failure")
+	}
+	return r.Reader.Read(p)
+}
+
+func TestReadLastLinesSeekInLoopFails(t *testing.T) {
+	// Content small enough to be read in a single backward chunk: the 2nd
+	// Seek call (1st is the initial SeekEnd) happens inside the read loop.
+	s := &seekFailsAfter{Reader: bytes.NewReader([]byte("a\nb\nc\n")), failAfter: 1}
+	_, err := readLastLines(s, 2)
+	testutils.Error(t, err)
+}
+
+func TestReadLastLinesRestoreSeekFails(t *testing.T) {
+	// 1st Seek = SeekEnd, 2nd Seek = SeekStart within the loop, 3rd Seek =
+	// restore-to-end. Let the first two succeed and fail the restore.
+	s := &seekFailsAfter{Reader: bytes.NewReader([]byte("a\nb\nc\n")), failAfter: 2}
+	_, err := readLastLines(s, 2)
+	testutils.Error(t, err)
+}
+
+func TestReadLastLinesReadInLoopFails(t *testing.T) {
+	r := &readFailsAfter{Reader: bytes.NewReader([]byte("a\nb\nc\n")), failAfter: 0}
+	_, err := readLastLines(r, 2)
+	testutils.Error(t, err)
+}
+
+func TestTailReaderSeekableInitialReadFails(t *testing.T) {
+	s := &seekFailsAfter{Reader: bytes.NewReader([]byte("a\nb\nc\n")), failAfter: 1}
+	ctx := context.Background()
+
+	var sawErr bool
+	for _, err := range TailReader(ctx, s, 2) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailReader to surface the readLastLines error")
+}
+
+func TestTailReaderSeekableStreamScanFails(t *testing.T) {
+	// n must be >= 0 here: that's what routes TailReader down the seekable
+	// fast path (readLastLines for initial lines, then its own separate
+	// scanner for "stream new lines"), as opposed to the generic
+	// non-seekable path used for n = -1 even on a seekable reader.
+	r := &readFailsAfter{Reader: bytes.NewReader([]byte("a\nb\nc\n")), failAfter: 1}
+	ctx := context.Background()
+
+	var sawErr bool
+	for _, err := range TailReader(ctx, r, 1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailReader to surface the scan error")
+}
+
+// errOnlyReader is a non-seekable io.Reader that fails after n successful
+// reads, used to exercise TailReader's non-seekable error branches.
+type errOnlyReader struct {
+	r         io.Reader
+	calls     int
+	failAfter int
+}
+
+func (e *errOnlyReader) Read(p []byte) (int, error) {
+	e.calls++
+	if e.calls > e.failAfter {
+		return 0, errors.New("read failure")
+	}
+	return e.r.Read(p)
+}
+
+func TestTailReaderNonSeekableBufferingScanFails(t *testing.T) {
+	r := &errOnlyReader{r: strings.NewReader("a\nb\nc\n"), failAfter: 1}
+	ctx := context.Background()
+
+	var sawErr bool
+	for _, err := range TailReader(ctx, r, 2) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailReader to surface the buffering scan error")
+}
+
+func TestTailReaderNonSeekableStreamScanFails(t *testing.T) {
+	r := &errOnlyReader{r: strings.NewReader("a\nb\nc\n"), failAfter: 1}
+	ctx := context.Background()
+
+	var sawErr bool
+	for _, err := range TailReader(ctx, r, -1) {
+		if err != nil {
+			sawErr = true
+		}
+	}
+	testutils.Assert(t, sawErr, "expected TailReader to surface the streaming scan error")
+}
+
+func TestTailReaderSeekableInitialLinesConsumerStops(t *testing.T) {
+	r := strings.NewReader("a\nb\nc\nd\ne\n")
+	ctx := context.Background()
+
+	var got []string
+	for line, err := range TailReader(ctx, r, 3) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected iteration to stop after first initial line")
+}
+
+func TestTailReaderNonSeekableInitialLinesConsumerStops(t *testing.T) {
+	r := nonSeekableReader{strings.NewReader("a\nb\nc\nd\ne\n")}
+	ctx := context.Background()
+
+	var got []string
+	for line, err := range TailReader(ctx, r, 3) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected iteration to stop after first buffered initial line")
+}
+
+// growableSeeker is an io.ReadSeeker over an in-memory buffer that can grow
+// concurrently. Unlike an *os.File, Read blocks (briefly polling) instead of
+// returning io.EOF immediately when caught up to the current end, which is
+// what TailReader's "stream new lines" phase needs from its reader to have
+// anything to actually stream for a seekable source; it gives up and
+// returns io.EOF after a bounded wait so a test can never hang on it.
+type growableSeeker struct {
+	mu   sync.Mutex
+	data []byte
+	pos  int64
+}
+
+func (g *growableSeeker) Append(s string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.data = append(g.data, s...)
+}
+
+func (g *growableSeeker) Read(p []byte) (int, error) {
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		g.mu.Lock()
+		if int(g.pos) < len(g.data) {
+			n := copy(p, g.data[g.pos:])
+			g.pos += int64(n)
+			g.mu.Unlock()
+			return n, nil
+		}
+		g.mu.Unlock()
+		if time.Now().After(deadline) {
+			return 0, io.EOF
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+func (g *growableSeeker) Seek(offset int64, whence int) (int64, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	var base int64
+	switch whence {
+	case io.SeekStart:
+		base = 0
+	case io.SeekCurrent:
+		base = g.pos
+	case io.SeekEnd:
+		base = int64(len(g.data))
+	}
+	g.pos = base + offset
+	return g.pos, nil
+}
+
+func TestTailReaderSeekableStreamsNewContentFromGrowingSource(t *testing.T) {
+	g := &growableSeeker{data: []byte("a\nb\n")}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		g.Append("c\n")
+	}()
+
+	// n=1: initial lines yield "b" via readLastLines (which restores the
+	// position to the then-current end), then TailReader's own separate
+	// scanner blocks on Scan() until the goroutine above appends "c".
+	var got []string
+	for line, err := range TailReader(ctx, g, 1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		if len(got) == 2 {
+			break
+		}
+	}
+	testutils.Equal(t, 2, len(got), "expected initial line plus one streamed line")
+	if len(got) == 2 {
+		testutils.Equal(t, "b", got[0], "unexpected initial line")
+		testutils.Equal(t, "c", got[1], "unexpected streamed line")
+	}
+}
+
+func TestTailLinesConsumerStopsIterating(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("a\nb\nc\n"), 0644))
+
+	var got []string
+	for line := range TailLines(context.Background(), path, 3) {
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected TailLines to stop after first yield returns false")
+}
+
+func TestTailReaderLinesStopsOnError(t *testing.T) {
+	got := slices.Collect(TailReaderLines(context.Background(), &brokenSeeker{}, 2))
+	testutils.Equal(t, 0, len(got), "expected TailReaderLines to stop without yielding on error")
+}
+
+func TestTailFileWriteEventConsumerStops(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("first\n"), 0644))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			return
+		}
+		_, _ = f.WriteString("second\n")
+		_ = f.Close()
+	}()
+
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected iteration to stop right after the first streamed write-event line")
+	if len(got) == 1 {
+		testutils.Equal(t, "second", got[0], "unexpected streamed line")
+	}
+}
+
+func TestTailFileRotationEventConsumerStops(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.log")
+	testutils.NoError(t, os.WriteFile(path, []byte("before-rotate\n"), 0644))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		_ = os.Rename(path, path+".1")
+		_ = os.WriteFile(path, []byte("after-rotate\n"), 0644)
+	}()
+
+	var got []string
+	for line, err := range TailFile(ctx, path, -1) {
+		testutils.NoError(t, err)
+		got = append(got, line)
+		break
+	}
+	testutils.Equal(t, 1, len(got), "expected iteration to stop right after the first post-rotation line")
+	if len(got) == 1 {
+		testutils.Equal(t, "after-rotate", got[0], "unexpected post-rotation line")
+	}
 }
