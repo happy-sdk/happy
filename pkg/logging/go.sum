@@ -4,5 +4,3 @@ github.com/happy-sdk/happy/pkg/devel/testutils v1.3.2 h1:FnYdWXGktM5E8mEYuYc6Y8b
 github.com/happy-sdk/happy/pkg/devel/testutils v1.3.2/go.mod h1:8x6zlUA0Ok4JUVN1XUcDcJ/cN4FCJb93SE635v4OmYc=
 github.com/happy-sdk/happy/pkg/tui v1.0.0 h1:2DiQB1wUgQ5p5mkQsy6ilGTGdjyvXf/D3quhqPZcrfA=
 github.com/happy-sdk/happy/pkg/tui v1.0.0/go.mod h1:VfQ7XqaYHoJXtad6MJabmvno3oerVwJXiTjA8kGG8zk=
-golang.org/x/sync v0.18.0 h1:kr88TuHDroi+UVf+0hZnirlk8o8T+4MrK6mr60WkH/I=
-golang.org/x/sync v0.18.0/go.mod h1:9KTHXmSnoGruLpwFjVSX0lNNA75CykiMECbovNTZqGI=

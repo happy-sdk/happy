@@ -6,6 +6,7 @@ package adapters
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/tui/ansicolor"
-	"golang.org/x/sync/errgroup"
 )
 
 func TestConsoleAdapterCustomTheme(t *testing.T) {
@@ -197,12 +197,15 @@ func TestConsoleAdapterBatchAndErrorHandling(t *testing.T) {
 			}
 		}()
 
-		var g errgroup.Group
 		const numGoroutines = 5
 		const recordsPerGoroutine = 10
 
+		var wg sync.WaitGroup
+		errs := make([]error, numGoroutines)
 		for i := range numGoroutines {
-			g.Go(func() error {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 				records := make([]logging.Record, recordsPerGoroutine)
 				for j := range recordsPerGoroutine {
 					records[j] = logging.Record{
@@ -213,11 +216,12 @@ func TestConsoleAdapterBatchAndErrorHandling(t *testing.T) {
 						},
 					}
 				}
-				return adapter.BatchHandle(records)
-			})
+				errs[i] = adapter.BatchHandle(records)
+			}()
 		}
+		wg.Wait()
 
-		err := g.Wait()
+		err := errors.Join(errs...)
 		testutils.NoError(t, err, "Concurrent BatchHandler() unexpected error")
 
 		output := buf.String()
