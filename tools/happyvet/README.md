@@ -39,6 +39,11 @@ go install github.com/happy-sdk/happy/tools/happyvet/cmd/happyvet@latest
 
 ## Use
 
+> In a multi-module repo or workspace, `./...` never crosses a nested module boundary (a
+> subdirectory with its own `go.mod`) — this is standard Go behavior, not specific to `happyvet`.
+> Run it from inside each module you want checked, rather than once from a parent directory
+> expecting it to recurse into every module underneath.
+
 **Standalone**, like any linter — takes package patterns, `-fix` applies suggested fixes,
 `-json` emits JSON diagnostics:
 
