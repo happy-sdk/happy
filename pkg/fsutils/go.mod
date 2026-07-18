@@ -3,6 +3,6 @@ module github.com/happy-sdk/happy/pkg/fsutils
 go 1.25
 
 require (
-	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.1
+	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.2
 	golang.org/x/sys v0.38.0
 )
