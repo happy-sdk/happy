@@ -41,7 +41,7 @@ func main() {
 		CLI: happy.CliSettings{
 			WithGlobalFlags:      true,
 			HideDisabledCommands: false,
-			WithI18nCmd:          true,
+			WithL10nCmd:          true,
 		},
 		Logging: happy.LoggingSettings{
 			WithSource: true,

@@ -2,7 +2,7 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package i18n
+package l10n
 
 import (
 	"encoding/json/jsontext"
@@ -29,19 +29,19 @@ type keyStatus struct {
 	Status          string // "ok" or "missing" (for single language mode)
 }
 
-func i18nList() *command.Command {
+func l10nList() *command.Command {
 	cmd := command.New("list",
 		command.Config{
-			Description: settings.String(i18np + ".list.description"),
+			Description: settings.String(l10np + ".list.description"),
 			Immediate:   true,
 		})
 
 	cmd.WithFlags(
-		varflag.StringFunc("lang", "", i18np+".list.flag_lang", "l"),
-		varflag.BoolFunc("missing", false, i18np+".list.flag_missing", "m"),
-		varflag.BoolFunc("json", false, i18np+".list.flag_json"),
+		varflag.StringFunc("lang", "", l10np+".list.flag_lang", "l"),
+		varflag.BoolFunc("missing", false, l10np+".list.flag_missing", "m"),
+		varflag.BoolFunc("json", false, l10np+".list.flag_json"),
 		// By default, list only application translations. Use --with-deps to include dependencies.
-		varflag.BoolFunc("with-deps", false, i18np+".list.flag_with_deps"),
+		varflag.BoolFunc("with-deps", false, l10np+".list.flag_with_deps"),
 	)
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {

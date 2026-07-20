@@ -2,14 +2,14 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package i18n
+package l10n
 
 import "testing"
 
 func TestDefaultCommandConfig(t *testing.T) {
 	cnf := DefaultCommandConfig()
-	if cnf.Name != "i18n" {
-		t.Errorf("Name = %q, want %q", cnf.Name, "i18n")
+	if cnf.Name != "l10n" {
+		t.Errorf("Name = %q, want %q", cnf.Name, "l10n")
 	}
 	if cnf.WithoutReport || cnf.WithoutList || cnf.WithoutTranslate {
 		t.Error("expected all subcommands to be enabled by default")
@@ -21,8 +21,8 @@ func TestCommandBuildsWithoutError(t *testing.T) {
 	if err := cmd.Err(); err != nil {
 		t.Fatalf("Command() with default config returned error: %v", err)
 	}
-	if cmd.Name() != "i18n" {
-		t.Errorf("Name() = %q, want %q", cmd.Name(), "i18n")
+	if cmd.Name() != "l10n" {
+		t.Errorf("Name() = %q, want %q", cmd.Name(), "l10n")
 	}
 }
 
@@ -53,22 +53,22 @@ func TestCommandWithoutSubcommands(t *testing.T) {
 }
 
 func TestSubcommandConstructors(t *testing.T) {
-	t.Run("i18nReport", func(t *testing.T) {
-		cmd := i18nReport()
+	t.Run("l10nReport", func(t *testing.T) {
+		cmd := l10nReport()
 		if err := cmd.Err(); err != nil {
-			t.Fatalf("i18nReport() returned error: %v", err)
+			t.Fatalf("l10nReport() returned error: %v", err)
 		}
 	})
-	t.Run("i18nList", func(t *testing.T) {
-		cmd := i18nList()
+	t.Run("l10nList", func(t *testing.T) {
+		cmd := l10nList()
 		if err := cmd.Err(); err != nil {
-			t.Fatalf("i18nList() returned error: %v", err)
+			t.Fatalf("l10nList() returned error: %v", err)
 		}
 	})
-	t.Run("i18nTranslate", func(t *testing.T) {
-		cmd := i18nTranslate()
+	t.Run("l10nTranslate", func(t *testing.T) {
+		cmd := l10nTranslate()
 		if err := cmd.Err(); err != nil {
-			t.Fatalf("i18nTranslate() returned error: %v", err)
+			t.Fatalf("l10nTranslate() returned error: %v", err)
 		}
 	})
 }

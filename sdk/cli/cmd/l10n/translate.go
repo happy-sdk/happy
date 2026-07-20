@@ -2,7 +2,7 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package i18n
+package l10n
 
 import (
 	"bufio"
@@ -22,17 +22,17 @@ import (
 	"golang.org/x/text/language"
 )
 
-func i18nTranslate() *command.Command {
+func l10nTranslate() *command.Command {
 	cmd := command.New("translate",
 		command.Config{
-			Description: settings.String(i18np + ".translate.description"),
+			Description: settings.String(l10np + ".translate.description"),
 			Immediate:   true,
 		})
 
 	cmd.WithFlags(
-		varflag.StringFunc("lang", "", i18np+".translate.flag_lang", "l"),
+		varflag.StringFunc("lang", "", l10np+".translate.flag_lang", "l"),
 		// By default, prompt only for application translations. Use --with-deps to include dependency keys.
-		varflag.BoolFunc("with-deps", false, i18np+".translate.flag_with_deps"),
+		varflag.BoolFunc("with-deps", false, l10np+".translate.flag_with_deps"),
 	)
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
@@ -268,7 +268,7 @@ func updateTranslation(sess *session.Context, lang language.Tag, key, value stri
 	if isDep {
 		// Dependency translations are stored in a single dependencies.json file
 		// Structure: { "rootKey": { "lang": { "key": "value" } } }
-		jsonPath = filepath.Join(moduleRoot, "i18n", "dependencies.json")
+		jsonPath = filepath.Join(moduleRoot, "l10n", "dependencies.json")
 
 		// Extract the root key (package identifier) from the full translation key
 		// Example: "com.github.happy-sdk.happy.sdk.cli.flags.version"
@@ -282,7 +282,7 @@ func updateTranslation(sess *session.Context, lang language.Tag, key, value stri
 	} else {
 		// Application translations are stored in language-specific JSON files
 		// Structure: { "key": "value" } (flat or nested based on key structure)
-		jsonPath = filepath.Join(moduleRoot, "i18n", lang.String()+".json")
+		jsonPath = filepath.Join(moduleRoot, "l10n", lang.String()+".json")
 
 		// Get the app's module identifier prefix to remove from the key
 		prefix, err := getAppModulePrefix(sess)
@@ -300,10 +300,10 @@ func updateTranslation(sess *session.Context, lang language.Tag, key, value stri
 		jsonKey = strings.TrimPrefix(key, prefix+".")
 	}
 
-	// Ensure the i18n directory exists in the module root
-	i18nDir := filepath.Dir(jsonPath)
-	if err := os.MkdirAll(i18nDir, 0755); err != nil {
-		return fmt.Errorf("failed to create i18n directory: %w", err)
+	// Ensure the l10n directory exists in the module root
+	l10nDir := filepath.Dir(jsonPath)
+	if err := os.MkdirAll(l10nDir, 0755); err != nil {
+		return fmt.Errorf("failed to create l10n directory: %w", err)
 	}
 
 	// Read existing JSON file or initialize empty map if file doesn't exist

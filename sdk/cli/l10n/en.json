@@ -59,8 +59,8 @@
         },
         "prompt_secrets_password": "enter secrets password"
       },
-      "i18n": {
-        "category": "Internationalization",
+      "l10n": {
+        "category": "Localization",
         "description": "Manage application translations",
         "info": "This command allows you to manage and translate application strings.",
         "report": {

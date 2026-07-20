@@ -19,7 +19,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/session"
 	"golang.org/x/term"
 
-	_ "github.com/happy-sdk/happy/sdk/cli/i18n"
+	_ "github.com/happy-sdk/happy/sdk/cli/l10n"
 )
 
 var (

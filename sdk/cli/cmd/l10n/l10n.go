@@ -2,7 +2,7 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package i18n
+package l10n
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-const i18np = "com.github.happy-sdk.happy.sdk.cli.cmd.i18n"
+const l10np = "com.github.happy-sdk.happy.sdk.cli.cmd.l10n"
 
 type CommandConfig struct {
 	Name             string
@@ -33,10 +33,10 @@ type CommandConfig struct {
 
 func DefaultCommandConfig() CommandConfig {
 	return CommandConfig{
-		Name:             "i18n",
-		Category:         i18np + ".category",
-		Description:      i18np + ".description",
-		Info:             i18np + ".info",
+		Name:             "l10n",
+		Category:         l10np + ".category",
+		Description:      l10np + ".description",
+		Info:             l10np + ".info",
 		WithoutReport:    false,
 		WithoutList:      false,
 		WithoutTranslate: false,
@@ -119,13 +119,13 @@ func Command(cnf CommandConfig) *command.Command {
 
 	var subcmds []*command.Command
 	if !cnf.WithoutReport {
-		subcmds = append(subcmds, i18nReport())
+		subcmds = append(subcmds, l10nReport())
 	}
 	if !cnf.WithoutList {
-		subcmds = append(subcmds, i18nList())
+		subcmds = append(subcmds, l10nList())
 	}
 	if !cnf.WithoutTranslate {
-		subcmds = append(subcmds, i18nTranslate())
+		subcmds = append(subcmds, l10nTranslate())
 	}
 
 	cmd.WithSubCommands(subcmds...)

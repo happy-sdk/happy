@@ -182,7 +182,7 @@ type CliSettings struct {
 	MainMinArgs          settings.Uint `default:"0" desc:"Minimum number of arguments for a application main"`
 	MainMaxArgs          settings.Uint `default:"0" desc:"Maximum number of arguments for a application main"`
 	WithConfigCmd        settings.Bool `default:"false" desc:"Add the config command in the CLI"`
-	WithI18nCmd          settings.Bool `default:"false" desc:"Add the i18n command in the CLI"`
+	WithL10nCmd          settings.Bool `default:"false" desc:"Add the l10n command in the CLI"`
 	WithGlobalFlags      settings.Bool `default:"false" desc:"Add the default global flags automatically in the CLI"`
 	HideDisabledCommands settings.Bool `default:"false" desc:"Hide disabled commands"`
 }

@@ -19,7 +19,7 @@ var testFS embed.FS
 func TestNewFS(t *testing.T) {
 	fs := NewFS(testFS)
 	testutils.NotNil(t, fs)
-	testutils.Equal(t, "i18n", fs.prefix)
+	testutils.Equal(t, "l10n", fs.prefix)
 }
 
 func TestFS_WithPrefix(t *testing.T) {

@@ -16,7 +16,7 @@ import (
 	"golang.org/x/text/message"
 )
 
-//go:embed i18n/*
+//go:embed l10n/*
 var translations embed.FS
 
 type contextKey string

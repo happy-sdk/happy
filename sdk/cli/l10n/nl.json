@@ -58,9 +58,9 @@
           "error_not_exists": "instelling %q bestaat niet"
         },
         "prompt_secrets_password": "voer geheim wachtwoord in"
-        },
-      "i18n": {
-        "category": "Internationalisatie",
+      },
+      "l10n": {
+        "category": "Lokalisatie",
         "description": "Beheer applicatievertalingen",
         "info": "Met dit commando kunt u applicatiestrings beheren en vertalen.",
         "report": {

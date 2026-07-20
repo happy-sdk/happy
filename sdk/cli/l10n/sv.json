@@ -59,8 +59,8 @@
         },
         "prompt_secrets_password": "ange hemligt lösenord"
       },
-      "i18n": {
-        "category": "Internationalisering",
+      "l10n": {
+        "category": "Lokalisering",
         "description": "Hantera applikationsöversättningar",
         "info": "Detta kommando låter dig hantera och översätta applikationssträngar.",
         "report": {

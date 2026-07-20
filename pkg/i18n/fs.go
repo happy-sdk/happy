@@ -18,14 +18,14 @@ import (
 
 type FS struct {
 	// Prefix directory path where language subdirectories are stored.
-	// Default is "i18n".
+	// Default is "l10n".
 	prefix  string
 	content embed.FS
 }
 
 func NewFS(fs embed.FS) *FS {
 	return &FS{
-		prefix:  "i18n",
+		prefix:  "l10n",
 		content: fs,
 	}
 }

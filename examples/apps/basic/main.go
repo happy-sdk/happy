@@ -30,7 +30,7 @@ func main() {
 		CLI: happy.CliSettings{
 			// Enable built-in CLI features:
 			WithConfigCmd:   true, // adds `config` command
-			WithI18nCmd:     true, // adds `i18n` command
+			WithL10nCmd:     true, // adds `l10n` command
 			WithGlobalFlags: true, // adds standard global flags (help, version, verbose, etc.)
 			// HideDisabledCommands: false,
 			MainMinArgs: 0,

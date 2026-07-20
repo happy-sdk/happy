@@ -2,7 +2,7 @@
 //
 // Showcase application demonstrating multiple Happy-SDK features:
 // - Application settings (name, slug, i18n)
-// - Built-in CLI commands (config, i18n) and global flags
+// - Built-in CLI commands (config, l10n) and global flags
 // - Custom commands
 // - Addons
 // - Services
@@ -31,7 +31,7 @@ func main() {
 		Slug:        "showcase",
 		CLI: happy.CliSettings{
 			WithConfigCmd:   true,
-			WithI18nCmd:     true,
+			WithL10nCmd:     true,
 			WithGlobalFlags: true,
 			MainMinArgs:     0,
 			MainMaxArgs:     2,

@@ -2,7 +2,7 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package i18n
+package l10n
 
 import (
 	"testing"

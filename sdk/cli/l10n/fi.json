@@ -59,8 +59,8 @@
         },
         "prompt_secrets_password": "syötä salaisuuden salasana"
       },
-      "i18n": {
-        "category": "Kansainvälistäminen",
+      "l10n": {
+        "category": "Lokalisointi",
         "description": "Hallitse sovelluksen käännöksiä",
         "info": "Tämä komento antaa sinun hallita ja kääntää sovelluksen merkkijonoja.",
         "report": {

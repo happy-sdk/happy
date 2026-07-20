@@ -58,9 +58,9 @@
           "error_not_exists": "Einstellung %q existiert nicht"
         },
         "prompt_secrets_password": "Geheimnis-Passwort eingeben"
-        },
-      "i18n": {
-        "category": "Internationalisierung",
+      },
+      "l10n": {
+        "category": "Lokalisierung",
         "description": "Anwendungsübersetzungen verwalten",
         "info": "Dieser Befehl ermöglicht es Ihnen, Anwendungszeichenfolgen zu verwalten und zu übersetzen.",
         "report": {

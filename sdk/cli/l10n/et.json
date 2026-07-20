@@ -59,8 +59,8 @@
         },
         "prompt_secrets_password": "sisesta salajane parool"
       },
-      "i18n": {
-        "category": "Keele haldus",
+      "l10n": {
+        "category": "Lokaliseerimine",
         "description": "Halda rakenduse tõlkeid",
         "info": "See käsk võimaldab teil hallata ja tõlkida rakenduse stringe.",
         "report": {

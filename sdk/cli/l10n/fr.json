@@ -59,8 +59,8 @@
         },
         "prompt_secrets_password": "entrer le mot de passe des secrets"
       },
-      "i18n": {
-        "category": "Internationalisation",
+      "l10n": {
+        "category": "Localisation",
         "description": "Gérer les traductions de l'application",
         "info": "Cette commande vous permet de gérer et traduire les chaînes de l'application.",
         "report": {
@@ -101,4 +101,3 @@
     }
   }
 }
-

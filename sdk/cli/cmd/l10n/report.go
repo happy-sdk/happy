@@ -2,7 +2,7 @@
 //
 // Copyright © 2025 The Happy Authors
 
-package i18n
+package l10n
 
 import (
 	"fmt"
@@ -20,18 +20,18 @@ import (
 	"golang.org/x/text/language"
 )
 
-func i18nReport() *command.Command {
+func l10nReport() *command.Command {
 	cmd := command.New("report",
 		command.Config{
-			Description: settings.String(i18np + ".report.description"),
+			Description: settings.String(l10np + ".report.description"),
 			Immediate:   true,
 		})
 
 	cmd.WithFlags(
-		varflag.Float64Func("threshold", 0.0, i18np+".report.flag_threshold", "t"),
-		varflag.StringFunc("lang", "", i18np+".report.flag_lang", "l"),
+		varflag.Float64Func("threshold", 0.0, l10np+".report.flag_threshold", "t"),
+		varflag.StringFunc("lang", "", l10np+".report.flag_lang", "l"),
 		// By default, report only on application translations. Use --with-deps to include dependencies.
-		varflag.BoolFunc("with-deps", false, i18np+".report.flag_with_deps"),
+		varflag.BoolFunc("with-deps", false, l10np+".report.flag_with_deps"),
 	)
 
 	cmd.Do(func(sess *session.Context, args action.Args) error {
@@ -144,7 +144,7 @@ func i18nReport() *command.Command {
 			if len(languages) > 0 {
 				firstReport := i18n.GetTranslationReport(languages[0])
 				filteredFirstReport := filterReportByDependencies(sess, firstReport, deps)
-				
+
 				if len(filteredFirstReport.RootKeys) > 0 {
 					perRootTable := textfmt.NewTable(
 						textfmt.TableTitle("Per Root Key Statistics"),
@@ -174,24 +174,24 @@ func i18nReport() *command.Command {
 				textfmt.TableWithHeader(),
 			)
 			appLangTable.AddRow("Language", "Total", "Translated", "Missing", "Percentage", "Root Keys")
-			
+
 			// Dependency translations section (lazily created only if missing translations exist)
 			var depLangTable *textfmt.Table
 
 			// Process each language to generate statistics
 			for _, lang := range languages {
 				report := i18n.GetTranslationReport(lang)
-				
+
 				// Separate app translations from dependency translations
 				appReport := filterReportByDependencies(sess, report, deps)
-				
+
 				// Fallback language is always 100% translated (it's the base language)
 				if lang == fallbackLang {
 					appReport.Percentage = 100.0
 					appReport.Translated = appReport.Total
 					appReport.Missing = 0
 				}
-				
+
 				// Calculate dependency statistics by subtracting app stats from total
 				depReport := i18n.TranslationReport{
 					Language:       report.Language,
@@ -200,8 +200,8 @@ func i18nReport() *command.Command {
 					Missing:        report.Missing - appReport.Missing,
 					Percentage:     0.0,
 					MissingEntries: make([]i18n.TranslationEntry, 0),
-					RootKeys:        make([]string, 0),
-					PerRootKey:      make(map[string]i18n.RootKeyStats),
+					RootKeys:       make([]string, 0),
+					PerRootKey:     make(map[string]i18n.RootKeyStats),
 				}
 				if depReport.Total > 0 {
 					depReport.Percentage = float64(depReport.Translated) / float64(depReport.Total) * 100.0
@@ -263,7 +263,7 @@ func i18nReport() *command.Command {
 
 			// Append application translations table to main report
 			mainTable.Append(appLangTable)
-			
+
 			// Append dependency translations table only if it was created
 			// (i.e., only when there are missing dependency translations)
 			if depLangTable != nil {
@@ -274,7 +274,7 @@ func i18nReport() *command.Command {
 			if len(languages) > 0 {
 				firstReport := i18n.GetTranslationReport(languages[0])
 				filteredFirstReport := filterReportByDependencies(sess, firstReport, deps)
-				
+
 				if len(filteredFirstReport.RootKeys) > 0 {
 					perRootTable := textfmt.NewTable(
 						textfmt.TableTitle("Per Root Key Statistics (Application)"),
@@ -322,8 +322,8 @@ func filterReportByDependencies(sess *session.Context, report i18n.TranslationRe
 		Missing:        0,
 		Percentage:     0.0,
 		MissingEntries: make([]i18n.TranslationEntry, 0),
-		RootKeys:        make([]string, 0),
-		PerRootKey:      make(map[string]i18n.RootKeyStats),
+		RootKeys:       make([]string, 0),
+		PerRootKey:     make(map[string]i18n.RootKeyStats),
 	}
 
 	// Get all entries and filter them
@@ -402,4 +402,3 @@ func filterReportByDependencies(sess *session.Context, report i18n.TranslationRe
 
 	return filtered
 }
-
