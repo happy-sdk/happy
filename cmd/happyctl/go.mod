@@ -3,7 +3,7 @@ module github.com/happy-sdk/happy/cmd/happyctl
 go 1.26.4
 
 require (
-	github.com/happy-sdk/happy v1.7.0
+	github.com/happy-sdk/happy v1.7.1
 	github.com/happy-sdk/happy/pkg/branding v1.0.1
 	github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.3
 	github.com/happy-sdk/happy/pkg/version v1.0.2
@@ -28,8 +28,9 @@ require (
 	github.com/go-git/go-git/v5 v5.19.1 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/happy-sdk/happy/addons/devel v1.3.0
+	github.com/happy-sdk/happy/addons/devel v1.3.1
 	github.com/happy-sdk/happy/lib/changelog v1.0.0 // indirect
+	github.com/happy-sdk/happy/lib/scm/gitutils v0.1.0 // indirect
 	github.com/happy-sdk/happy/lib/taskrunner v1.0.2 // indirect
 	github.com/happy-sdk/happy/pkg/bitutils v1.0.3 // indirect
 	github.com/happy-sdk/happy/pkg/bytesize v1.0.3 // indirect
