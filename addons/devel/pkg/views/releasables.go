@@ -54,9 +54,15 @@ func GetConfirmReleasablesView(sess *session.Context, pkgs []*gomodule.Package) 
 		rows = append(rows, table.Row{pkg.Import, action, path.Base(pkg.LastReleaseTag), path.Base(pkg.NextReleaseTag), fmt.Sprint(pkg.UpdateDeps)})
 	}
 
+	var totalWidth int
+	for _, col := range columns {
+		totalWidth += col.Width
+	}
+
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
+		table.WithWidth(totalWidth),
 		table.WithHeight(30),
 		table.WithFocused(true),
 	)
