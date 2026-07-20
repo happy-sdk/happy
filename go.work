@@ -5,6 +5,7 @@ use (
 	./addons/devel
 	./cmd/happyctl
 	./lib/changelog
+	./lib/scm/gitutils
 	./lib/tail
 	./lib/taskrunner
 	./pkg/bitutils

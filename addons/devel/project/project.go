@@ -13,8 +13,8 @@ import (
 	"sync"
 
 	"github.com/goccy/go-yaml"
-	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gomodule"
+	"github.com/happy-sdk/happy/lib/scm/gitutils"
 	"github.com/happy-sdk/happy/pkg/devel/goutils"
 	"github.com/happy-sdk/happy/pkg/fsutils"
 	"github.com/happy-sdk/happy/pkg/settings"

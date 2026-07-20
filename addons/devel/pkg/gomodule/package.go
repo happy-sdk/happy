@@ -17,8 +17,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
 	"github.com/happy-sdk/happy/lib/changelog"
+	"github.com/happy-sdk/happy/lib/scm/gitutils"
 	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/cli"

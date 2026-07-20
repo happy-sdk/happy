@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
+	"github.com/happy-sdk/happy/lib/scm/gitutils"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/cli"
@@ -150,7 +150,7 @@ func (t *TestsConfig) Blueprint() (*settings.Blueprint, error) {
 
 // ChangelogConfig toggles whether the releaser generates a changelog at
 // all. It's a project-level release-pipeline setting, not something the
-// reusable lib/devel/changelog package itself needs to know about.
+// reusable lib/changelog package itself needs to know about.
 type ChangelogConfig struct {
 	Disabled settings.Bool `key:"disabled,save" default:"false"`
 }

@@ -17,8 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
 	"github.com/happy-sdk/happy/addons/devel/project"
+	"github.com/happy-sdk/happy/lib/scm/gitutils"
 	"github.com/happy-sdk/happy/pkg/logging"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/strings/bexp"
