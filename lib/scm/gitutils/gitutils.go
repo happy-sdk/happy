@@ -8,11 +8,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/sdk/cli"
@@ -33,10 +33,13 @@ var (
 	execRun = cli.Run
 )
 
-// IsRepository checks if the given directory is a Git repository.
+// IsRepository reports whether path is a valid Git repository (bare or
+// with a worktree). It opens the repository via go-git rather than merely
+// checking for a ".git" entry, so a directory with an empty or otherwise
+// malformed ".git" (e.g. missing HEAD/objects/refs) correctly reports
+// false instead of a false positive.
 func IsRepository(path string) bool {
-	gitDir := filepath.Join(path, ".git")
-	_, err := os.Stat(gitDir)
+	_, err := git.PlainOpen(path)
 	return err == nil
 }
 

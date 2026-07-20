@@ -7,18 +7,41 @@ package gitutils
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	git "github.com/go-git/go-git/v5"
 )
 
+// initRepo creates a real, structurally valid (non-bare) git repository at
+// dir via go-git itself - no subprocess, no reliance on a git binary being
+// on PATH - so tests can distinguish "a real repository" from "a directory
+// that merely has something named .git in it".
+func initRepo(t *testing.T, dir string) {
+	t.Helper()
+	if _, err := git.PlainInit(dir, false); err != nil {
+		t.Fatalf("failed to init fixture repository: %v", err)
+	}
+}
+
 func TestIsRepository(t *testing.T) {
-	t.Run("true when .git exists", func(t *testing.T) {
+	t.Run("true for a real repository", func(t *testing.T) {
+		dir := t.TempDir()
+		initRepo(t, dir)
+		if !IsRepository(dir) {
+			t.Error("expected a real git repository to be recognized as one")
+		}
+	})
+
+	t.Run("false for a dummy .git directory", func(t *testing.T) {
+		// A bare empty ".git" directory is not a valid repository - it's
+		// missing HEAD, objects, refs, etc. This is the false positive
+		// IsRepository must not report.
 		dir := t.TempDir()
 		if err := os.Mkdir(filepath.Join(dir, ".git"), 0750); err != nil {
 			t.Fatal(err)
 		}
-		if !IsRepository(dir) {
-			t.Error("expected a directory with a .git subdirectory to be a repository")
+		if IsRepository(dir) {
+			t.Error("expected an empty dummy .git directory to not be recognized as a repository")
 		}
 	})
 
@@ -29,24 +52,9 @@ func TestIsRepository(t *testing.T) {
 		}
 	})
 
-	t.Run("false on stat error other than not-exist", func(t *testing.T) {
-		if runtime.GOOS == "windows" {
-			t.Skip("permission bits behave differently on windows")
-		}
-		if os.Geteuid() == 0 {
-			t.Skip("root ignores permission bits, can't provoke a permission error")
-		}
-		parent := t.TempDir()
-		if err := os.Chmod(parent, 0); err != nil {
-			t.Fatal(err)
-		}
-		t.Cleanup(func() { _ = os.Chmod(parent, 0750) })
-
-		// os.Stat(parent+"/.git") fails with a permission error here, not
-		// ErrNotExist - IsRepository must not treat that as "is a
-		// repository" just because the error isn't ErrNotExist.
-		if IsRepository(parent) {
-			t.Error("expected a permission error to not be reported as a repository")
+	t.Run("false for a nonexistent path", func(t *testing.T) {
+		if IsRepository(filepath.Join(t.TempDir(), "does-not-exist")) {
+			t.Error("expected a nonexistent path to not be a repository")
 		}
 	})
 }
@@ -54,9 +62,7 @@ func TestIsRepository(t *testing.T) {
 func TestFindRepositoryRoot(t *testing.T) {
 	t.Run("finds an ancestor repository root", func(t *testing.T) {
 		root := t.TempDir()
-		if err := os.Mkdir(filepath.Join(root, ".git"), 0750); err != nil {
-			t.Fatal(err)
-		}
+		initRepo(t, root)
 		nested := filepath.Join(root, "a", "b", "c")
 		if err := os.MkdirAll(nested, 0750); err != nil {
 			t.Fatal(err)
@@ -144,9 +150,7 @@ func TestNewConfig(t *testing.T) {
 
 	t.Run("repo.root accepts a real repository path", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := os.Mkdir(filepath.Join(dir, ".git"), 0750); err != nil {
-			t.Fatal(err)
-		}
+		initRepo(t, dir)
 		if err := spec.Set("repo.root", dir); err != nil {
 			t.Errorf("expected a valid repository path to be accepted, got: %v", err)
 		}
