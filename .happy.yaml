@@ -3,6 +3,16 @@ version: "1"
 releaser:
   enabled: true
 
+linter:
+  golangci-lint:
+    # TEMPORARY: staticcheck's SA5012 analyzer panics on go1.27rc2 toolchains
+    # ("interface conversion: interface {} is nil, not *buildir.IR") - an
+    # upstream golangci-lint/honnef.co/go/tools incompatibility with the
+    # go1.27 release candidate, not a real lint failure. Remove this once
+    # golangci-lint ships a release built against a stable go1.27.
+    disable:
+      - staticcheck
+
 deps:
   go:
     latest:

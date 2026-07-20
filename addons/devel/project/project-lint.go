@@ -55,6 +55,12 @@ func (prj *Project) lintTasks(sess *session.Context) []tr.Task {
 
 	if prj.Config().Get("linter.golangci-lint.enabled").Value().Bool() {
 		gloangciLintBin := prj.Config().Get("linter.golangci-lint.path").String()
+		disable := prj.Config().Get("linter.golangci-lint.disable").Value().Fields()
+		args := []string{"run"}
+		if len(disable) > 0 {
+			args = append(args, "--disable="+strings.Join(disable, ","))
+		}
+		args = append(args, "./...")
 		for _, gomodule := range gomodules {
 			// Respect config ignore list (from .happy.yaml: ignore: [])
 			if prj.isIgnoredModule(gomodule.Dir) {
@@ -65,7 +71,7 @@ func (prj *Project) lintTasks(sess *session.Context) []tr.Task {
 				name = filepath.Base(gomodule.Dir)
 			}
 			t := tr.NewTask(name, func(ex *tr.Executor) (res tr.Result) {
-				cmd := exec.Command(gloangciLintBin, "run", "./...")
+				cmd := exec.Command(gloangciLintBin, args...)
 				cmd.Dir = gomodule.Dir
 				out, err := cli.Exec(sess, cmd)
 				if err != nil {

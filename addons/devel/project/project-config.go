@@ -57,6 +57,11 @@ func (c *LinterConfig) Blueprint() (*settings.Blueprint, error) {
 type LinterGolangCILintConfig struct {
 	Enabled settings.Bool   `key:"enabled,save" default:"false"`
 	Path    settings.String `key:"path,save" default:""`
+	// Disable lists linter/analyzer names to pass to golangci-lint's
+	// --disable flag. Meant for temporary workarounds (e.g. an upstream
+	// analyzer that's currently broken on a given toolchain), not permanent
+	// project lint policy.
+	Disable settings.StringSlice `key:"disable,save"`
 }
 
 func (c *LinterGolangCILintConfig) Blueprint() (*settings.Blueprint, error) {

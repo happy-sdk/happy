@@ -4,6 +4,7 @@
 package adapters
 
 import (
+	"encoding/json/v2"
 	"errors"
 	"log/slog"
 	"testing"
@@ -36,11 +37,17 @@ func TestAttrMap(t *testing.T) {
 	testutils.NoError(t, err, "AttrMap.MarshalJSON should not return an error")
 	testutils.Assert(t, len(data) > 0, "AttrMap.MarshalJSON should return a non-empty byte slice")
 
-	testutils.Assert(t,
-		string(data) == `{"key1":"value1","key2":42,"key3":true,"key4":"value4","key5":{"gkey1":"gvalue1","gkey2":43}}`,
-		"AttrMap.MarshalJSON should return a valid JSON string got: %q",
-		string(data),
-	)
+	// Compare structurally, not by exact string: encoding/json/v2 marshals
+	// map keys in a non-deterministic order by default (unlike v1's sorted
+	// order), so two structurally-identical JSON objects may differ in key
+	// order between runs.
+	var got, want map[string]any
+	testutils.NoError(t, json.Unmarshal(data, &got), "failed to unmarshal actual JSON")
+	testutils.NoError(t, json.Unmarshal(
+		[]byte(`{"key1":"value1","key2":42,"key3":true,"key4":"value4","key5":{"gkey1":"gvalue1","gkey2":43}}`),
+		&want,
+	), "failed to unmarshal expected JSON")
+	testutils.EqualAny(t, want, got, "AttrMap.MarshalJSON should produce the expected JSON structure")
 
 	testutils.Equal(t, "value1", m.Get("key1").(string))
 	testutils.Equal(t, 42, m.Get("key2").(int64))

@@ -105,8 +105,15 @@ func (m *AttrMap) Len() int {
 }
 
 // MarshalJSON implements json.Marshaler, encoding the AttrMap to JSON.
+//
+// Marshals the underlying map[string]any rather than *m directly: since
+// MarshalJSON has a pointer receiver, marshaling *m (still of type AttrMap)
+// would find this same method applicable again - v1 avoided that only
+// because it skips pointer-receiver methods on unaddressable values, but v2
+// calls them regardless of addressability, which turns this into unbounded
+// recursion and a stack overflow.
 func (m *AttrMap) MarshalJSON() ([]byte, error) {
-	return json.Marshal(*m)
+	return json.Marshal(map[string]any(*m))
 }
 
 // AttrGroupToMap converts a slice of slog.Attr to an AttrMap, handling nested
