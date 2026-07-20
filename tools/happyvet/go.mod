@@ -1,6 +1,6 @@
 module github.com/happy-sdk/happy/tools/happyvet
 
-go 1.26.4
+go 1.27rc2
 
 require golang.org/x/tools v0.48.0
 
