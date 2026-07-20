@@ -25,7 +25,8 @@ go.work.sum
 **/[Tt]mp/*
 **/[Bb]in/*
 **/local/*
-dist/
+.happy/build/
+.happy/cache/
 
 ################################################################################
 # exception rules and final override

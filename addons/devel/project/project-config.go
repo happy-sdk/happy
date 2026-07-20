@@ -150,8 +150,11 @@ func (t *TestsConfig) Blueprint() (*settings.Blueprint, error) {
 }
 
 type ReleaserConfig struct {
-	Enabled settings.Bool   `key:"enabled,save" default:"false"`
-	Dist    settings.String `key:"dist,save" default:"dist"`
+	Enabled settings.Bool `key:"enabled,save" default:"false"`
+	// Dist is the releaser's working/build directory, relative to the
+	// project root - historically a plain "dist" dir, now living under the
+	// shared ".happy" directory alongside happyctl's other own files.
+	Dist settings.String `key:"dist,save" default:".happy/build"`
 }
 
 func (c *ReleaserConfig) Blueprint() (*settings.Blueprint, error) {
