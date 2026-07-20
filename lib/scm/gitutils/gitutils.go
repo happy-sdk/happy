@@ -72,6 +72,9 @@ func FindRepositoryRoot(wd string) (dir string, found bool, err error) {
 	return wd, false, nil
 }
 
+// NewIgnoreMatcher builds a gitignore.Matcher from patterns (in .gitignore
+// syntax), scoped under domain - the slash-separated path components the
+// patterns are relative to (nil for the repository root).
 func NewIgnoreMatcher(patterns []string, domain []string) gitignore.Matcher {
 	var ps []gitignore.Pattern
 	for _, p := range patterns {
