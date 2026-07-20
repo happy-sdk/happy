@@ -17,6 +17,18 @@ import (
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
+// CoverageThreshold is a test-coverage percentage threshold used to grade a
+// module's coverage in testTasks below.
+type CoverageThreshold float64
+
+const (
+	CoverageThresholdNone     CoverageThreshold = 0.0
+	CoverageThresholdLow      CoverageThreshold = 25.0
+	CoverageThresholdModerate CoverageThreshold = 50.0
+	CoverageThresholdHigh     CoverageThreshold = 80.0
+	CoverageThresholdFull     CoverageThreshold = 100.0
+)
+
 func (prj *Project) Test(sess *session.Context) error {
 
 	testsuite := tr.New("test")
@@ -109,16 +121,17 @@ func (prj *Project) testTasks(sess *session.Context) []tr.Task {
 				}
 				coverage, _ = vars.NewValue(strings.TrimSuffix(cov, "%"))
 			}
-			c, _ := coverage.Float64()
-			if c == 100.0 {
+			cf, _ := coverage.Float64()
+			c := CoverageThreshold(cf)
+			if c == CoverageThresholdFull {
 				return tr.Success(fmt.Sprintf("coverage[ %-8s]: full", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
-			} else if c >= 90.0 {
+			} else if c >= CoverageThresholdHigh {
 				return tr.Success(fmt.Sprintf("coverage[ %-8s]: high", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
-			} else if c >= 75.0 {
+			} else if c >= CoverageThresholdModerate {
 				return tr.Info(fmt.Sprintf("coverage[ %-8s]: moderate", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
-			} else if c >= 50.0 {
+			} else if c >= CoverageThresholdLow {
 				return tr.Notice(fmt.Sprintf("coverage[ %-8s]: low", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
-			} else if c > 0.0 {
+			} else if c > CoverageThresholdNone {
 				return tr.Warn(fmt.Sprintf("coverage[ %-8s]: very-low", coverage.FormatFloat('f', 2, 64)+"%")).WithDesc(gomodule.Import)
 			} else {
 				return tr.Warn("coverage[ 0%      ]: no coverage").WithDesc(gomodule.Import)
