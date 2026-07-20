@@ -7,7 +7,8 @@ package settings
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -114,7 +115,7 @@ func (p Preferences) GobEncode() ([]byte, error) {
 }
 
 func (p *Preferences) UnmarshalJSON(b []byte) error {
-	prefs := make(map[string]json.RawMessage)
+	prefs := make(map[string]jsontext.Value)
 	if err := json.Unmarshal(b, &prefs); err != nil {
 		return err
 	}

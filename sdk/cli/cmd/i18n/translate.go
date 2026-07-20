@@ -6,7 +6,8 @@ package i18n
 
 import (
 	"bufio"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -268,12 +269,12 @@ func updateTranslation(sess *session.Context, lang language.Tag, key, value stri
 		// Dependency translations are stored in a single dependencies.json file
 		// Structure: { "rootKey": { "lang": { "key": "value" } } }
 		jsonPath = filepath.Join(moduleRoot, "i18n", "dependencies.json")
-		
+
 		// Extract the root key (package identifier) from the full translation key
 		// Example: "com.github.happy-sdk.happy.sdk.cli.flags.version"
 		//          -> root key: "com.github.happy-sdk.happy.sdk.cli"
 		rootKey := extractRootKey(key)
-		
+
 		// Construct the nested JSON path: rootKey.lang.keyWithoutRoot
 		// This creates the structure: dependencies[rootKey][lang][keyWithoutRoot] = value
 		keyWithoutRoot := strings.TrimPrefix(key, rootKey+".")
@@ -282,13 +283,13 @@ func updateTranslation(sess *session.Context, lang language.Tag, key, value stri
 		// Application translations are stored in language-specific JSON files
 		// Structure: { "key": "value" } (flat or nested based on key structure)
 		jsonPath = filepath.Join(moduleRoot, "i18n", lang.String()+".json")
-		
+
 		// Get the app's module identifier prefix to remove from the key
 		prefix, err := getAppModulePrefix(sess)
 		if err != nil {
 			return fmt.Errorf("failed to get app module prefix: %w", err)
 		}
-		
+
 		// Remove the module prefix to get the relative key path
 		// Example: prefix = "com.github.happy-sdk.banctl"
 		//          key = "com.github.happy-sdk.banctl.help.description"
@@ -321,7 +322,7 @@ func updateTranslation(sess *session.Context, lang language.Tag, key, value stri
 	setNestedValue(translations, jsonKey, value)
 
 	// Marshal the updated translations back to JSON with indentation
-	updatedData, err := json.MarshalIndent(translations, "", "  ")
+	updatedData, err := json.Marshal(translations, jsontext.WithIndent("  "))
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
@@ -344,28 +345,30 @@ func updateTranslation(sess *session.Context, lang language.Tag, key, value stri
 // The root key is typically the first 5-6 dot-separated parts, with special handling
 // for "pkg" and "sdk" segments which extend the root key by one part.
 // Example: "com.github.happy-sdk.happy.sdk.cli.flags.version"
-//          -> "com.github.happy-sdk.happy.sdk.cli"
+//
+//	-> "com.github.happy-sdk.happy.sdk.cli"
 func extractRootKey(key string) string {
 	parts := strings.Split(key, ".")
 	if len(parts) < 5 {
 		// Key is too short to have a meaningful root, return as-is
 		return key
 	}
-	
+
 	// Default root key is first 5 parts
 	rootKey := strings.Join(parts[:5], ".")
 	// Extend root key if "pkg" or "sdk" is the 5th part (index 4)
 	if len(parts) >= 6 && (parts[4] == "pkg" || parts[4] == "sdk") {
 		rootKey = strings.Join(parts[:6], ".")
 	}
-	
+
 	return rootKey
 }
 
 // setNestedValue sets a nested value in a map using a dot-separated key path.
 // It creates intermediate nested maps as needed to reach the target key.
 // Example: setNestedValue(m, "cmd.help.description", "value")
-//          creates m["cmd"]["help"]["description"] = "value"
+//
+//	creates m["cmd"]["help"]["description"] = "value"
 func setNestedValue(m map[string]any, key string, value string) {
 	parts := strings.Split(key, ".")
 	current := m
@@ -386,4 +389,3 @@ func setNestedValue(m map[string]any, key string, value string) {
 	// Set the final value at the target key
 	current[parts[len(parts)-1]] = value
 }
-

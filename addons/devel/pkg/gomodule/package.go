@@ -5,7 +5,8 @@
 package gomodule
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -751,9 +752,14 @@ func (p *Package) addMissing(sess *session.Context) error {
 
 	// Parse JSON output to get module information
 	moduleMap := make(map[string]string) // module path -> version
-	decoder := json.NewDecoder(strings.NewReader(string(output)))
+	decoder := jsontext.NewDecoder(strings.NewReader(string(output)))
 
-	for decoder.More() {
+	for {
+		raw, err := decoder.ReadValue()
+		if err != nil {
+			break // end of stream or truncated trailing entry
+		}
+
 		var pkg struct {
 			ImportPath string `json:"ImportPath"`
 			Module     *struct {
@@ -762,7 +768,7 @@ func (p *Package) addMissing(sess *session.Context) error {
 			} `json:"Module"`
 		}
 
-		if err := decoder.Decode(&pkg); err != nil {
+		if err := json.Unmarshal(raw, &pkg); err != nil {
 			continue // Skip malformed entries
 		}
 

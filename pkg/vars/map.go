@@ -5,7 +5,7 @@
 package vars
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"iter"
 	"sort"

@@ -6,7 +6,7 @@
 package adapters
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"log/slog"
 	"sync"
 )

@@ -4,7 +4,10 @@
 
 package changelog
 
-import "encoding/json"
+import (
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
+)
 
 // jsonSchemaID identifies the shape produced by Document.Render(FormatJSON)
 // and described by JSONSchema. It's a urn, not a hosted URL - this package
@@ -69,7 +72,7 @@ func (d *Document) renderJSON() ([]byte, error) {
 		doc.Sections = append(doc.Sections, js)
 	}
 
-	return json.MarshalIndent(doc, "", "  ")
+	return json.Marshal(doc, jsontext.WithIndent("  "))
 }
 
 const jsonSchemaDoc = `{

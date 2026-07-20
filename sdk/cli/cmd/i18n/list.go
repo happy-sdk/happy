@@ -5,7 +5,8 @@
 package i18n
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"fmt"
 	"sort"
 	"strings"
@@ -109,15 +110,15 @@ func i18nList() *command.Command {
 		// Process entries to determine translation status for each key
 		keyStatuses := processEntriesForDisplay(allEntries, translatableLangs, targetLang, fallbackLang, missingOnly)
 
-	// When --missing is used and there are no missing keys, show a friendly message
-	if missingOnly && len(keyStatuses) == 0 && !includeDeps {
-		if targetLang != language.Und {
-			fmt.Printf("All application translations are complete for %s.\n", targetLang.String())
-		} else {
-			fmt.Println("All application translations are complete for all configured languages.")
+		// When --missing is used and there are no missing keys, show a friendly message
+		if missingOnly && len(keyStatuses) == 0 && !includeDeps {
+			if targetLang != language.Und {
+				fmt.Printf("All application translations are complete for %s.\n", targetLang.String())
+			} else {
+				fmt.Println("All application translations are complete for all configured languages.")
+			}
+			return nil
 		}
-		return nil
-	}
 
 		// JSON output
 		if jsonOutput {
@@ -155,7 +156,7 @@ func i18nList() *command.Command {
 				}
 			}
 
-			jsonData, err := json.MarshalIndent(output, "", "  ")
+			jsonData, err := json.Marshal(output, jsontext.WithIndent("  "))
 			if err != nil {
 				return fmt.Errorf("failed to marshal JSON: %w", err)
 			}
@@ -224,7 +225,7 @@ func i18nList() *command.Command {
 			// Process dependency entries without missingOnly filter to get all statuses
 			// We need to check all entries to determine which have missing translations
 			allDepKeyStatuses := processEntriesForDisplay(depEntries, translatableLangs, targetLang, fallbackLang, false)
-			
+
 			// Filter dependency entries to only include those with missing translations
 			// This ensures the dependency section only shows keys that need attention
 			depKeyStatuses := make([]keyStatus, 0)
@@ -233,12 +234,12 @@ func i18nList() *command.Command {
 					depKeyStatuses = append(depKeyStatuses, ks)
 				}
 			}
-			
+
 			// Create main table
 			mainTable := textfmt.NewTable(
 				textfmt.TableTitle("All Translation Keys"),
 			)
-			
+
 			// App translations section
 			if len(appKeyStatuses) > 0 {
 				appTable := textfmt.NewTable(
@@ -279,7 +280,7 @@ func i18nList() *command.Command {
 				}
 				mainTable.Append(appTable)
 			}
-			
+
 			// Dependency translations section - only show if there are missing translations
 			if len(depKeyStatuses) > 0 {
 				depTable := textfmt.NewTable(
@@ -320,7 +321,7 @@ func i18nList() *command.Command {
 				}
 				mainTable.Append(depTable)
 			}
-			
+
 			fmt.Println(mainTable.String())
 		}
 
@@ -357,7 +358,7 @@ func processEntriesForDisplay(entries []i18n.TranslationEntry, translatableLangs
 				// For other languages, check Translations map
 				_, hasLangTranslation = entry.Translations[lang]
 			}
-			
+
 			if hasLangTranslation {
 				translatedLangs = append(translatedLangs, lang.String())
 			} else {
@@ -393,4 +394,3 @@ func processEntriesForDisplay(entries []i18n.TranslationEntry, translatableLangs
 
 	return keyStatuses
 }
-
