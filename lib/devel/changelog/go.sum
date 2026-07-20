@@ -1,4 +1,4 @@
-github.com/go-pdf/fpdf v0.9.0 h1:PPvSaUuo1iMi9KkaAn90NuKi+P4gwMedWPHhj8YlJQw=
-github.com/go-pdf/fpdf v0.9.0/go.mod h1:oO8N111TkmKb9D7VvWGLvLJlaZUQVPM+6V42pp3iV4Y=
+codeberg.org/go-pdf/fpdf v0.12.0 h1:g8E/1VqGqB2lZUUaqQrrTnA0IEJLPTTX1DZ0qS/ZmhU=
+codeberg.org/go-pdf/fpdf v0.12.0/go.mod h1:WJNJ2bvCj81rZBdhOf7lKOGoSl+OKMXcIcXqDcP8r5Y=
 github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4 h1:Y399fmaEl6Dod6i9S2mG7tBd8aEyaLe1xNfoQjMPEt8=
 github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4/go.mod h1:oUfrdQ/nRMMKseZ9UV5XyKN48f2Qhs53WEMv/E6rlP8=
