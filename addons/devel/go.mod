@@ -7,7 +7,7 @@ require (
 	charm.land/bubbletea/v2 v2.0.8
 	charm.land/lipgloss/v2 v2.0.5
 	github.com/goccy/go-yaml v1.19.2
-	github.com/happy-sdk/happy v1.7.1
+	github.com/happy-sdk/happy v1.7.2
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.2
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4
 	github.com/happy-sdk/happy/pkg/fsutils v1.0.5
@@ -40,7 +40,7 @@ require (
 	github.com/go-git/go-git/v5 v5.19.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/happy-sdk/happy/lib/changelog v1.0.0
-	github.com/happy-sdk/happy/lib/scm/gitutils v0.1.0
+	github.com/happy-sdk/happy/lib/scm/gitutils v0.1.1
 	github.com/happy-sdk/happy/lib/taskrunner v1.0.2
 	github.com/happy-sdk/happy/pkg/bitutils v1.0.3 // indirect
 	github.com/happy-sdk/happy/pkg/i18n v1.1.5 // indirect
