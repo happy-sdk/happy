@@ -8,7 +8,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.5
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/goccy/go-yaml v1.19.2
-	github.com/happy-sdk/happy v1.5.2
+	github.com/happy-sdk/happy v1.6.0
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.2
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4
 	github.com/happy-sdk/happy/pkg/fsutils v1.0.5
