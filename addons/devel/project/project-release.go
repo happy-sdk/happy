@@ -77,6 +77,18 @@ func (prj *Project) Release(sess *session.Context, allowDirty, skipRemoteChecks 
 		return err
 	}
 
+	// VERIFY
+	verifyTasks := prj.verifyTasks(sess)
+	verifyEnabled := prj.Config().Get("releaser.verify.enabled").Value().Bool()
+
+	for _, task := range verifyTasks {
+		if verifyEnabled {
+			task = task.DependsOn(previousTaskID)
+			previousTaskID = task.ID()
+		}
+		releaser.AddTask(task)
+	}
+
 	// CHANGELOG
 	previousTaskID, err = prj.releaseChangelog(sess, releaser, previousTaskID)
 	if err != nil {

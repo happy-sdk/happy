@@ -112,8 +112,9 @@ type ReleaserConfig struct {
 	// Dist is the releaser's working/build directory, relative to the
 	// project root - historically a plain "dist" dir, now living under the
 	// shared ".happy" directory alongside happyctl's other own files.
-	Dist settings.String    `key:"dist,save" default:".happy/build"`
-	Bump ReleaserBumpConfig `key:"bump"`
+	Dist   settings.String      `key:"dist,save" default:".happy/build"`
+	Bump   ReleaserBumpConfig   `key:"bump"`
+	Verify ReleaserVerifyConfig `key:"verify"`
 }
 
 func (c *ReleaserConfig) Blueprint() (*settings.Blueprint, error) {
@@ -135,6 +136,31 @@ type ReleaserBumpConfig struct {
 }
 
 func (c *ReleaserBumpConfig) Blueprint() (*settings.Blueprint, error) {
+	return settings.New(c)
+}
+
+// ReleaserVerifyConfig controls the release pipeline's final sanity check:
+// after tagging and pushing, re-build and re-test each released module with
+// go.work disabled, so its own go.mod is resolved against the tags that
+// were just pushed instead of the on-disk workspace source every earlier
+// step (lint, test, go mod tidy) resolves through. go.work makes every
+// module in a monorepo satisfy its sibling imports from local source
+// regardless of what its own go.mod actually requires, so nothing earlier
+// in Release proves a downstream consumer - or this repo's own modules,
+// used outside the workspace - can actually build against what was just
+// tagged. Enabled by default: the point of the release command succeeding
+// is that the maintainer can trust the published versions actually work
+// together.
+type ReleaserVerifyConfig struct {
+	Enabled settings.Bool `key:"enabled,save" default:"false"`
+}
+
+// Blueprint sets Enabled to true unless a saved preference already overrode
+// it - settings.Bool fields may only declare a "false" struct-tag default,
+// so "on by default" has to be established here in code instead, the same
+// way TestsConfig.Blueprint auto-detects a "go" binary.
+func (c *ReleaserVerifyConfig) Blueprint() (*settings.Blueprint, error) {
+	c.Enabled = true
 	return settings.New(c)
 }
 
