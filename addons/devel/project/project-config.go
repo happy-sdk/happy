@@ -112,10 +112,29 @@ type ReleaserConfig struct {
 	// Dist is the releaser's working/build directory, relative to the
 	// project root - historically a plain "dist" dir, now living under the
 	// shared ".happy" directory alongside happyctl's other own files.
-	Dist settings.String `key:"dist,save" default:".happy/build"`
+	Dist settings.String    `key:"dist,save" default:".happy/build"`
+	Bump ReleaserBumpConfig `key:"bump"`
 }
 
 func (c *ReleaserConfig) Blueprint() (*settings.Blueprint, error) {
+	return settings.New(c)
+}
+
+// ReleaserBumpConfig controls how a breaking change or a Go version sync
+// (see gomodule.Package.SyncGoVersion) advances a package's version -
+// letting a project follow a compatibility policy other than plain semver,
+// e.g. jumping straight to the next full-hundred minor instead of bumping
+// major (see gomodule.BumpKind/BumpStrategy for the exact semantics).
+type ReleaserBumpConfig struct {
+	// Kind is "major" or "minor": which version component a breaking
+	// change or Go version sync bumps.
+	Kind settings.String `key:"kind,save" default:"major"`
+	// Strategy is "single" (+1), "hundred" (next full x00), or "thousand"
+	// (next full x000): how far Kind's component advances.
+	Strategy settings.String `key:"strategy,save" default:"single"`
+}
+
+func (c *ReleaserBumpConfig) Blueprint() (*settings.Blueprint, error) {
 	return settings.New(c)
 }
 

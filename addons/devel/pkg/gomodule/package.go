@@ -167,7 +167,13 @@ func (p *Package) SetDep(dep string, ver version.Version) error {
 // every module in the monorepo on the next release, not just the ones
 // whose own code happened to change. Must be called after LoadReleaseInfo,
 // since it relies on LastReleaseTag being populated.
-func (p *Package) SyncGoVersion(rootGoVersion string) error {
+//
+// A Go version sync is treated the same as a breaking change release-wise:
+// it bumps bumpKind (advanced per bumpStrategy) rather than just a patch,
+// since raising the minimum required Go version is itself the kind of
+// significant, compatibility-affecting event bumpKind/bumpStrategy exist to
+// express.
+func (p *Package) SyncGoVersion(rootGoVersion string, bumpKind BumpKind, bumpStrategy BumpStrategy) error {
 	if p.IsInternal || rootGoVersion == "" {
 		return nil
 	}
@@ -181,9 +187,9 @@ func (p *Package) SyncGoVersion(rootGoVersion string) error {
 	p.NeedsRelease = true
 
 	if p.NextReleaseTag == "" || p.LastReleaseTag == p.NextReleaseTag {
-		nextver, err := bumpPatch(p.TagPrefix, p.LastReleaseTag)
+		nextver, err := bumpSignificant(p.TagPrefix, p.LastReleaseTag, bumpKind, bumpStrategy)
 		if err != nil {
-			return fmt.Errorf("failed to bump patch version for(%s): %w", p.Import, err)
+			return fmt.Errorf("failed to bump version for(%s): %w", p.Import, err)
 		}
 		p.NextReleaseTag = nextver
 	}
@@ -192,7 +198,7 @@ func (p *Package) SyncGoVersion(rootGoVersion string) error {
 	return nil
 }
 
-func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, remoteName string, checkRemote bool) error {
+func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, remoteName string, checkRemote bool, bumpKind BumpKind, bumpStrategy BumpStrategy) error {
 	sess.Log().Debug(
 		"getting latest release",
 		slog.String("package", p.Modfile.Module.Mod.Path),
@@ -285,12 +291,12 @@ func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, remoteName st
 
 	// Handle pending release
 	if !checkRemote {
-		return p.getChangelog(sess, rootPath)
+		return p.getChangelog(sess, rootPath, bumpKind, bumpStrategy)
 	}
 
 	if gitutils.RemoteTagExists(sess, rootPath, remoteName, p.LastReleaseTag) {
 		p.NextReleaseTagRemoteExists = true
-		return p.getChangelog(sess, rootPath)
+		return p.getChangelog(sess, rootPath, bumpKind, bumpStrategy)
 	}
 
 	p.NextReleaseTag = p.LastReleaseTag
@@ -311,7 +317,7 @@ func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, remoteName st
 		p.FirstRelease = true
 	}
 
-	return p.getChangelog(sess, rootPath)
+	return p.getChangelog(sess, rootPath, bumpKind, bumpStrategy)
 }
 
 func (p *Package) ApplyTagTask(sess *session.Context, r *tr.Executor, dep tr.TaskID, prjwd string, internalDeps []*Package) tr.TaskID {
@@ -488,7 +494,7 @@ func (p *Package) GoModTidy(sess *session.Context) error {
 	return err
 }
 
-func (p *Package) getChangelog(sess *session.Context, rootPath string) error {
+func (p *Package) getChangelog(sess *session.Context, rootPath string, bumpKind BumpKind, bumpStrategy BumpStrategy) error {
 	if p.IsInternal {
 		return nil
 	}
@@ -531,9 +537,9 @@ func (p *Package) getChangelog(sess *session.Context, rootPath string) error {
 		return nil
 	}
 	if p.Changelog.HasMajorUpdate() {
-		nextTag, err := bumpMajor(p.TagPrefix, p.LastReleaseTag)
+		nextTag, err := bumpSignificant(p.TagPrefix, p.LastReleaseTag, bumpKind, bumpStrategy)
 		if err != nil {
-			return fmt.Errorf("failed to bump major version for(%s): %w", p.Import, err)
+			return fmt.Errorf("failed to bump version for(%s): %w", p.Import, err)
 		}
 		p.NextReleaseTag = nextTag
 		p.NeedsRelease = true
@@ -683,20 +689,6 @@ func extractPathFromTag(tag string) string {
 
 	// If no version pattern found, assume the whole thing is a path
 	return tag
-}
-
-func bumpMajor(prefix, tag string) (string, error) {
-
-	clean := strings.TrimPrefix(tag, prefix+"v")
-	parts := strings.Split(clean, ".")
-	if len(parts) != 3 {
-		return "", fmt.Errorf("invalid version: %s", tag)
-	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s%s", prefix, fmt.Sprintf("v%d.0.0", major+1)), nil
 }
 
 func bumpMinor(prefix, tag string) (string, error) {

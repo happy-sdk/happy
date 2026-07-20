@@ -4,7 +4,16 @@
 
 Happy SDK is an open-source Go framework designed to make building applications simple and fast. Its clear, modular structure and addon system promote code reuse, enabling anyone - coders or non-coders - to create prototypes or full projects efficiently. It integrates smoothly with projects using multiple programming languages, helping teams bring ideas to life with ease with built-in monorepo support.
 
-:warning: _Until v2.0.0, API changes may break compatibility, or break due to minimum Go version requirements, so pin your Happy version and update cautiously._
+---
+
+> [!WARNING]
+> **Until v2.0.0, API changes may break compatibility** - pin your Happy version and upgrade deliberately.
+>
+> **Compatibility promise:** minor versions are grouped into blocks of 100 (`v1.0.x`-`v1.99.x`, `v1.100.x`-`v1.199.x`, and so on). Within a block, the minimum required Go version and public APIs stay fixed, so upgrading anywhere inside a block (e.g. `v1.{n}00.0` to `v1.{n+1}00.0`, exclusive) is always safe. Crossing into the next block may raise the minimum Go version or include breaking changes - treat that boundary like a major version bump.
+>
+> Example: every package below `v1.100.0` supports Go 1.26; starting at `v1.100.0`, Go 1.27rc2 or higher is required.
+
+---
 
 **Update your project to latest**
 

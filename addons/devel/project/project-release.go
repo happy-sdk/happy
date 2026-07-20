@@ -168,6 +168,15 @@ func (prj *Project) releaseGomodules(sess *session.Context, r *tr.Runner, dep tr
 		return dep, err
 	}
 
+	bumpKind, err := gomodule.ParseBumpKind(prj.Config().Get("releaser.bump.kind").String())
+	if err != nil {
+		return dep, err
+	}
+	bumpStrategy, err := gomodule.ParseBumpStrategy(prj.Config().Get("releaser.bump.strategy").String())
+	if err != nil {
+		return dep, err
+	}
+
 	remoteName := prj.Config().Get("git.remote.name").String()
 
 	var rootGoVersion string
@@ -212,7 +221,9 @@ func (prj *Project) releaseGomodules(sess *session.Context, r *tr.Runner, dep tr
 					sess,
 					prj.Dir().Path,
 					remoteName,
-					!skipRemoteChecks); err != nil {
+					!skipRemoteChecks,
+					bumpKind,
+					bumpStrategy); err != nil {
 					failed = true
 					return tr.Failure(fmt.Sprintf("failed to get release info: %s", err.Error()))
 				}
@@ -229,7 +240,7 @@ func (prj *Project) releaseGomodules(sess *session.Context, r *tr.Runner, dep tr
 				}
 
 				if pkg.TagPrefix != "" {
-					if err := pkg.SyncGoVersion(rootGoVersion); err != nil {
+					if err := pkg.SyncGoVersion(rootGoVersion, bumpKind, bumpStrategy); err != nil {
 						return tr.Failure(fmt.Sprintf("failed to sync go version: %s", err.Error()))
 					}
 				}

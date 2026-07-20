@@ -2,6 +2,15 @@ version: "1"
 
 releaser:
   enabled: true
+  bump:
+    # A breaking change or a Go version sync bumps minor, jumped straight to
+    # the next full hundred (e.g. v1.55.0 -> v1.100.0) instead of bumping
+    # major - see the compatibility promise in README.md: stability is
+    # guaranteed within a block of 100 minor versions, and crossing into the
+    # next block is the signal that the minimum Go version or breaking
+    # changes may follow.
+    kind: minor
+    strategy: hundred
 
 linter:
   golangci-lint:
