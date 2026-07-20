@@ -1,4 +1,4 @@
-module github.com/happy-sdk/happy/lib/devel/changelog
+module github.com/happy-sdk/happy/lib/changelog
 
 go 1.26.4
 

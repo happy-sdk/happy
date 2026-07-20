@@ -4,7 +4,7 @@ use (
 	.
 	./addons/devel
 	./cmd/happyctl
-	./lib/devel/changelog
+	./lib/changelog
 	./lib/tail
 	./lib/taskrunner
 	./pkg/bitutils

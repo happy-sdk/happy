@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/happy-sdk/happy/addons/devel/pkg/gomodule"
-	"github.com/happy-sdk/happy/lib/devel/changelog"
+	"github.com/happy-sdk/happy/lib/changelog"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
 
