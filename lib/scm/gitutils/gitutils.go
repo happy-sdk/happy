@@ -19,13 +19,25 @@ import (
 	"github.com/happy-sdk/happy/sdk/session"
 )
 
-var Error = errors.New("git")
+var Error = errors.New("gitutils")
+
+// execRaw and execRun are indirection points so tests can substitute a fake
+// command runner instead of actually invoking `git` - cli.ExecRaw/cli.Run
+// require a real, fully-booted *session.Context internally (for logging and
+// context cancellation), which nothing in this repo constructs standalone
+// in tests. Substituting these lets tests exercise this package's own
+// argument-building and output-parsing logic deterministically, without a
+// real session or a real git binary.
+var (
+	execRaw = cli.ExecRaw
+	execRun = cli.Run
+)
 
 // IsRepository checks if the given directory is a Git repository.
 func IsRepository(path string) bool {
 	gitDir := filepath.Join(path, ".git")
 	_, err := os.Stat(gitDir)
-	return err == nil || !os.IsNotExist(err)
+	return err == nil
 }
 
 // FindRepositoryRoot locates the root directory of the Git repository containing wd.
@@ -47,7 +59,9 @@ func FindRepositoryRoot(wd string) (dir string, found bool, err error) {
 			return dir, true, nil
 		}
 		parent := filepath.Dir(dir)
-		if parent == dir || dir == "/" || dir == "." {
+		if parent == dir {
+			// filepath.Abs already made dir absolute, so the only way
+			// ascending stops making progress is at the filesystem root.
 			break
 		}
 		dir = parent
@@ -92,7 +106,7 @@ func NewConfig() (*options.Spec, error) {
 func Dirty(sess *session.Context, wd string, path string) bool {
 	statusCmd := exec.Command("git", "status", "--porcelain", path)
 	statusCmd.Dir = wd
-	status, err := cli.ExecRaw(sess, statusCmd)
+	status, err := execRaw(sess, statusCmd)
 	if err != nil {
 		return false
 	}
@@ -102,9 +116,9 @@ func Dirty(sess *session.Context, wd string, path string) bool {
 func CurrentBranch(sess *session.Context, wd string) (string, error) {
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	branchCmd.Dir = wd
-	branch, err := cli.ExecRaw(sess, branchCmd)
+	branch, err := execRaw(sess, branchCmd)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%w: current branch: %w", Error, err)
 	}
 
 	return strings.TrimSpace(string(branch)), nil
@@ -114,8 +128,9 @@ func CurrentRemote(sess *session.Context, wd string) (name, url string, err erro
 	// Get remote name
 	remoteNameCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "@{u}")
 	remoteNameCmd.Dir = wd
-	remoteName, err := cli.ExecRaw(sess, remoteNameCmd)
+	remoteName, err := execRaw(sess, remoteNameCmd)
 	if err != nil {
+		err = fmt.Errorf("%w: current remote: %w", Error, err)
 		return
 	}
 	remoteNameParts := strings.SplitN(strings.TrimSpace(string(remoteName)), "/", 2)
@@ -127,8 +142,9 @@ func CurrentRemote(sess *session.Context, wd string) (name, url string, err erro
 	remoteConfigKey := fmt.Sprintf("remote.%s.url", name)
 	remoteURLCmd := exec.Command("git", "config", "--get", remoteConfigKey)
 	remoteURLCmd.Dir = wd
-	remoteURL, err := cli.ExecRaw(sess, remoteURLCmd)
+	remoteURL, err := execRaw(sess, remoteURLCmd)
 	if err != nil {
+		err = fmt.Errorf("%w: current remote url: %w", Error, err)
 		return
 	}
 	url = strings.TrimSpace(string(remoteURL))
@@ -139,21 +155,42 @@ func CurrentRemote(sess *session.Context, wd string) (name, url string, err erro
 func RemoteTagExists(sess *session.Context, wd string, origin, tag string) bool {
 	tagCmd := exec.Command("git", "ls-remote", "--tags", origin, tag)
 	tagCmd.Dir = wd
-	tagOutput, err := cli.ExecRaw(sess, tagCmd)
+	tagOutput, err := execRaw(sess, tagCmd)
 	if err != nil {
 		return false
 	}
-	return strings.Contains(string(tagOutput), tag)
+	return tagRefMatches(string(tagOutput), tag)
 }
 
 func TagExists(sess *session.Context, wd string, tag string) bool {
 	tagCmd := exec.Command("git", "tag", "-l", tag)
 	tagCmd.Dir = wd
-	tagOutput, err := cli.ExecRaw(sess, tagCmd)
+	tagOutput, err := execRaw(sess, tagCmd)
 	if err != nil {
 		return false
 	}
-	return strings.Contains(string(tagOutput), tag)
+	return tagRefMatches(string(tagOutput), tag)
+}
+
+// tagRefMatches reports whether output (from `git tag -l <tag>`, which
+// lists just the tag name per line, or `git ls-remote --tags <remote>
+// <tag>`, which lists "<hash>\trefs/tags/<tag>" per line, with dereferenced
+// annotated tags also getting a "^{}"-suffixed line) contains a line that
+// refers to exactly tag - not merely a substring match, which would
+// wrongly report e.g. "v1.2" as existing when only "v1.2.0" does.
+func tagRefMatches(output, tag string) bool {
+	want := "refs/tags/" + tag
+	for line := range strings.Lines(output) {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		ref := fields[len(fields)-1]
+		if ref == tag || ref == want || ref == want+"^{}" {
+			return true
+		}
+	}
+	return false
 }
 
 func Commit(sess *session.Context, wd string, arg []string, commitMsg string) error {
@@ -165,14 +202,14 @@ func Commit(sess *session.Context, wd string, arg []string, commitMsg string) er
 
 	gitadd := exec.Command("git", gargs...)
 	gitadd.Dir = wd
-	if err := cli.Run(sess, gitadd); err != nil {
-		return err
+	if err := execRun(sess, gitadd); err != nil {
+		return fmt.Errorf("%w: add: %w", Error, err)
 	}
 
 	gitcommit := exec.Command("git", "commit", "-sm", commitMsg)
 	gitcommit.Dir = wd
-	if err := cli.Run(sess, gitcommit); err != nil {
-		return err
+	if err := execRun(sess, gitcommit); err != nil {
+		return fmt.Errorf("%w: commit: %w", Error, err)
 	}
 
 	return nil
@@ -181,8 +218,8 @@ func Commit(sess *session.Context, wd string, arg []string, commitMsg string) er
 func Tag(sess *session.Context, wd, tag, message string) error {
 	gitTag := exec.Command("git", "tag", "-s", tag, "-m", message)
 	gitTag.Dir = wd
-	if err := cli.Run(sess, gitTag); err != nil {
-		return err
+	if err := execRun(sess, gitTag); err != nil {
+		return fmt.Errorf("%w: tag: %w", Error, err)
 	}
 
 	return nil
