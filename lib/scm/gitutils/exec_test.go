@@ -146,6 +146,55 @@ func TestCurrentRemote(t *testing.T) {
 	})
 }
 
+func TestCommitterIdentity(t *testing.T) {
+	t.Run("trims and returns name and email", func(t *testing.T) {
+		withFakeExecRaw(t, func(cmd *exec.Cmd) ([]byte, error) {
+			if containsArg(cmd, "user.name") {
+				return []byte(" Jane Doe \n"), nil
+			}
+			return []byte(" jane@example.com \n"), nil
+		})
+		name, email, err := CommitterIdentity(nil, "/repo")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if name != "Jane Doe" {
+			t.Errorf("expected name %q, got %q", "Jane Doe", name)
+		}
+		if email != "jane@example.com" {
+			t.Errorf("expected email %q, got %q", "jane@example.com", email)
+		}
+	})
+
+	t.Run("propagates name lookup error without querying email", func(t *testing.T) {
+		calls := 0
+		withFakeExecRaw(t, func(cmd *exec.Cmd) ([]byte, error) {
+			calls++
+			return nil, errors.New("no such config key")
+		})
+		_, _, err := CommitterIdentity(nil, "/repo")
+		if !errors.Is(err, Error) {
+			t.Errorf("expected error to wrap gitutils.Error, got: %v", err)
+		}
+		if calls != 1 {
+			t.Errorf("expected only the name lookup to run, got %d exec calls", calls)
+		}
+	})
+
+	t.Run("propagates email lookup error", func(t *testing.T) {
+		withFakeExecRaw(t, func(cmd *exec.Cmd) ([]byte, error) {
+			if containsArg(cmd, "user.name") {
+				return []byte("Jane Doe\n"), nil
+			}
+			return nil, errors.New("no such config key")
+		})
+		_, _, err := CommitterIdentity(nil, "/repo")
+		if !errors.Is(err, Error) {
+			t.Errorf("expected error to wrap gitutils.Error, got: %v", err)
+		}
+	})
+}
+
 func TestTagRefMatchesLocal(t *testing.T) {
 	tests := []struct {
 		name   string

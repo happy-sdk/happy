@@ -202,7 +202,7 @@ func (prj *Project) loadConfig(sess *session.Context) (err error) {
 	cnf := &Config{}
 
 	if prj.dir.HasGit {
-		cnf.Git, err = newGitConfig(sess, prj.dir.Path)
+		cnf.Git, err = gitutils.LoadConfig(sess, prj.dir.Path)
 		if err != nil {
 			return err
 		}

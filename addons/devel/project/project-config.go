@@ -12,8 +12,6 @@ import (
 	"github.com/happy-sdk/happy/lib/scm/gitutils"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/version"
-	"github.com/happy-sdk/happy/sdk/cli"
-	"github.com/happy-sdk/happy/sdk/session"
 )
 
 type Config struct {
@@ -25,7 +23,7 @@ type Config struct {
 	Ignore settings.StringSlice `key:"ignore,save"`
 
 	Changelog    ChangelogConfig    `key:"changelog"`
-	Git          GitConfig          `key:"git"`
+	Git          gitutils.Config    `key:"git"`
 	Linter       LinterConfig       `key:"linter"`
 	Releaser     ReleaserConfig     `key:"releaser"`
 	Tests        TestsConfig        `key:"tests"`
@@ -34,61 +32,6 @@ type Config struct {
 
 func (c *Config) Blueprint() (*settings.Blueprint, error) {
 	return settings.New(c)
-}
-
-type GitConfig struct {
-	CommitterName  settings.String `key:"committer.name,save"`
-	CommitterEmail settings.String `key:"committer.email,save"`
-	AuthorName     settings.String `key:"author.name,save"`
-	AuthorEmail    settings.String `key:"author.email,save"`
-	Branch         settings.String `key:"branch,save" default:"main"`
-	RemoteName     settings.String `key:"remote.name,save" default:"origin"`
-	RemoteURL      settings.String `key:"remote.url,save"`
-}
-
-func (c *GitConfig) Blueprint() (*settings.Blueprint, error) {
-	return settings.New(c)
-}
-
-// newGitConfig reads committer/branch/remote metadata for changelog and
-// release attribution. Every field here is optional best-effort data used
-// only by commands that actually commit or tag (e.g. release) - a project
-// dir without a configured git identity, a detached HEAD, or no remote must
-// not stop any other happyctl command from booting, so each lookup degrades
-// independently to its zero value instead of aborting the whole function.
-func newGitConfig(sess *session.Context, dir string) (gitcnf GitConfig, err error) {
-	gitbin, err := exec.LookPath("git")
-	if err != nil {
-		return gitcnf, nil
-	}
-	// Get committer name
-	committerCmd := exec.Command(gitbin, "config", "user.name")
-	committerCmd.Dir = dir
-	if committer, cerr := cli.Exec(sess, committerCmd); cerr == nil {
-		gitcnf.CommitterName = settings.String(committer)
-		gitcnf.AuthorName = gitcnf.CommitterName
-	}
-
-	// Get committer email
-	emailCmd := exec.Command(gitbin, "config", "user.email")
-	emailCmd.Dir = dir
-	if email, eerr := cli.Exec(sess, emailCmd); eerr == nil {
-		gitcnf.CommitterEmail = settings.String(email)
-		gitcnf.AuthorEmail = gitcnf.CommitterEmail
-	}
-
-	// Get current branch
-	if branch, berr := gitutils.CurrentBranch(sess, dir); berr == nil {
-		gitcnf.Branch = settings.String(branch)
-	}
-
-	// Get remote
-	if remoteName, remoteURL, rerr := gitutils.CurrentRemote(sess, dir); rerr == nil {
-		gitcnf.RemoteName = settings.String(remoteName)
-		gitcnf.RemoteURL = settings.String(remoteURL)
-	}
-
-	return gitcnf, nil
 }
 
 type LinterConfig struct {

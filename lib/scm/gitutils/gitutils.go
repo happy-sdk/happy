@@ -14,7 +14,6 @@ import (
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
-	"github.com/happy-sdk/happy/pkg/options"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/session"
 )
@@ -85,30 +84,6 @@ func NewIgnoreMatcher(patterns []string, domain []string) gitignore.Matcher {
 	return gitignore.NewMatcher(ps)
 }
 
-func NewConfig() (*options.Spec, error) {
-	return options.New("git",
-		options.NewOption("repo.found", false),
-		options.NewOption("loaded", false),
-		options.NewOption("repo.root", "").
-			Validator(func(opt options.Option) error {
-				dir := opt.Value().String()
-				if dir == "" {
-					return nil
-				}
-				if !IsRepository(dir) {
-					return fmt.Errorf("not a valid Git repository: %s", dir)
-				}
-				return nil
-			}),
-		options.NewOption("repo.branch", ""),
-		options.NewOption("repo.remote.name", ""),
-		options.NewOption("repo.remote.url", ""),
-		options.NewOption("repo.dirty", ""),
-		options.NewOption("committer.name", ""),
-		options.NewOption("committer.email", ""),
-	)
-}
-
 func Dirty(sess *session.Context, wd string, path string) bool {
 	statusCmd := exec.Command("git", "status", "--porcelain", path)
 	statusCmd.Dir = wd
@@ -156,6 +131,28 @@ func CurrentRemote(sess *session.Context, wd string) (name, url string, err erro
 	url = strings.TrimSpace(string(remoteURL))
 
 	return
+}
+
+// CommitterIdentity reads the configured git committer name and email for
+// wd (i.e. `git config user.name`/`user.email`).
+func CommitterIdentity(sess *session.Context, wd string) (name, email string, err error) {
+	nameCmd := exec.Command("git", "config", "user.name")
+	nameCmd.Dir = wd
+	nameOut, err := execRaw(sess, nameCmd)
+	if err != nil {
+		return "", "", fmt.Errorf("%w: committer name: %w", Error, err)
+	}
+	name = strings.TrimSpace(string(nameOut))
+
+	emailCmd := exec.Command("git", "config", "user.email")
+	emailCmd.Dir = wd
+	emailOut, err := execRaw(sess, emailCmd)
+	if err != nil {
+		return "", "", fmt.Errorf("%w: committer email: %w", Error, err)
+	}
+	email = strings.TrimSpace(string(emailOut))
+
+	return name, email, nil
 }
 
 func RemoteTagExists(sess *session.Context, wd string, origin, tag string) bool {
