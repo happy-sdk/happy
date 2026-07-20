@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	git "github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v6"
 )
 
 // initRepo creates a real, structurally valid (non-bare) git repository at
