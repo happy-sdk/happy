@@ -5,10 +5,24 @@
 package gomodule
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/happy-sdk/happy/sdk/session"
 	"golang.org/x/mod/modfile"
 )
+
+// withFakeShowGoModAt substitutes showGoModAt for the duration of the test
+// with fn, so SyncOwnGoVersion's decision logic can be exercised without a
+// real session or git repository.
+func withFakeShowGoModAt(t *testing.T, fn func(rootPath, ref string) (string, error)) {
+	t.Helper()
+	orig := showGoModAt
+	showGoModAt = func(_ *session.Context, rootPath, ref string) (string, error) {
+		return fn(rootPath, ref)
+	}
+	t.Cleanup(func() { showGoModAt = orig })
+}
 
 func newTestPackage(t *testing.T, goVersion, tagPrefix, lastReleaseTag string, internal bool) *Package {
 	t.Helper()
@@ -114,6 +128,121 @@ func TestPackage_SyncGoVersion(t *testing.T) {
 		}
 		if p.NeedsRelease {
 			t.Error("expected no-op when root go version could not be determined")
+		}
+	})
+}
+
+// TestPackage_SyncOwnGoVersion covers SyncGoVersion's counterpart for the
+// root module: it has no external target to sync to, so it must instead
+// notice its own go directive changed since its own last release tag.
+func TestPackage_SyncOwnGoVersion(t *testing.T) {
+	t.Run("no-op for internal modules", func(t *testing.T) {
+		p := newTestPackage(t, "1.26.4", "", "v1.7.3", true)
+		withFakeShowGoModAt(t, func(rootPath, ref string) (string, error) {
+			t.Fatal("expected no git show call for an internal module")
+			return "", nil
+		})
+		if err := p.SyncOwnGoVersion(nil, "/repo", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("no-op for a first release", func(t *testing.T) {
+		p := newTestPackage(t, "1.26.4", "", "v0.0.0", false)
+		p.FirstRelease = true
+		withFakeShowGoModAt(t, func(rootPath, ref string) (string, error) {
+			t.Fatal("expected no git show call for a first release")
+			return "", nil
+		})
+		if err := p.SyncOwnGoVersion(nil, "/repo", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("no-op when the module has no go directive", func(t *testing.T) {
+		mf, err := modfile.Parse("go.mod", []byte("module example.com/mod\n"), nil)
+		if err != nil {
+			t.Fatalf("failed to parse fixture go.mod: %v", err)
+		}
+		p := &Package{Import: "example.com/mod", Modfile: mf, LastReleaseTag: "v1.7.3"}
+		withFakeShowGoModAt(t, func(rootPath, ref string) (string, error) {
+			t.Fatal("expected no git show call when there's no go directive to compare")
+			return "", nil
+		})
+		if err := p.SyncOwnGoVersion(nil, "/repo", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("no-op when the last release tag doesn't resolve", func(t *testing.T) {
+		p := newTestPackage(t, "1.27.0", "", "v1.7.3", false)
+		withFakeShowGoModAt(t, func(rootPath, ref string) (string, error) {
+			return "", errors.New("unknown revision")
+		})
+		if err := p.SyncOwnGoVersion(nil, "/repo", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.NeedsRelease {
+			t.Error("expected no-op when the last release tag's go.mod can't be read")
+		}
+	})
+
+	t.Run("no-op when the go version is unchanged", func(t *testing.T) {
+		p := newTestPackage(t, "1.27.0", "", "v1.7.3", false)
+		withFakeShowGoModAt(t, func(rootPath, ref string) (string, error) {
+			return "module example.com/mod\n\ngo 1.27.0\n", nil
+		})
+		if err := p.SyncOwnGoVersion(nil, "/repo", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.NeedsRelease {
+			t.Error("expected no-op when the go version hasn't changed since the last release")
+		}
+	})
+
+	t.Run("bumps significant when the go version changed", func(t *testing.T) {
+		p := newTestPackage(t, "1.27.0", "", "v1.7.3", false)
+		withFakeShowGoModAt(t, func(rootPath, ref string) (string, error) {
+			if ref != "v1.7.3" {
+				t.Errorf("expected to look up go.mod at v1.7.3, got %q", ref)
+			}
+			return "module example.com/mod\n\ngo 1.26.4\n", nil
+		})
+		if err := p.SyncOwnGoVersion(nil, "/repo", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !p.NeedsRelease {
+			t.Error("expected NeedsRelease to become true when the go version changed")
+		}
+		if p.NextReleaseTag != "v1.100.0" {
+			t.Errorf("expected next release tag v1.100.0, got %s", p.NextReleaseTag)
+		}
+	})
+
+	t.Run("keeps an already-pending bump that's higher", func(t *testing.T) {
+		p := newTestPackage(t, "1.27.0", "", "v1.7.3", false)
+		p.NextReleaseTag = "v2.0.0" // e.g. already bumped major by a breaking change
+		withFakeShowGoModAt(t, func(rootPath, ref string) (string, error) {
+			return "module example.com/mod\n\ngo 1.26.4\n", nil
+		})
+		if err := p.SyncOwnGoVersion(nil, "/repo", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.NextReleaseTag != "v2.0.0" {
+			t.Errorf("expected the higher already-pending v2.0.0 to win, got %s", p.NextReleaseTag)
+		}
+	})
+
+	t.Run("no-op when the historical go.mod is unparseable", func(t *testing.T) {
+		p := newTestPackage(t, "1.27.0", "", "v1.7.3", false)
+		withFakeShowGoModAt(t, func(rootPath, ref string) (string, error) {
+			return "not a go.mod", nil
+		})
+		if err := p.SyncOwnGoVersion(nil, "/repo", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.NeedsRelease {
+			t.Error("expected no-op when the historical go.mod can't be parsed")
 		}
 	})
 }

@@ -193,6 +193,62 @@ func (p *Package) SyncGoVersion(rootGoVersion string, bumpKind BumpKind, bumpStr
 	}
 	p.NeedsRelease = true
 
+	if err := p.applySignificantBump(bumpKind, bumpStrategy); err != nil {
+		return err
+	}
+
+	p.Modfile.Cleanup()
+	return nil
+}
+
+// SyncOwnGoVersion is SyncGoVersion's counterpart for the root module
+// itself: submodules sync to "the root's go version" via SyncGoVersion, but
+// the root module has no external target to sync to - it defines its own
+// go version. So instead this checks whether the go directive actually
+// changed since the module's own LastReleaseTag, by diffing its go.mod
+// against the copy recorded at that tag, and if so applies the same
+// significant bump SyncGoVersion would.
+//
+// Must be called after LoadReleaseInfo, since it relies on LastReleaseTag
+// and NextReleaseTag being populated. Only meaningful for the root module
+// (TagPrefix == ""); submodules should use SyncGoVersion instead.
+func (p *Package) SyncOwnGoVersion(sess *session.Context, rootPath string, bumpKind BumpKind, bumpStrategy BumpStrategy) error {
+	if p.IsInternal || p.FirstRelease || p.Modfile.Go == nil {
+		return nil
+	}
+
+	out, err := showGoModAt(sess, rootPath, p.LastReleaseTag)
+	if err != nil {
+		// LastReleaseTag doesn't resolve (e.g. shallow clone) or never had
+		// a go.mod at the repo root - nothing to compare against.
+		return nil
+	}
+
+	lastMod, err := modfile.Parse("go.mod", []byte(out), nil)
+	if err != nil || lastMod.Go == nil || lastMod.Go.Version == p.Modfile.Go.Version {
+		return nil
+	}
+
+	p.NeedsRelease = true
+	return p.applySignificantBump(bumpKind, bumpStrategy)
+}
+
+// showGoModAt is an indirection point so tests can substitute a fake git
+// show without needing a real session or git repository - cli.Exec
+// requires a real, fully-booted *session.Context internally, which
+// nothing in this package's tests constructs standalone. It returns the
+// content of go.mod at ref, read from rootPath's repository.
+var showGoModAt = func(sess *session.Context, rootPath, ref string) (string, error) {
+	cmd := exec.Command("git", "show", fmt.Sprintf("%s:go.mod", ref))
+	cmd.Dir = rootPath
+	return cli.Exec(sess, cmd)
+}
+
+// applySignificantBump computes the significant bump for p (per bumpKind
+// and bumpStrategy) and applies it only if it's higher than whatever
+// NextReleaseTag is already pending, so a caller can't accidentally
+// downgrade a bigger bump another code path already decided on.
+func (p *Package) applySignificantBump(bumpKind BumpKind, bumpStrategy BumpStrategy) error {
 	candidate, err := bumpSignificant(p.TagPrefix, p.LastReleaseTag, bumpKind, bumpStrategy)
 	if err != nil {
 		return fmt.Errorf("failed to bump version for(%s): %w", p.Import, err)
@@ -200,15 +256,14 @@ func (p *Package) SyncGoVersion(rootGoVersion string, bumpKind BumpKind, bumpStr
 
 	if p.NextReleaseTag == "" || p.LastReleaseTag == p.NextReleaseTag {
 		p.NextReleaseTag = candidate
-	} else {
-		candidateVersion := version.Version(path.Base(candidate))
-		pendingVersion := version.Version(path.Base(p.NextReleaseTag))
-		if candidateVersion.IsValid() && pendingVersion.IsValid() && version.Compare(candidateVersion, pendingVersion) == 1 {
-			p.NextReleaseTag = candidate
-		}
+		return nil
 	}
 
-	p.Modfile.Cleanup()
+	candidateVersion := version.Version(path.Base(candidate))
+	pendingVersion := version.Version(path.Base(p.NextReleaseTag))
+	if candidateVersion.IsValid() && pendingVersion.IsValid() && version.Compare(candidateVersion, pendingVersion) == 1 {
+		p.NextReleaseTag = candidate
+	}
 	return nil
 }
 

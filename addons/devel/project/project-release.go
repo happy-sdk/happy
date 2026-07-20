@@ -243,6 +243,10 @@ func (prj *Project) releaseGomodules(sess *session.Context, r *tr.Runner, dep tr
 					if err := pkg.SyncGoVersion(rootGoVersion, bumpKind, bumpStrategy); err != nil {
 						return tr.Failure(fmt.Sprintf("failed to sync go version: %s", err.Error()))
 					}
+				} else {
+					if err := pkg.SyncOwnGoVersion(sess, prj.Dir().Path, bumpKind, bumpStrategy); err != nil {
+						return tr.Failure(fmt.Sprintf("failed to check own go version: %s", err.Error()))
+					}
 				}
 
 				if !pkg.NeedsRelease {
