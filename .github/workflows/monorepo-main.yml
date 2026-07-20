@@ -28,7 +28,7 @@ jobs:
       - name: Lint all packages
         uses: ./.github/actions/golangci-lint-monorepo-action
         with:
-          go-version: ">=1.26.0"
+          go-version: ">=1.27rc2"
           golangci-lint-version: v2.12.2
 
   i18n:
@@ -38,7 +38,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: ">=1.26.0"
+          go-version: ">=1.27rc2"
       - run: go run ./cmd/happyctl/ --system-debug -x i18n report -t 95
 
   list-modules:
@@ -51,7 +51,7 @@ jobs:
         id: modulelist
         uses: ./.github/actions/go-test-monorepo-action
         with:
-          go-version: ">=1.26.0"
+          go-version: ">=1.27rc2"
           only-module-list: true
 
   happyvet:
@@ -62,7 +62,7 @@ jobs:
       - name: Run happyvet across all modules
         uses: ./.github/actions/happyvet-monorepo-action
         with:
-          go-version: ">=1.26.0"
+          go-version: ">=1.27rc2"
           modules: ${{ needs.list-modules.outputs.modules }}
 
   test-and-coverage:
@@ -84,7 +84,7 @@ jobs:
         id: run-tests
         uses: ./.github/actions/go-test-monorepo-action
         with:
-          go-version: ">=1.26.0"
+          go-version: ">=1.27rc2"
           race: ${{ github.event.inputs.loose != 'true' }}
           fail-fast: ${{ github.event.inputs.loose != 'true' }}
           continue-on-error: ${{ github.event.inputs.loose == 'true' }}
