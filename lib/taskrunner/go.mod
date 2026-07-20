@@ -1,13 +1,13 @@
 module github.com/happy-sdk/happy/lib/taskrunner
 
-go 1.26.4
+go 1.27rc2
 
 require (
 	charm.land/bubbles/v2 v2.1.1
 	charm.land/bubbletea/v2 v2.0.8
 	charm.land/lipgloss/v2 v2.0.5
 	github.com/google/uuid v1.6.0
-	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4
+	github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0
 )
 
 require (
