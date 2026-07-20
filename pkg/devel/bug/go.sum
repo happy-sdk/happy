@@ -1,8 +1,8 @@
-github.com/happy-sdk/happy/pkg/bitutils v1.0.3 h1:6bK5Nt9KtTotdlV4yHODbM8JlFCVldWdie6VPpyUMQw=
-github.com/happy-sdk/happy/pkg/bitutils v1.0.3/go.mod h1:RHPvN0lp1lMAofLV6kPMnVkwWssL4uqqfmBEX+JGG54=
-github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4 h1:Y399fmaEl6Dod6i9S2mG7tBd8aEyaLe1xNfoQjMPEt8=
-github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4/go.mod h1:oUfrdQ/nRMMKseZ9UV5XyKN48f2Qhs53WEMv/E6rlP8=
-github.com/happy-sdk/happy/pkg/logging v1.0.4 h1:5mWXllZML2RuqNqqhSlpvCaV19BNG73xkDisFiUuSgs=
-github.com/happy-sdk/happy/pkg/logging v1.0.4/go.mod h1:zQdW1ED9iTaAzp2/EjE2iQApPgubhgD0T1l6cTZUi2U=
-github.com/happy-sdk/happy/pkg/tui v1.0.1 h1:4vF7IuMyCzc4GQsSA3No5bRS/rk7pLKzGxIH6cl1VQk=
-github.com/happy-sdk/happy/pkg/tui v1.0.1/go.mod h1:sDj6JC40L4eKYCfD+H/HDaM6nAZrywo0wos7EXDqaB4=
+github.com/happy-sdk/happy/pkg/bitutils v1.100.0 h1:r2x4QghR133VU/CWxjyhaA/jOw+5uyfuHFw+wv7fhv8=
+github.com/happy-sdk/happy/pkg/bitutils v1.100.0/go.mod h1:k6JAuAcgJb2RjUbS5eCo9WgC2Zwv78SUhdzudVjufEQ=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0 h1:V0rIJf/gqYUdkYxjhggeCJypXK15K5hxyXUl+02CWwE=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0/go.mod h1:neqQCJrkhJjB/rWJLEtZAXu9aGp8DX7JsKQFN0xSAJI=
+github.com/happy-sdk/happy/pkg/logging v1.100.0 h1:HdR7LoR4qTApmmgImZ/FWhGPVfp3KICwOHCcziQZroc=
+github.com/happy-sdk/happy/pkg/logging v1.100.0/go.mod h1:pCvK2tgbkdkKmowesJUExfLKlSAM25n/srSHjMtndbs=
+github.com/happy-sdk/happy/pkg/tui v1.100.0 h1:oMBXZfNi+BWq0FNJWH1a0ZXhcinviSLOW6UGL1w/OOI=
+github.com/happy-sdk/happy/pkg/tui v1.100.0/go.mod h1:xmaqbJ9ig3L1naEQ268TAN5nns9KU0up151ZQoPGRr4=
