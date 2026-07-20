@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/happy-sdk/happy/addons/devel/pkg/changelog"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gomodule"
+	"github.com/happy-sdk/happy/lib/devel/changelog"
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
 )
 
-func changelogWith(entries, breaking []string) *changelog.Changelog {
-	cl := &changelog.Changelog{}
+func changelogWith(entries, breaking []string) *changelog.Release {
+	cl := changelog.NewRelease()
 	for _, e := range entries {
 		cl.Add("abc1234", "abc1234full", "author", e, changelog.EntryType{})
 	}

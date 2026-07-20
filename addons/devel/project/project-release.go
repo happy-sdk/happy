@@ -10,13 +10,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gomodule"
 	"github.com/happy-sdk/happy/addons/devel/pkg/views"
+	"github.com/happy-sdk/happy/lib/devel/changelog"
 	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -400,102 +400,31 @@ func (prj *Project) writeChangelogs(gomodules []*gomodule.Package) tr.Result {
 	return prj.writeRootChangelog(gomodules, rootPkg)
 }
 
+// writeRootChangelog composes every releasing package's changes into one
+// changelog.Document - one section per package, titled "<import>@<tag>" -
+// and writes it, rendered as Markdown, under the root package's own next
+// release tag. That's the tag the GitHub release for the whole repo is cut
+// against, so this is the one changelog that release's notes link to.
 func (prj *Project) writeRootChangelog(gomodules []*gomodule.Package, rootPkg *gomodule.Package) tr.Result {
-	cl := &fullChangelog{}
-
+	doc := changelog.NewDocument("Changelog")
 	for _, pkg := range gomodules {
-		if !pkg.NeedsRelease || (pkg.Changelog == nil) {
+		if !pkg.NeedsRelease || pkg.Changelog == nil {
 			continue
 		}
-
-		clp := &packageChangelog{pkg: pkg}
-
-		for _, breaking := range pkg.Changelog.Breaking() {
-			breaking := fmt.Sprintf("* %s %s", breaking.ShortHash, breaking.Subject)
-			clp.Breaking = append(clp.Breaking, breaking)
-		}
-
-		for _, entry := range pkg.Changelog.Entries() {
-			change := fmt.Sprintf("* %s %s", entry.ShortHash, entry.Subject)
-			clp.Changes = append(clp.Changes, change)
-		}
-
-		if pkg.Dir == prj.Dir().Path {
-			cl.Root = clp
-		} else {
-			cl.Subpkgs = append(cl.Subpkgs, clp)
-		}
+		doc.AddSection(fmt.Sprintf("%s@%s", pkg.Import, pkg.NextReleaseTag), pkg.Changelog)
 	}
 
-	cldata := new(strings.Builder)
-	cldata.WriteString("## Changelog\n")
-
-	if cl.Root != nil {
-		fmt.Fprintf(cldata, "`%s@%s`\n\n", cl.Root.pkg.Import, cl.Root.pkg.NextReleaseTag)
-		var breakingsection string
-		for _, breaking := range cl.Root.Breaking {
-			for _, scl := range cl.Subpkgs {
-				found := false
-				for _, bcl := range scl.Breaking {
-					if bcl == breaking {
-						found = true
-					}
-				}
-				if !found {
-					breakingsection += breaking + "\n"
-				}
-			}
-		}
-		if len(breakingsection) > 0 {
-			cldata.WriteString("### Breaking Changes\n")
-			cldata.WriteString(breakingsection)
-		}
-		var changessection string
-		for _, change := range cl.Root.Changes {
-			found := false
-			for _, scl := range cl.Subpkgs {
-				found = slices.Contains(scl.Changes, change)
-				if found {
-					break
-				}
-			}
-			if found {
-				continue
-			}
-			changessection += change + "\n"
-		}
-		if len(changessection) > 0 {
-			cldata.WriteString("### Changes\n")
-			cldata.WriteString(changessection)
-		}
-		cldata.WriteString("\n")
+	md, err := doc.Render(changelog.FormatMarkdown)
+	if err != nil {
+		return tr.Failure(err.Error())
 	}
 
-	for _, scl := range cl.Subpkgs {
-		fmt.Fprintf(cldata, "\n### %s\n\n`%s@%s`\n", scl.pkg.NextReleaseTag, scl.pkg.Import, path.Base(scl.pkg.NextReleaseTag))
-
-		for i, breaking := range scl.Breaking {
-			if i == 0 {
-				cldata.WriteString("**Breaking Changes**\n")
-			}
-			cldata.WriteString(breaking)
-		}
-		for i, change := range scl.Changes {
-			if i == 0 {
-				cldata.WriteString("**Changes**\n")
-			}
-			cldata.WriteString(change)
-			cldata.WriteRune('\n')
-		}
-	}
-
-	cldata.WriteString("\n")
 	versionDir := filepath.Join(prj.Dist(), rootPkg.NextReleaseTag)
 	if err := os.MkdirAll(versionDir, 0750); err != nil {
 		return tr.Failure(err.Error())
 	}
 	clFilePath := filepath.Join(versionDir, "CHANGELOG.md")
-	if err := os.WriteFile(clFilePath, []byte(cldata.String()), 0644); err != nil {
+	if err := os.WriteFile(clFilePath, md, 0644); err != nil {
 		return tr.Failure(err.Error())
 	}
 
@@ -504,11 +433,11 @@ func (prj *Project) writeRootChangelog(gomodules []*gomodule.Package, rootPkg *g
 
 // writePackageChangelogs is releaseChangelog's fallback for repos with no
 // root module: instead of one changelog attached to a whole-repo release,
-// each releasing package gets its own changelog under its own next release
-// tag (which, for a subpackage, already includes its own tag prefix, e.g.
-// "daemon/v1.2.3" - joining that directly under the build dir naturally
-// avoids collisions between differently-prefixed packages that happen to
-// land on the same version number).
+// each releasing package gets its own single-section changelog.Document
+// under its own next release tag (which, for a subpackage, already includes
+// its own tag prefix, e.g. "daemon/v1.2.3" - joining that directly under the
+// build dir naturally avoids collisions between differently-prefixed
+// packages that happen to land on the same version number).
 func (prj *Project) writePackageChangelogs(gomodules []*gomodule.Package) tr.Result {
 	var written []string
 
@@ -517,25 +446,12 @@ func (prj *Project) writePackageChangelogs(gomodules []*gomodule.Package) tr.Res
 			continue
 		}
 
-		cldata := new(strings.Builder)
-		fmt.Fprintf(cldata, "## Changelog\n\n`%s@%s`\n\n", pkg.Import, pkg.NextReleaseTag)
+		doc := changelog.NewDocument("Changelog").
+			AddSection(fmt.Sprintf("%s@%s", pkg.Import, pkg.NextReleaseTag), pkg.Changelog)
 
-		var breakingsection string
-		for _, breaking := range pkg.Changelog.Breaking() {
-			breakingsection += fmt.Sprintf("* %s %s\n", breaking.ShortHash, breaking.Subject)
-		}
-		if len(breakingsection) > 0 {
-			cldata.WriteString("### Breaking Changes\n")
-			cldata.WriteString(breakingsection)
-		}
-
-		var changessection string
-		for _, entry := range pkg.Changelog.Entries() {
-			changessection += fmt.Sprintf("* %s %s\n", entry.ShortHash, entry.Subject)
-		}
-		if len(changessection) > 0 {
-			cldata.WriteString("### Changes\n")
-			cldata.WriteString(changessection)
+		md, err := doc.Render(changelog.FormatMarkdown)
+		if err != nil {
+			return tr.Failure(err.Error())
 		}
 
 		versionDir := filepath.Join(prj.Dist(), pkg.NextReleaseTag)
@@ -543,7 +459,7 @@ func (prj *Project) writePackageChangelogs(gomodules []*gomodule.Package) tr.Res
 			return tr.Failure(err.Error())
 		}
 		clFilePath := filepath.Join(versionDir, "CHANGELOG.md")
-		if err := os.WriteFile(clFilePath, []byte(cldata.String()), 0644); err != nil {
+		if err := os.WriteFile(clFilePath, md, 0644); err != nil {
 			return tr.Failure(err.Error())
 		}
 		written = append(written, clFilePath)
@@ -553,15 +469,4 @@ func (prj *Project) writePackageChangelogs(gomodules []*gomodule.Package) tr.Res
 		return tr.Skip("no changelogs to write")
 	}
 	return tr.Success(fmt.Sprintf("%d package changelog(s) saved", len(written))).WithDesc(strings.Join(written, ", "))
-}
-
-type fullChangelog struct {
-	Root    *packageChangelog
-	Subpkgs []*packageChangelog
-}
-
-type packageChangelog struct {
-	pkg      *gomodule.Package
-	Breaking []string
-	Changes  []string
 }

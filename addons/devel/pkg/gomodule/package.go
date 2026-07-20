@@ -17,8 +17,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/happy-sdk/happy/addons/devel/pkg/changelog"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
+	"github.com/happy-sdk/happy/lib/devel/changelog"
 	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/cli"
@@ -41,7 +41,7 @@ type Package struct {
 	NextReleaseTag             string
 	NextReleaseTagRemoteExists bool
 	LastReleaseTag             string
-	Changelog                  *changelog.Changelog
+	Changelog                  *changelog.Release
 }
 
 func Load(sess *session.Context, root, path string) (pkg *Package, err error) {
@@ -237,7 +237,7 @@ func (p *Package) LoadReleaseInfo(sess *session.Context, rootPath, remoteName st
 		}
 
 		if p.NeedsRelease && p.Changelog == nil {
-			p.Changelog = &changelog.Changelog{}
+			p.Changelog = changelog.NewRelease()
 			p.Changelog.Add("", "", "", "initial release", changelog.EntryType{
 				Typ:  "feat",
 				Kind: changelog.EntryKindPatch,
@@ -519,7 +519,7 @@ func (p *Package) getChangelog(sess *session.Context, rootPath string) error {
 	if err != nil {
 		return err
 	}
-	changelog, err := changelog.ParseGitLog(sess, logout)
+	changelog, err := changelog.ParseGitLog(logout)
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/happy-sdk/happy/addons/devel/pkg/changelog"
 	"github.com/happy-sdk/happy/addons/devel/pkg/gitutils"
 	"github.com/happy-sdk/happy/pkg/settings"
 	"github.com/happy-sdk/happy/pkg/version"
@@ -25,7 +24,7 @@ type Config struct {
 	// "ignore" list in .happy.yaml.
 	Ignore settings.StringSlice `key:"ignore,save"`
 
-	Changelog    changelog.Config   `key:"changelog"`
+	Changelog    ChangelogConfig    `key:"changelog"`
 	Git          GitConfig          `key:"git"`
 	Linter       LinterConfig       `key:"linter"`
 	Releaser     ReleaserConfig     `key:"releaser"`
@@ -147,6 +146,17 @@ func (t *TestsConfig) Blueprint() (*settings.Blueprint, error) {
 		t.Enabled = true
 	}
 	return settings.New(t)
+}
+
+// ChangelogConfig toggles whether the releaser generates a changelog at
+// all. It's a project-level release-pipeline setting, not something the
+// reusable lib/devel/changelog package itself needs to know about.
+type ChangelogConfig struct {
+	Disabled settings.Bool `key:"disabled,save" default:"false"`
+}
+
+func (c *ChangelogConfig) Blueprint() (*settings.Blueprint, error) {
+	return settings.New(c)
 }
 
 type ReleaserConfig struct {
