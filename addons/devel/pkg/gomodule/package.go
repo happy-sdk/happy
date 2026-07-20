@@ -166,13 +166,20 @@ func (p *Package) SetDep(dep string, ver version.Version) error {
 // the root (e.g. bumping to 1.27 for new generic methods) rolls out to
 // every module in the monorepo on the next release, not just the ones
 // whose own code happened to change. Must be called after LoadReleaseInfo,
-// since it relies on LastReleaseTag being populated.
+// since it relies on LastReleaseTag and NextReleaseTag being populated.
 //
 // A Go version sync is treated the same as a breaking change release-wise:
 // it bumps bumpKind (advanced per bumpStrategy) rather than just a patch,
 // since raising the minimum required Go version is itself the kind of
 // significant, compatibility-affecting event bumpKind/bumpStrategy exist to
-// express.
+// express. That significant bump always wins over whatever ordinary
+// (non-breaking) minor/patch bump getChangelog may have already computed
+// from the package's own commits, since it's frequently the larger of the
+// two - e.g. a plain feat commit's ordinary +1 minor bump must not stand in
+// for a "jump straight to the next full hundred" Go version sync. The two
+// candidates are compared explicitly (not just "is anything already set")
+// so the actually-larger bump always wins, regardless of which one ran
+// first.
 func (p *Package) SyncGoVersion(rootGoVersion string, bumpKind BumpKind, bumpStrategy BumpStrategy) error {
 	if p.IsInternal || rootGoVersion == "" {
 		return nil
@@ -186,12 +193,19 @@ func (p *Package) SyncGoVersion(rootGoVersion string, bumpKind BumpKind, bumpStr
 	}
 	p.NeedsRelease = true
 
+	candidate, err := bumpSignificant(p.TagPrefix, p.LastReleaseTag, bumpKind, bumpStrategy)
+	if err != nil {
+		return fmt.Errorf("failed to bump version for(%s): %w", p.Import, err)
+	}
+
 	if p.NextReleaseTag == "" || p.LastReleaseTag == p.NextReleaseTag {
-		nextver, err := bumpSignificant(p.TagPrefix, p.LastReleaseTag, bumpKind, bumpStrategy)
-		if err != nil {
-			return fmt.Errorf("failed to bump version for(%s): %w", p.Import, err)
+		p.NextReleaseTag = candidate
+	} else {
+		candidateVersion := version.Version(path.Base(candidate))
+		pendingVersion := version.Version(path.Base(p.NextReleaseTag))
+		if candidateVersion.IsValid() && pendingVersion.IsValid() && version.Compare(candidateVersion, pendingVersion) == 1 {
+			p.NextReleaseTag = candidate
 		}
-		p.NextReleaseTag = nextver
 	}
 
 	p.Modfile.Cleanup()

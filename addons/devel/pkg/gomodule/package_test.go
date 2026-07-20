@@ -65,7 +65,7 @@ func TestPackage_SyncGoVersion(t *testing.T) {
 		}
 	})
 
-	t.Run("does not override an already-set next release tag", func(t *testing.T) {
+	t.Run("does not override an already-set next release tag that is already higher", func(t *testing.T) {
 		p := newTestPackage(t, "1.25.0", "pkg/mod/", "pkg/mod/v1.2.3", false)
 		p.NextReleaseTag = "pkg/mod/v2.0.0" // e.g. already bumped minor/major by changelog
 		if err := p.SyncGoVersion("1.26.4", BumpKindMajor, BumpStrategySingle); err != nil {
@@ -73,6 +73,24 @@ func TestPackage_SyncGoVersion(t *testing.T) {
 		}
 		if p.NextReleaseTag != "pkg/mod/v2.0.0" {
 			t.Errorf("expected existing next release tag to be preserved, got %s", p.NextReleaseTag)
+		}
+	})
+
+	// Regression: a package with ordinary (non-breaking) commits since its
+	// last tag gets an ordinary +1 minor bump from getChangelog before
+	// SyncGoVersion ever runs. SyncGoVersion used to only apply its own
+	// bump when NextReleaseTag was still unset/unchanged, so that smaller
+	// ordinary bump silently won even when the Go version sync's bump
+	// (e.g. a "hundred" jump) was actually larger. It must compare the two
+	// and take whichever is bigger.
+	t.Run("overrides an already-set next release tag that is lower", func(t *testing.T) {
+		p := newTestPackage(t, "1.25.0", "pkg/mod/", "pkg/mod/v1.55.3", false)
+		p.NextReleaseTag = "pkg/mod/v1.56.0" // e.g. ordinary minor bump from a feat commit
+		if err := p.SyncGoVersion("1.27.0", BumpKindMinor, BumpStrategyHundred); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if p.NextReleaseTag != "pkg/mod/v1.100.0" {
+			t.Errorf("expected the larger hundred-bump v1.100.0 to win, got %s", p.NextReleaseTag)
 		}
 	})
 
