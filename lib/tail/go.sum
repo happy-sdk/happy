@@ -1,8 +1,8 @@
 github.com/fsnotify/fsnotify v1.10.1 h1:b0/UzAf9yR5rhf3RPm9gf3ehBPpf0oZKIjtpKrx59Ho=
 github.com/fsnotify/fsnotify v1.10.1/go.mod h1:TLheqan6HD6GBK6PrDWyDPBaEV8LspOxvPSjC+bVfgo=
-github.com/happy-sdk/happy/pkg/bytesize v1.0.3 h1:LRU5Tc41JoHy6y0sbdj9gcBcah3BziLsIZJqtf85CIk=
-github.com/happy-sdk/happy/pkg/bytesize v1.0.3/go.mod h1:8ZEd00wlgPeKsQQrIMzTWNnqz1LIbAQA4SSs3bi+cPM=
-github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4 h1:Y399fmaEl6Dod6i9S2mG7tBd8aEyaLe1xNfoQjMPEt8=
-github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4/go.mod h1:oUfrdQ/nRMMKseZ9UV5XyKN48f2Qhs53WEMv/E6rlP8=
+github.com/happy-sdk/happy/pkg/bytesize v1.100.0 h1:UprXQFxtakIAHElEt/Hy/ryx2gWxtr2yg9kwxNWjdlc=
+github.com/happy-sdk/happy/pkg/bytesize v1.100.0/go.mod h1:OFyBVVBrOf3rF5joSTdT9Rl4m3tNzR4hzOcuO8Qpnk4=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0 h1:V0rIJf/gqYUdkYxjhggeCJypXK15K5hxyXUl+02CWwE=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0/go.mod h1:neqQCJrkhJjB/rWJLEtZAXu9aGp8DX7JsKQFN0xSAJI=
 golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=
 golang.org/x/sys v0.47.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
