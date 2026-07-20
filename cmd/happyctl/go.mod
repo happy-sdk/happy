@@ -1,21 +1,21 @@
 module github.com/happy-sdk/happy/cmd/happyctl
 
-go 1.26.4
+go 1.27rc2
 
 require (
-	github.com/happy-sdk/happy v1.7.3
-	github.com/happy-sdk/happy/pkg/branding v1.0.1
-	github.com/happy-sdk/happy/pkg/strings/textfmt v1.0.3
-	github.com/happy-sdk/happy/pkg/version v1.0.2
+	github.com/happy-sdk/happy v1.100.0
+	github.com/happy-sdk/happy/addons/devel v1.100.0
+	github.com/happy-sdk/happy/pkg/branding v1.100.0
+	github.com/happy-sdk/happy/pkg/strings/textfmt v1.100.0
+	github.com/happy-sdk/happy/pkg/version v1.100.0
 )
-
-require github.com/Microsoft/go-winio v0.6.2 // indirect
 
 require (
 	charm.land/bubbles/v2 v2.1.1 // indirect
 	charm.land/bubbletea/v2 v2.0.8 // indirect
 	charm.land/lipgloss/v2 v2.0.5 // indirect
 	codeberg.org/go-pdf/fpdf v0.12.0 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
@@ -33,25 +33,24 @@ require (
 	github.com/go-git/go-git/v6 v6.0.0-alpha.4 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/happy-sdk/happy/addons/devel v1.3.3
-	github.com/happy-sdk/happy/lib/changelog v1.0.0 // indirect
-	github.com/happy-sdk/happy/lib/scm/gitutils v0.1.2 // indirect
-	github.com/happy-sdk/happy/lib/taskrunner v1.0.2 // indirect
-	github.com/happy-sdk/happy/pkg/bitutils v1.0.3 // indirect
-	github.com/happy-sdk/happy/pkg/bytesize v1.0.3 // indirect
-	github.com/happy-sdk/happy/pkg/devel/goutils v1.0.2 // indirect
-	github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4 // indirect
-	github.com/happy-sdk/happy/pkg/fsutils v1.0.5 // indirect
-	github.com/happy-sdk/happy/pkg/i18n v1.1.5 // indirect
-	github.com/happy-sdk/happy/pkg/logging v1.0.4 // indirect
-	github.com/happy-sdk/happy/pkg/networking v1.0.1 // indirect
-	github.com/happy-sdk/happy/pkg/options v1.0.6 // indirect
-	github.com/happy-sdk/happy/pkg/scheduling/cron v1.0.4 // indirect
-	github.com/happy-sdk/happy/pkg/settings v1.1.9 // indirect
-	github.com/happy-sdk/happy/pkg/strings/bexp v1.7.4 // indirect
-	github.com/happy-sdk/happy/pkg/strings/slug v1.0.1 // indirect
-	github.com/happy-sdk/happy/pkg/tui v1.0.1 // indirect
-	github.com/happy-sdk/happy/pkg/vars v1.1.6 // indirect
+	github.com/happy-sdk/happy/lib/changelog v1.100.0 // indirect
+	github.com/happy-sdk/happy/lib/scm/gitutils v1.100.0 // indirect
+	github.com/happy-sdk/happy/lib/taskrunner v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/bitutils v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/bytesize v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/devel/goutils v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/fsutils v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/i18n v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/logging v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/networking v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/options v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/scheduling/cron v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/settings v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/strings/bexp v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/strings/slug v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/tui v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/vars v1.100.0 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
