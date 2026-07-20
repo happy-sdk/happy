@@ -23,8 +23,8 @@ github.com/go-git/go-git-fixtures/v6 v6.0.0-alpha.1 h1:gmqi2jvsreu0s8JMLylYDFq4s
 github.com/go-git/go-git-fixtures/v6 v6.0.0-alpha.1/go.mod h1:ECf1MqJlBdYpKggBrOXjo/0EnvRZx6D++I86UYjPgAQ=
 github.com/go-git/go-git/v6 v6.0.0-alpha.4 h1:aDTc2UGanmaE7FkGLSlBEB9nohMnQ+RKXcfq/D+esDQ=
 github.com/go-git/go-git/v6 v6.0.0-alpha.4/go.mod h1:4ODa/G7hPWrh4Y+7lmt59Ij3zW38IEfvRoAZxLYYBhc=
-github.com/happy-sdk/happy v1.7.2 h1:o21mpTeeZsn71rvGYf6Z+56bLAiYoWgPYFdMYxIIatY=
-github.com/happy-sdk/happy v1.7.2/go.mod h1:+zttAxTt55FJt2FS62uc37BrDWLeD0IUkqWfeBfT800=
+github.com/happy-sdk/happy v1.7.3 h1:+aO9llNbtPFt1z7/irCOR3GSwUlXhe9mDjIVQSbaqzk=
+github.com/happy-sdk/happy v1.7.3/go.mod h1:+zttAxTt55FJt2FS62uc37BrDWLeD0IUkqWfeBfT800=
 github.com/happy-sdk/happy/pkg/bitutils v1.0.3 h1:6bK5Nt9KtTotdlV4yHODbM8JlFCVldWdie6VPpyUMQw=
 github.com/happy-sdk/happy/pkg/bitutils v1.0.3/go.mod h1:RHPvN0lp1lMAofLV6kPMnVkwWssL4uqqfmBEX+JGG54=
 github.com/happy-sdk/happy/pkg/devel/testutils v1.3.4 h1:Y399fmaEl6Dod6i9S2mG7tBd8aEyaLe1xNfoQjMPEt8=

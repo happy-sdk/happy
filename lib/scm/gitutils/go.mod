@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/go-git/go-git/v6 v6.0.0-alpha.4
-	github.com/happy-sdk/happy v1.7.2
+	github.com/happy-sdk/happy v1.7.3
 	github.com/happy-sdk/happy/pkg/settings v1.1.9
 )
 
