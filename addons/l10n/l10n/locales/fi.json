@@ -1,0 +1,171 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.addons.l10n",
+  "locales": {
+    "fi": {
+      "notes": "The l10n addon's own l10n report/list/translate command help text and flag descriptions.",
+      "keys": {
+        "category": {
+          "$message": {
+            "msg": "Lokalisointi",
+            "description": {
+              "msg": "Kategorialappu, joka näytetään CLI-ohjetulosteessa ja ryhmittelee l10n-komennon samantyyppisten komentojen kanssa."
+            }
+          }
+        },
+        "description": {
+          "$message": {
+            "msg": "Hallitse sovelluksen käännöksiä",
+            "description": {
+              "msg": "L10n-komennon yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+            }
+          }
+        },
+        "info": {
+          "$message": {
+            "msg": "Tämä komento antaa sinun hallita ja kääntää sovelluksen merkkijonoja.",
+            "description": {
+              "msg": "Pidempi ohjeteksti, joka näytetään itse l10n-komennolle (esim. --help-kautta)."
+            }
+          }
+        },
+        "report": {
+          "description": {
+            "$message": {
+              "msg": "Näytä käännösstatuksen raportti",
+              "description": {
+                "msg": "Alikomennon l10n report yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+              }
+            }
+          },
+          "flag_threshold": {
+            "$message": {
+              "msg": "Poistu koodilla 1, jos jollakin kielellä on prosenttiosuus alle kynnysarvon",
+              "description": {
+                "msg": "Ohjeteksti report-alikomennon --threshold-lipulle."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Näytä raportti vain tietylle kielelle",
+              "description": {
+                "msg": "Ohjeteksti report-alikomennon --lang-lipulle."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Sisällytä riippuvuuksien käännökset raporttiin (oletuksena näytetään vain nykyisen projektin omat käännökset).",
+              "description": {
+                "msg": "Ohjeteksti report-alikomennon --with-deps-lipulle."
+              }
+            }
+          }
+        },
+        "list": {
+          "description": {
+            "$message": {
+              "msg": "Listaa kaikki käännösavaimet",
+              "description": {
+                "msg": "Alikomennon l10n list yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Näytä lista vain tietylle kielelle",
+              "description": {
+                "msg": "Ohjeteksti list-alikomennon --lang-lipulle."
+              }
+            }
+          },
+          "flag_missing": {
+            "$message": {
+              "msg": "Näytä vain avaimet, joilta puuttuu käännöksiä",
+              "description": {
+                "msg": "Ohjeteksti list-alikomennon --missing-lipulle."
+              }
+            }
+          },
+          "flag_json": {
+            "$message": {
+              "msg": "Tulosta JSON-vastaus taulukon sijaan",
+              "description": {
+                "msg": "Ohjeteksti list-alikomennon --json-lipulle."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Sisällytä riippuvuuksien käännökset luetteloon (oletuksena näytetään vain nykyisen projektin omat käännökset).",
+              "description": {
+                "msg": "Ohjeteksti list-alikomennon --with-deps-lipulle."
+              }
+            }
+          }
+        },
+        "translate": {
+          "description": {
+            "$message": {
+              "msg": "Käännä puuttuvat käännösavaimet",
+              "description": {
+                "msg": "Alikomennon l10n translate yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Käännä avaimet vain tietylle kielelle.",
+              "description": {
+                "msg": "Ohjeteksti translate-alikomennon --lang-lipulle."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Sisällytä riippuvuuksien käännösavaimet kysyttäessä puuttuvia käännöksiä (oletuksena kysytään vain nykyisen projektin omia avaimia).",
+              "description": {
+                "msg": "Ohjeteksti translate-alikomennon --with-deps-lipulle."
+              }
+            }
+          }
+        },
+        "generate": {
+          "description": {
+            "$message": {
+              "msg": "Luo tyypitetyt Go-käyttöfunktiot käännösavaimille",
+              "description": {
+                "msg": "l10n generate -alikomennon yksirivinen kuvaus CLI-ohjeluetteloissa."
+              }
+            }
+          },
+          "flag_bundle": {
+            "$message": {
+              "msg": "Luo käyttöfunktiot tietylle nipulle (oletuksena sovelluksen oman moduulin nippu).",
+              "description": {
+                "msg": "Ohjeteksti generate-alikomennon --bundle-lipulle."
+              }
+            }
+          },
+          "flag_out": {
+            "$message": {
+              "msg": "Kirjoita luotu Go-tiedosto tähän polkuun (oletuksena stdout).",
+              "description": {
+                "msg": "Ohjeteksti generate-alikomennon --out-lipulle."
+              }
+            }
+          },
+          "flag_package": {
+            "$message": {
+              "msg": "Luodun Go-tiedoston paketin nimi.",
+              "description": {
+                "msg": "Ohjeteksti generate-alikomennon --package-lipulle."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

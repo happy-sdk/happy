@@ -30,28 +30,28 @@ const (
 
 var (
 	// ErrFlag is returned when flag fails to initialize.
-	ErrFlag = i18n.NewError("ErrFlag", "flag error")
+	ErrFlag = i18n.NewError("flag", "flag error")
 	// ErrFlag is returned when flag fails to initialize.
-	ErrFlagExists = i18n.NewError("ErrFlagExists", "flag already exists")
+	ErrFlagExists = i18n.NewError("flag_exists", "flag already exists")
 	// ErrAliasShadow is returned when flag alias is shadowed.
-	ErrAliasShadow = i18n.NewError("ErrAliasShadow", "flag alias shadowed")
+	ErrAliasShadow = i18n.NewError("alias_shadow", "flag alias shadowed")
 	// ErrParse is used to indicate parse errors.
-	ErrParse = i18n.NewError("ErrParse", "flag parse error")
+	ErrParse = i18n.NewError("parse", "flag parse error")
 	// ErrMissingValue is used when flag value was not in parsed args.
-	ErrMissingValue = i18n.NewError("ErrMissingValue", "missing value for flag")
+	ErrMissingValue = i18n.NewError("missing_value", "missing value for flag")
 	// ErrInvalidValue is used when invalid value was provided.
-	ErrInvalidValue = i18n.NewError("ErrInvalidValue", "invalid value for flag")
+	ErrInvalidValue = i18n.NewError("invalid_value", "invalid value for flag")
 	// ErrFlagAlreadyParsed is returned when this flag was already parsed.
-	ErrFlagAlreadyParsed = i18n.NewError("ErrFlagAlreadyParsed", "flag is already parsed")
+	ErrFlagAlreadyParsed = i18n.NewError("flag_already_parsed", "flag is already parsed")
 	// ErrMissingRequired indicates that required flag was not in argument set.
-	ErrMissingRequired = i18n.NewError("ErrMissingRequired", "missing required flag")
+	ErrMissingRequired = i18n.NewError("missing_required", "missing required flag")
 	// ErrMissingOptions is returned when option flag parser does not find options.
-	ErrMissingOptions = i18n.NewError("ErrMissingOptions", "missing options")
+	ErrMissingOptions = i18n.NewError("missing_options", "missing options")
 	// ErrNoNamedFlag is returned when flag lookup can not find named flag.
-	ErrNoNamedFlag = i18n.NewError("ErrNoNamedFlag", "no such flag")
+	ErrNoNamedFlag = i18n.NewError("no_named_flag", "no such flag")
 
-	ErrInvalidArguments     = i18n.NewError("ErrInvalidArguments", "Invalid arguments")
-	ErrInvalidCommandOrArgs = i18n.NewError("ErrInvalidCommandOrArgs", "%s does not accept command or argument %s")
+	ErrInvalidArguments     = i18n.NewError("invalid_arguments", "Invalid arguments")
+	ErrInvalidCommandOrArgs = i18n.NewError("invalid_command_or_args", "%s does not accept command or argument %s")
 )
 
 type (

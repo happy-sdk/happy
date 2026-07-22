@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.vars.varflag",
+  "locales": {
+    "fi": {
+      "notes": "pkg/vars/varflag's own sentinel error messages.",
+      "keys": {
+        "invalid_arguments": {
+          "$message": {
+            "msg": "virheelliset argumentit",
+            "description": {
+              "msg": "Virheilmoitus yleisesti virheellisille CLI-argumenteille."
+            }
+          }
+        },
+        "invalid_command_or_args": {
+          "$message": {
+            "msg": "{name:s} ei hyväksy komentoa tai argumenttia {arg:s}",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun lippujoukolle annetaan komento tai argumentti, jota se ei hyväksy.",
+              "args": {
+                "name": {
+                  "description": "lippujoukon oma nimi."
+                },
+                "arg": {
+                  "description": "hylätty komento- tai argumenttiarvo."
+                }
+              }
+            }
+          }
+        },
+        "flag": {
+          "$message": {
+            "msg": "lippuvirhe",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun lipun alustus epäonnistuu."
+            }
+          }
+        },
+        "flag_exists": {
+          "$message": {
+            "msg": "lippu on jo olemassa",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun samanniminen lippu on jo olemassa."
+            }
+          }
+        },
+        "alias_shadow": {
+          "$message": {
+            "msg": "lippualias varjostettu",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun toisen lipun alias varjostaa lipun."
+            }
+          }
+        },
+        "parse": {
+          "$message": {
+            "msg": "lippujen jäsennysvirhe",
+            "description": {
+              "msg": "Virheilmoitus yleisille lippujen jäsennysvirheille."
+            }
+          }
+        },
+        "missing_value": {
+          "$message": {
+            "msg": "lippuarvon puuttuminen",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun lipun arvo puuttuu jäsennetyistä argumenteista."
+            }
+          }
+        },
+        "invalid_value": {
+          "$message": {
+            "msg": "virheellinen lippuarvo",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun lipulle annettiin virheellinen arvo."
+            }
+          }
+        },
+        "flag_already_parsed": {
+          "$message": {
+            "msg": "lippu on jo jäsennetty",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun lippu on jo jäsennetty."
+            }
+          }
+        },
+        "missing_required": {
+          "$message": {
+            "msg": "pakollinen lippu puuttuu",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun pakollinen lippu puuttuu argumenttijoukosta."
+            }
+          }
+        },
+        "missing_options": {
+          "$message": {
+            "msg": "vaihtoehdot puuttuvat",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun valintalipun jäsentäjä ei löydä yhtään valintaa."
+            }
+          }
+        },
+        "no_named_flag": {
+          "$message": {
+            "msg": "ei tällaista lippua",
+            "description": {
+              "msg": "Virheilmoitus, joka palautetaan, kun lipun haku ei löydä sen nimistä lippua."
+            }
+          }
+        }
+      }
+    }
+  }
+}

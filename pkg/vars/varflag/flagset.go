@@ -298,7 +298,7 @@ includessubset:
 			return fmt.Errorf("%w: %s does not accept flag %s", ErrInvalidArguments, s.name, sargs[0])
 		}
 
-		return errors.Join(ErrInvalidArguments, ErrInvalidCommandOrArgs.WithArgs(s.name, sargs[0]))
+		return errors.Join(ErrInvalidArguments, ErrInvalidCommandOrArgs.WithArgs("name", s.name, "arg", sargs[0]))
 	}
 
 	for _, arg := range sargs {

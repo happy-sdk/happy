@@ -1,0 +1,171 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.addons.l10n",
+  "locales": {
+    "de": {
+      "notes": "The l10n addon's own l10n report/list/translate command help text and flag descriptions.",
+      "keys": {
+        "category": {
+          "$message": {
+            "msg": "Lokalisierung",
+            "description": {
+              "msg": "Kategoriebezeichnung, die in der CLI-Hilfeausgabe angezeigt wird und den l10n-Befehl mit anderen Befehlen derselben Art gruppiert."
+            }
+          }
+        },
+        "description": {
+          "$message": {
+            "msg": "Anwendungsübersetzungen verwalten",
+            "description": {
+              "msg": "Einzeilige Beschreibung des l10n-Befehls, die in CLI-Hilfeauflistungen angezeigt wird."
+            }
+          }
+        },
+        "info": {
+          "$message": {
+            "msg": "Dieser Befehl ermöglicht es Ihnen, Anwendungszeichenfolgen zu verwalten und zu übersetzen.",
+            "description": {
+              "msg": "Längerer Hilfetext, der für den l10n-Befehl selbst angezeigt wird (z. B. über --help)."
+            }
+          }
+        },
+        "report": {
+          "description": {
+            "$message": {
+              "msg": "Übersetzungsstatusbericht anzeigen",
+              "description": {
+                "msg": "Einzeilige Beschreibung des Unterbefehls l10n report, die in CLI-Hilfeauflistungen angezeigt wird."
+              }
+            }
+          },
+          "flag_threshold": {
+            "$message": {
+              "msg": "Mit Code 1 beenden, wenn eine Sprache einen niedrigeren Prozentsatz als den Schwellenwert hat",
+              "description": {
+                "msg": "Hilfetext für das Flag --threshold des Unterbefehls report."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Bericht nur für eine bestimmte Sprache anzeigen",
+              "description": {
+                "msg": "Hilfetext für das Flag --lang des Unterbefehls report."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Abhängigkeitsübersetzungen in den Bericht einbeziehen (standardmäßig werden nur die eigenen Übersetzungen des aktuellen Projekts angezeigt).",
+              "description": {
+                "msg": "Hilfetext für das Flag --with-deps des Unterbefehls report."
+              }
+            }
+          }
+        },
+        "list": {
+          "description": {
+            "$message": {
+              "msg": "Alle Übersetzungsschlüssel auflisten",
+              "description": {
+                "msg": "Einzeilige Beschreibung des Unterbefehls l10n list, die in CLI-Hilfeauflistungen angezeigt wird."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Liste nur für eine bestimmte Sprache anzeigen",
+              "description": {
+                "msg": "Hilfetext für das Flag --lang des Unterbefehls list."
+              }
+            }
+          },
+          "flag_missing": {
+            "$message": {
+              "msg": "Nur Schlüssel mit fehlenden Übersetzungen anzeigen",
+              "description": {
+                "msg": "Hilfetext für das Flag --missing des Unterbefehls list."
+              }
+            }
+          },
+          "flag_json": {
+            "$message": {
+              "msg": "JSON-Antwort statt Tabelle ausgeben",
+              "description": {
+                "msg": "Hilfetext für das Flag --json des Unterbefehls list."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Abhängigkeitsübersetzungen in die Liste einbeziehen (standardmäßig werden nur die eigenen Übersetzungen des aktuellen Projekts angezeigt).",
+              "description": {
+                "msg": "Hilfetext für das Flag --with-deps des Unterbefehls list."
+              }
+            }
+          }
+        },
+        "translate": {
+          "description": {
+            "$message": {
+              "msg": "Fehlende Übersetzungsschlüssel übersetzen",
+              "description": {
+                "msg": "Einzeilige Beschreibung des Unterbefehls l10n translate, die in CLI-Hilfeauflistungen angezeigt wird."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Nur Schlüssel für eine bestimmte Sprache übersetzen.",
+              "description": {
+                "msg": "Hilfetext für das Flag --lang des Unterbefehls translate."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Abhängigkeits-Übersetzungsschlüssel einbeziehen, wenn nach fehlenden Übersetzungen gefragt wird (standardmäßig werden nur die eigenen Schlüssel des aktuellen Projekts abgefragt).",
+              "description": {
+                "msg": "Hilfetext für das Flag --with-deps des Unterbefehls translate."
+              }
+            }
+          }
+        },
+        "generate": {
+          "description": {
+            "$message": {
+              "msg": "Typisierte Go-Zugriffsfunktionen für Übersetzungsschlüssel generieren",
+              "description": {
+                "msg": "Einzeilige Beschreibung des Unterbefehls l10n generate in CLI-Hilfelisten."
+              }
+            }
+          },
+          "flag_bundle": {
+            "$message": {
+              "msg": "Zugriffsfunktionen für ein bestimmtes Bundle generieren (Standard: das Modul-Bundle der Anwendung).",
+              "description": {
+                "msg": "Hilfetext für das Flag --bundle des Unterbefehls generate."
+              }
+            }
+          },
+          "flag_out": {
+            "$message": {
+              "msg": "Die generierte Go-Datei in diesen Pfad schreiben (Standard: stdout).",
+              "description": {
+                "msg": "Hilfetext für das Flag --out des Unterbefehls generate."
+              }
+            }
+          },
+          "flag_package": {
+            "$message": {
+              "msg": "Paketname für die generierte Go-Datei.",
+              "description": {
+                "msg": "Hilfetext für das Flag --package des Unterbefehls generate."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

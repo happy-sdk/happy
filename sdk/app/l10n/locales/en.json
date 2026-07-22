@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.app",
+  "locales": {
+    "en": {
+      "notes": "sdk/app's own runtime log messages.",
+      "keys": {
+        "internal": {
+          "initializer": {
+            "initializing": {
+              "$message": {
+                "msg": "initializing",
+                "description": {
+                  "msg": "Debug log message emitted when the application initializer starts running."
+                }
+              }
+            },
+            "initialization_completed": {
+              "$message": {
+                "msg": "initialization completed",
+                "description": {
+                  "msg": "Debug log message emitted when application initialization has finished."
+                }
+              }
+            }
+          },
+          "application": {
+            "booting_application": {
+              "$message": {
+                "msg": "booting application",
+                "description": {
+                  "msg": "Debug log message emitted when the application begins booting."
+                }
+              }
+            },
+            "application_booted": {
+              "$message": {
+                "msg": "application booted",
+                "description": {
+                  "msg": "Debug log message emitted once the application has finished booting."
+                }
+              }
+            },
+            "starting_application": {
+              "$message": {
+                "msg": "starting application",
+                "description": {
+                  "msg": "Debug log message emitted when the application starts running."
+                }
+              }
+            },
+            "shutdown_complete": {
+              "$message": {
+                "msg": "shutdown complete",
+                "description": {
+                  "msg": "Debug log message emitted once the application has finished shutting down."
+                }
+              }
+            }
+          }
+        },
+        "preparing_runtime": {
+          "$message": {
+            "msg": "preparing runtime",
+            "description": {
+              "msg": "Debug log message emitted right before the application runtime is prepared."
+            }
+          }
+        }
+      }
+    }
+  }
+}

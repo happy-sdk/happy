@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.vars.varflag",
+  "locales": {
+    "nl": {
+      "notes": "pkg/vars/varflag's own sentinel error messages.",
+      "keys": {
+        "invalid_arguments": {
+          "$message": {
+            "msg": "ongeldige argumenten",
+            "description": {
+              "msg": "Foutmelding voor algemeen ongeldige CLI-argumenten."
+            }
+          }
+        },
+        "invalid_command_or_args": {
+          "$message": {
+            "msg": "{name:s} accepteert geen commando of argument {arg:s}",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer een vlagset een commando of argument krijgt dat het niet accepteert.",
+              "args": {
+                "name": {
+                  "description": "de eigen naam van de vlagset."
+                },
+                "arg": {
+                  "description": "het geweigerde commando- of argumenttoken."
+                }
+              }
+            }
+          }
+        },
+        "flag": {
+          "$message": {
+            "msg": "vlagfout",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer een vlag niet kan worden geïnitialiseerd."
+            }
+          }
+        },
+        "flag_exists": {
+          "$message": {
+            "msg": "vlag bestaat al",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer een vlag met dezelfde naam al bestaat."
+            }
+          }
+        },
+        "alias_shadow": {
+          "$message": {
+            "msg": "vlagalias overschaduwd",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer een vlagalias wordt overschaduwd door een andere vlag."
+            }
+          }
+        },
+        "parse": {
+          "$message": {
+            "msg": "vlagparsefout",
+            "description": {
+              "msg": "Foutmelding voor algemene vlagparsingfouten."
+            }
+          }
+        },
+        "missing_value": {
+          "$message": {
+            "msg": "vlagwaarde ontbreekt",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer de waarde van een vlag ontbreekt in de geparste argumenten."
+            }
+          }
+        },
+        "invalid_value": {
+          "$message": {
+            "msg": "ongeldige vlagwaarde",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer een ongeldige waarde voor een vlag is opgegeven."
+            }
+          }
+        },
+        "flag_already_parsed": {
+          "$message": {
+            "msg": "vlag is al geparsed",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer een vlag al is geparsed."
+            }
+          }
+        },
+        "missing_required": {
+          "$message": {
+            "msg": "vereiste vlag ontbreekt",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer een verplichte vlag ontbreekt in de argumentenset."
+            }
+          }
+        },
+        "missing_options": {
+          "$message": {
+            "msg": "opties ontbreken",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer de parser van een optievlag geen opties vindt."
+            }
+          }
+        },
+        "no_named_flag": {
+          "$message": {
+            "msg": "geen dergelijke vlag",
+            "description": {
+              "msg": "Foutmelding die wordt geretourneerd wanneer een vlagzoekactie geen vlag met die naam vindt."
+            }
+          }
+        }
+      }
+    }
+  }
+}

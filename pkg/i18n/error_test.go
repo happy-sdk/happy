@@ -5,6 +5,7 @@
 package i18n
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/happy-sdk/happy/pkg/devel/testutils"
@@ -434,6 +435,23 @@ func TestNewErrorWithLocale_Error(t *testing.T) {
 	testutils.Assert(t, errMsg != "", "expected non-empty error message")
 }
 
+// TestNewErrorWithLocale_RendersPinnedLocale is a regression test: e.tag was
+// previously stored on the LocalizedError but never consulted by Error(),
+// which always rendered via T (the process-wide current language) - so a
+// LocalizedError built with NewErrorWithLocale rendered no differently than
+// one built with plain NewError, defeating the entire point of pinning it
+// to a specific locale. Error() must render via TL(e.tag, ...) whenever tag
+// isn't language.Und, regardless of whatever SetLanguage last set.
+func TestNewErrorWithLocale_RendersPinnedLocale(t *testing.T) {
+	Initialize(language.English)
+	err := NewErrorWithLocale(language.French, "locale_pinned_test", "fallback")
+	_ = err.Translate(language.French, "message francais")
+	_ = err.Translate(language.English, "english message")
+
+	testutils.NoError(t, SetLanguage(language.English))
+	testutils.Equal(t, "message francais", err.Error())
+}
+
 func TestNewErrorDepth_Error(t *testing.T) {
 	Initialize(language.English)
 	err := NewErrorDepth(3, "DepthError", "Depth Fallback")
@@ -562,6 +580,107 @@ func TestLocalizedError_Error_NotInitialized_WithFallback_WithArgs(t *testing.T)
 		// May vary depending on initialization state
 		t.Logf("error message: %q (may vary)", errMsg)
 	}
+}
+
+// Tests for Extends/Unwrap/Is and the package's own sentinel errors.
+
+func TestLocalizedError_Extends(t *testing.T) {
+	Initialize(language.English)
+
+	base := errors.New("some base error")
+	err := NewError("ExtendsTest", "extended error").Extends(base)
+
+	testutils.Assert(t, errors.Is(err, base), "expected err to satisfy errors.Is(err, base)")
+	testutils.Equal(t, base, err.Unwrap())
+}
+
+func TestLocalizedError_Extends_DoesNotMutateReceiver(t *testing.T) {
+	Initialize(language.English)
+
+	base := errors.New("some base error")
+	orig := NewError("ExtendsNoMutate", "original")
+	extended := orig.Extends(base)
+
+	testutils.Assert(t, orig != extended, "expected Extends to return a copy, not the receiver")
+	testutils.Assert(t, orig.Unwrap() == nil, "expected original error to remain unwrapped")
+	testutils.Assert(t, errors.Is(extended, base), "expected copy to satisfy errors.Is(extended, base)")
+}
+
+func TestLocalizedError_Is_SameKeyDifferentArgs(t *testing.T) {
+	Initialize(language.English)
+
+	sentinel := NewError("IsSameKeyTest", "template: %s")
+	copyA := sentinel.WithArgs("a")
+	copyB := sentinel.WithArgs("b")
+
+	testutils.Assert(t, errors.Is(copyA, sentinel), "expected copyA to satisfy errors.Is against its originating sentinel")
+	testutils.Assert(t, errors.Is(copyB, sentinel), "expected copyB to satisfy errors.Is against its originating sentinel")
+	testutils.Assert(t, errors.Is(copyA, copyB), "expected two copies of the same sentinel to satisfy errors.Is against each other")
+}
+
+func TestLocalizedError_Is_DifferentKeyDoesNotMatch(t *testing.T) {
+	Initialize(language.English)
+
+	a := NewError("IsDifferentKeyA", "a")
+	b := NewError("IsDifferentKeyB", "b")
+
+	testutils.Assert(t, !errors.Is(a, b), "expected errors with different keys not to satisfy errors.Is")
+}
+
+func TestLocalizedError_Is_NonLocalizedErrorTarget(t *testing.T) {
+	Initialize(language.English)
+
+	err := NewError("IsNonLocalizedTarget", "msg")
+	plain := errors.New("plain error")
+
+	testutils.Assert(t, !errors.Is(err, plain), "expected LocalizedError not to match a plain error via Is")
+}
+
+func TestLocalizedError_WithArgs_DoesNotMutateSharedSentinel(t *testing.T) {
+	Initialize(language.English)
+
+	sentinel := NewError("WithArgsNoMutate", "template: %s")
+	_ = sentinel.WithArgs("mutated")
+
+	testutils.Assert(t, len(sentinel.args) == 0, "expected WithArgs to leave the original sentinel's args untouched")
+}
+
+func TestLocalizedError_WithCode_DoesNotMutateSharedSentinel(t *testing.T) {
+	Initialize(language.English)
+
+	sentinel := NewError("WithCodeNoMutate", "msg")
+	_ = sentinel.WithCode(500)
+
+	testutils.Equal(t, 0, sentinel.code)
+}
+
+func TestPackageErrors_ExtendError(t *testing.T) {
+	Initialize(language.English)
+
+	testutils.Assert(t, errors.Is(ErrDisabled, Error), "expected ErrDisabled to satisfy errors.Is(err, Error)")
+	testutils.Assert(t, errors.Is(ErrLanguageNotSupported.WithArgs("lang", "ja"), Error), "expected ErrLanguageNotSupported to satisfy errors.Is(err, Error) even after WithArgs")
+	testutils.Assert(t, errors.Is(ErrUnsupportedType.WithArgs("type", 1, "key", "key", "lang", "en"), Error), "expected ErrUnsupportedType to satisfy errors.Is(err, Error) even after WithArgs")
+	testutils.Assert(t, errors.Is(ErrReadDir.WithArgs("dir", "dir", "cause", "cause"), Error), "expected ErrReadDir to satisfy errors.Is(err, Error) even after WithArgs")
+}
+
+func TestPackageErrors_DistinctSentinelsDoNotCrossMatch(t *testing.T) {
+	Initialize(language.English)
+
+	langErr := ErrLanguageNotSupported.WithArgs("lang", "ja")
+	testutils.Assert(t, errors.Is(langErr, ErrLanguageNotSupported), "expected langErr to still satisfy errors.Is against its own sentinel")
+	testutils.Assert(t, !errors.Is(langErr, ErrDisabled), "expected langErr not to satisfy errors.Is against an unrelated sentinel")
+	testutils.Assert(t, !errors.Is(langErr, ErrUnsupportedType), "expected langErr not to satisfy errors.Is against an unrelated sentinel")
+}
+
+func TestErrDisabled_IsLocalized(t *testing.T) {
+	Initialize(language.English)
+	testutils.Equal(t, "i18n is disabled", ErrDisabled.Error())
+}
+
+func TestErrLanguageNotSupported_FormatsArgs(t *testing.T) {
+	Initialize(language.English)
+	err := ErrLanguageNotSupported.WithArgs("lang", "ja")
+	testutils.Equal(t, "language ja is not supported", err.Error())
 }
 
 func TestLocalizedError_Error_Initialized_ResultNotKey_CodeZero(t *testing.T) {

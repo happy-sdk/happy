@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.i18n",
+  "locales": {
+    "de": {
+      "notes": "Core i18n package's own bundled runtime strings: language display names and this package's own sentinel error messages.",
+      "keys": {
+        "name": {
+          "$message": {
+            "msg": "Deutsch",
+            "description": {
+              "msg": "Der Eigenname dieser Sprache, in ihr selbst geschrieben (nicht in eine andere Sprache übersetzt)."
+            }
+          }
+        },
+        "set_default": {
+          "$message": {
+            "msg": "Sprache auf {lang:s} gesetzt",
+            "description": {
+              "msg": "Debug-Log-Meldung, die ausgegeben wird, wenn die aktuelle Sprache zur Laufzeit geändert wird.",
+              "args": {
+                "lang": {
+                  "description": "das gesetzte BCP-47-Sprach-Tag (z. B. \"de\", \"en\")."
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "disabled": {
+            "$message": {
+              "msg": "i18n ist deaktiviert",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrDisabled, die zurückgegeben wird, damit Aufrufer sie mit errors.Is prüfen können, wenn ein Build oder Profil den i18n-Manager absichtlich nie initialisiert."
+              }
+            }
+          },
+          "language_not_supported": {
+            "$message": {
+              "msg": "Sprache {lang:s} wird nicht unterstützt",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrLanguageNotSupported, die zurückgegeben wird, wenn eine angeforderte Sprache über keinen RegisterTranslation-Aufruf als unterstützt registriert wurde.",
+                "args": {
+                  "lang": {
+                    "description": "das angeforderte, nicht unterstützte BCP-47-Sprach-Tag."
+                  }
+                }
+              }
+            }
+          },
+          "unsupported_type": {
+            "$message": {
+              "msg": "nicht unterstützter Übersetzungswerttyp {type:T} für Schlüssel {key:s} in Sprache {lang:s}",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrUnsupportedType, die zurückgegeben wird, wenn ein an RegisterTranslation/RegisterTranslations übergebener Übersetzungswert weder ein string, catalog.Message, []catalog.Message noch eine Message/verschachtelte Map davon ist.",
+                "args": {
+                  "type": {
+                    "description": "der Go-Typ des nicht unterstützten Werts."
+                  },
+                  "key": {
+                    "description": "der vollständige Übersetzungsschlüssel, unter dem der Wert registriert wurde."
+                  },
+                  "lang": {
+                    "description": "das BCP-47-Sprach-Tag, für das der Wert registriert wurde."
+                  }
+                }
+              }
+            }
+          },
+          "read_dir": {
+            "$message": {
+              "msg": "Übersetzungsverzeichnis {dir:s} konnte nicht gelesen werden: {cause:s}",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrReadDir, die zurückgegeben wird, wenn das Stammverzeichnis eines Übersetzungs-*FS oder ein Sprachunterverzeichnis darin nicht gelesen werden kann.",
+                "args": {
+                  "dir": {
+                    "description": "der Verzeichnispfad, der nicht gelesen werden konnte."
+                  },
+                  "cause": {
+                    "description": "die Meldung des zugrunde liegenden Dateisystemfehlers."
+                  }
+                }
+              }
+            }
+          },
+          "unexpected_directory": {
+            "$message": {
+              "msg": "Übersetzungsdatei erwartet, aber Verzeichnis {name:q} in Sprache {lang:s} gefunden",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrUnexpectedDirectory, die zurückgegeben wird, wenn ein Übersetzungs-*FS an der erwarteten Stelle einer Übersetzungsdatei ein Verzeichnis findet.",
+                "args": {
+                  "name": {
+                    "description": "der Name des unerwarteten Verzeichnisses."
+                  },
+                  "lang": {
+                    "description": "das BCP-47-Sprach-Tag des geladenen Verzeichnisses."
+                  }
+                }
+              }
+            }
+          },
+          "read_file": {
+            "$message": {
+              "msg": "Übersetzungsdatei {file:s} konnte nicht gelesen werden: {cause:s}",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrReadFile, die zurückgegeben wird, wenn eine Übersetzungsdatei innerhalb eines Übersetzungs-*FS nicht gelesen werden kann.",
+                "args": {
+                  "file": {
+                    "description": "der Name der Übersetzungsdatei."
+                  },
+                  "cause": {
+                    "description": "die Meldung des zugrunde liegenden Dateisystemfehlers."
+                  }
+                }
+              }
+            }
+          },
+          "parse_file": {
+            "$message": {
+              "msg": "Übersetzungsdatei {file:s} konnte nicht verarbeitet werden: {cause:s}",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrParseFile, die zurückgegeben wird, wenn der Inhalt einer Übersetzungsdatei kein gültiges JSON ist.",
+                "args": {
+                  "file": {
+                    "description": "der Name der Übersetzungsdatei."
+                  },
+                  "cause": {
+                    "description": "die Meldung des zugrunde liegenden JSON-Parsing-Fehlers."
+                  }
+                }
+              }
+            }
+          },
+          "parse_language_tag": {
+            "$message": {
+              "msg": "Sprachkennung konnte nicht aus {source:q} verarbeitet werden: {cause:s}",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrParseLanguageTag, die zurückgegeben wird, wenn ein Übersetzungs-*FS kein BCP-47-Sprach-Tag aus einem Datei- oder Verzeichnisnamen parsen kann.",
+                "args": {
+                  "source": {
+                    "description": "der Datei- oder Verzeichnisname, aus dem das Sprach-Tag geparst wurde."
+                  },
+                  "cause": {
+                    "description": "die Meldung des zugrunde liegenden Parsing-Fehlers."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_message": {
+            "$message": {
+              "msg": "ungültige Übersetzungsnachricht {name:s}: {reason:s}",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrInvalidMessage, die zurückgegeben wird, wenn ein JSON-$message-Objekt fehlerhaft ist (z. B. wenn einem Fragment die erforderliche \"other\"-Form fehlt).",
+                "args": {
+                  "name": {
+                    "description": "der ungültige Fragment- oder Feldname."
+                  },
+                  "reason": {
+                    "description": "eine verständliche Erklärung, was falsch ist."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_schema_version": {
+            "$message": {
+              "msg": "nicht unterstützte oder ungültige Übersetzungsschema-Version für Sprache {lang:s}: {cause:s}",
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrInvalidSchemaVersion, die zurückgegeben wird, wenn der reservierte Schlüssel \"$version\" einer Übersetzungsdatei nicht aufgelöst werden kann: er benennt eine Schema-Version, die neuer ist als von dieser pkg/i18n-Version unterstützt, ist keine erkennbare Ganzzahl, oder eine Migration zur aktuellen Version ist fehlgeschlagen.",
+                "args": {
+                  "lang": {
+                    "description": "das BCP-47-Sprach-Tag, für das die Übersetzungsdatei registriert wurde."
+                  },
+                  "cause": {
+                    "description": "die Meldung des zugrunde liegenden Schema-Fehlers."
+                  }
+                }
+              }
+            }
+          },
+          "unknown_locale_key": {
+            "$message": {
+              "msg": "{has_suggestion_f}",
+              "fragments": {
+                "has_suggestion_f": {
+                  "kind": "select",
+                  "arg": "has_suggestion",
+                  "yes": "Bundle {bundle:s}: Gebietsschema {lang:s} enthält den Schlüssel {key:s}, der im Quell-Gebietsschema {source:s} nicht existiert (meinten Sie {suggestion:s}?)",
+                  "other": "Bundle {bundle:s}: Gebietsschema {lang:s} enthält den Schlüssel {key:s}, der im Quell-Gebietsschema {source:s} nicht existiert"
+                }
+              },
+              "description": {
+                "msg": "Fehlermeldung für i18n.ErrUnknownLocaleKey, die zurückgegeben wird, wenn ein Nicht-Quell-Gebietsschema einen Schlüssel registriert, der im deklarierten Quell-Gebietsschema seines Bundles nirgends existiert - meist ein Tippfehler im Schlüsselnamen selbst oder ein veralteter Schlüssel, der nach einer Änderung der Quelle zurückgeblieben ist.",
+                "args": {
+                  "bundle": {
+                    "description": "das Bundle (der Wurzelschlüssel), unter dem der Schlüssel registriert wurde."
+                  },
+                  "lang": {
+                    "description": "das BCP-47-Sprach-Tag des Gebietsschemas mit dem unbekannten Schlüssel."
+                  },
+                  "key": {
+                    "description": "der unbekannte Schlüssel, relativ zu seinem Bundle."
+                  },
+                  "source": {
+                    "description": "das BCP-47-Sprach-Tag des deklarierten Quell-Gebietsschemas des Bundles."
+                  },
+                  "suggestion": {
+                    "description": "der ähnlichste passende Schlüssel im Quell-Gebietsschema, falls vorhanden."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

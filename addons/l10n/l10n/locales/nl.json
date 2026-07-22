@@ -1,0 +1,171 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.addons.l10n",
+  "locales": {
+    "nl": {
+      "notes": "The l10n addon's own l10n report/list/translate command help text and flag descriptions.",
+      "keys": {
+        "category": {
+          "$message": {
+            "msg": "Lokalisatie",
+            "description": {
+              "msg": "Categorielabel dat wordt getoond in de CLI-help-uitvoer en het l10n-commando groepeert met andere commando's van hetzelfde type."
+            }
+          }
+        },
+        "description": {
+          "$message": {
+            "msg": "Beheer applicatievertalingen",
+            "description": {
+              "msg": "Eenregelige beschrijving van het l10n-commando, getoond in CLI-helplijsten."
+            }
+          }
+        },
+        "info": {
+          "$message": {
+            "msg": "Met dit commando kunt u applicatiestrings beheren en vertalen.",
+            "description": {
+              "msg": "Langere helptekst die wordt getoond voor het l10n-commando zelf (bijv. via --help)."
+            }
+          }
+        },
+        "report": {
+          "description": {
+            "$message": {
+              "msg": "Vertalingsstatusrapport weergeven",
+              "description": {
+                "msg": "Eenregelige beschrijving van het l10n report subcommando, getoond in CLI-helplijsten."
+              }
+            }
+          },
+          "flag_threshold": {
+            "$message": {
+              "msg": "Afsluiten met code 1 als een taal een lager percentage dan de drempel heeft",
+              "description": {
+                "msg": "Helptekst voor de --threshold-vlag van het report-subcommando."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Rapport alleen voor een specifieke taal weergeven",
+              "description": {
+                "msg": "Helptekst voor de --lang-vlag van het report-subcommando."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Vertalingen van afhankelijkheden opnemen in het rapport (standaard worden alleen de eigen vertalingen van het huidige project getoond).",
+              "description": {
+                "msg": "Helptekst voor de --with-deps-vlag van het report-subcommando."
+              }
+            }
+          }
+        },
+        "list": {
+          "description": {
+            "$message": {
+              "msg": "Alle vertaalsleutels weergeven",
+              "description": {
+                "msg": "Eenregelige beschrijving van het l10n list subcommando, getoond in CLI-helplijsten."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Lijst alleen voor een specifieke taal weergeven",
+              "description": {
+                "msg": "Helptekst voor de --lang-vlag van het list-subcommando."
+              }
+            }
+          },
+          "flag_missing": {
+            "$message": {
+              "msg": "Alleen sleutels met ontbrekende vertalingen weergeven",
+              "description": {
+                "msg": "Helptekst voor de --missing-vlag van het list-subcommando."
+              }
+            }
+          },
+          "flag_json": {
+            "$message": {
+              "msg": "JSON-antwoord uitvoeren in plaats van tabel",
+              "description": {
+                "msg": "Helptekst voor de --json-vlag van het list-subcommando."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Vertalingen van afhankelijkheden opnemen in de lijst (standaard worden alleen de eigen vertalingen van het huidige project getoond).",
+              "description": {
+                "msg": "Helptekst voor de --with-deps-vlag van het list-subcommando."
+              }
+            }
+          }
+        },
+        "translate": {
+          "description": {
+            "$message": {
+              "msg": "Ontbrekende vertaalsleutels vertalen",
+              "description": {
+                "msg": "Eenregelige beschrijving van het l10n translate subcommando, getoond in CLI-helplijsten."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Vertaal sleutels alleen voor een specifieke taal.",
+              "description": {
+                "msg": "Helptekst voor de --lang-vlag van het translate-subcommando."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Vertaalsleutels van afhankelijkheden opnemen bij het vragen om ontbrekende vertalingen (standaard wordt alleen om de eigen sleutels van het huidige project gevraagd).",
+              "description": {
+                "msg": "Helptekst voor de --with-deps-vlag van het translate-subcommando."
+              }
+            }
+          }
+        },
+        "generate": {
+          "description": {
+            "$message": {
+              "msg": "Genereer getypte Go-accessors voor vertaalsleutels",
+              "description": {
+                "msg": "Beschrijving van één regel van de subopdracht l10n generate in CLI-hulplijsten."
+              }
+            }
+          },
+          "flag_bundle": {
+            "$message": {
+              "msg": "Genereer accessors voor een specifieke bundel (standaard de modulebundel van de applicatie zelf).",
+              "description": {
+                "msg": "Helptekst voor de --bundle-vlag van de subopdracht generate."
+              }
+            }
+          },
+          "flag_out": {
+            "$message": {
+              "msg": "Schrijf het gegenereerde Go-bestand naar dit pad (standaard stdout).",
+              "description": {
+                "msg": "Helptekst voor de --out-vlag van de subopdracht generate."
+              }
+            }
+          },
+          "flag_package": {
+            "$message": {
+              "msg": "Pakketnaam voor het gegenereerde Go-bestand.",
+              "description": {
+                "msg": "Helptekst voor de --package-vlag van de subopdracht generate."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

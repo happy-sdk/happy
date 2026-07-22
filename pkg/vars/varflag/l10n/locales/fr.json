@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.vars.varflag",
+  "locales": {
+    "fr": {
+      "notes": "pkg/vars/varflag's own sentinel error messages.",
+      "keys": {
+        "invalid_arguments": {
+          "$message": {
+            "msg": "arguments invalides",
+            "description": {
+              "msg": "Message d'erreur pour des arguments CLI invalides en général."
+            }
+          }
+        },
+        "invalid_command_or_args": {
+          "$message": {
+            "msg": "{name:s} n'accepte ni la commande ni l'argument {arg:s}",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsqu'un ensemble de drapeaux reçoit une commande ou un argument qu'il n'accepte pas.",
+              "args": {
+                "name": {
+                  "description": "le nom propre de l'ensemble de drapeaux."
+                },
+                "arg": {
+                  "description": "le jeton de commande ou d'argument refusé."
+                }
+              }
+            }
+          }
+        },
+        "flag": {
+          "$message": {
+            "msg": "erreur de drapeau",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsqu'un drapeau ne parvient pas à s'initialiser."
+            }
+          }
+        },
+        "flag_exists": {
+          "$message": {
+            "msg": "le drapeau existe déjà",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsqu'un drapeau du même nom existe déjà."
+            }
+          }
+        },
+        "alias_shadow": {
+          "$message": {
+            "msg": "alias de drapeau ombragé",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsqu'un alias de drapeau est masqué par un autre drapeau."
+            }
+          }
+        },
+        "parse": {
+          "$message": {
+            "msg": "erreur d'analyse de drapeau",
+            "description": {
+              "msg": "Message d'erreur pour les échecs généraux d'analyse des drapeaux."
+            }
+          }
+        },
+        "missing_value": {
+          "$message": {
+            "msg": "valeur de drapeau manquante",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsque la valeur d'un drapeau est absente des arguments analysés."
+            }
+          }
+        },
+        "invalid_value": {
+          "$message": {
+            "msg": "valeur de drapeau invalide",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsqu'une valeur invalide a été fournie pour un drapeau."
+            }
+          }
+        },
+        "flag_already_parsed": {
+          "$message": {
+            "msg": "le drapeau a déjà été analysé",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsqu'un drapeau a déjà été analysé."
+            }
+          }
+        },
+        "missing_required": {
+          "$message": {
+            "msg": "drapeau requis manquant",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsqu'un drapeau requis est absent de l'ensemble d'arguments."
+            }
+          }
+        },
+        "missing_options": {
+          "$message": {
+            "msg": "options manquantes",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsque l'analyseur d'un drapeau d'options ne trouve aucune option."
+            }
+          }
+        },
+        "no_named_flag": {
+          "$message": {
+            "msg": "aucun drapeau de ce nom",
+            "description": {
+              "msg": "Message d'erreur renvoyé lorsque la recherche d'un drapeau ne trouve aucun drapeau portant ce nom."
+            }
+          }
+        }
+      }
+    }
+  }
+}

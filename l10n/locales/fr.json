@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "bundle": "app",
+  "locales": {
+    "fr": {
+      "notes": "Default fallback strings for the embedding application itself (e.g. its default description), used when the application doesn't override them with its own.",
+      "keys": {
+        "description": {
+          "$message": {
+            "msg": "Cette application est construite avec le Happy-SDK pour fournir des fonctionnalités et des caractéristiques améliorées.",
+            "description": {
+              "msg": "Description par défaut de l'application affichée dans la sortie d'aide et le texte « à propos », sauf si elle est remplacée par les propres paramètres de l'application intégrante."
+            }
+          }
+        }
+      }
+    }
+  }
+}

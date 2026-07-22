@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.i18n",
+  "locales": {
+    "nl": {
+      "notes": "Core i18n package's own bundled runtime strings: language display names and this package's own sentinel error messages.",
+      "keys": {
+        "name": {
+          "$message": {
+            "msg": "Nederlands",
+            "description": {
+              "msg": "De eigen naam van deze taal, geschreven in de taal zelf (niet vertaald naar een andere taal)."
+            }
+          }
+        },
+        "set_default": {
+          "$message": {
+            "msg": "taal ingesteld op {lang:s}",
+            "description": {
+              "msg": "Debug-logbericht dat wordt uitgegeven wanneer de huidige taal tijdens runtime wordt gewijzigd.",
+              "args": {
+                "lang": {
+                  "description": "de BCP 47-taaltag die is ingesteld (bijv. \"de\", \"en\")."
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "disabled": {
+            "$message": {
+              "msg": "i18n is uitgeschakeld",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrDisabled, geretourneerd zodat aanroepers deze kunnen testen met errors.Is wanneer een build of profiel de i18n-manager doelbewust nooit initialiseert."
+              }
+            }
+          },
+          "language_not_supported": {
+            "$message": {
+              "msg": "taal {lang:s} wordt niet ondersteund",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrLanguageNotSupported, geretourneerd wanneer een gevraagde taal via geen enkele RegisterTranslation-aanroep als ondersteund is geregistreerd.",
+                "args": {
+                  "lang": {
+                    "description": "de gevraagde, niet-ondersteunde BCP 47-taaltag."
+                  }
+                }
+              }
+            }
+          },
+          "unsupported_type": {
+            "$message": {
+              "msg": "niet-ondersteund vertaalwaardetype {type:T} voor sleutel {key:s} in taal {lang:s}",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrUnsupportedType, geretourneerd wanneer een aan RegisterTranslation/RegisterTranslations doorgegeven vertaalwaarde geen string, catalog.Message, []catalog.Message, of een Message/geneste map daarvan is.",
+                "args": {
+                  "type": {
+                    "description": "het Go-type van de niet-ondersteunde waarde."
+                  },
+                  "key": {
+                    "description": "de volledige vertaalsleutel waaronder de waarde is geregistreerd."
+                  },
+                  "lang": {
+                    "description": "de BCP 47-taaltag waarvoor de waarde is geregistreerd."
+                  }
+                }
+              }
+            }
+          },
+          "read_dir": {
+            "$message": {
+              "msg": "kon vertaalmap {dir:s} niet lezen: {cause:s}",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrReadDir, geretourneerd wanneer de root van een vertalings-*FS of een taalsubmap daarin niet kan worden gelezen.",
+                "args": {
+                  "dir": {
+                    "description": "het mappad dat niet kon worden gelezen."
+                  },
+                  "cause": {
+                    "description": "het bericht van de onderliggende bestandssysteemfout."
+                  }
+                }
+              }
+            }
+          },
+          "unexpected_directory": {
+            "$message": {
+              "msg": "vertaalbestand verwacht, map {name:q} gevonden in taal {lang:s}",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrUnexpectedDirectory, geretourneerd wanneer een vertalings-*FS een map aantreft waar een vertaalbestand werd verwacht.",
+                "args": {
+                  "name": {
+                    "description": "de naam van de onverwachte map."
+                  },
+                  "lang": {
+                    "description": "de BCP 47-taaltag van de map die wordt geladen."
+                  }
+                }
+              }
+            }
+          },
+          "read_file": {
+            "$message": {
+              "msg": "kon vertaalbestand {file:s} niet lezen: {cause:s}",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrReadFile, geretourneerd wanneer een vertaalbestand binnen een vertalings-*FS niet kan worden gelezen.",
+                "args": {
+                  "file": {
+                    "description": "de naam van het vertaalbestand."
+                  },
+                  "cause": {
+                    "description": "het bericht van de onderliggende bestandssysteemfout."
+                  }
+                }
+              }
+            }
+          },
+          "parse_file": {
+            "$message": {
+              "msg": "kon vertaalbestand {file:s} niet verwerken: {cause:s}",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrParseFile, geretourneerd wanneer de inhoud van een vertaalbestand geen geldige JSON is.",
+                "args": {
+                  "file": {
+                    "description": "de naam van het vertaalbestand."
+                  },
+                  "cause": {
+                    "description": "het bericht van de onderliggende JSON-parseerfout."
+                  }
+                }
+              }
+            }
+          },
+          "parse_language_tag": {
+            "$message": {
+              "msg": "kon taaltag niet verwerken uit {source:q}: {cause:s}",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrParseLanguageTag, geretourneerd wanneer een vertalings-*FS geen BCP 47-taaltag kan parseren uit een bestands- of mapnaam.",
+                "args": {
+                  "source": {
+                    "description": "de bestands- of mapnaam waaruit de taaltag is geparseerd."
+                  },
+                  "cause": {
+                    "description": "het bericht van de onderliggende parseerfout."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_message": {
+            "$message": {
+              "msg": "ongeldig vertaalbericht {name:s}: {reason:s}",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrInvalidMessage, geretourneerd wanneer een JSON-$message-object onjuist is opgebouwd (bijv. een fragment waarbij de vereiste \"other\"-vorm ontbreekt).",
+                "args": {
+                  "name": {
+                    "description": "de ongeldige fragment- of veldnaam."
+                  },
+                  "reason": {
+                    "description": "een leesbare uitleg van wat er mis is."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_schema_version": {
+            "$message": {
+              "msg": "niet-ondersteunde of ongeldige vertaalschema-versie voor taal {lang:s}: {cause:s}",
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrInvalidSchemaVersion, geretourneerd wanneer de gereserveerde sleutel \"$version\" van een vertaalbestand niet kan worden opgelost: deze noemt een schemaversie die nieuwer is dan deze versie van pkg/i18n ondersteunt, is geen herkenbaar geheel getal, of een migratie naar de huidige versie is mislukt.",
+                "args": {
+                  "lang": {
+                    "description": "de BCP 47-taaltag waarvoor het vertaalbestand werd geregistreerd."
+                  },
+                  "cause": {
+                    "description": "het bericht van de onderliggende schemafout."
+                  }
+                }
+              }
+            }
+          },
+          "unknown_locale_key": {
+            "$message": {
+              "msg": "{has_suggestion_f}",
+              "fragments": {
+                "has_suggestion_f": {
+                  "kind": "select",
+                  "arg": "has_suggestion",
+                  "yes": "bundel {bundle:s}: locale {lang:s} bevat sleutel {key:s} die niet bestaat in brontaal {source:s} (bedoelde u {suggestion:s}?)",
+                  "other": "bundel {bundle:s}: locale {lang:s} bevat sleutel {key:s} die niet bestaat in brontaal {source:s}"
+                }
+              },
+              "description": {
+                "msg": "Foutmelding voor i18n.ErrUnknownLocaleKey, geretourneerd wanneer een niet-brontaal een sleutel registreert die nergens bestaat in de opgegeven brontaal van zijn bundel - meestal een typefout in de sleutelnaam zelf, of een verouderde sleutel die is achtergebleven nadat de bron is gewijzigd.",
+                "args": {
+                  "bundle": {
+                    "description": "de bundel (hoofdsleutel) waaronder de sleutel werd geregistreerd."
+                  },
+                  "lang": {
+                    "description": "de BCP 47-taaltag van de locale met de onbekende sleutel."
+                  },
+                  "key": {
+                    "description": "de onbekende sleutel, relatief ten opzichte van zijn bundel."
+                  },
+                  "source": {
+                    "description": "de BCP 47-taaltag van de opgegeven brontaal van de bundel."
+                  },
+                  "suggestion": {
+                    "description": "de dichtstbijzijnde overeenkomende sleutel gevonden in de brontaal, indien aanwezig."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.i18n",
+  "locales": {
+    "fi": {
+      "notes": "Core i18n package's own bundled runtime strings: language display names and this package's own sentinel error messages.",
+      "keys": {
+        "name": {
+          "$message": {
+            "msg": "Suomi",
+            "description": {
+              "msg": "Tämän kielen oma nimi, kirjoitettuna kielellä itsellään (ei käännetty muille kielille)."
+            }
+          }
+        },
+        "set_default": {
+          "$message": {
+            "msg": "kieli asetettu arvoon {lang:s}",
+            "description": {
+              "msg": "Debug-lokiviesti, joka lähetetään, kun nykyinen kieli vaihdetaan ajon aikana.",
+              "args": {
+                "lang": {
+                  "description": "asetettu BCP 47 -kielikoodi (esim. \"de\", \"en\")."
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "disabled": {
+            "$message": {
+              "msg": "i18n on poistettu käytöstä",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrDisabled, palautetaan jotta kutsujat voivat tarkistaa sen errors.Is-funktiolla, kun build tai profiili jättää i18n-hallinnan tarkoituksella alustamatta."
+              }
+            }
+          },
+          "language_not_supported": {
+            "$message": {
+              "msg": "kieltä {lang:s} ei tueta",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrLanguageNotSupported, palautetaan kun pyydettyä kieltä ei ole rekisteröity tuetuksi millään RegisterTranslation-kutsulla.",
+                "args": {
+                  "lang": {
+                    "description": "pyydetty, ei-tuettu BCP 47 -kielikoodi."
+                  }
+                }
+              }
+            }
+          },
+          "unsupported_type": {
+            "$message": {
+              "msg": "ei-tuettu käännösarvon tyyppi {type:T} avaimelle {key:s} kielessä {lang:s}",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrUnsupportedType, palautetaan kun RegisterTranslation/RegisterTranslations-funktiolle annettu käännösarvo ei ole string, catalog.Message, []catalog.Message eikä Message tai niiden sisäkkäinen map.",
+                "args": {
+                  "type": {
+                    "description": "ei-tuetun arvon Go-tyyppi."
+                  },
+                  "key": {
+                    "description": "täydellinen käännösavain, jonka alle arvo rekisteröitiin."
+                  },
+                  "lang": {
+                    "description": "BCP 47 -kielikoodi, jolle arvo rekisteröitiin."
+                  }
+                }
+              }
+            }
+          },
+          "read_dir": {
+            "$message": {
+              "msg": "käännöshakemistoa {dir:s} ei voitu lukea: {cause:s}",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrReadDir, palautetaan kun käännös-*FS:n juurihakemistoa tai sen kielialihakemistoa ei voida lukea.",
+                "args": {
+                  "dir": {
+                    "description": "hakemistopolku, jota ei voitu lukea."
+                  },
+                  "cause": {
+                    "description": "taustalla olevan tiedostojärjestelmävirheen viesti."
+                  }
+                }
+              }
+            }
+          },
+          "unexpected_directory": {
+            "$message": {
+              "msg": "odotettiin käännöstiedostoa, löytyi hakemisto {name:q} kielessä {lang:s}",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrUnexpectedDirectory, palautetaan kun käännös-*FS löytää hakemiston käännöstiedoston sijaan.",
+                "args": {
+                  "name": {
+                    "description": "odottamattoman hakemiston nimi."
+                  },
+                  "lang": {
+                    "description": "ladattavan hakemiston BCP 47 -kielikoodi."
+                  }
+                }
+              }
+            }
+          },
+          "read_file": {
+            "$message": {
+              "msg": "käännöstiedostoa {file:s} ei voitu lukea: {cause:s}",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrReadFile, palautetaan kun käännös-*FS:n käännöstiedostoa ei voida lukea.",
+                "args": {
+                  "file": {
+                    "description": "käännöstiedoston nimi."
+                  },
+                  "cause": {
+                    "description": "taustalla olevan tiedostojärjestelmävirheen viesti."
+                  }
+                }
+              }
+            }
+          },
+          "parse_file": {
+            "$message": {
+              "msg": "käännöstiedostoa {file:s} ei voitu jäsentää: {cause:s}",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrParseFile, palautetaan kun käännöstiedoston sisältö ei ole kelvollista JSONia.",
+                "args": {
+                  "file": {
+                    "description": "käännöstiedoston nimi."
+                  },
+                  "cause": {
+                    "description": "taustalla olevan JSON-jäsennysvirheen viesti."
+                  }
+                }
+              }
+            }
+          },
+          "parse_language_tag": {
+            "$message": {
+              "msg": "kielitunnistetta ei voitu jäsentää arvosta {source:q}: {cause:s}",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrParseLanguageTag, palautetaan kun käännös-*FS ei pysty jäsentämään BCP 47 -kielikoodia tiedoston tai hakemiston nimestä.",
+                "args": {
+                  "source": {
+                    "description": "tiedoston tai hakemiston nimi, josta kielikoodi jäsennettiin."
+                  },
+                  "cause": {
+                    "description": "taustalla olevan jäsennysvirheen viesti."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_message": {
+            "$message": {
+              "msg": "virheellinen käännösviesti {name:s}: {reason:s}",
+              "description": {
+                "msg": "Virheilmoitus kohteelle i18n.ErrInvalidMessage, palautetaan kun JSON-$message-objekti on virheellinen (esim. fragmentilta puuttuu vaadittu \"other\"-muoto).",
+                "args": {
+                  "name": {
+                    "description": "virheellinen fragmentin tai kentän nimi."
+                  },
+                  "reason": {
+                    "description": "ihmisluettava selitys siitä, mikä on vialla."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_schema_version": {
+            "$message": {
+              "msg": "ei-tuettu tai virheellinen käännösskeeman versio kielelle {lang:s}: {cause:s}",
+              "description": {
+                "msg": "Virheilmoitus i18n.ErrInvalidSchemaVersion-virheelle, joka palautetaan, kun käännöstiedoston varattua \"$version\"-avainta ei voida ratkaista: se nimeää skeemaversion, joka on uudempi kuin tämä pkg/i18n-versio tukee, ei ole tunnistettava kokonaisluku, tai siirtymä nykyiseen versioon epäonnistui.",
+                "args": {
+                  "lang": {
+                    "description": "BCP 47 -kielikoodi, jolle käännöstiedostoa rekisteröitiin."
+                  },
+                  "cause": {
+                    "description": "taustalla olevan skeemavirheen viesti."
+                  }
+                }
+              }
+            }
+          },
+          "unknown_locale_key": {
+            "$message": {
+              "msg": "{has_suggestion_f}",
+              "fragments": {
+                "has_suggestion_f": {
+                  "kind": "select",
+                  "arg": "has_suggestion",
+                  "yes": "paketti {bundle:s}: kielialue {lang:s} sisältää avaimen {key:s}, jota ei ole lähdekielialueella {source:s} (tarkoititko {suggestion:s}?)",
+                  "other": "paketti {bundle:s}: kielialue {lang:s} sisältää avaimen {key:s}, jota ei ole lähdekielialueella {source:s}"
+                }
+              },
+              "description": {
+                "msg": "Virheilmoitus i18n.ErrUnknownLocaleKey-virheelle, joka palautetaan, kun muu kuin lähdekielialue rekisteröi avaimen, jota ei ole missään paketin ilmoitetulla lähdekielialueella - yleensä kirjoitusvirhe itse avaimen nimessä tai vanhentunut avain, joka on jäänyt jäljelle lähteen muuttumisen jälkeen.",
+                "args": {
+                  "bundle": {
+                    "description": "paketti (juuriavain), jonka alla avain rekisteröitiin."
+                  },
+                  "lang": {
+                    "description": "sen kielialueen BCP 47 -kielikoodi, jolla on tuntematon avain."
+                  },
+                  "key": {
+                    "description": "tuntematon avain, suhteessa omaan pakettiinsa."
+                  },
+                  "source": {
+                    "description": "paketin ilmoitetun lähdekielialueen BCP 47 -kielikoodi."
+                  },
+                  "suggestion": {
+                    "description": "lähdekielialueelta löytynyt lähin vastaava avain, jos sellainen on."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

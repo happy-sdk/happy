@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/happy-sdk/happy/main/pkg/i18n/schema/v2/schema.json",
+  "title": "happy-sdk i18n translation file (schema version 2)",
+  "description": "Shape of a github.com/happy-sdk/happy/pkg/i18n translation file that describes its own bundle identity and locale(s), rather than relying on its filename. This document is for editors and humans only - it is never read at runtime; github.com/happy-sdk/happy/pkg/i18n/schema/v2 is the authoritative, enforced definition.",
+  "type": "object",
+  "required": ["version", "bundle", "locales"],
+  "$comment": "\"source\" is optional (defaults to \"en\"); \"notes\" now lives per-locale inside each \"locales\" entry - see $defs/localeEntry.",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 2,
+      "description": "This schema version. Required - a document with no \"version\" key at all is schema version 1 instead (see v1/schema.json)."
+    },
+    "bundle": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$",
+      "description": "This document's root/bundle identifier: either a bare word (e.g. \"app\") or a dot-separated, reverse-DNS-style path mirroring the owning Go module's import path (e.g. \"com.github.example.app\")."
+    },
+    "source": {
+      "type": "string",
+      "description": "The locale this bundle's translations are authored/maintained in - the one every other locale is translated from. Defaults to \"en\" when omitted."
+    },
+    "locales": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "One entry per locale this document carries. Keys are BCP 47/ISO 639-1 language tags (e.g. \"en\", \"de\", \"zh-Hant\"). A document may hold just one locale (if a maintainer prefers one file per language) or every locale an application supports in a single exportable file - both are valid.",
+      "additionalProperties": { "$ref": "#/$defs/localeEntry" }
+    }
+  },
+  "$defs": {
+    "localeEntry": {
+      "type": "object",
+      "required": ["keys"],
+      "additionalProperties": false,
+      "properties": {
+        "notes": {
+          "type": "string",
+          "description": "Optional, free-text context for translators/tooling, specific to this locale (not the whole bundle - see \"source\"). Has no effect on rendering."
+        },
+        "keys": { "$ref": "#/$defs/tree" }
+      }
+    },
+    "tree": {
+      "description": "A locale's translation tree: every key is either a nested group (another tree) or a Message (an object holding \"$message\"). Key names must be lowercase a-z, 0-9, or \"_\" - except \"$message\" itself.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/node" },
+      "propertyNames": {
+        "pattern": "^([a-z0-9_]+|\\$message)$"
+      }
+    },
+    "node": {
+      "oneOf": [
+        { "$ref": "#/$defs/message" },
+        { "$ref": "#/$defs/tree" }
+      ]
+    },
+    "message": {
+      "type": "object",
+      "required": ["$message"],
+      "additionalProperties": false,
+      "properties": {
+        "$message": {
+          "type": "object",
+          "required": ["msg"],
+          "additionalProperties": false,
+          "properties": {
+            "msg": {
+              "type": "string",
+              "description": "The template. A bare {name} or {name:verb} placeholder is a literal argument; a placeholder whose name matches a key in \"fragments\" resolves to that fragment's own rendering instead."
+            },
+            "fragments": {
+              "type": "object",
+              "description": "Named, variable pieces of msg - each one a plural/ordinal/select choice of wording.",
+              "additionalProperties": { "$ref": "#/$defs/fragment" }
+            },
+            "description": { "$ref": "#/$defs/description" }
+          }
+        }
+      }
+    },
+    "fragment": {
+      "type": "object",
+      "required": ["arg", "other"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["plural", "ordinal", "select"],
+          "description": "Defaults to \"plural\" when omitted. \"plural\": CLDR cardinal category (quantity). \"ordinal\": CLDR ordinal category (rank: 1st/2nd/3rd). \"select\": exact match against arg's own value, for closed sets like gender or formality."
+        },
+        "arg": {
+          "type": "string",
+          "description": "The argument name (passed via i18n.T/i18n.TL) whose value selects a form below."
+        },
+        "zero": { "type": "string" },
+        "one": { "type": "string" },
+        "two": { "type": "string" },
+        "few": { "type": "string" },
+        "many": { "type": "string" },
+        "other": {
+          "type": "string",
+          "description": "Required. The universal fallback: used whenever the rendering language doesn't distinguish the selected category, or (for \"select\") the value has no dedicated form."
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "description": "\"select\" fragments may use arbitrary literal values as form keys beyond zero/one/two/few/many/other; \"plural\"/\"ordinal\" fragments are restricted to the real CLDR category names."
+      }
+    },
+    "description": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Documents this Message for translator/tooling use. Has no effect on rendering.",
+      "properties": {
+        "msg": {
+          "type": "string",
+          "description": "What this message is for / where it appears."
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "What this argument represents. Never include a \"type\" field here - it is always derived automatically from the verb the template actually uses for this arg, never hand-authored."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

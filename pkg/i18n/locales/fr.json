@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.i18n",
+  "locales": {
+    "fr": {
+      "notes": "Core i18n package's own bundled runtime strings: language display names and this package's own sentinel error messages.",
+      "keys": {
+        "name": {
+          "$message": {
+            "msg": "Français",
+            "description": {
+              "msg": "Le nom propre de cette langue, écrit dans cette langue elle-même (non traduit dans une autre langue)."
+            }
+          }
+        },
+        "set_default": {
+          "$message": {
+            "msg": "langue définie sur {lang:s}",
+            "description": {
+              "msg": "Message de journal de débogage émis lorsque la langue actuelle est modifiée au moment de l'exécution.",
+              "args": {
+                "lang": {
+                  "description": "l'étiquette de langue BCP 47 qui a été définie (par ex. « de », « en »)."
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "disabled": {
+            "$message": {
+              "msg": "i18n est désactivé",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrDisabled, renvoyé afin que les appelants puissent le tester avec errors.Is lorsqu'une build ou un profil n'initialise volontairement jamais le gestionnaire i18n."
+              }
+            }
+          },
+          "language_not_supported": {
+            "$message": {
+              "msg": "la langue {lang:s} n'est pas prise en charge",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrLanguageNotSupported, renvoyé lorsqu'une langue demandée n'a été enregistrée comme prise en charge par aucun appel à RegisterTranslation.",
+                "args": {
+                  "lang": {
+                    "description": "l'étiquette de langue BCP 47 demandée et non prise en charge."
+                  }
+                }
+              }
+            }
+          },
+          "unsupported_type": {
+            "$message": {
+              "msg": "type de valeur de traduction non pris en charge {type:T} pour la clé {key:s} dans la langue {lang:s}",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrUnsupportedType, renvoyé lorsqu'une valeur de traduction passée à RegisterTranslation/RegisterTranslations n'est ni une string, un catalog.Message, un []catalog.Message, ni une Message ou une map imbriquée de celles-ci.",
+                "args": {
+                  "type": {
+                    "description": "le type Go de la valeur non prise en charge."
+                  },
+                  "key": {
+                    "description": "la clé de traduction complète sous laquelle la valeur a été enregistrée."
+                  },
+                  "lang": {
+                    "description": "l'étiquette de langue BCP 47 pour laquelle la valeur a été enregistrée."
+                  }
+                }
+              }
+            }
+          },
+          "read_dir": {
+            "$message": {
+              "msg": "impossible de lire le répertoire de traduction {dir:s} : {cause:s}",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrReadDir, renvoyé lorsque la racine d'un *FS de traductions ou un sous-répertoire de langue qu'il contient ne peut pas être lu.",
+                "args": {
+                  "dir": {
+                    "description": "le chemin du répertoire qui n'a pas pu être lu."
+                  },
+                  "cause": {
+                    "description": "le message de l'erreur système de fichiers sous-jacente."
+                  }
+                }
+              }
+            }
+          },
+          "unexpected_directory": {
+            "$message": {
+              "msg": "fichier de traduction attendu, répertoire {name:q} trouvé dans la langue {lang:s}",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrUnexpectedDirectory, renvoyé lorsqu'un *FS de traductions trouve un répertoire là où un fichier de traduction était attendu.",
+                "args": {
+                  "name": {
+                    "description": "le nom du répertoire inattendu."
+                  },
+                  "lang": {
+                    "description": "l'étiquette de langue BCP 47 du répertoire en cours de chargement."
+                  }
+                }
+              }
+            }
+          },
+          "read_file": {
+            "$message": {
+              "msg": "impossible de lire le fichier de traduction {file:s} : {cause:s}",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrReadFile, renvoyé lorsqu'un fichier de traduction au sein d'un *FS de traductions ne peut pas être lu.",
+                "args": {
+                  "file": {
+                    "description": "le nom du fichier de traduction."
+                  },
+                  "cause": {
+                    "description": "le message de l'erreur système de fichiers sous-jacente."
+                  }
+                }
+              }
+            }
+          },
+          "parse_file": {
+            "$message": {
+              "msg": "impossible d'analyser le fichier de traduction {file:s} : {cause:s}",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrParseFile, renvoyé lorsque le contenu d'un fichier de traduction n'est pas un JSON valide.",
+                "args": {
+                  "file": {
+                    "description": "le nom du fichier de traduction."
+                  },
+                  "cause": {
+                    "description": "le message de l'erreur d'analyse JSON sous-jacente."
+                  }
+                }
+              }
+            }
+          },
+          "parse_language_tag": {
+            "$message": {
+              "msg": "impossible d'analyser l'étiquette de langue à partir de {source:q} : {cause:s}",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrParseLanguageTag, renvoyé lorsqu'un *FS de traductions ne parvient pas à analyser une étiquette de langue BCP 47 à partir d'un nom de fichier ou de répertoire.",
+                "args": {
+                  "source": {
+                    "description": "le nom de fichier ou de répertoire à partir duquel l'étiquette de langue a été analysée."
+                  },
+                  "cause": {
+                    "description": "le message de l'erreur d'analyse sous-jacente."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_message": {
+            "$message": {
+              "msg": "message de traduction invalide {name:s} : {reason:s}",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrInvalidMessage, renvoyé lorsqu'un objet JSON $message est malformé (par ex. un fragment auquel manque sa forme « other » requise).",
+                "args": {
+                  "name": {
+                    "description": "le nom du fragment ou du champ invalide."
+                  },
+                  "reason": {
+                    "description": "une explication lisible de ce qui ne va pas."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_schema_version": {
+            "$message": {
+              "msg": "version de schéma de traduction non prise en charge ou invalide pour la langue {lang:s} : {cause:s}",
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrInvalidSchemaVersion, renvoyé lorsque la clé réservée \"$version\" d'un fichier de traduction ne peut pas être résolue : elle désigne une version de schéma plus récente que celle prise en charge par cette version de pkg/i18n, n'est pas un entier reconnaissable, ou une migration vers la version actuelle a échoué.",
+                "args": {
+                  "lang": {
+                    "description": "le tag de langue BCP 47 pour lequel le fichier de traduction était enregistré."
+                  },
+                  "cause": {
+                    "description": "le message de l'erreur de schéma sous-jacente."
+                  }
+                }
+              }
+            }
+          },
+          "unknown_locale_key": {
+            "$message": {
+              "msg": "{has_suggestion_f}",
+              "fragments": {
+                "has_suggestion_f": {
+                  "kind": "select",
+                  "arg": "has_suggestion",
+                  "yes": "paquet {bundle:s} : la locale {lang:s} contient la clé {key:s} qui n'existe pas dans la locale source {source:s} (vouliez-vous dire {suggestion:s} ?)",
+                  "other": "paquet {bundle:s} : la locale {lang:s} contient la clé {key:s} qui n'existe pas dans la locale source {source:s}"
+                }
+              },
+              "description": {
+                "msg": "Message d'erreur pour i18n.ErrUnknownLocaleKey, renvoyé lorsqu'une locale non source enregistre une clé qui n'existe nulle part dans la locale source déclarée de son paquet - généralement une faute de frappe dans le nom de la clé elle-même, ou une clé obsolète laissée après une modification de la source.",
+                "args": {
+                  "bundle": {
+                    "description": "le paquet (clé racine) sous lequel la clé a été enregistrée."
+                  },
+                  "lang": {
+                    "description": "le tag de langue BCP 47 de la locale qui contient la clé inconnue."
+                  },
+                  "key": {
+                    "description": "la clé inconnue, relative à son paquet."
+                  },
+                  "source": {
+                    "description": "le tag de langue BCP 47 de la locale source déclarée du paquet."
+                  },
+                  "suggestion": {
+                    "description": "la clé correspondante la plus proche trouvée dans la locale source, le cas échéant."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

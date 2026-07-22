@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.i18n",
+  "locales": {
+    "sv": {
+      "notes": "Core i18n package's own bundled runtime strings: language display names and this package's own sentinel error messages.",
+      "keys": {
+        "name": {
+          "$message": {
+            "msg": "Svenska",
+            "description": {
+              "msg": "Detta språks eget visningsnamn, skrivet på språket självt (inte översatt till något annat språk)."
+            }
+          }
+        },
+        "set_default": {
+          "$message": {
+            "msg": "språk inställt till {lang:s}",
+            "description": {
+              "msg": "Felsökningsloggmeddelande som skickas när det aktuella språket ändras vid körning.",
+              "args": {
+                "lang": {
+                  "description": "BCP 47-språktaggen som angavs (t.ex. \"de\", \"en\")."
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "disabled": {
+            "$message": {
+              "msg": "i18n är inaktiverat",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrDisabled, returneras så att anropare kan testa det med errors.Is när en build eller profil avsiktligt aldrig initierar i18n-hanteraren."
+              }
+            }
+          },
+          "language_not_supported": {
+            "$message": {
+              "msg": "språket {lang:s} stöds inte",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrLanguageNotSupported, returneras när ett begärt språk inte har registrerats som stött via något RegisterTranslation-anrop.",
+                "args": {
+                  "lang": {
+                    "description": "den begärda, ej stödda BCP 47-språktaggen."
+                  }
+                }
+              }
+            }
+          },
+          "unsupported_type": {
+            "$message": {
+              "msg": "typ av översättningsvärde {type:T} som inte stöds för nyckeln {key:s} i språket {lang:s}",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrUnsupportedType, returneras när ett översättningsvärde som skickas till RegisterTranslation/RegisterTranslations varken är en string, catalog.Message, []catalog.Message eller en Message/nästlad map av dessa.",
+                "args": {
+                  "type": {
+                    "description": "Go-typen för det värde som inte stöds."
+                  },
+                  "key": {
+                    "description": "den fullständiga översättningsnyckel som värdet registrerades under."
+                  },
+                  "lang": {
+                    "description": "den BCP 47-språktagg som värdet registrerades för."
+                  }
+                }
+              }
+            }
+          },
+          "read_dir": {
+            "$message": {
+              "msg": "kunde inte läsa översättningskatalogen {dir:s}: {cause:s}",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrReadDir, returneras när roten för ett översättnings-*FS eller en språkundermapp i det inte kan läsas.",
+                "args": {
+                  "dir": {
+                    "description": "katalogsökvägen som inte kunde läsas."
+                  },
+                  "cause": {
+                    "description": "meddelandet från det underliggande filsystemfelet."
+                  }
+                }
+              }
+            }
+          },
+          "unexpected_directory": {
+            "$message": {
+              "msg": "förväntade en översättningsfil, hittade katalogen {name:q} i språket {lang:s}",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrUnexpectedDirectory, returneras när ett översättnings-*FS hittar en katalog där en översättningsfil förväntades.",
+                "args": {
+                  "name": {
+                    "description": "namnet på den oväntade katalogen."
+                  },
+                  "lang": {
+                    "description": "BCP 47-språktaggen för katalogen som laddas."
+                  }
+                }
+              }
+            }
+          },
+          "read_file": {
+            "$message": {
+              "msg": "kunde inte läsa översättningsfilen {file:s}: {cause:s}",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrReadFile, returneras när en översättningsfil inom ett översättnings-*FS inte kan läsas.",
+                "args": {
+                  "file": {
+                    "description": "översättningsfilens namn."
+                  },
+                  "cause": {
+                    "description": "meddelandet från det underliggande filsystemfelet."
+                  }
+                }
+              }
+            }
+          },
+          "parse_file": {
+            "$message": {
+              "msg": "kunde inte tolka översättningsfilen {file:s}: {cause:s}",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrParseFile, returneras när innehållet i en översättningsfil inte är giltig JSON.",
+                "args": {
+                  "file": {
+                    "description": "översättningsfilens namn."
+                  },
+                  "cause": {
+                    "description": "meddelandet från det underliggande JSON-tolkningsfelet."
+                  }
+                }
+              }
+            }
+          },
+          "parse_language_tag": {
+            "$message": {
+              "msg": "kunde inte tolka språktaggen från {source:q}: {cause:s}",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrParseLanguageTag, returneras när ett översättnings-*FS inte kan tolka en BCP 47-språktagg från ett fil- eller katalognamn.",
+                "args": {
+                  "source": {
+                    "description": "fil- eller katalognamnet som språktaggen tolkades från."
+                  },
+                  "cause": {
+                    "description": "meddelandet från det underliggande tolkningsfelet."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_message": {
+            "$message": {
+              "msg": "ogiltigt översättningsmeddelande {name:s}: {reason:s}",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrInvalidMessage, returneras när ett JSON-$message-objekt är felaktigt (t.ex. ett fragment som saknar sin obligatoriska \"other\"-form).",
+                "args": {
+                  "name": {
+                    "description": "det ogiltiga fragment- eller fältnamnet."
+                  },
+                  "reason": {
+                    "description": "en begriplig förklaring av vad som är fel."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_schema_version": {
+            "$message": {
+              "msg": "ej stödd eller ogiltig översättningsschemaversion för språket {lang:s}: {cause:s}",
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrInvalidSchemaVersion, som returneras när en översättningsfils reserverade nyckel \"$version\" inte kan lösas: den anger en schemaversion som är nyare än vad denna version av pkg/i18n stöder, är inte ett igenkännbart heltal, eller en migrering till den aktuella versionen misslyckades.",
+                "args": {
+                  "lang": {
+                    "description": "BCP 47-språktaggen som översättningsfilen registrerades för."
+                  },
+                  "cause": {
+                    "description": "meddelandet från det underliggande schemafelet."
+                  }
+                }
+              }
+            }
+          },
+          "unknown_locale_key": {
+            "$message": {
+              "msg": "{has_suggestion_f}",
+              "fragments": {
+                "has_suggestion_f": {
+                  "kind": "select",
+                  "arg": "has_suggestion",
+                  "yes": "paket {bundle:s}: språket {lang:s} har nyckeln {key:s} som inte finns i källspråket {source:s} (menade du {suggestion:s}?)",
+                  "other": "paket {bundle:s}: språket {lang:s} har nyckeln {key:s} som inte finns i källspråket {source:s}"
+                }
+              },
+              "description": {
+                "msg": "Felmeddelande för i18n.ErrUnknownLocaleKey, som returneras när ett icke-källspråk registrerar en nyckel som inte finns någonstans i paketets angivna källspråk - vanligtvis ett stavfel i själva nyckelnamnet, eller en föråldrad nyckel som blivit kvar efter att källan ändrats.",
+                "args": {
+                  "bundle": {
+                    "description": "paketet (rotnyckeln) som nyckeln registrerades under."
+                  },
+                  "lang": {
+                    "description": "BCP 47-språktaggen för språket som har den okända nyckeln."
+                  },
+                  "key": {
+                    "description": "den okända nyckeln, relativt sitt paket."
+                  },
+                  "source": {
+                    "description": "BCP 47-språktaggen för paketets angivna källspråk."
+                  },
+                  "suggestion": {
+                    "description": "den närmaste matchande nyckeln som hittades i källspråket, om någon."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

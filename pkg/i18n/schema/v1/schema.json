@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/happy-sdk/happy/main/pkg/i18n/schema/v1.schema.json",
+  "title": "happy-sdk i18n translation file (schema version 1)",
+  "description": "Shape of a github.com/happy-sdk/happy/pkg/i18n translation file. This document is for editors and humans only - it is never read at runtime; github.com/happy-sdk/happy/pkg/i18n/schema is the authoritative, enforced definition. Point a translation file's own \"$schema\" at this URL to get editor autocomplete/validation.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Purely documentary - never read by pkg/i18n. Conventionally this file's own URL, so editors validate against it."
+    },
+    "$version": {
+      "type": "integer",
+      "const": 1,
+      "description": "The schema version this file was written against. Omitting this key entirely is equivalent to \"$version\": 1 - every translation file written before versioning existed remains valid without any edits."
+    }
+  },
+  "additionalProperties": {
+    "$ref": "#/$defs/node"
+  },
+  "$defs": {
+    "node": {
+      "description": "A translation key: either a Message (an object holding \"$message\"), or a nested group of further keys.",
+      "oneOf": [
+        { "$ref": "#/$defs/message" },
+        { "$ref": "#/$defs/group" }
+      ]
+    },
+    "group": {
+      "type": "object",
+      "not": { "required": ["$message"] },
+      "additionalProperties": { "$ref": "#/$defs/node" }
+    },
+    "message": {
+      "type": "object",
+      "required": ["$message"],
+      "additionalProperties": false,
+      "properties": {
+        "$message": {
+          "type": "object",
+          "required": ["msg"],
+          "additionalProperties": false,
+          "properties": {
+            "msg": {
+              "type": "string",
+              "description": "The template. A bare {name} or {name:verb} placeholder is a literal argument; a placeholder whose name matches a key in \"fragments\" resolves to that fragment's own rendering instead."
+            },
+            "fragments": {
+              "type": "object",
+              "description": "Named, variable pieces of msg - each one a plural/ordinal/select choice of wording.",
+              "additionalProperties": { "$ref": "#/$defs/fragment" }
+            },
+            "description": { "$ref": "#/$defs/description" }
+          }
+        }
+      }
+    },
+    "fragment": {
+      "type": "object",
+      "required": ["arg", "other"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["plural", "ordinal", "select"],
+          "description": "Defaults to \"plural\" when omitted. \"plural\": CLDR cardinal category (quantity). \"ordinal\": CLDR ordinal category (rank: 1st/2nd/3rd). \"select\": exact match against arg's own value, for closed sets like gender or formality."
+        },
+        "arg": {
+          "type": "string",
+          "description": "The argument name (passed via i18n.T/i18n.TL) whose value selects a form below."
+        },
+        "zero": { "type": "string" },
+        "one": { "type": "string" },
+        "two": { "type": "string" },
+        "few": { "type": "string" },
+        "many": { "type": "string" },
+        "other": {
+          "type": "string",
+          "description": "Required. The universal fallback: used whenever the rendering language doesn't distinguish the selected category, or (for \"select\") the value has no dedicated form."
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "description": "\"select\" fragments may use arbitrary literal values as form keys beyond zero/one/two/few/many/other; \"plural\"/\"ordinal\" fragments are restricted to the real CLDR category names."
+      }
+    },
+    "description": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Documents this Message for translator/tooling use. Has no effect on rendering.",
+      "properties": {
+        "msg": {
+          "type": "string",
+          "description": "What this message is for / where it appears."
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "What this argument represents. Never include a \"type\" field here - it is always derived automatically from the verb the template actually uses for this arg, never hand-authored."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

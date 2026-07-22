@@ -1,0 +1,171 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.addons.l10n",
+  "locales": {
+    "en": {
+      "notes": "The l10n addon's own l10n report/list/translate command help text and flag descriptions.",
+      "keys": {
+        "category": {
+          "$message": {
+            "msg": "Localization",
+            "description": {
+              "msg": "Category label shown in the CLI help output, grouping the l10n command with other commands of the same kind."
+            }
+          }
+        },
+        "description": {
+          "$message": {
+            "msg": "Manage application translations",
+            "description": {
+              "msg": "One-line description of the l10n command shown in CLI help listings."
+            }
+          }
+        },
+        "info": {
+          "$message": {
+            "msg": "This command allows you to manage and translate application strings.",
+            "description": {
+              "msg": "Longer help text shown for the l10n command itself (e.g. via --help)."
+            }
+          }
+        },
+        "report": {
+          "description": {
+            "$message": {
+              "msg": "Show translation status report",
+              "description": {
+                "msg": "One-line description of the l10n report subcommand shown in CLI help listings."
+              }
+            }
+          },
+          "flag_threshold": {
+            "$message": {
+              "msg": "Exit with code 1 if any language has lower than threshold percentage",
+              "description": {
+                "msg": "Help text for the report subcommand's --threshold flag."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Display report for a specific language only",
+              "description": {
+                "msg": "Help text for the report subcommand's --lang flag."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Include dependency translations in the report (by default, only the current project's own translations are shown).",
+              "description": {
+                "msg": "Help text for the report subcommand's --with-deps flag."
+              }
+            }
+          }
+        },
+        "list": {
+          "description": {
+            "$message": {
+              "msg": "List all translation keys",
+              "description": {
+                "msg": "One-line description of the l10n list subcommand shown in CLI help listings."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Display list for a specific language only",
+              "description": {
+                "msg": "Help text for the list subcommand's --lang flag."
+              }
+            }
+          },
+          "flag_missing": {
+            "$message": {
+              "msg": "Display only keys with missing translations",
+              "description": {
+                "msg": "Help text for the list subcommand's --missing flag."
+              }
+            }
+          },
+          "flag_json": {
+            "$message": {
+              "msg": "Output JSON response instead of table",
+              "description": {
+                "msg": "Help text for the list subcommand's --json flag."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Include dependency translations in the list (by default, only the current project's own translations are shown).",
+              "description": {
+                "msg": "Help text for the list subcommand's --with-deps flag."
+              }
+            }
+          }
+        },
+        "translate": {
+          "description": {
+            "$message": {
+              "msg": "Translate missing translation keys",
+              "description": {
+                "msg": "One-line description of the l10n translate subcommand shown in CLI help listings."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Translate keys for a specific language only.",
+              "description": {
+                "msg": "Help text for the translate subcommand's --lang flag."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Include dependency translation keys when prompting for missing translations (by default, only the current project's own keys are prompted).",
+              "description": {
+                "msg": "Help text for the translate subcommand's --with-deps flag."
+              }
+            }
+          }
+        },
+        "generate": {
+          "description": {
+            "$message": {
+              "msg": "Generate typed Go accessors for translation keys",
+              "description": {
+                "msg": "One-line description of the l10n generate subcommand shown in CLI help listings."
+              }
+            }
+          },
+          "flag_bundle": {
+            "$message": {
+              "msg": "Generate accessors for a specific bundle (defaults to the application's own module bundle).",
+              "description": {
+                "msg": "Help text for the generate subcommand's --bundle flag."
+              }
+            }
+          },
+          "flag_out": {
+            "$message": {
+              "msg": "Write the generated Go file to this path (defaults to stdout).",
+              "description": {
+                "msg": "Help text for the generate subcommand's --out flag."
+              }
+            }
+          },
+          "flag_package": {
+            "$message": {
+              "msg": "Package name for the generated Go file.",
+              "description": {
+                "msg": "Help text for the generate subcommand's --package flag."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

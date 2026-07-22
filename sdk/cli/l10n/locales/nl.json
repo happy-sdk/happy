@@ -1,0 +1,556 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.cli",
+  "locales": {
+    "nl": {
+      "notes": "sdk/cli's own command help text, flag descriptions, and the built-in config command.",
+      "keys": {
+        "cmd": {
+          "config": {
+            "category": {
+              "$message": {
+                "msg": "Configuratie",
+                "description": {
+                  "msg": "Categorielabel dat wordt getoond in de CLI-help-uitvoer en het config-commando groepeert met andere commando's van hetzelfde type."
+                }
+              }
+            },
+            "description": {
+              "$message": {
+                "msg": "Beheer en configureer applicatie-instellingen",
+                "description": {
+                  "msg": "Eenregelige beschrijving van het config-commando, getoond in CLI-helplijsten."
+                }
+              }
+            },
+            "info": {
+              "$message": {
+                "msg": "Met dit commando kunt u de applicatieconfiguratie-instellingen en instellingsprofielen beheren.",
+                "description": {
+                  "msg": "Langere helptekst die wordt getoond voor het config-commando zelf (bijv. via --help)."
+                }
+              }
+            },
+            "ls": {
+              "description": {
+                "$message": {
+                  "msg": "Lijst instellingen voor huidig profiel",
+                  "description": {
+                    "msg": "Eenregelige beschrijving van het config ls subcommando, getoond in CLI-helplijsten."
+                  }
+                }
+              },
+              "usage_flags": {
+                "$message": {
+                  "msg": "[-a|--all]",
+                  "description": {
+                    "msg": "Korte vlagsamenvatting die naast het ls-subcommando in de gebruikstekst wordt getoond."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiel-naam> [flags]",
+                  "description": {
+                    "msg": "Gebruiksregel die wordt getoond voor het ls-subcommando."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "Lijst alle instellingen (standaard huidig profiel), inclusief interne instellingen",
+                  "description": {
+                    "msg": "Helptekst voor de --all-vlag van het ls-subcommando."
+                  }
+                }
+              },
+              "flag_describe": {
+                "$message": {
+                  "msg": "Beschrijf instellingen",
+                  "description": {
+                    "msg": "Helptekst voor de --describe-vlag van het ls-subcommando."
+                  }
+                }
+              },
+              "flag_prefix": {
+                "$message": {
+                  "msg": "Toon instellingen met een specifiek voorvoegsel",
+                  "description": {
+                    "msg": "Helptekst voor de --prefix-vlag van het ls-subcommando."
+                  }
+                }
+              },
+              "table_settings_descriptions": {
+                "$message": {
+                  "msg": "Instellingsbeschrijvingen",
+                  "description": {
+                    "msg": "Titel die boven de tabel met instellingsbeschrijvingen wordt getoond."
+                  }
+                }
+              },
+              "table_configuration_of": {
+                "$message": {
+                  "msg": "Configuratie van {app_name:s}",
+                  "description": {
+                    "msg": "Titel die boven de tabel met de configuratie van een specifieke applicatie wordt getoond.",
+                    "args": {
+                      "app_name": {
+                        "description": "de weergavenaam van de applicatie."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_settings_for_profile": {
+                "$message": {
+                  "msg": "Instellingen voor huidig PROFIEL: {profile:s}",
+                  "description": {
+                    "msg": "Titel die boven de tabel met instellingen voor het huidige profiel wordt getoond.",
+                    "args": {
+                      "profile": {
+                        "description": "de naam van het huidige profiel."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_application_config": {
+                "$message": {
+                  "msg": "Applicatieconfiguratie",
+                  "description": {
+                    "msg": "Titel die boven de algemene applicatieconfiguratietabel wordt getoond."
+                  }
+                }
+              },
+              "header_key": {
+                "$message": {
+                  "msg": "SLEUTEL",
+                  "description": {
+                    "msg": "Kolomkop voor de sleutelkolom van de instellingentabel."
+                  }
+                }
+              },
+              "header_description": {
+                "$message": {
+                  "msg": "BESCHRIJVING",
+                  "description": {
+                    "msg": "Kolomkop voor de beschrijvingskolom van de instellingentabel."
+                  }
+                }
+              },
+              "header_kind": {
+                "$message": {
+                  "msg": "SOORT",
+                  "description": {
+                    "msg": "Kolomkop voor de soort-/typekolom van de instellingentabel."
+                  }
+                }
+              },
+              "header_is_set": {
+                "$message": {
+                  "msg": "IS INGESTELD",
+                  "description": {
+                    "msg": "Kolomkop voor de is-ingesteld-kolom van de instellingentabel."
+                  }
+                }
+              },
+              "header_mutability": {
+                "$message": {
+                  "msg": "MUTEERBAARHEID",
+                  "description": {
+                    "msg": "Kolomkop voor de muteerbaarheidskolom van de instellingentabel."
+                  }
+                }
+              },
+              "header_value": {
+                "$message": {
+                  "msg": "WAARDE",
+                  "description": {
+                    "msg": "Kolomkop voor de waardekolom van de instellingentabel."
+                  }
+                }
+              },
+              "header_default": {
+                "$message": {
+                  "msg": "STANDAARD",
+                  "description": {
+                    "msg": "Kolomkop voor de standaardwaardekolom van de instellingentabel."
+                  }
+                }
+              }
+            },
+            "set": {
+              "description": {
+                "$message": {
+                  "msg": "Stel een instellingswaarde in",
+                  "description": {
+                    "msg": "Eenregelige beschrijving van het config set subcommando, getoond in CLI-helplijsten."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiel-naam>",
+                  "description": {
+                    "msg": "Gebruiksregel die wordt getoond voor het set-subcommando."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "instelling {key:s} bestaat niet",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven instellingssleutel niet bestaat.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "get": {
+              "description": {
+                "$message": {
+                  "msg": "Haal een instellings- of optiewaarde op",
+                  "description": {
+                    "msg": "Eenregelige beschrijving van het config get subcommando, getoond in CLI-helplijsten."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiel-naam>",
+                  "description": {
+                    "msg": "Gebruiksregel die wordt getoond voor het get-subcommando."
+                  }
+                }
+              },
+              "flag_secret": {
+                "$message": {
+                  "msg": "Vraagt om het geheime wachtwoord in te voeren om de waarde weer te geven. Als het wachtwoord niet is ingesteld, wordt in plaats daarvan de geheime waarde <redacted> afgedrukt zonder de prompt",
+                  "description": {
+                    "msg": "Helptekst voor de --secret-vlag van het get-subcommando."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "instelling {key:s} bestaat niet",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven instellingssleutel niet bestaat.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_invalid_password": {
+                "$message": {
+                  "msg": "ongeldig wachtwoord",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer het ingevoerde geheime wachtwoord ongeldig is."
+                  }
+                }
+              },
+              "redacted": {
+                "$message": {
+                  "msg": "<redacted>",
+                  "description": {
+                    "msg": "Plaatshoudertekst die wordt getoond in plaats van een geheime waarde wanneer geen wachtwoord is opgegeven."
+                  }
+                }
+              }
+            },
+            "add": {
+              "description": {
+                "$message": {
+                  "msg": "Voeg gegeven waarde toe aan instellingswaarde",
+                  "description": {
+                    "msg": "Eenregelige beschrijving van het config add subcommando, getoond in CLI-helplijsten."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiel-naam>",
+                  "description": {
+                    "msg": "Gebruiksregel die wordt getoond voor het add-subcommando."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "instelling {key:s} bestaat niet",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven instellingssleutel niet bestaat.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "instelling {key:s} is geen lijst",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven instelling geen lijst is, waardoor er geen waarde aan kan worden toegevoegd.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_already_exists": {
+                "$message": {
+                  "msg": "{key:s} waarde {value:s} bestaat al",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven waarde al bestaat in de lijst van de instelling.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      },
+                      "value": {
+                        "description": "de opgegeven waarde."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "remove": {
+              "description": {
+                "$message": {
+                  "msg": "Verwijder gegeven waarde uit instellingswaarde",
+                  "description": {
+                    "msg": "Eenregelige beschrijving van het config remove subcommando, getoond in CLI-helplijsten."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiel-naam>",
+                  "description": {
+                    "msg": "Gebruiksregel die wordt getoond voor het remove-subcommando."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "instelling {key:s} bestaat niet",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven instellingssleutel niet bestaat.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "instelling {key:s} is geen lijst",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven instelling geen lijst is, waardoor er geen waarde uit kan worden verwijderd.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_value_not_exists": {
+                "$message": {
+                  "msg": "{key:s} waarde {value:s} bestaat niet",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven waarde niet bestaat in de lijst van de instelling.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      },
+                      "value": {
+                        "description": "de opgegeven waarde."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "reset": {
+              "description": {
+                "$message": {
+                  "msg": "Herstel een instelling naar de standaardwaarde",
+                  "description": {
+                    "msg": "Eenregelige beschrijving van het config reset subcommando, getoond in CLI-helplijsten."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiel-naam>",
+                  "description": {
+                    "msg": "Gebruiksregel die wordt getoond voor het reset-subcommando."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "herstel alle instellingen",
+                  "description": {
+                    "msg": "Helptekst voor de --all-vlag van het reset-subcommando."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "instelling {key:s} bestaat niet",
+                  "description": {
+                    "msg": "Fout die wordt getoond wanneer de opgegeven instellingssleutel niet bestaat.",
+                    "args": {
+                      "key": {
+                        "description": "de opgezochte instellingssleutel."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "prompt_secrets_password": {
+              "$message": {
+                "msg": "voer geheim wachtwoord in",
+                "description": {
+                  "msg": "Prompt die wordt getoond wanneer de gebruiker wordt gevraagd het geheime wachtwoord in te voeren."
+                }
+              }
+            }
+          }
+        },
+        "help": {
+          "commands": {
+            "$message": {
+              "msg": " COMMANDO'S:",
+              "description": {
+                "msg": "Sectiekop die boven de lijst met commando's in de CLI-help-uitvoer wordt getoond."
+              }
+            }
+          },
+          "flags": {
+            "$message": {
+              "msg": " FLAGS:",
+              "description": {
+                "msg": "Sectiekop die boven de lijst met vlaggen in de CLI-help-uitvoer wordt getoond."
+              }
+            }
+          },
+          "shared_flags": {
+            "$message": {
+              "msg": " GEDEELDE FLAGS:",
+              "description": {
+                "msg": "Sectiekop die boven de lijst met gedeelde vlaggen in de CLI-help-uitvoer wordt getoond."
+              }
+            }
+          },
+          "global_flags": {
+            "$message": {
+              "msg": " GLOBALE FLAGS:",
+              "description": {
+                "msg": "Sectiekop die boven de lijst met globale vlaggen in de CLI-help-uitvoer wordt getoond."
+              }
+            }
+          },
+          "copyright": {
+            "$message": {
+              "msg": "Copyright ©",
+              "description": {
+                "msg": "Label dat wordt getoond vóór de copyrightregel in de CLI-help-uitvoer."
+              }
+            }
+          },
+          "license": {
+            "$message": {
+              "msg": "Licentie: ",
+              "description": {
+                "msg": "Label dat wordt getoond vóór de licentieregel in de CLI-help-uitvoer."
+              }
+            }
+          },
+          "default": {
+            "$message": {
+              "msg": "standaard",
+              "description": {
+                "msg": "Woord dat wordt gebruikt om de standaardwaarde van een vlag of instelling aan te duiden in de CLI-help-uitvoer."
+              }
+            }
+          }
+        },
+        "flags": {
+          "version": {
+            "$message": {
+              "msg": "toon applicatieversie",
+              "description": {
+                "msg": "Helptekst voor de globale --version-vlag."
+              }
+            }
+          },
+          "help": {
+            "$message": {
+              "msg": "toon help of help voor het commando. [...commando --help]",
+              "description": {
+                "msg": "Helptekst voor de globale --help-vlag."
+              }
+            }
+          },
+          "show_exec": {
+            "$message": {
+              "msg": "de vlag -x drukt alle CLI-commando's af terwijl ze worden uitgevoerd.",
+              "description": {
+                "msg": "Helptekst voor de globale -x-vlag."
+              }
+            }
+          },
+          "system_debug": {
+            "$message": {
+              "msg": "schakel systeem debug logniveau in (zeer uitgebreid)",
+              "description": {
+                "msg": "Helptekst voor de globale --system-debug-vlag."
+              }
+            }
+          },
+          "debug": {
+            "$message": {
+              "msg": "schakel debug logniveau in",
+              "description": {
+                "msg": "Helptekst voor de globale --debug-vlag."
+              }
+            }
+          },
+          "verbose": {
+            "$message": {
+              "msg": "schakel uitgebreid logniveau in",
+              "description": {
+                "msg": "Helptekst voor de globale --verbose-vlag."
+              }
+            }
+          },
+          "x_prod": {
+            "$message": {
+              "msg": "ALLEEN ONTWIKKELING: dwing app in productiemodus door app_is_devel op false te zetten bij uitvoeren vanuit bron.",
+              "description": {
+                "msg": "Helptekst voor de alleen-voor-ontwikkeling --x-prod-vlag."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

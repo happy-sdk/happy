@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.app",
+  "locales": {
+    "fi": {
+      "notes": "sdk/app's own runtime log messages.",
+      "keys": {
+        "internal": {
+          "initializer": {
+            "initializing": {
+              "$message": {
+                "msg": "alustetaan",
+                "description": {
+                  "msg": "Debug-lokiviesti, joka lähetetään, kun sovelluksen alustaja aloittaa toimintansa."
+                }
+              }
+            },
+            "initialization_completed": {
+              "$message": {
+                "msg": "alustus valmis",
+                "description": {
+                  "msg": "Debug-lokiviesti, joka lähetetään, kun sovelluksen alustus on valmis."
+                }
+              }
+            }
+          },
+          "application": {
+            "booting_application": {
+              "$message": {
+                "msg": "sovellus käynnistetään",
+                "description": {
+                  "msg": "Debug-lokiviesti, joka lähetetään, kun sovellus alkaa käynnistyä."
+                }
+              }
+            },
+            "application_booted": {
+              "$message": {
+                "msg": "sovellus käynnistetty",
+                "description": {
+                  "msg": "Debug-lokiviesti, joka lähetetään, kun sovellus on käynnistynyt."
+                }
+              }
+            },
+            "starting_application": {
+              "$message": {
+                "msg": "sovellus käynnistetään",
+                "description": {
+                  "msg": "Debug-lokiviesti, joka lähetetään, kun sovellus alkaa toimia."
+                }
+              }
+            },
+            "shutdown_complete": {
+              "$message": {
+                "msg": "sammutus valmis",
+                "description": {
+                  "msg": "Debug-lokiviesti, joka lähetetään, kun sovelluksen sammutus on valmis."
+                }
+              }
+            }
+          }
+        },
+        "preparing_runtime": {
+          "$message": {
+            "msg": "ajoympäristöä valmistellaan",
+            "description": {
+              "msg": "Debug-lokiviesti, joka lähetetään juuri ennen sovelluksen ajoympäristön valmistelua."
+            }
+          }
+        }
+      }
+    }
+  }
+}

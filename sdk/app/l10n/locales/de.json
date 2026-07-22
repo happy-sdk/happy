@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.app",
+  "locales": {
+    "de": {
+      "notes": "sdk/app's own runtime log messages.",
+      "keys": {
+        "internal": {
+          "initializer": {
+            "initializing": {
+              "$message": {
+                "msg": "initialisiere",
+                "description": {
+                  "msg": "Debug-Log-Meldung, die ausgegeben wird, wenn der Anwendungsinitialisierer zu laufen beginnt."
+                }
+              }
+            },
+            "initialization_completed": {
+              "$message": {
+                "msg": "Initialisierung abgeschlossen",
+                "description": {
+                  "msg": "Debug-Log-Meldung, die ausgegeben wird, wenn die Anwendungsinitialisierung abgeschlossen ist."
+                }
+              }
+            }
+          },
+          "application": {
+            "booting_application": {
+              "$message": {
+                "msg": "Anwendung wird gestartet",
+                "description": {
+                  "msg": "Debug-Log-Meldung, die ausgegeben wird, wenn die Anwendung zu starten beginnt."
+                }
+              }
+            },
+            "application_booted": {
+              "$message": {
+                "msg": "Anwendung gestartet",
+                "description": {
+                  "msg": "Debug-Log-Meldung, die ausgegeben wird, sobald die Anwendung vollständig gestartet ist."
+                }
+              }
+            },
+            "starting_application": {
+              "$message": {
+                "msg": "Anwendung wird gestartet",
+                "description": {
+                  "msg": "Debug-Log-Meldung, die ausgegeben wird, wenn die Anwendung zu laufen beginnt."
+                }
+              }
+            },
+            "shutdown_complete": {
+              "$message": {
+                "msg": "Herunterfahren abgeschlossen",
+                "description": {
+                  "msg": "Debug-Log-Meldung, die ausgegeben wird, sobald das Herunterfahren der Anwendung abgeschlossen ist."
+                }
+              }
+            }
+          }
+        },
+        "preparing_runtime": {
+          "$message": {
+            "msg": "Laufzeit wird vorbereitet",
+            "description": {
+              "msg": "Debug-Log-Meldung, die kurz vor der Vorbereitung der Anwendungslaufzeit ausgegeben wird."
+            }
+          }
+        }
+      }
+    }
+  }
+}

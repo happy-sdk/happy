@@ -105,15 +105,26 @@ func New(s settings.Settings, rt *application.Runtime, log *logging.QueueLogger)
 
 	init.context, init.cancelFunc = context.WithCancel(context.Background())
 
-		fallbackLang := language.English
-		if langGetter, ok := s.(fallbackLanguageGetter); ok {
-			lang, err := language.Parse(langGetter.GetFallbackLanguage())
-			if err == nil {
-				fallbackLang = lang
-			}
+	fallbackLang := language.English
+	if langGetter, ok := s.(fallbackLanguageGetter); ok {
+		lang, err := language.Parse(langGetter.GetFallbackLanguage())
+		if err == nil {
+			fallbackLang = lang
 		}
-		_ = init.log.LogDepth(3, logging.LevelHappy, "loading i18n")
-		i18n.Initialize(fallbackLang)
+	}
+	_ = init.log.LogDepth(3, logging.LevelHappy, "loading i18n")
+	for _, issue := range i18n.Initialize(fallbackLang) {
+		if issue.Fatal {
+			// i18n's own bundle failed to load - as serious as any
+			// other boot/init error, so it fails the application boot
+			// the same way (see HasFailed), rather than i18n itself
+			// panicking.
+			_ = init.log.LogDepth(3, logging.LevelError, issue.Err.Error())
+			init.error(issue.Err)
+			continue
+		}
+		_ = init.log.LogDepth(3, logging.LevelWarn, issue.Err.Error())
+	}
 
 	_ = init.log.LogDepth(3, logging.LevelDebug, i18n.PTD(i18np, "initializing", "initializing"), slog.String("pid", fmt.Sprint(init.pid)))
 	init.initialize()

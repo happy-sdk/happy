@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.app",
+  "locales": {
+    "fr": {
+      "notes": "sdk/app's own runtime log messages.",
+      "keys": {
+        "internal": {
+          "initializer": {
+            "initializing": {
+              "$message": {
+                "msg": "initialisation",
+                "description": {
+                  "msg": "Message de journal de débogage émis lorsque l'initialiseur de l'application commence à s'exécuter."
+                }
+              }
+            },
+            "initialization_completed": {
+              "$message": {
+                "msg": "initialisation terminée",
+                "description": {
+                  "msg": "Message de journal de débogage émis lorsque l'initialisation de l'application est terminée."
+                }
+              }
+            }
+          },
+          "application": {
+            "booting_application": {
+              "$message": {
+                "msg": "démarrage de l'application",
+                "description": {
+                  "msg": "Message de journal de débogage émis lorsque l'application commence à démarrer."
+                }
+              }
+            },
+            "application_booted": {
+              "$message": {
+                "msg": "application démarrée",
+                "description": {
+                  "msg": "Message de journal de débogage émis une fois que l'application a fini de démarrer."
+                }
+              }
+            },
+            "starting_application": {
+              "$message": {
+                "msg": "démarrage de l'application",
+                "description": {
+                  "msg": "Message de journal de débogage émis lorsque l'application commence à s'exécuter."
+                }
+              }
+            },
+            "shutdown_complete": {
+              "$message": {
+                "msg": "arrêt terminé",
+                "description": {
+                  "msg": "Message de journal de débogage émis une fois que l'application a fini de s'arrêter."
+                }
+              }
+            }
+          }
+        },
+        "preparing_runtime": {
+          "$message": {
+            "msg": "préparation de l'environnement d'exécution",
+            "description": {
+              "msg": "Message de journal de débogage émis juste avant la préparation de l'environnement d'exécution de l'application."
+            }
+          }
+        }
+      }
+    }
+  }
+}

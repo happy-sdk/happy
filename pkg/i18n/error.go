@@ -15,24 +15,34 @@ import (
 	"golang.org/x/text/language"
 )
 
+// LocalizedError is a translatable error: its message renders through T
+// (see Error) using a key composed from the caller's own package (see
+// composePackageKey), falling back to a caller-supplied plain string
+// wherever no translation applies - either because i18n hasn't been
+// Initialized yet, or because no translation was ever registered for this
+// specific key. Construct one with NewError, NewErrorWithLocale, or
+// NewErrorDepth; WithArgs, WithCode, and Extends each return a modified
+// copy, so calling them on a shared package-level sentinel is safe to do
+// from multiple call sites without racing or clobbering one another.
 type LocalizedError struct {
 	code     int
 	key      string
 	fallback string
 	tag      language.Tag
 	args     []any
+	wraps    error
 }
 
-// NewError creates a new LocalizedError with the default language.English locale.
-// It uses the provided key to form a unique translation key by prefixing it with the
-// reverse module DNS name (e.g., "Error" becomes "com.github.happy-sdk.happy.pkg.i18n.Error").
-// If translations are not loaded via Initialize, the defaultMsg is returned as the error message.
-// Otherwise, defaultMsg is applied as the fallback for the default locale.
-// For specific locales, use NewErrorWithLocale instead.
-//
-// Parameters:
-//   - key: The local error key (e.g., "Error") to form a unique translation key.
-//   - fallback: The fallback error message if no translation is found.
+// NewError creates a LocalizedError keyed under the calling package's own
+// reverse-DNS prefix (see GetPackagePrefix) plus key - e.g. key "disabled"
+// called from package i18n itself becomes
+// "com.github.happy-sdk.happy.pkg.i18n.disabled". If non-empty, fallback
+// is queued (see QueueTranslation) as language.Und's translation for that
+// key, so Error() has something sensible to render even before Initialize
+// registers a real translation for it; it also becomes the text Error()
+// falls back to before Initialize runs at all, or if no translation for
+// this key ever gets registered. Use NewErrorWithLocale to key the error's
+// own rendering to a specific language instead of the current one.
 func NewError(key, fallback string) *LocalizedError {
 	fullKey := composePackageKey(key, 2)
 	if fallback != "" {
@@ -45,6 +55,9 @@ func NewError(key, fallback string) *LocalizedError {
 	}
 }
 
+// NewErrorWithLocale is NewError for a LocalizedError that always renders
+// in tag's language via TL, regardless of the process-wide current
+// language (see SetLanguage) at the time Error() is called.
 func NewErrorWithLocale(tag language.Tag, key, fallback string) *LocalizedError {
 	fullKey := composePackageKey(key, 2)
 	if fallback != "" {
@@ -57,8 +70,12 @@ func NewErrorWithLocale(tag language.Tag, key, fallback string) *LocalizedError 
 	}
 }
 
-// NewErrorDepth creates a new LocalizedError with the default
-// locale and a specified depth to compose full key from package import path.
+// NewErrorDepth is NewError for a caller that isn't itself the package the
+// error should be keyed under - e.g. a helper called from several places
+// that all want the error keyed under their own package, not the helper's.
+// depth is a runtime.Caller depth counted from NewErrorDepth's own call
+// frame: 1 names NewErrorDepth's direct caller (equivalent to NewError's
+// fixed depth), 2 names that caller's own caller, and so on.
 func NewErrorDepth(depth int, key, fallback string) *LocalizedError {
 	fullKey := composePackageKey(key, depth)
 	if fallback != "" {
@@ -71,11 +88,23 @@ func NewErrorDepth(depth int, key, fallback string) *LocalizedError {
 	}
 }
 
+// WithCode returns a copy of e carrying code, so calling WithCode on a
+// shared package-level sentinel (e.g. i18n.ErrLanguageNotSupported) never
+// mutates that sentinel for every other caller.
 func (e *LocalizedError) WithCode(code int) *LocalizedError {
-	e.code = code
-	return e
+	c := e.clone()
+	c.code = code
+	return c
 }
 
+// Translate registers msg as e's own translation for tag (see
+// RegisterTranslation), then returns e itself for chaining - e.g.
+// NewError("disabled", "disabled").Translate(language.French, "desactive").
+// A registration failure is intentionally not surfaced here (there's no
+// error return to give it): call RegisterTranslation directly instead if
+// that failure needs to be checked. A blank msg is a no-op, so chaining
+// Translate calls for every supported language doesn't require guarding
+// each one against a locale nobody has a wording for yet.
 func (e *LocalizedError) Translate(tag language.Tag, msg string) *LocalizedError {
 	if msg != "" {
 		_ = RegisterTranslation(tag, e.key, msg)
@@ -83,26 +112,72 @@ func (e *LocalizedError) Translate(tag language.Tag, msg string) *LocalizedError
 	return e
 }
 
+// WithArgs returns a copy of e carrying args, for the same reason WithCode
+// does - it's routine to call WithArgs on a shared sentinel (e.g.
+// i18n.ErrLanguageNotSupported.WithArgs(lang.String())) and that must not
+// race with or clobber every other caller doing the same.
 func (e *LocalizedError) WithArgs(args ...any) *LocalizedError {
-	e.args = args
-	return e
+	c := e.clone()
+	c.args = args
+	return c
 }
 
+// Extends returns a copy of e that satisfies errors.Is(err, target), so a
+// package can define its own sentinel LocalizedErrors that still identify
+// as belonging to a broader category - e.g. every error this package
+// returns extends its own package-level Error.
+func (e *LocalizedError) Extends(target error) *LocalizedError {
+	c := e.clone()
+	c.wraps = target
+	return c
+}
+
+// Unwrap lets errors.Is/errors.As reach whatever Extends was called with.
+func (e *LocalizedError) Unwrap() error {
+	return e.wraps
+}
+
+// Is reports whether target is a *LocalizedError sharing e's translation
+// key, so a copy produced by WithArgs/WithCode - same underlying error,
+// different call-specific details - still satisfies
+// errors.Is(copy, originalSentinel).
+func (e *LocalizedError) Is(target error) bool {
+	t, ok := target.(*LocalizedError)
+	if !ok || e.key == "" {
+		return false
+	}
+	return e.key == t.key
+}
+
+func (e *LocalizedError) clone() *LocalizedError {
+	c := *e
+	return &c
+}
+
+// Error renders e's message: via TL if built with NewErrorWithLocale (tag
+// pinned to a specific language), otherwise via T (the process-wide
+// current language, see SetLanguage), with e.args interpolated either way.
+// Before Initialize has run, or if this key has no registered translation
+// anywhere, it renders e.fallback instead (formatted the same way - see
+// formatFallback), or e.key itself if fallback is also empty. A non-zero
+// code (see WithCode) is prefixed as "code: message".
 func (e *LocalizedError) Error() string {
 	if !isInitialized() {
 		msg := e.key
 		if e.fallback != "" {
 			msg = e.fallback
 		}
-		if len(e.args) > 0 {
-			return fmt.Sprintf(msg, e.args...)
-		}
-		return msg
+		return formatFallback(msg, e.args)
 	}
-	result := T(e.key, e.args...)
+	var result string
+	if e.tag != language.Und {
+		result = TL(e.tag, e.key, e.args...)
+	} else {
+		result = T(e.key, e.args...)
+	}
 	if result == e.key {
 		if e.fallback != "" {
-			return e.fallback
+			return formatFallback(e.fallback, e.args)
 		}
 		return e.key
 	}
@@ -112,15 +187,33 @@ func (e *LocalizedError) Error() string {
 	return fmt.Sprintf("%d: %s", e.code, result)
 }
 
-// processFunctionName processes a function name to remove init function indices.
-// This is extracted for testability.
+// formatFallback renders msg with args when no translation applies (either
+// i18n isn't initialized yet, or this specific key has no registered
+// translation) - using the {name}/{name:verb} engine if msg uses that
+// syntax, or plain fmt.Sprintf otherwise, matching whichever style the
+// caller's fallback text was written in.
+func formatFallback(msg string, args []any) string {
+	if hasNamedPlaceholders(msg) {
+		return renderNamed(msg, args)
+	}
+	if len(args) > 0 {
+		return fmt.Sprintf(msg, args...)
+	}
+	return msg
+}
+
+// processFunctionName strips fnName's trailing function/method name, and -
+// if what's left inside "init" is itself only digits (as runtime names the
+// N'th init function in a file, e.g. "pkg.init.0") - strips that generated
+// index too, leaving just the package's own import path. Called from
+// composePackageKey, which needs a caller's package path, not the name of
+// whatever function or init() block happened to be on the stack at depth.
 func processFunctionName(fnName string) string {
 	lastDotIndex := strings.LastIndex(fnName, ".")
 	if lastDotIndex != -1 {
 		fnNameNew := fnName[:lastDotIndex]
 		removed := fnName[lastDotIndex+1:]
 		fnName = fnNameNew
-		// check if we removed pkg init function index
 		if strings.IndexFunc(removed, func(c rune) bool { return c < '0' || c > '9' }) == -1 {
 			lastDotIndex := strings.LastIndex(fnName, ".")
 			if lastDotIndex != -1 {
@@ -131,6 +224,11 @@ func processFunctionName(fnName string) string {
 	return fnName
 }
 
+// composePackageKey builds a full translation key by prefixing key with
+// the reverse-DNS form (see reverseDns) of the package found at depth on
+// the call stack (a runtime.Caller depth, counted from composePackageKey's
+// own frame) - e.g. NewError, GetPackagePrefix. An empty key returns just
+// the reverse-DNS prefix on its own.
 func composePackageKey(key string, depth int) string {
 	pc, _, _, ok := runtime.Caller(depth)
 	if !ok {
@@ -149,6 +247,11 @@ func composePackageKey(key string, depth int) string {
 	return fmt.Sprintf("%s.%s", fnName, key)
 }
 
+// reverseDns turns a Go import path (e.g.
+// "github.com/happy-sdk/happy/pkg/i18n") into its reverse-DNS form (e.g.
+// "com.github.happy-sdk.happy.pkg.i18n") - the convention every key this
+// package's own sentinels, and NewError/NewErrorDepth/GetPackagePrefix
+// callers, are rooted under.
 func reverseDns(u string) string {
 	var rev []string
 	var rmdomain bool
@@ -168,11 +271,12 @@ func reverseDns(u string) string {
 		}
 		rev = append(rev, (sl[i]))
 	}
-	// slices.Reverse(rev)
 	rdns := strings.Join(rev, ".")
 	return rdns
 }
 
+// alnum is the ASCII alphanumeric range ensure keeps; anything else
+// (except dot) is dropped.
 var alnum = &unicode.RangeTable{ //nolint:gochecknoglobals
 	R16: []unicode.Range16{
 		{'0', '9', 1},
@@ -183,6 +287,12 @@ var alnum = &unicode.RangeTable{ //nolint:gochecknoglobals
 
 const dot = '.'
 
+// ensure lowercases in and strips everything but ASCII alphanumerics and
+// "." - used by reverseDns to clean up a domain apex (e.g. "GitHub.COM")
+// before reversing it into a translation key segment. A bare "-" is passed
+// through unchanged rather than reduced to "": every other character
+// ensure strips would otherwise collapse it to an empty segment, which
+// would join two dots together in the caller's result.
 func ensure(in string) string {
 	if in == "-" {
 		return in

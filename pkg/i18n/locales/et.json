@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.i18n",
+  "locales": {
+    "et": {
+      "notes": "Core i18n package's own bundled runtime strings: language display names and this package's own sentinel error messages.",
+      "keys": {
+        "name": {
+          "$message": {
+            "msg": "Eesti",
+            "description": {
+              "msg": "Selle keele enda nimi, kirjutatud selles keeles endas (mitte tõlgitud ühessegi teise keelde)."
+            }
+          }
+        },
+        "set_default": {
+          "$message": {
+            "msg": "keel määratud: {lang:s}",
+            "description": {
+              "msg": "Silumislogi teade, mis väljastatakse, kui käitusajal muudetakse praegust keelt.",
+              "args": {
+                "lang": {
+                  "description": "määratud BCP 47 keelesilt (nt \"de\", \"en\")."
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "disabled": {
+            "$message": {
+              "msg": "i18n on välja lülitatud",
+              "description": {
+                "msg": "Veateade i18n.ErrDisabled jaoks, tagastatakse, et väljakutsujad saaksid seda kontrollida errors.Is abil, kui build või profiil jätab i18n halduri tahtlikult initsialiseerimata."
+              }
+            }
+          },
+          "language_not_supported": {
+            "$message": {
+              "msg": "keelt {lang:s} ei toetata",
+              "description": {
+                "msg": "Veateade i18n.ErrLanguageNotSupported jaoks, tagastatakse, kui soovitud keelt pole ühegi RegisterTranslation kutsega toetatavaks registreeritud.",
+                "args": {
+                  "lang": {
+                    "description": "soovitud, toetamata BCP 47 keelesilt."
+                  }
+                }
+              }
+            }
+          },
+          "unsupported_type": {
+            "$message": {
+              "msg": "toetamata tõlkeväärtuse tüüp {type:T} võtme {key:s} jaoks keeles {lang:s}",
+              "description": {
+                "msg": "Veateade i18n.ErrUnsupportedType jaoks, tagastatakse, kui RegisterTranslation/RegisterTranslations funktsioonile antud tõlkeväärtus pole string, catalog.Message, []catalog.Message ega Message/nende pesastatud map.",
+                "args": {
+                  "type": {
+                    "description": "toetamata väärtuse Go tüüp."
+                  },
+                  "key": {
+                    "description": "täielik tõlkevõti, mille alla väärtus registreeriti."
+                  },
+                  "lang": {
+                    "description": "BCP 47 keelesilt, mille jaoks väärtus registreeriti."
+                  }
+                }
+              }
+            }
+          },
+          "read_dir": {
+            "$message": {
+              "msg": "tõlkekataloogi {dir:s} ei õnnestunud lugeda: {cause:s}",
+              "description": {
+                "msg": "Veateade i18n.ErrReadDir jaoks, tagastatakse, kui tõlke-*FS juurkataloogi või selle keelealamkataloogi ei õnnestu lugeda.",
+                "args": {
+                  "dir": {
+                    "description": "kataloogitee, mida ei õnnestunud lugeda."
+                  },
+                  "cause": {
+                    "description": "aluseks oleva failisüsteemi vea teade."
+                  }
+                }
+              }
+            }
+          },
+          "unexpected_directory": {
+            "$message": {
+              "msg": "oodati tõlkefaili, kuid leiti kataloog {name:q} keeles {lang:s}",
+              "description": {
+                "msg": "Veateade i18n.ErrUnexpectedDirectory jaoks, tagastatakse, kui tõlke-*FS leiab tõlkefaili asemel kataloogi.",
+                "args": {
+                  "name": {
+                    "description": "ootamatu kataloogi nimi."
+                  },
+                  "lang": {
+                    "description": "laaditava kataloogi BCP 47 keelesilt."
+                  }
+                }
+              }
+            }
+          },
+          "read_file": {
+            "$message": {
+              "msg": "tõlkefaili {file:s} ei õnnestunud lugeda: {cause:s}",
+              "description": {
+                "msg": "Veateade i18n.ErrReadFile jaoks, tagastatakse, kui tõlke-*FS-i tõlkefaili ei õnnestu lugeda.",
+                "args": {
+                  "file": {
+                    "description": "tõlkefaili nimi."
+                  },
+                  "cause": {
+                    "description": "aluseks oleva failisüsteemi vea teade."
+                  }
+                }
+              }
+            }
+          },
+          "parse_file": {
+            "$message": {
+              "msg": "tõlkefaili {file:s} ei õnnestunud parsida: {cause:s}",
+              "description": {
+                "msg": "Veateade i18n.ErrParseFile jaoks, tagastatakse, kui tõlkefaili sisu pole kehtiv JSON.",
+                "args": {
+                  "file": {
+                    "description": "tõlkefaili nimi."
+                  },
+                  "cause": {
+                    "description": "aluseks oleva JSON-parsimisvea teade."
+                  }
+                }
+              }
+            }
+          },
+          "parse_language_tag": {
+            "$message": {
+              "msg": "keelesildi parsimine allikast {source:q} ebaõnnestus: {cause:s}",
+              "description": {
+                "msg": "Veateade i18n.ErrParseLanguageTag jaoks, tagastatakse, kui tõlke-*FS ei suuda faili- või kataloogi nimest BCP 47 keelesilti parsida.",
+                "args": {
+                  "source": {
+                    "description": "faili- või kataloogi nimi, millest keelesilti parsiti."
+                  },
+                  "cause": {
+                    "description": "aluseks oleva parsimisvea teade."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_message": {
+            "$message": {
+              "msg": "vigane tõlkesõnum {name:s}: {reason:s}",
+              "description": {
+                "msg": "Veateade i18n.ErrInvalidMessage jaoks, tagastatakse, kui JSON $message objekt on vigane (nt fragmendil puudub nõutav \"other\" vorm).",
+                "args": {
+                  "name": {
+                    "description": "vigane fragmendi- või väljanimi."
+                  },
+                  "reason": {
+                    "description": "inimloetav selgitus, mis on valesti."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_schema_version": {
+            "$message": {
+              "msg": "toetamata või vigane tõlke skeemi versioon keele {lang:s} jaoks: {cause:s}",
+              "description": {
+                "msg": "Veateade i18n.ErrInvalidSchemaVersion jaoks, mis tagastatakse, kui tõlkefaili reserveeritud võtit \"$version\" ei õnnestu lahendada: see nimetab skeemi versiooni, mis on uuem kui see pkg/i18n versioon toetab, ei ole äratuntav täisarv, või ülemineku praegusele versioonile ebaõnnestus.",
+                "args": {
+                  "lang": {
+                    "description": "BCP 47 keelekood, mille jaoks tõlkefaili registreeriti."
+                  },
+                  "cause": {
+                    "description": "aluseks oleva skeemivea sõnum."
+                  }
+                }
+              }
+            }
+          },
+          "unknown_locale_key": {
+            "$message": {
+              "msg": "{has_suggestion_f}",
+              "fragments": {
+                "has_suggestion_f": {
+                  "kind": "select",
+                  "arg": "has_suggestion",
+                  "yes": "pakett {bundle:s}: lokaadis {lang:s} on võti {key:s}, mida lähtelokaadis {source:s} ei eksisteeri (kas mõtlesite {suggestion:s}?)",
+                  "other": "pakett {bundle:s}: lokaadis {lang:s} on võti {key:s}, mida lähtelokaadis {source:s} ei eksisteeri"
+                }
+              },
+              "description": {
+                "msg": "Veateade i18n.ErrUnknownLocaleKey jaoks, mis tagastatakse, kui mitte-lähtelokaat registreerib võtme, mida ei eksisteeri kusagil selle paketi deklareeritud lähtelokaadis - tavaliselt trükiviga võtme nimes endas või vananenud võti, mis jäi alles pärast lähte muutmist.",
+                "args": {
+                  "bundle": {
+                    "description": "pakett (juurvõti), mille all võti registreeriti."
+                  },
+                  "lang": {
+                    "description": "selle lokaadi BCP 47 keelekood, millel on tundmatu võti."
+                  },
+                  "key": {
+                    "description": "tundmatu võti, suhteliselt oma paketi suhtes."
+                  },
+                  "source": {
+                    "description": "paketi deklareeritud lähtelokaadi BCP 47 keelekood."
+                  },
+                  "suggestion": {
+                    "description": "lähtelokaadist leitud kõige sarnasem võti, kui see on olemas."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

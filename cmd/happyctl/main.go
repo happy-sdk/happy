@@ -12,6 +12,7 @@ import (
 	"github.com/happy-sdk/happy/addons/devel"
 	"github.com/happy-sdk/happy/addons/devel/project"
 	"github.com/happy-sdk/happy/addons/devel/projects"
+	"github.com/happy-sdk/happy/addons/l10n"
 	"github.com/happy-sdk/happy/pkg/branding"
 	"github.com/happy-sdk/happy/sdk/action"
 	"github.com/happy-sdk/happy/sdk/cli"
@@ -20,6 +21,7 @@ import (
 )
 
 func main() {
+
 	brand := branding.New(branding.Info{
 		Name:    "Happy Theme",
 		Slug:    "happy-theme",
@@ -41,7 +43,6 @@ func main() {
 		CLI: happy.CliSettings{
 			WithGlobalFlags:      true,
 			HideDisabledCommands: false,
-			WithL10nCmd:          true,
 		},
 		Logging: happy.LoggingSettings{
 			WithSource: true,
@@ -53,7 +54,7 @@ func main() {
 
 	app.WithBrand(brand)
 
-	app.WithAddon(
+	app.WithAddons(
 		devel.Addon(
 			devel.Settings{
 				Projects: projects.Settings{
@@ -67,6 +68,7 @@ func main() {
 				},
 			},
 		),
+		l10n.Addon(),
 	)
 
 	app.WithFlags(

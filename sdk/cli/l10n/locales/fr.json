@@ -1,0 +1,556 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.cli",
+  "locales": {
+    "fr": {
+      "notes": "sdk/cli's own command help text, flag descriptions, and the built-in config command.",
+      "keys": {
+        "cmd": {
+          "config": {
+            "category": {
+              "$message": {
+                "msg": "Configuration",
+                "description": {
+                  "msg": "Étiquette de catégorie affichée dans la sortie d'aide de la CLI, regroupant la commande config avec d'autres commandes du même type."
+                }
+              }
+            },
+            "description": {
+              "$message": {
+                "msg": "Gérer et configurer les paramètres de l'application",
+                "description": {
+                  "msg": "Description en une ligne de la commande config affichée dans les listes d'aide de la CLI."
+                }
+              }
+            },
+            "info": {
+              "$message": {
+                "msg": "Cette commande vous permet de gérer les paramètres de configuration de l'application et les profils de paramètres.",
+                "description": {
+                  "msg": "Texte d'aide plus long affiché pour la commande config elle-même (par ex. via --help)."
+                }
+              }
+            },
+            "ls": {
+              "description": {
+                "$message": {
+                  "msg": "Lister les paramètres du profil actuel",
+                  "description": {
+                    "msg": "Description en une ligne de la sous-commande config ls affichée dans les listes d'aide de la CLI."
+                  }
+                }
+              },
+              "usage_flags": {
+                "$message": {
+                  "msg": "[-a|--all]",
+                  "description": {
+                    "msg": "Résumé court des drapeaux affiché à côté de la sous-commande ls dans le texte d'utilisation."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<nom-profil> [flags]",
+                  "description": {
+                    "msg": "Ligne d'utilisation affichée pour la sous-commande ls."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "Lister tous les paramètres (par défaut profil actuel), y compris les paramètres internes",
+                  "description": {
+                    "msg": "Texte d'aide pour le drapeau --all de la sous-commande ls."
+                  }
+                }
+              },
+              "flag_describe": {
+                "$message": {
+                  "msg": "Décrire les paramètres",
+                  "description": {
+                    "msg": "Texte d'aide pour le drapeau --describe de la sous-commande ls."
+                  }
+                }
+              },
+              "flag_prefix": {
+                "$message": {
+                  "msg": "Afficher les paramètres avec un préfixe spécifique",
+                  "description": {
+                    "msg": "Texte d'aide pour le drapeau --prefix de la sous-commande ls."
+                  }
+                }
+              },
+              "table_settings_descriptions": {
+                "$message": {
+                  "msg": "Descriptions des paramètres",
+                  "description": {
+                    "msg": "Titre affiché au-dessus du tableau des descriptions de paramètres."
+                  }
+                }
+              },
+              "table_configuration_of": {
+                "$message": {
+                  "msg": "Configuration de {app_name:s}",
+                  "description": {
+                    "msg": "Titre affiché au-dessus du tableau listant la configuration d'une application spécifique.",
+                    "args": {
+                      "app_name": {
+                        "description": "le nom d'affichage de l'application."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_settings_for_profile": {
+                "$message": {
+                  "msg": "Paramètres pour le PROFIL actuel : {profile:s}",
+                  "description": {
+                    "msg": "Titre affiché au-dessus du tableau listant les paramètres du profil actuel.",
+                    "args": {
+                      "profile": {
+                        "description": "le nom du profil actuel."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_application_config": {
+                "$message": {
+                  "msg": "Configuration de l'application",
+                  "description": {
+                    "msg": "Titre affiché au-dessus du tableau général de configuration de l'application."
+                  }
+                }
+              },
+              "header_key": {
+                "$message": {
+                  "msg": "CLÉ",
+                  "description": {
+                    "msg": "En-tête de colonne pour la colonne clé du tableau des paramètres."
+                  }
+                }
+              },
+              "header_description": {
+                "$message": {
+                  "msg": "DESCRIPTION",
+                  "description": {
+                    "msg": "En-tête de colonne pour la colonne description du tableau des paramètres."
+                  }
+                }
+              },
+              "header_kind": {
+                "$message": {
+                  "msg": "TYPE",
+                  "description": {
+                    "msg": "En-tête de colonne pour la colonne type du tableau des paramètres."
+                  }
+                }
+              },
+              "header_is_set": {
+                "$message": {
+                  "msg": "EST DÉFINI",
+                  "description": {
+                    "msg": "En-tête de colonne pour la colonne est-défini du tableau des paramètres."
+                  }
+                }
+              },
+              "header_mutability": {
+                "$message": {
+                  "msg": "MUTABILITÉ",
+                  "description": {
+                    "msg": "En-tête de colonne pour la colonne mutabilité du tableau des paramètres."
+                  }
+                }
+              },
+              "header_value": {
+                "$message": {
+                  "msg": "VALEUR",
+                  "description": {
+                    "msg": "En-tête de colonne pour la colonne valeur du tableau des paramètres."
+                  }
+                }
+              },
+              "header_default": {
+                "$message": {
+                  "msg": "PAR DÉFAUT",
+                  "description": {
+                    "msg": "En-tête de colonne pour la colonne valeur par défaut du tableau des paramètres."
+                  }
+                }
+              }
+            },
+            "set": {
+              "description": {
+                "$message": {
+                  "msg": "Définir une valeur de paramètre",
+                  "description": {
+                    "msg": "Description en une ligne de la sous-commande config set affichée dans les listes d'aide de la CLI."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<nom-profil>",
+                  "description": {
+                    "msg": "Ligne d'utilisation affichée pour la sous-commande set."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "le paramètre {key:s} n'existe pas",
+                  "description": {
+                    "msg": "Erreur affichée lorsque la clé de paramètre donnée n'existe pas.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "get": {
+              "description": {
+                "$message": {
+                  "msg": "Obtenir une valeur de paramètre ou d'option",
+                  "description": {
+                    "msg": "Description en une ligne de la sous-commande config get affichée dans les listes d'aide de la CLI."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<nom-profil>",
+                  "description": {
+                    "msg": "Ligne d'utilisation affichée pour la sous-commande get."
+                  }
+                }
+              },
+              "flag_secret": {
+                "$message": {
+                  "msg": "Demande de saisir le mot de passe des secrets pour afficher la valeur. Si le mot de passe n'est pas défini, il affiche la valeur secrète <redacted> sans la demande",
+                  "description": {
+                    "msg": "Texte d'aide pour le drapeau --secret de la sous-commande get."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "le paramètre {key:s} n'existe pas",
+                  "description": {
+                    "msg": "Erreur affichée lorsque la clé de paramètre donnée n'existe pas.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_invalid_password": {
+                "$message": {
+                  "msg": "mot de passe invalide",
+                  "description": {
+                    "msg": "Erreur affichée lorsque le mot de passe des secrets saisi est invalide."
+                  }
+                }
+              },
+              "redacted": {
+                "$message": {
+                  "msg": "<redacted>",
+                  "description": {
+                    "msg": "Texte d'espace réservé affiché à la place d'une valeur secrète lorsqu'aucun mot de passe n'a été fourni."
+                  }
+                }
+              }
+            },
+            "add": {
+              "description": {
+                "$message": {
+                  "msg": "Ajouter une valeur donnée à la valeur du paramètre",
+                  "description": {
+                    "msg": "Description en une ligne de la sous-commande config add affichée dans les listes d'aide de la CLI."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<nom-profil>",
+                  "description": {
+                    "msg": "Ligne d'utilisation affichée pour la sous-commande add."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "le paramètre {key:s} n'existe pas",
+                  "description": {
+                    "msg": "Erreur affichée lorsque la clé de paramètre donnée n'existe pas.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "le paramètre {key:s} n'est pas une liste",
+                  "description": {
+                    "msg": "Erreur affichée lorsque le paramètre donné n'est pas une liste, et qu'une valeur ne peut donc pas y être ajoutée.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_already_exists": {
+                "$message": {
+                  "msg": "la valeur {value:s} pour {key:s} existe déjà",
+                  "description": {
+                    "msg": "Erreur affichée lorsque la valeur donnée existe déjà dans la liste du paramètre.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      },
+                      "value": {
+                        "description": "la valeur donnée."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "remove": {
+              "description": {
+                "$message": {
+                  "msg": "Retirer une valeur donnée de la valeur du paramètre",
+                  "description": {
+                    "msg": "Description en une ligne de la sous-commande config remove affichée dans les listes d'aide de la CLI."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<nom-profil>",
+                  "description": {
+                    "msg": "Ligne d'utilisation affichée pour la sous-commande remove."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "le paramètre {key:s} n'existe pas",
+                  "description": {
+                    "msg": "Erreur affichée lorsque la clé de paramètre donnée n'existe pas.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "le paramètre {key:s} n'est pas une liste",
+                  "description": {
+                    "msg": "Erreur affichée lorsque le paramètre donné n'est pas une liste, et qu'une valeur ne peut donc pas en être retirée.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_value_not_exists": {
+                "$message": {
+                  "msg": "la valeur {value:s} pour {key:s} n'existe pas",
+                  "description": {
+                    "msg": "Erreur affichée lorsque la valeur donnée n'existe pas dans la liste du paramètre.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      },
+                      "value": {
+                        "description": "la valeur donnée."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "reset": {
+              "description": {
+                "$message": {
+                  "msg": "Réinitialiser un paramètre à sa valeur par défaut",
+                  "description": {
+                    "msg": "Description en une ligne de la sous-commande config reset affichée dans les listes d'aide de la CLI."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<nom-profil>",
+                  "description": {
+                    "msg": "Ligne d'utilisation affichée pour la sous-commande reset."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "réinitialiser tous les paramètres",
+                  "description": {
+                    "msg": "Texte d'aide pour le drapeau --all de la sous-commande reset."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "le paramètre {key:s} n'existe pas",
+                  "description": {
+                    "msg": "Erreur affichée lorsque la clé de paramètre donnée n'existe pas.",
+                    "args": {
+                      "key": {
+                        "description": "la clé de paramètre recherchée."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "prompt_secrets_password": {
+              "$message": {
+                "msg": "entrer le mot de passe des secrets",
+                "description": {
+                  "msg": "Invite affichée lorsqu'il est demandé à l'utilisateur de saisir le mot de passe des secrets."
+                }
+              }
+            }
+          }
+        },
+        "help": {
+          "commands": {
+            "$message": {
+              "msg": " COMMANDES :",
+              "description": {
+                "msg": "En-tête de section affiché au-dessus de la liste des commandes dans la sortie d'aide de la CLI."
+              }
+            }
+          },
+          "flags": {
+            "$message": {
+              "msg": " DRAPEAUX :",
+              "description": {
+                "msg": "En-tête de section affiché au-dessus de la liste des drapeaux dans la sortie d'aide de la CLI."
+              }
+            }
+          },
+          "shared_flags": {
+            "$message": {
+              "msg": " DRAPEAUX PARTAGÉS :",
+              "description": {
+                "msg": "En-tête de section affiché au-dessus de la liste des drapeaux partagés dans la sortie d'aide de la CLI."
+              }
+            }
+          },
+          "global_flags": {
+            "$message": {
+              "msg": " DRAPEAUX GLOBAUX :",
+              "description": {
+                "msg": "En-tête de section affiché au-dessus de la liste des drapeaux globaux dans la sortie d'aide de la CLI."
+              }
+            }
+          },
+          "copyright": {
+            "$message": {
+              "msg": "Copyright ©",
+              "description": {
+                "msg": "Libellé affiché avant la ligne de copyright dans la sortie d'aide de la CLI."
+              }
+            }
+          },
+          "license": {
+            "$message": {
+              "msg": "Licence : ",
+              "description": {
+                "msg": "Libellé affiché avant la ligne de licence dans la sortie d'aide de la CLI."
+              }
+            }
+          },
+          "default": {
+            "$message": {
+              "msg": "par défaut",
+              "description": {
+                "msg": "Mot utilisé pour marquer la valeur par défaut d'un drapeau ou d'un paramètre dans la sortie d'aide de la CLI."
+              }
+            }
+          }
+        },
+        "flags": {
+          "version": {
+            "$message": {
+              "msg": "afficher la version de l'application",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau global --version."
+              }
+            }
+          },
+          "help": {
+            "$message": {
+              "msg": "afficher l'aide ou l'aide pour la commande. [...commande --help]",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau global --help."
+              }
+            }
+          },
+          "show_exec": {
+            "$message": {
+              "msg": "le drapeau -x affiche toutes les commandes CLI au fur et à mesure de leur exécution.",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau global -x."
+              }
+            }
+          },
+          "system_debug": {
+            "$message": {
+              "msg": "activer le niveau de journalisation de débogage système (très verbeux)",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau global --system-debug."
+              }
+            }
+          },
+          "debug": {
+            "$message": {
+              "msg": "activer le niveau de journalisation de débogage",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau global --debug."
+              }
+            }
+          },
+          "verbose": {
+            "$message": {
+              "msg": "activer le niveau de journalisation verbeux",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau global --verbose."
+              }
+            }
+          },
+          "x_prod": {
+            "$message": {
+              "msg": "DÉVELOPPEMENT UNIQUEMENT : forcer l'application en mode production en définissant app_is_devel sur false lors de l'exécution depuis la source.",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --x-prod réservé au développement."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

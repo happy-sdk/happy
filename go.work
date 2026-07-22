@@ -3,6 +3,7 @@ go 1.27rc2
 use (
 	.
 	./addons/devel
+	./addons/l10n
 	./cmd/happyctl
 	./lib/changelog
 	./lib/scm/gitutils

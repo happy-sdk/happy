@@ -1,0 +1,556 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.cli",
+  "locales": {
+    "en": {
+      "notes": "sdk/cli's own command help text, flag descriptions, and the built-in config command.",
+      "keys": {
+        "cmd": {
+          "config": {
+            "category": {
+              "$message": {
+                "msg": "Configuration",
+                "description": {
+                  "msg": "Category label shown in CLI help output, grouping the config command with other commands of the same kind."
+                }
+              }
+            },
+            "description": {
+              "$message": {
+                "msg": "Manage and configure application settings",
+                "description": {
+                  "msg": "One-line description of the config command shown in CLI help listings."
+                }
+              }
+            },
+            "info": {
+              "$message": {
+                "msg": "This command allows you to manage the application configuration settings and settings profiles.",
+                "description": {
+                  "msg": "Longer help text shown for the config command itself (e.g. via --help)."
+                }
+              }
+            },
+            "ls": {
+              "description": {
+                "$message": {
+                  "msg": "List settings for current profile",
+                  "description": {
+                    "msg": "One-line description of the config ls subcommand shown in CLI help listings."
+                  }
+                }
+              },
+              "usage_flags": {
+                "$message": {
+                  "msg": "[-a|--all]",
+                  "description": {
+                    "msg": "Short flag summary shown next to the ls subcommand in usage text."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profile-name> [flags]",
+                  "description": {
+                    "msg": "Usage line shown for the ls subcommand."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "List all settings (default current profile), including internal settings",
+                  "description": {
+                    "msg": "Help text for the ls subcommand's --all flag."
+                  }
+                }
+              },
+              "flag_describe": {
+                "$message": {
+                  "msg": "Describe settings",
+                  "description": {
+                    "msg": "Help text for the ls subcommand's --describe flag."
+                  }
+                }
+              },
+              "flag_prefix": {
+                "$message": {
+                  "msg": "Display settings with a specific prefix",
+                  "description": {
+                    "msg": "Help text for the ls subcommand's --prefix flag."
+                  }
+                }
+              },
+              "table_settings_descriptions": {
+                "$message": {
+                  "msg": "Settings Descriptions",
+                  "description": {
+                    "msg": "Title shown above the settings-descriptions table."
+                  }
+                }
+              },
+              "table_configuration_of": {
+                "$message": {
+                  "msg": "Configuration of {app_name:s}",
+                  "description": {
+                    "msg": "Title shown above the table listing a specific application's configuration.",
+                    "args": {
+                      "app_name": {
+                        "description": "the application's display name."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_settings_for_profile": {
+                "$message": {
+                  "msg": "Settings for current PROFILE: {profile:s}",
+                  "description": {
+                    "msg": "Title shown above the table listing settings for the current profile.",
+                    "args": {
+                      "profile": {
+                        "description": "the current profile's name."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_application_config": {
+                "$message": {
+                  "msg": "Application Config",
+                  "description": {
+                    "msg": "Title shown above the general application-config table."
+                  }
+                }
+              },
+              "header_key": {
+                "$message": {
+                  "msg": "KEY",
+                  "description": {
+                    "msg": "Column header for the settings table's key column."
+                  }
+                }
+              },
+              "header_description": {
+                "$message": {
+                  "msg": "DESCRIPTION",
+                  "description": {
+                    "msg": "Column header for the settings table's description column."
+                  }
+                }
+              },
+              "header_kind": {
+                "$message": {
+                  "msg": "KIND",
+                  "description": {
+                    "msg": "Column header for the settings table's kind/type column."
+                  }
+                }
+              },
+              "header_is_set": {
+                "$message": {
+                  "msg": "IS SET",
+                  "description": {
+                    "msg": "Column header for the settings table's is-set column."
+                  }
+                }
+              },
+              "header_mutability": {
+                "$message": {
+                  "msg": "MUTABILITY",
+                  "description": {
+                    "msg": "Column header for the settings table's mutability column."
+                  }
+                }
+              },
+              "header_value": {
+                "$message": {
+                  "msg": "VALUE",
+                  "description": {
+                    "msg": "Column header for the settings table's value column."
+                  }
+                }
+              },
+              "header_default": {
+                "$message": {
+                  "msg": "DEFAULT",
+                  "description": {
+                    "msg": "Column header for the settings table's default-value column."
+                  }
+                }
+              }
+            },
+            "set": {
+              "description": {
+                "$message": {
+                  "msg": "Set a setting value",
+                  "description": {
+                    "msg": "One-line description of the config set subcommand shown in CLI help listings."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profile-name>",
+                  "description": {
+                    "msg": "Usage line shown for the set subcommand."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "setting {key:s} does not exist",
+                  "description": {
+                    "msg": "Error shown when the given setting key doesn't exist.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "get": {
+              "description": {
+                "$message": {
+                  "msg": "Get a setting or option value",
+                  "description": {
+                    "msg": "One-line description of the config get subcommand shown in CLI help listings."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profile-name>",
+                  "description": {
+                    "msg": "Usage line shown for the get subcommand."
+                  }
+                }
+              },
+              "flag_secret": {
+                "$message": {
+                  "msg": "Prompts to enter Secrets password to display value. If password is not set it prints secret value instead <redacted> without the prompt",
+                  "description": {
+                    "msg": "Help text for the get subcommand's --secret flag."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "setting {key:s} does not exist",
+                  "description": {
+                    "msg": "Error shown when the given setting key doesn't exist.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_invalid_password": {
+                "$message": {
+                  "msg": "invalid password",
+                  "description": {
+                    "msg": "Error shown when the entered secrets password is invalid."
+                  }
+                }
+              },
+              "redacted": {
+                "$message": {
+                  "msg": "<redacted>",
+                  "description": {
+                    "msg": "Placeholder text shown instead of a secret value when no password was provided."
+                  }
+                }
+              }
+            },
+            "add": {
+              "description": {
+                "$message": {
+                  "msg": "Add given value to setting value",
+                  "description": {
+                    "msg": "One-line description of the config add subcommand shown in CLI help listings."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profile-name>",
+                  "description": {
+                    "msg": "Usage line shown for the add subcommand."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "setting {key:s} does not exist",
+                  "description": {
+                    "msg": "Error shown when the given setting key doesn't exist.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "setting {key:s} is not a slice",
+                  "description": {
+                    "msg": "Error shown when the given setting isn't a slice/list value, so a value can't be added to it.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_already_exists": {
+                "$message": {
+                  "msg": "{key:s} value {value:s} already exists",
+                  "description": {
+                    "msg": "Error shown when the given value already exists in the setting's list.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      },
+                      "value": {
+                        "description": "the value that was given."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "remove": {
+              "description": {
+                "$message": {
+                  "msg": "Remove given value from setting value",
+                  "description": {
+                    "msg": "One-line description of the config remove subcommand shown in CLI help listings."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profile-name>",
+                  "description": {
+                    "msg": "Usage line shown for the remove subcommand."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "setting {key:s} does not exist",
+                  "description": {
+                    "msg": "Error shown when the given setting key doesn't exist.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "setting {key:s} is not a slice",
+                  "description": {
+                    "msg": "Error shown when the given setting isn't a slice/list value, so a value can't be removed from it.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_value_not_exists": {
+                "$message": {
+                  "msg": "{key:s} value {value:s} does not exist",
+                  "description": {
+                    "msg": "Error shown when the given value doesn't exist in the setting's list.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      },
+                      "value": {
+                        "description": "the value that was given."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "reset": {
+              "description": {
+                "$message": {
+                  "msg": "Reset a setting to its default value",
+                  "description": {
+                    "msg": "One-line description of the config reset subcommand shown in CLI help listings."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profile-name>",
+                  "description": {
+                    "msg": "Usage line shown for the reset subcommand."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "reset all settings",
+                  "description": {
+                    "msg": "Help text for the reset subcommand's --all flag."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "setting {key:s} does not exist",
+                  "description": {
+                    "msg": "Error shown when the given setting key doesn't exist.",
+                    "args": {
+                      "key": {
+                        "description": "the setting key that was looked up."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "prompt_secrets_password": {
+              "$message": {
+                "msg": "enter secrets password",
+                "description": {
+                  "msg": "Prompt shown when asking the user to enter the secrets password."
+                }
+              }
+            }
+          }
+        },
+        "help": {
+          "commands": {
+            "$message": {
+              "msg": " COMMANDS:",
+              "description": {
+                "msg": "Section header shown above the list of commands in CLI help output."
+              }
+            }
+          },
+          "flags": {
+            "$message": {
+              "msg": " FLAGS:",
+              "description": {
+                "msg": "Section header shown above the list of flags in CLI help output."
+              }
+            }
+          },
+          "shared_flags": {
+            "$message": {
+              "msg": " SHARED FLAGS:",
+              "description": {
+                "msg": "Section header shown above the list of shared flags in CLI help output."
+              }
+            }
+          },
+          "global_flags": {
+            "$message": {
+              "msg": " GLOBAL FLAGS:",
+              "description": {
+                "msg": "Section header shown above the list of global flags in CLI help output."
+              }
+            }
+          },
+          "copyright": {
+            "$message": {
+              "msg": "Copyright ©",
+              "description": {
+                "msg": "Label shown before the copyright line in CLI help output."
+              }
+            }
+          },
+          "license": {
+            "$message": {
+              "msg": "License: ",
+              "description": {
+                "msg": "Label shown before the license line in CLI help output."
+              }
+            }
+          },
+          "default": {
+            "$message": {
+              "msg": "default",
+              "description": {
+                "msg": "Word used to mark a flag or setting's default value in CLI help output."
+              }
+            }
+          }
+        },
+        "flags": {
+          "version": {
+            "$message": {
+              "msg": "print application version",
+              "description": {
+                "msg": "Help text for the global --version flag."
+              }
+            }
+          },
+          "help": {
+            "$message": {
+              "msg": "display help or help for the command. [...command --help]",
+              "description": {
+                "msg": "Help text for the global --help flag."
+              }
+            }
+          },
+          "show_exec": {
+            "$message": {
+              "msg": "the -x flag prints all the cli commands as they are executed.",
+              "description": {
+                "msg": "Help text for the global -x flag."
+              }
+            }
+          },
+          "system_debug": {
+            "$message": {
+              "msg": "enable system debug log level (very verbose)",
+              "description": {
+                "msg": "Help text for the global --system-debug flag."
+              }
+            }
+          },
+          "debug": {
+            "$message": {
+              "msg": "enable debug log level",
+              "description": {
+                "msg": "Help text for the global --debug flag."
+              }
+            }
+          },
+          "verbose": {
+            "$message": {
+              "msg": "enable verbose log level",
+              "description": {
+                "msg": "Help text for the global --verbose flag."
+              }
+            }
+          },
+          "x_prod": {
+            "$message": {
+              "msg": "DEV ONLY: force app into production mode setting app_is_devel false when running from source.",
+              "description": {
+                "msg": "Help text for the development-only --x-prod flag."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

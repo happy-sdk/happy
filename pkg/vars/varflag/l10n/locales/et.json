@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.vars.varflag",
+  "locales": {
+    "et": {
+      "notes": "pkg/vars/varflag's own sentinel error messages.",
+      "keys": {
+        "invalid_arguments": {
+          "$message": {
+            "msg": "vigased argumendid",
+            "description": {
+              "msg": "Veateade üldiselt vigaste CLI argumentide jaoks."
+            }
+          }
+        },
+        "invalid_command_or_args": {
+          "$message": {
+            "msg": "{name:s} ei aktsepteeri käsku ega argumenti {arg:s}",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui lipukomplektile antakse käsk või argument, mida see ei aktsepteeri.",
+              "args": {
+                "name": {
+                  "description": "lipukomplekti enda nimi."
+                },
+                "arg": {
+                  "description": "aktsepteerimata käsu- või argumendi väärtus."
+                }
+              }
+            }
+          }
+        },
+        "flag": {
+          "$message": {
+            "msg": "lipu viga",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui lipu initsialiseerimine ebaõnnestub."
+            }
+          }
+        },
+        "flag_exists": {
+          "$message": {
+            "msg": "lipp on juba olemas",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui sama nimega lipp on juba olemas."
+            }
+          }
+        },
+        "alias_shadow": {
+          "$message": {
+            "msg": "lipu alias on varjutatud",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui lipu aliast varjutab mõni teine lipp."
+            }
+          }
+        },
+        "parse": {
+          "$message": {
+            "msg": "lipu sõelumise viga",
+            "description": {
+              "msg": "Veateade üldiste lipu sõelumisvigade jaoks."
+            }
+          }
+        },
+        "missing_value": {
+          "$message": {
+            "msg": "lipu väärtus puudub",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui lipu väärtus puudub sõelutud argumentidest."
+            }
+          }
+        },
+        "invalid_value": {
+          "$message": {
+            "msg": "vigane lipu väärtus",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui lipule anti vigane väärtus."
+            }
+          }
+        },
+        "flag_already_parsed": {
+          "$message": {
+            "msg": "lipp on juba sõelutud",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui lipp on juba sõelutud."
+            }
+          }
+        },
+        "missing_required": {
+          "$message": {
+            "msg": "nõutav lipp puudub",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui nõutav lipp puudub argumentide hulgast."
+            }
+          }
+        },
+        "missing_options": {
+          "$message": {
+            "msg": "valikud puuduvad",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui valikulipu sõelumisel ei leita ühtegi valikut."
+            }
+          }
+        },
+        "no_named_flag": {
+          "$message": {
+            "msg": "sellist lippu pole",
+            "description": {
+              "msg": "Veateade, mis tagastatakse, kui lipu otsimine ei leia sellenimelist lippu."
+            }
+          }
+        }
+      }
+    }
+  }
+}

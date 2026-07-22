@@ -1,0 +1,171 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.addons.l10n",
+  "locales": {
+    "sv": {
+      "notes": "The l10n addon's own l10n report/list/translate command help text and flag descriptions.",
+      "keys": {
+        "category": {
+          "$message": {
+            "msg": "Lokalisering",
+            "description": {
+              "msg": "Kategorietikett som visas i CLI-hjälputskriften och grupperar l10n-kommandot med andra kommandon av samma typ."
+            }
+          }
+        },
+        "description": {
+          "$message": {
+            "msg": "Hantera applikationsöversättningar",
+            "description": {
+              "msg": "Enradig beskrivning av l10n-kommandot som visas i CLI-hjälplistor."
+            }
+          }
+        },
+        "info": {
+          "$message": {
+            "msg": "Detta kommando låter dig hantera och översätta applikationssträngar.",
+            "description": {
+              "msg": "Längre hjälptext som visas för själva l10n-kommandot (t.ex. via --help)."
+            }
+          }
+        },
+        "report": {
+          "description": {
+            "$message": {
+              "msg": "Visa översättningsstatusrapport",
+              "description": {
+                "msg": "Enradig beskrivning av underkommandot l10n report som visas i CLI-hjälplistor."
+              }
+            }
+          },
+          "flag_threshold": {
+            "$message": {
+              "msg": "Avsluta med kod 1 om ett språk har en lägre procentsats än tröskelvärdet",
+              "description": {
+                "msg": "Hjälptext för report-underkommandots --threshold-flagga."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Visa rapport endast för ett specifikt språk",
+              "description": {
+                "msg": "Hjälptext för report-underkommandots --lang-flagga."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Inkludera beroendeöversättningar i rapporten (som standard visas endast det aktuella projektets egna översättningar).",
+              "description": {
+                "msg": "Hjälptext för report-underkommandots --with-deps-flagga."
+              }
+            }
+          }
+        },
+        "list": {
+          "description": {
+            "$message": {
+              "msg": "Lista alla översättningsnycklar",
+              "description": {
+                "msg": "Enradig beskrivning av underkommandot l10n list som visas i CLI-hjälplistor."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Visa lista endast för ett specifikt språk",
+              "description": {
+                "msg": "Hjälptext för list-underkommandots --lang-flagga."
+              }
+            }
+          },
+          "flag_missing": {
+            "$message": {
+              "msg": "Visa endast nycklar med saknade översättningar",
+              "description": {
+                "msg": "Hjälptext för list-underkommandots --missing-flagga."
+              }
+            }
+          },
+          "flag_json": {
+            "$message": {
+              "msg": "Skriv ut JSON-svar istället för tabell",
+              "description": {
+                "msg": "Hjälptext för list-underkommandots --json-flagga."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Inkludera beroendeöversättningar i listan (som standard visas endast det aktuella projektets egna översättningar).",
+              "description": {
+                "msg": "Hjälptext för list-underkommandots --with-deps-flagga."
+              }
+            }
+          }
+        },
+        "translate": {
+          "description": {
+            "$message": {
+              "msg": "Översätt saknade översättningsnycklar",
+              "description": {
+                "msg": "Enradig beskrivning av underkommandot l10n translate som visas i CLI-hjälplistor."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Översätt nycklar endast för ett specifikt språk.",
+              "description": {
+                "msg": "Hjälptext för translate-underkommandots --lang-flagga."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Inkludera beroendens översättningsnycklar vid fråga om saknade översättningar (som standard efterfrågas endast det aktuella projektets egna nycklar).",
+              "description": {
+                "msg": "Hjälptext för translate-underkommandots --with-deps-flagga."
+              }
+            }
+          }
+        },
+        "generate": {
+          "description": {
+            "$message": {
+              "msg": "Generera typade Go-accessorer för översättningsnycklar",
+              "description": {
+                "msg": "Enradig beskrivning av underkommandot l10n generate som visas i CLI-hjälplistor."
+              }
+            }
+          },
+          "flag_bundle": {
+            "$message": {
+              "msg": "Generera accessorer för ett specifikt paket (standard är applikationens egna modulpaket).",
+              "description": {
+                "msg": "Hjälptext för underkommandot generates flagga --bundle."
+              }
+            }
+          },
+          "flag_out": {
+            "$message": {
+              "msg": "Skriv den genererade Go-filen till denna sökväg (standard är stdout).",
+              "description": {
+                "msg": "Hjälptext för underkommandot generates flagga --out."
+              }
+            }
+          },
+          "flag_package": {
+            "$message": {
+              "msg": "Paketnamn för den genererade Go-filen.",
+              "description": {
+                "msg": "Hjälptext för underkommandot generates flagga --package."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,556 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.cli",
+  "locales": {
+    "fi": {
+      "notes": "sdk/cli's own command help text, flag descriptions, and the built-in config command.",
+      "keys": {
+        "cmd": {
+          "config": {
+            "category": {
+              "$message": {
+                "msg": "Konfiguraatio",
+                "description": {
+                  "msg": "Kategorialappu, joka näytetään CLI-ohjetulosteessa ja ryhmittelee config-komennon samantyyppisten komentojen kanssa."
+                }
+              }
+            },
+            "description": {
+              "$message": {
+                "msg": "Hallitse ja konfiguroi sovelluksen asetuksia",
+                "description": {
+                  "msg": "Config-komennon yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+                }
+              }
+            },
+            "info": {
+              "$message": {
+                "msg": "Tämä komento antaa sinun hallita sovelluksen konfiguraatioasetuksia ja asetusprofiileja.",
+                "description": {
+                  "msg": "Pidempi ohjeteksti, joka näytetään itse config-komennolle (esim. --help-kautta)."
+                }
+              }
+            },
+            "ls": {
+              "description": {
+                "$message": {
+                  "msg": "Listaa nykyisen profiilin asetukset",
+                  "description": {
+                    "msg": "Alikomennon config ls yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+                  }
+                }
+              },
+              "usage_flags": {
+                "$message": {
+                  "msg": "[-a|--all]",
+                  "description": {
+                    "msg": "Lyhyt lippuyhteenveto, joka näytetään ls-alikomennon vieressä käyttöohjeessa."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi> [liput]",
+                  "description": {
+                    "msg": "Käyttörivi, joka näytetään ls-alikomennolle."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "Listaa kaikki asetukset (oletus nykyinen profiili), mukaan lukien sisäiset asetukset",
+                  "description": {
+                    "msg": "Ohjeteksti ls-alikomennon --all-lipulle."
+                  }
+                }
+              },
+              "flag_describe": {
+                "$message": {
+                  "msg": "Kuvaa asetukset",
+                  "description": {
+                    "msg": "Ohjeteksti ls-alikomennon --describe-lipulle."
+                  }
+                }
+              },
+              "flag_prefix": {
+                "$message": {
+                  "msg": "Näytä asetukset tietyllä etuliitteellä",
+                  "description": {
+                    "msg": "Ohjeteksti ls-alikomennon --prefix-lipulle."
+                  }
+                }
+              },
+              "table_settings_descriptions": {
+                "$message": {
+                  "msg": "Asetusten kuvaukset",
+                  "description": {
+                    "msg": "Otsikko, joka näytetään asetuskuvaustaulukon yläpuolella."
+                  }
+                }
+              },
+              "table_configuration_of": {
+                "$message": {
+                  "msg": "{app_name:s} konfiguraatio",
+                  "description": {
+                    "msg": "Otsikko, joka näytetään tietyn sovelluksen konfiguraation luettelevan taulukon yläpuolella.",
+                    "args": {
+                      "app_name": {
+                        "description": "sovelluksen näyttönimi."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_settings_for_profile": {
+                "$message": {
+                  "msg": "Asetukset nykyiselle PROFIILILLE: {profile:s}",
+                  "description": {
+                    "msg": "Otsikko, joka näytetään nykyisen profiilin asetukset luettelevan taulukon yläpuolella.",
+                    "args": {
+                      "profile": {
+                        "description": "nykyisen profiilin nimi."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_application_config": {
+                "$message": {
+                  "msg": "Sovelluksen konfiguraatio",
+                  "description": {
+                    "msg": "Otsikko, joka näytetään yleisen sovelluskonfiguraatiotaulukon yläpuolella."
+                  }
+                }
+              },
+              "header_key": {
+                "$message": {
+                  "msg": "AVAIN",
+                  "description": {
+                    "msg": "Sarakeotsikko asetustaulukon avainsarakkeelle."
+                  }
+                }
+              },
+              "header_description": {
+                "$message": {
+                  "msg": "KUVAUS",
+                  "description": {
+                    "msg": "Sarakeotsikko asetustaulukon kuvaussarakkeelle."
+                  }
+                }
+              },
+              "header_kind": {
+                "$message": {
+                  "msg": "TYYPPI",
+                  "description": {
+                    "msg": "Sarakeotsikko asetustaulukon laji-/tyyppisarakkeelle."
+                  }
+                }
+              },
+              "header_is_set": {
+                "$message": {
+                  "msg": "ON ASETETTU",
+                  "description": {
+                    "msg": "Sarakeotsikko asetustaulukon on-asetettu-sarakkeelle."
+                  }
+                }
+              },
+              "header_mutability": {
+                "$message": {
+                  "msg": "MUUTETTAVUUS",
+                  "description": {
+                    "msg": "Sarakeotsikko asetustaulukon muutettavuussarakkeelle."
+                  }
+                }
+              },
+              "header_value": {
+                "$message": {
+                  "msg": "ARVO",
+                  "description": {
+                    "msg": "Sarakeotsikko asetustaulukon arvosarakkeelle."
+                  }
+                }
+              },
+              "header_default": {
+                "$message": {
+                  "msg": "Oletus",
+                  "description": {
+                    "msg": "Sarakeotsikko asetustaulukon oletusarvosarakkeelle."
+                  }
+                }
+              }
+            },
+            "set": {
+              "description": {
+                "$message": {
+                  "msg": "Aseta asetuksen arvo",
+                  "description": {
+                    "msg": "Alikomennon config set yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Käyttörivi, joka näytetään set-alikomennolle."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "asetus {key:s} ei ole olemassa",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettua asetusavainta ei ole olemassa.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "get": {
+              "description": {
+                "$message": {
+                  "msg": "Hae asetuksen tai vaihtoehdon arvo",
+                  "description": {
+                    "msg": "Alikomennon config get yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Käyttörivi, joka näytetään get-alikomennolle."
+                  }
+                }
+              },
+              "flag_secret": {
+                "$message": {
+                  "msg": "Pyytää syöttämään salaisuuden salasanan arvon näyttämiseksi. Jos salasanaa ei ole asetettu, se tulostaa salaisen arvon sijaan <redacted> ilman kehotusta",
+                  "description": {
+                    "msg": "Ohjeteksti get-alikomennon --secret-lipulle."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "asetus {key:s} ei ole olemassa",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettua asetusavainta ei ole olemassa.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_invalid_password": {
+                "$message": {
+                  "msg": "virheellinen salasana",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun syötetty salaisuuksien salasana on virheellinen."
+                  }
+                }
+              },
+              "redacted": {
+                "$message": {
+                  "msg": "<redacted>",
+                  "description": {
+                    "msg": "Paikkamerkkiteksti, joka näytetään salaisen arvon sijaan, kun salasanaa ei annettu."
+                  }
+                }
+              }
+            },
+            "add": {
+              "description": {
+                "$message": {
+                  "msg": "Lisää annettu arvo asetuksen arvoon",
+                  "description": {
+                    "msg": "Alikomennon config add yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Käyttörivi, joka näytetään add-alikomennolle."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "asetus {key:s} ei ole olemassa",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettua asetusavainta ei ole olemassa.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "asetus {key:s} ei ole lista",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettu asetus ei ole lista, joten siihen ei voida lisätä arvoa.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_already_exists": {
+                "$message": {
+                  "msg": "{key:s} arvo {value:s} on jo olemassa",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettu arvo on jo asetuksen listalla.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      },
+                      "value": {
+                        "description": "annettu arvo."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "remove": {
+              "description": {
+                "$message": {
+                  "msg": "Poista annettu arvo asetuksen arvosta",
+                  "description": {
+                    "msg": "Alikomennon config remove yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Käyttörivi, joka näytetään remove-alikomennolle."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "asetus {key:s} ei ole olemassa",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettua asetusavainta ei ole olemassa.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "asetus {key:s} ei ole lista",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettu asetus ei ole lista, joten siitä ei voida poistaa arvoa.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_value_not_exists": {
+                "$message": {
+                  "msg": "{key:s} arvo {value:s} ei ole olemassa",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettua arvoa ei ole asetuksen listalla.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      },
+                      "value": {
+                        "description": "annettu arvo."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "reset": {
+              "description": {
+                "$message": {
+                  "msg": "Palauta asetus oletusarvoon",
+                  "description": {
+                    "msg": "Alikomennon config reset yksirivinen kuvaus, joka näytetään CLI-ohjelistauksissa."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Käyttörivi, joka näytetään reset-alikomennolle."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "palauta kaikki asetukset",
+                  "description": {
+                    "msg": "Ohjeteksti reset-alikomennon --all-lipulle."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "asetus {key:s} ei ole olemassa",
+                  "description": {
+                    "msg": "Virhe, joka näytetään, kun annettua asetusavainta ei ole olemassa.",
+                    "args": {
+                      "key": {
+                        "description": "haettu asetusavain."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "prompt_secrets_password": {
+              "$message": {
+                "msg": "syötä salaisuuden salasana",
+                "description": {
+                  "msg": "Kehote, joka näytetään pyydettäessä käyttäjää syöttämään salaisuuksien salasana."
+                }
+              }
+            }
+          }
+        },
+        "help": {
+          "commands": {
+            "$message": {
+              "msg": " KOMENNOT:",
+              "description": {
+                "msg": "Osion otsikko, joka näytetään komentoluettelon yläpuolella CLI-ohjetulosteessa."
+              }
+            }
+          },
+          "flags": {
+            "$message": {
+              "msg": " LIPUT:",
+              "description": {
+                "msg": "Osion otsikko, joka näytetään lippuluettelon yläpuolella CLI-ohjetulosteessa."
+              }
+            }
+          },
+          "shared_flags": {
+            "$message": {
+              "msg": " JAETUT LIPUT:",
+              "description": {
+                "msg": "Osion otsikko, joka näytetään jaettujen lippujen luettelon yläpuolella CLI-ohjetulosteessa."
+              }
+            }
+          },
+          "global_flags": {
+            "$message": {
+              "msg": " GLOBAALIT LIPUT:",
+              "description": {
+                "msg": "Osion otsikko, joka näytetään globaalien lippujen luettelon yläpuolella CLI-ohjetulosteessa."
+              }
+            }
+          },
+          "copyright": {
+            "$message": {
+              "msg": "Tekijänoikeus ©",
+              "description": {
+                "msg": "Merkintä, joka näytetään ennen tekijänoikeusriviä CLI-ohjetulosteessa."
+              }
+            }
+          },
+          "license": {
+            "$message": {
+              "msg": "Lisenssi: ",
+              "description": {
+                "msg": "Merkintä, joka näytetään ennen lisenssiriviä CLI-ohjetulosteessa."
+              }
+            }
+          },
+          "default": {
+            "$message": {
+              "msg": "oletus",
+              "description": {
+                "msg": "Sana, jota käytetään merkitsemään lipun tai asetuksen oletusarvoa CLI-ohjetulosteessa."
+              }
+            }
+          }
+        },
+        "flags": {
+          "version": {
+            "$message": {
+              "msg": "tulosta sovelluksen versio",
+              "description": {
+                "msg": "Ohjeteksti globaalille --version-lipulle."
+              }
+            }
+          },
+          "help": {
+            "$message": {
+              "msg": "näytä ohje tai komennon ohje. [...komento --help]",
+              "description": {
+                "msg": "Ohjeteksti globaalille --help-lipulle."
+              }
+            }
+          },
+          "show_exec": {
+            "$message": {
+              "msg": "lippu -x tulostaa kaikki CLI-komennot niiden suorituksen aikana.",
+              "description": {
+                "msg": "Ohjeteksti globaalille -x-lipulle."
+              }
+            }
+          },
+          "system_debug": {
+            "$message": {
+              "msg": "ota käyttöön järjestelmän debug-lokitaso (erittäin yksityiskohtainen)",
+              "description": {
+                "msg": "Ohjeteksti globaalille --system-debug-lipulle."
+              }
+            }
+          },
+          "debug": {
+            "$message": {
+              "msg": "ota käyttöön debug-lokitaso",
+              "description": {
+                "msg": "Ohjeteksti globaalille --debug-lipulle."
+              }
+            }
+          },
+          "verbose": {
+            "$message": {
+              "msg": "ota käyttöön yksityiskohtainen lokitaso",
+              "description": {
+                "msg": "Ohjeteksti globaalille --verbose-lipulle."
+              }
+            }
+          },
+          "x_prod": {
+            "$message": {
+              "msg": "VAIN KEHITYS: pakota sovellus tuotantotilaan asettamalla app_is_devel false lähdekoodista ajettaessa.",
+              "description": {
+                "msg": "Ohjeteksti vain kehityskäyttöön tarkoitetulle --x-prod-lipulle."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

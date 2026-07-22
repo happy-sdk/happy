@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "bundle": "app",
+  "locales": {
+    "fi": {
+      "notes": "Default fallback strings for the embedding application itself (e.g. its default description), used when the application doesn't override them with its own.",
+      "keys": {
+        "description": {
+          "$message": {
+            "msg": "Tämä sovellus on rakennettu Happy-SDK:lla tarjoamaan parannettua toiminnallisuutta ja ominaisuuksia.",
+            "description": {
+              "msg": "Sovelluksen oletuskuvaus, joka näytetään ohjetulosteessa ja tietoja-tekstissä, ellei sitä ole korvattu upottavan sovelluksen omilla asetuksilla."
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.vars.varflag",
+  "locales": {
+    "de": {
+      "notes": "pkg/vars/varflag's own sentinel error messages.",
+      "keys": {
+        "invalid_arguments": {
+          "$message": {
+            "msg": "ungültige Argumente",
+            "description": {
+              "msg": "Fehlermeldung für allgemein ungültige CLI-Argumente."
+            }
+          }
+        },
+        "invalid_command_or_args": {
+          "$message": {
+            "msg": "{name:s} akzeptiert weder Befehl noch Argument {arg:s}",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn einem Flag-Set ein Befehl oder Argument übergeben wird, das es nicht akzeptiert.",
+              "args": {
+                "name": {
+                  "description": "der Eigenname des Flag-Sets."
+                },
+                "arg": {
+                  "description": "das nicht akzeptierte Befehls- oder Argument-Token."
+                }
+              }
+            }
+          }
+        },
+        "flag": {
+          "$message": {
+            "msg": "Flag-Fehler",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn ein Flag nicht initialisiert werden kann."
+            }
+          }
+        },
+        "flag_exists": {
+          "$message": {
+            "msg": "Flag existiert bereits",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn bereits ein Flag mit demselben Namen existiert."
+            }
+          }
+        },
+        "alias_shadow": {
+          "$message": {
+            "msg": "Flag-Alias überschattet",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn ein Flag-Alias von einem anderen Flag überschattet wird."
+            }
+          }
+        },
+        "parse": {
+          "$message": {
+            "msg": "Flag-Parsing-Fehler",
+            "description": {
+              "msg": "Fehlermeldung für allgemeine Flag-Parsing-Fehler."
+            }
+          }
+        },
+        "missing_value": {
+          "$message": {
+            "msg": "Flag-Wert fehlt",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn der Wert eines Flags in den geparsten Argumenten fehlt."
+            }
+          }
+        },
+        "invalid_value": {
+          "$message": {
+            "msg": "ungültiger Flag-Wert",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn ein ungültiger Wert für ein Flag angegeben wurde."
+            }
+          }
+        },
+        "flag_already_parsed": {
+          "$message": {
+            "msg": "Flag wurde bereits geparst",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn ein Flag bereits geparst wurde."
+            }
+          }
+        },
+        "missing_required": {
+          "$message": {
+            "msg": "erforderliches Flag fehlt",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn ein erforderliches Flag in der Argumentmenge fehlt."
+            }
+          }
+        },
+        "missing_options": {
+          "$message": {
+            "msg": "Optionen fehlen",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn der Parser eines Optionsflags keine Optionen findet."
+            }
+          }
+        },
+        "no_named_flag": {
+          "$message": {
+            "msg": "kein solches Flag",
+            "description": {
+              "msg": "Fehlermeldung, die zurückgegeben wird, wenn bei der Flag-Suche kein Flag mit diesem Namen gefunden wird."
+            }
+          }
+        }
+      }
+    }
+  }
+}

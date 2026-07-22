@@ -1,0 +1,556 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.cli",
+  "locales": {
+    "sv": {
+      "notes": "sdk/cli's own command help text, flag descriptions, and the built-in config command.",
+      "keys": {
+        "cmd": {
+          "config": {
+            "category": {
+              "$message": {
+                "msg": "Konfiguration",
+                "description": {
+                  "msg": "Kategorietikett som visas i CLI-hjälputskriften och grupperar config-kommandot med andra kommandon av samma typ."
+                }
+              }
+            },
+            "description": {
+              "$message": {
+                "msg": "Hantera och konfigurera applikationsinställningar",
+                "description": {
+                  "msg": "Enradig beskrivning av config-kommandot som visas i CLI-hjälplistor."
+                }
+              }
+            },
+            "info": {
+              "$message": {
+                "msg": "Detta kommando låter dig hantera applikationskonfigurationsinställningar och inställningsprofiler.",
+                "description": {
+                  "msg": "Längre hjälptext som visas för själva config-kommandot (t.ex. via --help)."
+                }
+              }
+            },
+            "ls": {
+              "description": {
+                "$message": {
+                  "msg": "Lista inställningar för aktuell profil",
+                  "description": {
+                    "msg": "Enradig beskrivning av underkommandot config ls som visas i CLI-hjälplistor."
+                  }
+                }
+              },
+              "usage_flags": {
+                "$message": {
+                  "msg": "[-a|--all]",
+                  "description": {
+                    "msg": "Kort flaggsammanfattning som visas bredvid ls-underkommandot i användningstexten."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-namn> [flaggor]",
+                  "description": {
+                    "msg": "Användningsrad som visas för ls-underkommandot."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "Lista alla inställningar (standard aktuell profil), inklusive interna inställningar",
+                  "description": {
+                    "msg": "Hjälptext för ls-underkommandots --all-flagga."
+                  }
+                }
+              },
+              "flag_describe": {
+                "$message": {
+                  "msg": "Beskriv inställningar",
+                  "description": {
+                    "msg": "Hjälptext för ls-underkommandots --describe-flagga."
+                  }
+                }
+              },
+              "flag_prefix": {
+                "$message": {
+                  "msg": "Visa inställningar med ett specifikt prefix",
+                  "description": {
+                    "msg": "Hjälptext för ls-underkommandots --prefix-flagga."
+                  }
+                }
+              },
+              "table_settings_descriptions": {
+                "$message": {
+                  "msg": "Inställningsbeskrivningar",
+                  "description": {
+                    "msg": "Titel som visas ovanför tabellen med inställningsbeskrivningar."
+                  }
+                }
+              },
+              "table_configuration_of": {
+                "$message": {
+                  "msg": "Konfiguration av {app_name:s}",
+                  "description": {
+                    "msg": "Titel som visas ovanför tabellen som listar en specifik applikations konfiguration.",
+                    "args": {
+                      "app_name": {
+                        "description": "applikationens visningsnamn."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_settings_for_profile": {
+                "$message": {
+                  "msg": "Inställningar för aktuell PROFIL: {profile:s}",
+                  "description": {
+                    "msg": "Titel som visas ovanför tabellen som listar inställningar för den aktuella profilen.",
+                    "args": {
+                      "profile": {
+                        "description": "namnet på den aktuella profilen."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_application_config": {
+                "$message": {
+                  "msg": "Applikationskonfiguration",
+                  "description": {
+                    "msg": "Titel som visas ovanför den allmänna applikationskonfigurationstabellen."
+                  }
+                }
+              },
+              "header_key": {
+                "$message": {
+                  "msg": "NYCKEL",
+                  "description": {
+                    "msg": "Kolumnrubrik för inställningstabellens nyckelkolumn."
+                  }
+                }
+              },
+              "header_description": {
+                "$message": {
+                  "msg": "BESKRIVNING",
+                  "description": {
+                    "msg": "Kolumnrubrik för inställningstabellens beskrivningskolumn."
+                  }
+                }
+              },
+              "header_kind": {
+                "$message": {
+                  "msg": "TYP",
+                  "description": {
+                    "msg": "Kolumnrubrik för inställningstabellens typkolumn."
+                  }
+                }
+              },
+              "header_is_set": {
+                "$message": {
+                  "msg": "ÄR INSTÄLLD",
+                  "description": {
+                    "msg": "Kolumnrubrik för inställningstabellens är-inställd-kolumn."
+                  }
+                }
+              },
+              "header_mutability": {
+                "$message": {
+                  "msg": "MUTERBARHET",
+                  "description": {
+                    "msg": "Kolumnrubrik för inställningstabellens muterbarhetskolumn."
+                  }
+                }
+              },
+              "header_value": {
+                "$message": {
+                  "msg": "VÄRDE",
+                  "description": {
+                    "msg": "Kolumnrubrik för inställningstabellens värdekolumn."
+                  }
+                }
+              },
+              "header_default": {
+                "$message": {
+                  "msg": "STANDARD",
+                  "description": {
+                    "msg": "Kolumnrubrik för inställningstabellens standardvärdeskolumn."
+                  }
+                }
+              }
+            },
+            "set": {
+              "description": {
+                "$message": {
+                  "msg": "Sätt ett inställningsvärde",
+                  "description": {
+                    "msg": "Enradig beskrivning av underkommandot config set som visas i CLI-hjälplistor."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-namn>",
+                  "description": {
+                    "msg": "Användningsrad som visas för set-underkommandot."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "inställning {key:s} finns inte",
+                  "description": {
+                    "msg": "Fel som visas när den angivna inställningsnyckeln inte finns.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "get": {
+              "description": {
+                "$message": {
+                  "msg": "Hämta ett inställnings- eller alternativvärde",
+                  "description": {
+                    "msg": "Enradig beskrivning av underkommandot config get som visas i CLI-hjälplistor."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-namn>",
+                  "description": {
+                    "msg": "Användningsrad som visas för get-underkommandot."
+                  }
+                }
+              },
+              "flag_secret": {
+                "$message": {
+                  "msg": "Frågar efter att ange hemligt lösenord för att visa värde. Om lösenordet inte är inställt skriver det ut hemligt värde istället <redacted> utan prompten",
+                  "description": {
+                    "msg": "Hjälptext för get-underkommandots --secret-flagga."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "inställning {key:s} finns inte",
+                  "description": {
+                    "msg": "Fel som visas när den angivna inställningsnyckeln inte finns.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_invalid_password": {
+                "$message": {
+                  "msg": "ogiltigt lösenord",
+                  "description": {
+                    "msg": "Fel som visas när det angivna lösenordet för hemligheter är ogiltigt."
+                  }
+                }
+              },
+              "redacted": {
+                "$message": {
+                  "msg": "<redacted>",
+                  "description": {
+                    "msg": "Platshållartext som visas i stället för ett hemligt värde när inget lösenord angavs."
+                  }
+                }
+              }
+            },
+            "add": {
+              "description": {
+                "$message": {
+                  "msg": "Lägg till givet värde till inställningsvärde",
+                  "description": {
+                    "msg": "Enradig beskrivning av underkommandot config add som visas i CLI-hjälplistor."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-namn>",
+                  "description": {
+                    "msg": "Användningsrad som visas för add-underkommandot."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "inställning {key:s} finns inte",
+                  "description": {
+                    "msg": "Fel som visas när den angivna inställningsnyckeln inte finns.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "inställning {key:s} är inte en lista",
+                  "description": {
+                    "msg": "Fel som visas när den angivna inställningen inte är en lista, så ett värde inte kan läggas till den.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_already_exists": {
+                "$message": {
+                  "msg": "{key:s} värde {value:s} finns redan",
+                  "description": {
+                    "msg": "Fel som visas när det angivna värdet redan finns i inställningens lista.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      },
+                      "value": {
+                        "description": "det angivna värdet."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "remove": {
+              "description": {
+                "$message": {
+                  "msg": "Ta bort givet värde från inställningsvärde",
+                  "description": {
+                    "msg": "Enradig beskrivning av underkommandot config remove som visas i CLI-hjälplistor."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-namn>",
+                  "description": {
+                    "msg": "Användningsrad som visas för remove-underkommandot."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "inställning {key:s} finns inte",
+                  "description": {
+                    "msg": "Fel som visas när den angivna inställningsnyckeln inte finns.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "inställning {key:s} är inte en lista",
+                  "description": {
+                    "msg": "Fel som visas när den angivna inställningen inte är en lista, så ett värde inte kan tas bort från den.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_value_not_exists": {
+                "$message": {
+                  "msg": "{key:s} värde {value:s} finns inte",
+                  "description": {
+                    "msg": "Fel som visas när det angivna värdet inte finns i inställningens lista.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      },
+                      "value": {
+                        "description": "det angivna värdet."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "reset": {
+              "description": {
+                "$message": {
+                  "msg": "Återställ en inställning till dess standardvärde",
+                  "description": {
+                    "msg": "Enradig beskrivning av underkommandot config reset som visas i CLI-hjälplistor."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-namn>",
+                  "description": {
+                    "msg": "Användningsrad som visas för reset-underkommandot."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "återställ alla inställningar",
+                  "description": {
+                    "msg": "Hjälptext för reset-underkommandots --all-flagga."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "inställning {key:s} finns inte",
+                  "description": {
+                    "msg": "Fel som visas när den angivna inställningsnyckeln inte finns.",
+                    "args": {
+                      "key": {
+                        "description": "den efterfrågade inställningsnyckeln."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "prompt_secrets_password": {
+              "$message": {
+                "msg": "ange hemligt lösenord",
+                "description": {
+                  "msg": "Prompt som visas när användaren ombeds ange lösenordet för hemligheter."
+                }
+              }
+            }
+          }
+        },
+        "help": {
+          "commands": {
+            "$message": {
+              "msg": " KOMMANDON:",
+              "description": {
+                "msg": "Sektionsrubrik som visas ovanför listan över kommandon i CLI-hjälputskriften."
+              }
+            }
+          },
+          "flags": {
+            "$message": {
+              "msg": " FLAGGOR:",
+              "description": {
+                "msg": "Sektionsrubrik som visas ovanför listan över flaggor i CLI-hjälputskriften."
+              }
+            }
+          },
+          "shared_flags": {
+            "$message": {
+              "msg": " DELADE FLAGGOR:",
+              "description": {
+                "msg": "Sektionsrubrik som visas ovanför listan över delade flaggor i CLI-hjälputskriften."
+              }
+            }
+          },
+          "global_flags": {
+            "$message": {
+              "msg": " GLOBALA FLAGGOR:",
+              "description": {
+                "msg": "Sektionsrubrik som visas ovanför listan över globala flaggor i CLI-hjälputskriften."
+              }
+            }
+          },
+          "copyright": {
+            "$message": {
+              "msg": "Copyright ©",
+              "description": {
+                "msg": "Etikett som visas före upphovsrättsraden i CLI-hjälputskriften."
+              }
+            }
+          },
+          "license": {
+            "$message": {
+              "msg": "Licens: ",
+              "description": {
+                "msg": "Etikett som visas före licensraden i CLI-hjälputskriften."
+              }
+            }
+          },
+          "default": {
+            "$message": {
+              "msg": "standard",
+              "description": {
+                "msg": "Ord som används för att markera en flaggas eller inställnings standardvärde i CLI-hjälputskriften."
+              }
+            }
+          }
+        },
+        "flags": {
+          "version": {
+            "$message": {
+              "msg": "skriv ut applikationsversion",
+              "description": {
+                "msg": "Hjälptext för den globala --version-flaggan."
+              }
+            }
+          },
+          "help": {
+            "$message": {
+              "msg": "visa hjälp eller hjälp för kommandot. [...kommando --help]",
+              "description": {
+                "msg": "Hjälptext för den globala --help-flaggan."
+              }
+            }
+          },
+          "show_exec": {
+            "$message": {
+              "msg": "flaggan -x skriver ut alla CLI-kommandon när de körs.",
+              "description": {
+                "msg": "Hjälptext för den globala -x-flaggan."
+              }
+            }
+          },
+          "system_debug": {
+            "$message": {
+              "msg": "aktivera systemdebug-lognivå (mycket utförlig)",
+              "description": {
+                "msg": "Hjälptext för den globala --system-debug-flaggan."
+              }
+            }
+          },
+          "debug": {
+            "$message": {
+              "msg": "aktivera debug-lognivå",
+              "description": {
+                "msg": "Hjälptext för den globala --debug-flaggan."
+              }
+            }
+          },
+          "verbose": {
+            "$message": {
+              "msg": "aktivera utförlig lognivå",
+              "description": {
+                "msg": "Hjälptext för den globala --verbose-flaggan."
+              }
+            }
+          },
+          "x_prod": {
+            "$message": {
+              "msg": "ENDAST UTVECKLING: tvinga app i produktionsläge genom att sätta app_is_devel till false vid körning från källa.",
+              "description": {
+                "msg": "Hjälptext för den endast-för-utveckling --x-prod-flaggan."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

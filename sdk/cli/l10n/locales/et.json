@@ -1,0 +1,556 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.cli",
+  "locales": {
+    "et": {
+      "notes": "sdk/cli's own command help text, flag descriptions, and the built-in config command.",
+      "keys": {
+        "cmd": {
+          "config": {
+            "category": {
+              "$message": {
+                "msg": "Konfiguratsioon",
+                "description": {
+                  "msg": "Kategooria silt, mida kuvatakse CLI abiväljundis, rühmitades config käsu koos teiste sama liiki käskudega."
+                }
+              }
+            },
+            "description": {
+              "$message": {
+                "msg": "Halda ja seadista rakenduse seadeid",
+                "description": {
+                  "msg": "Config käsu üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+                }
+              }
+            },
+            "info": {
+              "$message": {
+                "msg": "See käsk võimaldab teil hallata rakenduse konfiguratsiooniseadeid ja seadistusprofiile.",
+                "description": {
+                  "msg": "Pikem abitekst, mida kuvatakse config käsu enda kohta (nt --help kaudu)."
+                }
+              }
+            },
+            "ls": {
+              "description": {
+                "$message": {
+                  "msg": "Näita praeguse profiili seadeid",
+                  "description": {
+                    "msg": "Alamkäsu config ls üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+                  }
+                }
+              },
+              "usage_flags": {
+                "$message": {
+                  "msg": "[-a|--all]",
+                  "description": {
+                    "msg": "Lühike lippude kokkuvõte, mida kuvatakse alamkäsu ls kõrval kasutusjuhendis."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi> [lipud]",
+                  "description": {
+                    "msg": "Kasutusrida, mida kuvatakse alamkäsu ls jaoks."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "Näita kõiki seadeid (vaikimisi praegune profiil), sealhulgas sisemisi seadeid",
+                  "description": {
+                    "msg": "Abitekst alamkäsu ls lipu --all jaoks."
+                  }
+                }
+              },
+              "flag_describe": {
+                "$message": {
+                  "msg": "Kirjelda seadeid",
+                  "description": {
+                    "msg": "Abitekst alamkäsu ls lipu --describe jaoks."
+                  }
+                }
+              },
+              "flag_prefix": {
+                "$message": {
+                  "msg": "Näita seadeid kindla eesliitega",
+                  "description": {
+                    "msg": "Abitekst alamkäsu ls lipu --prefix jaoks."
+                  }
+                }
+              },
+              "table_settings_descriptions": {
+                "$message": {
+                  "msg": "Seadete kirjeldused",
+                  "description": {
+                    "msg": "Pealkiri, mida kuvatakse seadete kirjelduste tabeli kohal."
+                  }
+                }
+              },
+              "table_configuration_of": {
+                "$message": {
+                  "msg": "{app_name:s} konfiguratsioon",
+                  "description": {
+                    "msg": "Pealkiri, mida kuvatakse konkreetse rakenduse konfiguratsiooni loetleva tabeli kohal.",
+                    "args": {
+                      "app_name": {
+                        "description": "rakenduse kuvatav nimi."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_settings_for_profile": {
+                "$message": {
+                  "msg": "Seaded praeguse PROFIILI jaoks: {profile:s}",
+                  "description": {
+                    "msg": "Pealkiri, mida kuvatakse praeguse profiili seadeid loetleva tabeli kohal.",
+                    "args": {
+                      "profile": {
+                        "description": "praeguse profiili nimi."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_application_config": {
+                "$message": {
+                  "msg": "Rakenduse konfiguratsioon",
+                  "description": {
+                    "msg": "Pealkiri, mida kuvatakse üldise rakenduse konfiguratsioonitabeli kohal."
+                  }
+                }
+              },
+              "header_key": {
+                "$message": {
+                  "msg": "VÕTI",
+                  "description": {
+                    "msg": "Veeru pealkiri seadete tabeli võtme veeru jaoks."
+                  }
+                }
+              },
+              "header_description": {
+                "$message": {
+                  "msg": "KIRJELDUS",
+                  "description": {
+                    "msg": "Veeru pealkiri seadete tabeli kirjelduse veeru jaoks."
+                  }
+                }
+              },
+              "header_kind": {
+                "$message": {
+                  "msg": "TÜÜP",
+                  "description": {
+                    "msg": "Veeru pealkiri seadete tabeli liigi/tüübi veeru jaoks."
+                  }
+                }
+              },
+              "header_is_set": {
+                "$message": {
+                  "msg": "ON SEADETUD",
+                  "description": {
+                    "msg": "Veeru pealkiri seadete tabeli on-seadetud veeru jaoks."
+                  }
+                }
+              },
+              "header_mutability": {
+                "$message": {
+                  "msg": "MUUTMISVÕIME",
+                  "description": {
+                    "msg": "Veeru pealkiri seadete tabeli muudetavuse veeru jaoks."
+                  }
+                }
+              },
+              "header_value": {
+                "$message": {
+                  "msg": "VÄÄRTUS",
+                  "description": {
+                    "msg": "Veeru pealkiri seadete tabeli väärtuse veeru jaoks."
+                  }
+                }
+              },
+              "header_default": {
+                "$message": {
+                  "msg": "VAIKE",
+                  "description": {
+                    "msg": "Veeru pealkiri seadete tabeli vaikeväärtuse veeru jaoks."
+                  }
+                }
+              }
+            },
+            "set": {
+              "description": {
+                "$message": {
+                  "msg": "Määra seadistuse väärtus",
+                  "description": {
+                    "msg": "Alamkäsu config set üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Kasutusrida, mida kuvatakse alamkäsu set jaoks."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "seade {key:s} ei eksisteeri",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud seadistusvõtit ei eksisteeri.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "get": {
+              "description": {
+                "$message": {
+                  "msg": "Hangi seadistuse või valiku väärtus",
+                  "description": {
+                    "msg": "Alamkäsu config get üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Kasutusrida, mida kuvatakse alamkäsu get jaoks."
+                  }
+                }
+              },
+              "flag_secret": {
+                "$message": {
+                  "msg": "Küsib salajase parooli sisestamist väärtuse kuvamiseks. Kui parool pole määratud, prindib see salajase väärtuse asemel <redacted> ilma küsimuseta",
+                  "description": {
+                    "msg": "Abitekst alamkäsu get lipu --secret jaoks."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "seade {key:s} ei eksisteeri",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud seadistusvõtit ei eksisteeri.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_invalid_password": {
+                "$message": {
+                  "msg": "vale parool",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui sisestatud salajane parool on vale."
+                  }
+                }
+              },
+              "redacted": {
+                "$message": {
+                  "msg": "<redacted>",
+                  "description": {
+                    "msg": "Kohatäitja tekst, mida kuvatakse salajase väärtuse asemel, kui parooli ei antud."
+                  }
+                }
+              }
+            },
+            "add": {
+              "description": {
+                "$message": {
+                  "msg": "Lisa antud väärtus seadistuse väärtusele",
+                  "description": {
+                    "msg": "Alamkäsu config add üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Kasutusrida, mida kuvatakse alamkäsu add jaoks."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "seade {key:s} ei eksisteeri",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud seadistusvõtit ei eksisteeri.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "seade {key:s} ei ole loend",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud seadistus pole loend ja sellele ei saa seetõttu väärtust lisada.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_already_exists": {
+                "$message": {
+                  "msg": "{key:s} väärtus {value:s} on juba olemas",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud väärtus on seadistuse loendis juba olemas.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      },
+                      "value": {
+                        "description": "antud väärtus."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "remove": {
+              "description": {
+                "$message": {
+                  "msg": "Eemalda antud väärtus seadistuse väärtusest",
+                  "description": {
+                    "msg": "Alamkäsu config remove üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Kasutusrida, mida kuvatakse alamkäsu remove jaoks."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "seade {key:s} ei eksisteeri",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud seadistusvõtit ei eksisteeri.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "seade {key:s} ei ole loend",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud seadistus pole loend ja sellest ei saa seetõttu väärtust eemaldada.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_value_not_exists": {
+                "$message": {
+                  "msg": "{key:s} väärtus {value:s} ei eksisteeri",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud väärtust seadistuse loendis ei ole.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      },
+                      "value": {
+                        "description": "antud väärtus."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "reset": {
+              "description": {
+                "$message": {
+                  "msg": "Lähtesta seade vaikeväärtusele",
+                  "description": {
+                    "msg": "Alamkäsu config reset üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profiili-nimi>",
+                  "description": {
+                    "msg": "Kasutusrida, mida kuvatakse alamkäsu reset jaoks."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "lähtesta kõik seaded",
+                  "description": {
+                    "msg": "Abitekst alamkäsu reset lipu --all jaoks."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "seade {key:s} ei eksisteeri",
+                  "description": {
+                    "msg": "Viga, mida kuvatakse, kui antud seadistusvõtit ei eksisteeri.",
+                    "args": {
+                      "key": {
+                        "description": "otsitud seadistusvõti."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "prompt_secrets_password": {
+              "$message": {
+                "msg": "sisesta salajane parool",
+                "description": {
+                  "msg": "Viip, mida kuvatakse, kui kasutajal palutakse sisestada salajane parool."
+                }
+              }
+            }
+          }
+        },
+        "help": {
+          "commands": {
+            "$message": {
+              "msg": " KÄSUD:",
+              "description": {
+                "msg": "Jaotise pealkiri, mida kuvatakse käskude loendi kohal CLI abiväljundis."
+              }
+            }
+          },
+          "flags": {
+            "$message": {
+              "msg": " LIPUD:",
+              "description": {
+                "msg": "Jaotise pealkiri, mida kuvatakse lippude loendi kohal CLI abiväljundis."
+              }
+            }
+          },
+          "shared_flags": {
+            "$message": {
+              "msg": " JAGATUD LIPUD:",
+              "description": {
+                "msg": "Jaotise pealkiri, mida kuvatakse jagatud lippude loendi kohal CLI abiväljundis."
+              }
+            }
+          },
+          "global_flags": {
+            "$message": {
+              "msg": " GLOBAALSED LIPUD:",
+              "description": {
+                "msg": "Jaotise pealkiri, mida kuvatakse globaalsete lippude loendi kohal CLI abiväljundis."
+              }
+            }
+          },
+          "copyright": {
+            "$message": {
+              "msg": "Autoriõigus ©",
+              "description": {
+                "msg": "Silt, mida kuvatakse enne autoriõiguse rida CLI abiväljundis."
+              }
+            }
+          },
+          "license": {
+            "$message": {
+              "msg": "Litsents: ",
+              "description": {
+                "msg": "Silt, mida kuvatakse enne litsentsi rida CLI abiväljundis."
+              }
+            }
+          },
+          "default": {
+            "$message": {
+              "msg": "vaikimisi",
+              "description": {
+                "msg": "Sõna, mida kasutatakse lipu või seadistuse vaikeväärtuse tähistamiseks CLI abiväljundis."
+              }
+            }
+          }
+        },
+        "flags": {
+          "version": {
+            "$message": {
+              "msg": "prindi rakenduse versioon",
+              "description": {
+                "msg": "Abitekst globaalse lipu --version jaoks."
+              }
+            }
+          },
+          "help": {
+            "$message": {
+              "msg": "kuva abi või käsu abi. [...käsk --help]",
+              "description": {
+                "msg": "Abitekst globaalse lipu --help jaoks."
+              }
+            }
+          },
+          "show_exec": {
+            "$message": {
+              "msg": "lipu -x prindib kõik CLI käsud nende täitmisel.",
+              "description": {
+                "msg": "Abitekst globaalse lipu -x jaoks."
+              }
+            }
+          },
+          "system_debug": {
+            "$message": {
+              "msg": "luba süsteemi silumise logi tase (väga üksikasjalik)",
+              "description": {
+                "msg": "Abitekst globaalse lipu --system-debug jaoks."
+              }
+            }
+          },
+          "debug": {
+            "$message": {
+              "msg": "luba silumise logi tase",
+              "description": {
+                "msg": "Abitekst globaalse lipu --debug jaoks."
+              }
+            }
+          },
+          "verbose": {
+            "$message": {
+              "msg": "luba üksikasjaliku logi tase",
+              "description": {
+                "msg": "Abitekst globaalse lipu --verbose jaoks."
+              }
+            }
+          },
+          "x_prod": {
+            "$message": {
+              "msg": "AINULT ARENDUS: sunni rakendus tootmisrežiimi, seades app_is_devel false allikast käivitamisel.",
+              "description": {
+                "msg": "Abitekst ainult arenduseks mõeldud lipu --x-prod jaoks."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

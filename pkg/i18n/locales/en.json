@@ -1,0 +1,219 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.i18n",
+  "locales": {
+    "en": {
+      "notes": "Core i18n package's own bundled runtime strings: language display names and this package's own sentinel error messages.",
+      "keys": {
+        "name": {
+          "$message": {
+            "msg": "English",
+            "description": {
+              "msg": "This language's own display name, written in itself (not translated into any other language)."
+            }
+          }
+        },
+        "set_default": {
+          "$message": {
+            "msg": "set language to {lang:s}",
+            "description": {
+              "msg": "Debug log message emitted when the current language is changed at runtime.",
+              "args": {
+                "lang": {
+                  "description": "the BCP 47 language tag that was set (e.g. \"de\", \"en\")."
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "disabled": {
+            "$message": {
+              "msg": "i18n is disabled",
+              "description": {
+                "msg": "Error message for i18n.ErrDisabled, returned for callers to test with errors.Is when a build or profile intentionally never initializes the i18n manager."
+              }
+            }
+          },
+          "language_not_supported": {
+            "$message": {
+              "msg": "language {lang:s} is not supported",
+              "description": {
+                "msg": "Error message for i18n.ErrLanguageNotSupported, returned when a requested language hasn't been registered as supported by any RegisterTranslation call.",
+                "args": {
+                  "lang": {
+                    "description": "the requested, unsupported BCP 47 language tag."
+                  }
+                }
+              }
+            }
+          },
+          "unsupported_type": {
+            "$message": {
+              "msg": "unsupported translation value type {type:T} for key {key:s} in language {lang:s}",
+              "description": {
+                "msg": "Error message for i18n.ErrUnsupportedType, returned when a translation value passed to RegisterTranslation/RegisterTranslations isn't a string, catalog.Message, []catalog.Message, or a Message/nested map of those.",
+                "args": {
+                  "type": {
+                    "description": "the Go type of the unsupported value."
+                  },
+                  "key": {
+                    "description": "the full translation key the value was registered under."
+                  },
+                  "lang": {
+                    "description": "the BCP 47 language tag the value was registered for."
+                  }
+                }
+              }
+            }
+          },
+          "read_dir": {
+            "$message": {
+              "msg": "could not read translation directory {dir:s}: {cause:s}",
+              "description": {
+                "msg": "Error message for i18n.ErrReadDir, returned when a translations *FS's root or a language subdirectory within it can't be read.",
+                "args": {
+                  "dir": {
+                    "description": "the directory path that could not be read."
+                  },
+                  "cause": {
+                    "description": "the underlying filesystem error's message."
+                  }
+                }
+              }
+            }
+          },
+          "unexpected_directory": {
+            "$message": {
+              "msg": "expected a translation file, found a directory {name:q} in language {lang:s}",
+              "description": {
+                "msg": "Error message for i18n.ErrUnexpectedDirectory, returned when a translations *FS finds a directory where it expected a translation file.",
+                "args": {
+                  "name": {
+                    "description": "the unexpected directory's name."
+                  },
+                  "lang": {
+                    "description": "the BCP 47 language tag of the directory being loaded."
+                  }
+                }
+              }
+            }
+          },
+          "read_file": {
+            "$message": {
+              "msg": "could not read translation file {file:s}: {cause:s}",
+              "description": {
+                "msg": "Error message for i18n.ErrReadFile, returned when a translation file within a translations *FS can't be read.",
+                "args": {
+                  "file": {
+                    "description": "the translation file's name."
+                  },
+                  "cause": {
+                    "description": "the underlying filesystem error's message."
+                  }
+                }
+              }
+            }
+          },
+          "parse_file": {
+            "$message": {
+              "msg": "could not parse translation file {file:s}: {cause:s}",
+              "description": {
+                "msg": "Error message for i18n.ErrParseFile, returned when a translation file's content isn't valid JSON.",
+                "args": {
+                  "file": {
+                    "description": "the translation file's name."
+                  },
+                  "cause": {
+                    "description": "the underlying JSON parse error's message."
+                  }
+                }
+              }
+            }
+          },
+          "parse_language_tag": {
+            "$message": {
+              "msg": "could not parse language tag from {source:q}: {cause:s}",
+              "description": {
+                "msg": "Error message for i18n.ErrParseLanguageTag, returned when a translations *FS can't parse a BCP 47 language tag from a file or directory name.",
+                "args": {
+                  "source": {
+                    "description": "the file or directory name the language tag was parsed from."
+                  },
+                  "cause": {
+                    "description": "the underlying parse error's message."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_message": {
+            "$message": {
+              "msg": "invalid translation message {name:s}: {reason:s}",
+              "description": {
+                "msg": "Error message for i18n.ErrInvalidMessage, returned when a JSON $message object is malformed (e.g. a fragment missing its required \"other\" form).",
+                "args": {
+                  "name": {
+                    "description": "the fragment or field name that is invalid."
+                  },
+                  "reason": {
+                    "description": "a human-readable explanation of what's wrong."
+                  }
+                }
+              }
+            }
+          },
+          "invalid_schema_version": {
+            "$message": {
+              "msg": "unsupported or invalid translation schema version for language {lang:s}: {cause:s}",
+              "description": {
+                "msg": "Error message for i18n.ErrInvalidSchemaVersion, returned when a translation file's reserved \"$version\" key can't be resolved: it names a schema version newer than this build of pkg/i18n supports, isn't a recognizable integer, or a migration up to the current version failed.",
+                "args": {
+                  "lang": {
+                    "description": "the BCP 47 language tag the translation file was being registered for."
+                  },
+                  "cause": {
+                    "description": "the underlying schema error's message."
+                  }
+                }
+              }
+            }
+          },
+          "unknown_locale_key": {
+            "$message": {
+              "msg": "{has_suggestion_f}",
+              "fragments": {
+                "has_suggestion_f": {
+                  "kind": "select",
+                  "arg": "has_suggestion",
+                  "yes": "bundle {bundle:s}: locale {lang:s} has key {key:s} which does not exist in source locale {source:s} (did you mean {suggestion:s}?)",
+                  "other": "bundle {bundle:s}: locale {lang:s} has key {key:s} which does not exist in source locale {source:s}"
+                }
+              },
+              "description": {
+                "msg": "Error message for i18n.ErrUnknownLocaleKey, returned when a non-source locale registers a key that doesn't exist anywhere in its bundle's declared source locale - usually a typo in the key name itself, or a stale key left behind after the source changed.",
+                "args": {
+                  "bundle": {
+                    "description": "the bundle (root key) the key was registered under."
+                  },
+                  "lang": {
+                    "description": "the BCP 47 language tag of the locale that has the unknown key."
+                  },
+                  "key": {
+                    "description": "the unknown key, relative to its bundle."
+                  },
+                  "source": {
+                    "description": "the BCP 47 language tag of the bundle's declared source locale."
+                  },
+                  "suggestion": {
+                    "description": "the closest matching key found in the source locale, if any."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -27,7 +27,6 @@ import (
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/cmd/config"
-	l10ncmd "github.com/happy-sdk/happy/sdk/cli/cmd/l10n"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/instance"
 	"github.com/happy-sdk/happy/sdk/session"
@@ -46,7 +45,6 @@ type defaults struct {
 	cliMainMinArgs            uint
 	cliMainMaxArgs            uint
 	cliWithConfigCmd          bool
-	cliWithL10nCmd            bool
 	cliWithGlobalFlags        bool
 	develAllowProd            bool
 }
@@ -139,10 +137,6 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	if err != nil {
 		return err
 	}
-	cliWithL10nCmdSpec, err := init.settingsb.GetSpec("app.cli.with_l10n_cmd")
-	if err != nil {
-		return err
-	}
 	cliWithGlobalFlagsSpec, err := init.settingsb.GetSpec("app.cli.with_global_flags")
 	if err != nil {
 		return err
@@ -158,7 +152,6 @@ func (init *Initializer) initSettingsAndOpts() (err error) {
 	init.defaults.cliMainMinArgs = uint(cliMainMinArgs)
 	init.defaults.cliMainMaxArgs = uint(cliMainMaxArgs)
 	init.defaults.cliWithConfigCmd = cliWithConfigCmdSpec.Value == "true"
-	init.defaults.cliWithL10nCmd = cliWithL10nCmdSpec.Value == "true"
 	init.defaults.cliWithGlobalFlags = cliWithGlobalFlagsSpec.Value == "true"
 	init.defaults.develAllowProd = develAllowProdSpec.Value == "true"
 
@@ -552,10 +545,6 @@ func (init *Initializer) initRootCommand() error {
 
 	if init.defaults.cliWithConfigCmd {
 		root.WithSubCommands(config.Command(config.DefaultCommandConfig()))
-	}
-
-	if init.defaults.cliWithL10nCmd {
-		root.WithSubCommands(l10ncmd.Command(l10ncmd.DefaultCommandConfig()))
 	}
 
 	init.main = root

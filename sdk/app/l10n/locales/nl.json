@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.app",
+  "locales": {
+    "nl": {
+      "notes": "sdk/app's own runtime log messages.",
+      "keys": {
+        "internal": {
+          "initializer": {
+            "initializing": {
+              "$message": {
+                "msg": "initialiseren",
+                "description": {
+                  "msg": "Debug-logbericht dat wordt uitgegeven wanneer de applicatie-initialisator begint te draaien."
+                }
+              }
+            },
+            "initialization_completed": {
+              "$message": {
+                "msg": "initialisatie voltooid",
+                "description": {
+                  "msg": "Debug-logbericht dat wordt uitgegeven wanneer de applicatie-initialisatie is voltooid."
+                }
+              }
+            }
+          },
+          "application": {
+            "booting_application": {
+              "$message": {
+                "msg": "applicatie opstarten",
+                "description": {
+                  "msg": "Debug-logbericht dat wordt uitgegeven wanneer de applicatie begint op te starten."
+                }
+              }
+            },
+            "application_booted": {
+              "$message": {
+                "msg": "applicatie opgestart",
+                "description": {
+                  "msg": "Debug-logbericht dat wordt uitgegeven zodra de applicatie is opgestart."
+                }
+              }
+            },
+            "starting_application": {
+              "$message": {
+                "msg": "applicatie starten",
+                "description": {
+                  "msg": "Debug-logbericht dat wordt uitgegeven wanneer de applicatie begint te draaien."
+                }
+              }
+            },
+            "shutdown_complete": {
+              "$message": {
+                "msg": "afsluiting voltooid",
+                "description": {
+                  "msg": "Debug-logbericht dat wordt uitgegeven zodra het afsluiten van de applicatie is voltooid."
+                }
+              }
+            }
+          }
+        },
+        "preparing_runtime": {
+          "$message": {
+            "msg": "runtime voorbereiden",
+            "description": {
+              "msg": "Debug-logbericht dat wordt uitgegeven vlak voordat de applicatieruntime wordt voorbereid."
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -5,6 +5,9 @@
 package i18n
 
 import (
+	"errors"
+	"fmt"
+	"strings"
 	"sync"
 	"testing"
 
@@ -183,7 +186,7 @@ func TestManager_ExtractRootKey(t *testing.T) {
 	}{
 		{"com.github.happy-sdk.happy.sdk.cli.flags.version", "com.github.happy-sdk.happy.sdk.cli"},
 		{"com.github.happy-sdk.happy.pkg.vars.varflag.ErrFlag", "com.github.happy-sdk.happy.pkg.vars"}, // parts[4] is "pkg", so returns first 6 parts
-		{"short.key", "short"}, // Short keys return first segment
+		{"short.key", "short"},     // Short keys return first segment
 		{"com.github.test", "com"}, // Short keys return first segment
 		{"com.github.happy-sdk.happy.sdk.app.name", "com.github.happy-sdk.happy.sdk.app"},
 		{"com.github.happy-sdk.happy.sdk.cli.flags", "com.github.happy-sdk.happy.sdk.cli"}, // parts[4] is "sdk", so returns first 6 parts
@@ -278,13 +281,20 @@ func TestManager_Reload_ErrorHandling(t *testing.T) {
 
 	// Queue invalid translation (will cause error during reload)
 	// This tests the error handling in reload()
-	// Note: This will log an error but should not panic
+	// Note: This will log an error (slog.Error) AND be reported via the
+	// returned []InitIssue - never Fatal, since a bad queued key reflects
+	// some other package's/application's own translations, not this
+	// package's own bundle (see InitIssue's doc comment).
 	_ = QueueTranslation(language.English, "invalid.key", 12345) // Invalid type
 
-	// Reload should handle error gracefully (error is logged, not returned)
-	Reload()
+	issues := Reload()
 
-	// Should not panic - error is logged via slog.Error
+	// Should not panic - error is logged via slog.Error and also collected here.
+	testutils.Assert(t, len(issues) > 0, "expected at least one InitIssue for the invalid queued translation")
+	for _, issue := range issues {
+		testutils.Assert(t, !issue.Fatal, "a queue-flush issue must never be Fatal")
+		testutils.NotNil(t, issue.Err, "expected a non-nil error on the issue")
+	}
 }
 
 func TestManager_GetPrinterFor_CacheMiss(t *testing.T) {
@@ -406,7 +416,7 @@ func TestManager_ExtractRootKey_EdgeCases(t *testing.T) {
 		{"7 parts with pkg", "com.github.happy-sdk.happy.pkg.vars.varflag.key", "com.github.happy-sdk.happy.pkg.vars"},
 		{"7 parts with sdk", "com.github.happy-sdk.happy.sdk.cli.flags.key", "com.github.happy-sdk.happy.sdk.cli"},
 		{"4 parts (too short)", "com.github.happy-sdk.test", "com"}, // Short keys return first segment
-		{"3 parts (too short)", "com.github.test", "com"}, // Short keys return first segment
+		{"3 parts (too short)", "com.github.test", "com"},           // Short keys return first segment
 		{"6 parts without pkg/sdk", "com.github.happy-sdk.happy.other.key", "com.github.happy-sdk.happy.other"},
 	}
 	for _, tt := range tests {
@@ -509,7 +519,7 @@ func TestManager_SetCurrentLanguage_NotSupported(t *testing.T) {
 	m.initialized = true
 	err := m.setCurrentLanguage(language.Japanese)
 	testutils.Error(t, err, "expected error for unsupported language")
-	testutils.ContainsString(t, err.Error(), "language not supported")
+	testutils.Assert(t, errors.Is(err, ErrLanguageNotSupported), "expected err to be ErrLanguageNotSupported, got %v", err)
 }
 
 func TestQueueTranslations_Overwrite(t *testing.T) {
@@ -535,7 +545,7 @@ func TestSetLanguage_NotSupported(t *testing.T) {
 	// Test setLanguage when language is not supported
 	err := SetLanguage(language.Japanese)
 	testutils.Error(t, err, "expected error for unsupported language")
-	testutils.ContainsString(t, err.Error(), "language not supported")
+	testutils.Assert(t, errors.Is(err, ErrLanguageNotSupported), "expected err to be ErrLanguageNotSupported, got %v", err)
 }
 
 func TestManager_RegisterTranslation_DeferShouldSupport(t *testing.T) {
@@ -718,6 +728,35 @@ func TestManager_Initialize_ConcurrentReads(t *testing.T) {
 	wg.Wait()
 }
 
+// TestRegisterTranslation_ConcurrentRegistration is a regression test for a bug
+// where registerTranslation mutated globalCatalog (SetString/Set) without
+// holding mngr.mu, even though the surrounding code and catalog.go's own
+// comment claimed registration "serializes behind the manager's mutex".
+// catalog.Builder is not safe for concurrent writers, so two goroutines
+// registering different bundles at the same time raced on its internal maps.
+// Under `go test -race` this line of test (registering into distinct v2
+// bundles from many goroutines at once) catches that real data race.
+func TestRegisterTranslation_ConcurrentRegistration(t *testing.T) {
+	Initialize(language.English)
+	var wg sync.WaitGroup
+	for i := 0; i < 50; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			bundle := fmt.Sprintf("schematest.concurrent%d", i)
+			_ = RegisterTranslations(language.Und, map[string]any{
+				"version": float64(2),
+				"bundle":  bundle,
+				"locales": map[string]any{
+					"en": map[string]any{"keys": map[string]any{"greeting": "hello"}},
+				},
+			})
+		}()
+	}
+	wg.Wait()
+}
+
 // TestManager_GetTranslationReport_FallbackLanguage is a regression test for a bug
 // where getAllTranslations stores the fallback language's value in entry.Fallback
 // (not entry.Translations[fallbackLang]), but getTranslationReport only checked
@@ -802,4 +841,137 @@ func TestManager_GetAllTranslations_FallbackDictNilButPrinterExists(t *testing.T
 		}
 	}
 	testutils.Assert(t, found, "expected to find catalogprinter.key in entries")
+}
+
+func TestRegisterTranslations_MissingVersionKeyIsSchemaV1(t *testing.T) {
+	Initialize(language.English)
+	// A document that never declares "version" (every translation file
+	// written before schema versioning existed) must keep registering
+	// exactly as before - under lang, since a v1 document has no locale
+	// of its own.
+	err := RegisterTranslations(language.English, map[string]any{
+		"schematest.no_version": "hello",
+	})
+	testutils.NoError(t, err)
+	testutils.Equal(t, "hello", T("schematest.no_version"))
+}
+
+func TestRegisterTranslations_V2DocumentUsesItsOwnLocalesAndBundle(t *testing.T) {
+	Initialize(language.English)
+	err := RegisterTranslations(language.Und, map[string]any{
+		"version": float64(2),
+		"bundle":  "schematest.v2bundle",
+		"locales": map[string]any{
+			"en": map[string]any{"keys": map[string]any{"greeting": "hello v2"}},
+			"de": map[string]any{"keys": map[string]any{"greeting": "hallo v2"}},
+		},
+	})
+	testutils.NoError(t, err)
+	testutils.Equal(t, "hello v2", T("schematest.v2bundle.greeting"))
+	testutils.Equal(t, "hallo v2", TL(language.German, "schematest.v2bundle.greeting"))
+	// The reserved envelope keys must never leak through as translation keys.
+	for _, entry := range GetAllTranslations() {
+		testutils.Assert(t, entry.Key != "version" && entry.Key != "bundle" && entry.Key != "locales" && entry.Key != "keys",
+			"reserved schema key leaked into translations: "+entry.Key)
+	}
+	source, ok := GetBundleSourceLanguage("schematest.v2bundle")
+	testutils.Assert(t, ok, "expected the bundle's source language to be known")
+	testutils.Equal(t, language.English, source)
+}
+
+// TestReload_DetectsKeyTypoInNonSourceLocale is a regression test for a
+// real gap the maintainer found: schema validation only checks that a
+// key's *shape* is well-formed (lowercase a-z/0-9/_), not whether it
+// actually corresponds to anything in the bundle's source locale. A
+// translator's typo in a key NAME (as opposed to its value) previously
+// registered silently: the misspelled key became a new, orphaned entry
+// nothing ever looks up, while the correctly-spelled key it was meant to
+// be stayed entirely missing from that locale, with no warning anywhere.
+func TestReload_DetectsKeyTypoInNonSourceLocale(t *testing.T) {
+	Initialize(language.English)
+	err := RegisterTranslations(language.Und, map[string]any{
+		"version": float64(2),
+		"bundle":  "schematest.typobundle",
+		"source":  "en",
+		"locales": map[string]any{
+			"en": map[string]any{"keys": map[string]any{"greeting": "hello"}},
+			// "greeting" typo'd as "gretting" - still a validly-*shaped*
+			// key (schema validation alone can't catch this), but it does
+			// not exist anywhere in the source ("en") locale.
+			"de": map[string]any{"keys": map[string]any{"gretting": "hallo"}},
+		},
+	})
+	testutils.NoError(t, err)
+
+	issues := Reload()
+	var found *InitIssue
+	for i := range issues {
+		if !issues[i].Fatal {
+			found = &issues[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("expected a non-Fatal InitIssue for the typo'd \"gretting\" key")
+	}
+	testutils.Assert(t, errorsIsUnknownLocaleKey(found.Err), "expected the issue to be (or wrap) ErrUnknownLocaleKey, got: %v", found.Err)
+	msg := found.Err.Error()
+	testutils.Assert(t, strings.Contains(msg, "gretting"), "expected the message to name the offending key, got: %q", msg)
+	testutils.Assert(t, strings.Contains(msg, "greeting"), "expected the message to suggest the close source key \"greeting\", got: %q", msg)
+
+	// The library must not register a key it's already warned about: it
+	// should be gone from GetAllTranslations (what l10n list/report read)
+	// and unresolvable through T/TL (which fall back to the raw key).
+	const badKey = "schematest.typobundle.gretting"
+	for _, entry := range GetAllTranslations() {
+		testutils.Assert(t, entry.Key != badKey, "expected %q to be pruned from GetAllTranslations, but found it", badKey)
+	}
+	got := TL(language.German, badKey)
+	testutils.Equal(t, badKey, got)
+}
+
+func errorsIsUnknownLocaleKey(err error) bool {
+	return errors.Is(err, ErrUnknownLocaleKey)
+}
+
+func TestClosestKey_SuggestsPlausibleTypoOnly(t *testing.T) {
+	candidates := map[string]bool{"greeting": true, "farewell": true, "report.description": true}
+
+	suggestion, ok := closestKey("gretting", candidates)
+	testutils.Assert(t, ok, "expected a suggestion for a one-transposition typo of \"greeting\"")
+	testutils.Equal(t, "greeting", suggestion)
+
+	_, ok = closestKey("something_completely_unrelated", candidates)
+	testutils.Assert(t, !ok, "did not expect a suggestion for a key with no plausible match")
+}
+
+func TestLevenshtein(t *testing.T) {
+	cases := []struct {
+		a, b string
+		want int
+	}{
+		{"", "", 0},
+		{"greeting", "greeting", 0},
+		{"", "abc", 3},
+		{"abc", "", 3},
+		{"gretting", "greeting", 1}, // single substitution (e<->t at index 3)
+		{"kitten", "sitting", 3},    // classic textbook example
+	}
+	for _, c := range cases {
+		if got := levenshtein(c.a, c.b); got != c.want {
+			t.Errorf("levenshtein(%q, %q) = %d, want %d", c.a, c.b, got, c.want)
+		}
+	}
+}
+
+func TestRegisterTranslations_UnsupportedSchemaVersionIsRejected(t *testing.T) {
+	Initialize(language.English)
+	err := RegisterTranslations(language.English, map[string]any{
+		"version":      float64(999),
+		"schematest.x": "unreachable",
+	})
+	if err == nil {
+		t.Fatal("expected an error for an unsupported schema version")
+	}
+	testutils.ErrorIs(t, err, ErrInvalidSchemaVersion)
 }

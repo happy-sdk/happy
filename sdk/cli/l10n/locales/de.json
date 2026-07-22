@@ -1,0 +1,556 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.cli",
+  "locales": {
+    "de": {
+      "notes": "sdk/cli's own command help text, flag descriptions, and the built-in config command.",
+      "keys": {
+        "cmd": {
+          "config": {
+            "category": {
+              "$message": {
+                "msg": "Konfiguration",
+                "description": {
+                  "msg": "Kategoriebezeichnung, die in der CLI-Hilfeausgabe angezeigt wird und den config-Befehl mit anderen Befehlen derselben Art gruppiert."
+                }
+              }
+            },
+            "description": {
+              "$message": {
+                "msg": "Anwendungseinstellungen verwalten und konfigurieren",
+                "description": {
+                  "msg": "Einzeilige Beschreibung des config-Befehls, die in CLI-Hilfeauflistungen angezeigt wird."
+                }
+              }
+            },
+            "info": {
+              "$message": {
+                "msg": "Dieser Befehl ermöglicht es Ihnen, die Anwendungskonfigurationseinstellungen und Einstellungsprofile zu verwalten.",
+                "description": {
+                  "msg": "Längerer Hilfetext, der für den config-Befehl selbst angezeigt wird (z. B. über --help)."
+                }
+              }
+            },
+            "ls": {
+              "description": {
+                "$message": {
+                  "msg": "Einstellungen für aktuelles Profil auflisten",
+                  "description": {
+                    "msg": "Einzeilige Beschreibung des Unterbefehls config ls, die in CLI-Hilfeauflistungen angezeigt wird."
+                  }
+                }
+              },
+              "usage_flags": {
+                "$message": {
+                  "msg": "[-a|--all]",
+                  "description": {
+                    "msg": "Kurze Flag-Übersicht, die neben dem Unterbefehl ls im Verwendungstext angezeigt wird."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-name> [flags]",
+                  "description": {
+                    "msg": "Verwendungszeile, die für den Unterbefehl ls angezeigt wird."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "Alle Einstellungen auflisten (Standard: aktuelles Profil), einschließlich interner Einstellungen",
+                  "description": {
+                    "msg": "Hilfetext für das Flag --all des Unterbefehls ls."
+                  }
+                }
+              },
+              "flag_describe": {
+                "$message": {
+                  "msg": "Einstellungen beschreiben",
+                  "description": {
+                    "msg": "Hilfetext für das Flag --describe des Unterbefehls ls."
+                  }
+                }
+              },
+              "flag_prefix": {
+                "$message": {
+                  "msg": "Einstellungen mit einem bestimmten Präfix anzeigen",
+                  "description": {
+                    "msg": "Hilfetext für das Flag --prefix des Unterbefehls ls."
+                  }
+                }
+              },
+              "table_settings_descriptions": {
+                "$message": {
+                  "msg": "Einstellungsbeschreibungen",
+                  "description": {
+                    "msg": "Titel, der über der Tabelle mit den Einstellungsbeschreibungen angezeigt wird."
+                  }
+                }
+              },
+              "table_configuration_of": {
+                "$message": {
+                  "msg": "Konfiguration von {app_name:s}",
+                  "description": {
+                    "msg": "Titel, der über der Tabelle mit der Konfiguration einer bestimmten Anwendung angezeigt wird.",
+                    "args": {
+                      "app_name": {
+                        "description": "der Anzeigename der Anwendung."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_settings_for_profile": {
+                "$message": {
+                  "msg": "Einstellungen für aktuelles PROFIL: {profile:s}",
+                  "description": {
+                    "msg": "Titel, der über der Tabelle mit den Einstellungen des aktuellen Profils angezeigt wird.",
+                    "args": {
+                      "profile": {
+                        "description": "der Name des aktuellen Profils."
+                      }
+                    }
+                  }
+                }
+              },
+              "table_application_config": {
+                "$message": {
+                  "msg": "Anwendungskonfiguration",
+                  "description": {
+                    "msg": "Titel, der über der allgemeinen Anwendungskonfigurationstabelle angezeigt wird."
+                  }
+                }
+              },
+              "header_key": {
+                "$message": {
+                  "msg": "SCHLÜSSEL",
+                  "description": {
+                    "msg": "Spaltenüberschrift für die Schlüsselspalte der Einstellungstabelle."
+                  }
+                }
+              },
+              "header_description": {
+                "$message": {
+                  "msg": "BESCHREIBUNG",
+                  "description": {
+                    "msg": "Spaltenüberschrift für die Beschreibungsspalte der Einstellungstabelle."
+                  }
+                }
+              },
+              "header_kind": {
+                "$message": {
+                  "msg": "ART",
+                  "description": {
+                    "msg": "Spaltenüberschrift für die Art-/Typspalte der Einstellungstabelle."
+                  }
+                }
+              },
+              "header_is_set": {
+                "$message": {
+                  "msg": "IST GESETZT",
+                  "description": {
+                    "msg": "Spaltenüberschrift für die Ist-gesetzt-Spalte der Einstellungstabelle."
+                  }
+                }
+              },
+              "header_mutability": {
+                "$message": {
+                  "msg": "MUTIERBARKEIT",
+                  "description": {
+                    "msg": "Spaltenüberschrift für die Veränderbarkeitsspalte der Einstellungstabelle."
+                  }
+                }
+              },
+              "header_value": {
+                "$message": {
+                  "msg": "WERT",
+                  "description": {
+                    "msg": "Spaltenüberschrift für die Wertspalte der Einstellungstabelle."
+                  }
+                }
+              },
+              "header_default": {
+                "$message": {
+                  "msg": "STANDARD",
+                  "description": {
+                    "msg": "Spaltenüberschrift für die Standardwertspalte der Einstellungstabelle."
+                  }
+                }
+              }
+            },
+            "set": {
+              "description": {
+                "$message": {
+                  "msg": "Einen Einstellungswert setzen",
+                  "description": {
+                    "msg": "Einzeilige Beschreibung des Unterbefehls config set, die in CLI-Hilfeauflistungen angezeigt wird."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-name>",
+                  "description": {
+                    "msg": "Verwendungszeile, die für den Unterbefehl set angezeigt wird."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "Einstellung {key:s} existiert nicht",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn der angegebene Einstellungsschlüssel nicht existiert.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "get": {
+              "description": {
+                "$message": {
+                  "msg": "Einen Einstellungs- oder Optionswert abrufen",
+                  "description": {
+                    "msg": "Einzeilige Beschreibung des Unterbefehls config get, die in CLI-Hilfeauflistungen angezeigt wird."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-name>",
+                  "description": {
+                    "msg": "Verwendungszeile, die für den Unterbefehl get angezeigt wird."
+                  }
+                }
+              },
+              "flag_secret": {
+                "$message": {
+                  "msg": "Fordert zur Eingabe des Geheimnis-Passworts auf, um den Wert anzuzeigen. Wenn kein Passwort gesetzt ist, wird stattdessen der Geheimniswert <redacted> ohne Aufforderung ausgegeben",
+                  "description": {
+                    "msg": "Hilfetext für das Flag --secret des Unterbefehls get."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "Einstellung {key:s} existiert nicht",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn der angegebene Einstellungsschlüssel nicht existiert.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_invalid_password": {
+                "$message": {
+                  "msg": "ungültiges Passwort",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn das eingegebene Geheimnis-Passwort ungültig ist."
+                  }
+                }
+              },
+              "redacted": {
+                "$message": {
+                  "msg": "<redacted>",
+                  "description": {
+                    "msg": "Platzhaltertext, der anstelle eines Geheimniswerts angezeigt wird, wenn kein Passwort angegeben wurde."
+                  }
+                }
+              }
+            },
+            "add": {
+              "description": {
+                "$message": {
+                  "msg": "Gegebenen Wert zum Einstellungswert hinzufügen",
+                  "description": {
+                    "msg": "Einzeilige Beschreibung des Unterbefehls config add, die in CLI-Hilfeauflistungen angezeigt wird."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-name>",
+                  "description": {
+                    "msg": "Verwendungszeile, die für den Unterbefehl add angezeigt wird."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "Einstellung {key:s} existiert nicht",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn der angegebene Einstellungsschlüssel nicht existiert.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "Einstellung {key:s} ist keine Liste",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn die angegebene Einstellung keine Liste ist und ihr daher kein Wert hinzugefügt werden kann.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_already_exists": {
+                "$message": {
+                  "msg": "Wert {value:s} für {key:s} existiert bereits",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn der angegebene Wert bereits in der Liste der Einstellung vorhanden ist.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      },
+                      "value": {
+                        "description": "der angegebene Wert."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "remove": {
+              "description": {
+                "$message": {
+                  "msg": "Gegebenen Wert vom Einstellungswert entfernen",
+                  "description": {
+                    "msg": "Einzeilige Beschreibung des Unterbefehls config remove, die in CLI-Hilfeauflistungen angezeigt wird."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-name>",
+                  "description": {
+                    "msg": "Verwendungszeile, die für den Unterbefehl remove angezeigt wird."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "Einstellung {key:s} existiert nicht",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn der angegebene Einstellungsschlüssel nicht existiert.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_not_slice": {
+                "$message": {
+                  "msg": "Einstellung {key:s} ist keine Liste",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn die angegebene Einstellung keine Liste ist und daher kein Wert daraus entfernt werden kann.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      }
+                    }
+                  }
+                }
+              },
+              "error_value_not_exists": {
+                "$message": {
+                  "msg": "Wert {value:s} für {key:s} existiert nicht",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn der angegebene Wert nicht in der Liste der Einstellung vorhanden ist.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      },
+                      "value": {
+                        "description": "der angegebene Wert."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "reset": {
+              "description": {
+                "$message": {
+                  "msg": "Eine Einstellung auf ihren Standardwert zurücksetzen",
+                  "description": {
+                    "msg": "Einzeilige Beschreibung des Unterbefehls config reset, die in CLI-Hilfeauflistungen angezeigt wird."
+                  }
+                }
+              },
+              "usage": {
+                "$message": {
+                  "msg": "--profile=<profil-name>",
+                  "description": {
+                    "msg": "Verwendungszeile, die für den Unterbefehl reset angezeigt wird."
+                  }
+                }
+              },
+              "flag_all": {
+                "$message": {
+                  "msg": "alle Einstellungen zurücksetzen",
+                  "description": {
+                    "msg": "Hilfetext für das Flag --all des Unterbefehls reset."
+                  }
+                }
+              },
+              "error_not_exists": {
+                "$message": {
+                  "msg": "Einstellung {key:s} existiert nicht",
+                  "description": {
+                    "msg": "Fehler, der angezeigt wird, wenn der angegebene Einstellungsschlüssel nicht existiert.",
+                    "args": {
+                      "key": {
+                        "description": "der abgefragte Einstellungsschlüssel."
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "prompt_secrets_password": {
+              "$message": {
+                "msg": "Geheimnis-Passwort eingeben",
+                "description": {
+                  "msg": "Eingabeaufforderung, die angezeigt wird, wenn der Benutzer zur Eingabe des Geheimnis-Passworts aufgefordert wird."
+                }
+              }
+            }
+          }
+        },
+        "help": {
+          "commands": {
+            "$message": {
+              "msg": " BEFEHLE:",
+              "description": {
+                "msg": "Abschnittsüberschrift, die über der Befehlsliste in der CLI-Hilfeausgabe angezeigt wird."
+              }
+            }
+          },
+          "flags": {
+            "$message": {
+              "msg": " FLAGS:",
+              "description": {
+                "msg": "Abschnittsüberschrift, die über der Flag-Liste in der CLI-Hilfeausgabe angezeigt wird."
+              }
+            }
+          },
+          "shared_flags": {
+            "$message": {
+              "msg": " GEMEINSAME FLAGS:",
+              "description": {
+                "msg": "Abschnittsüberschrift, die über der Liste gemeinsamer Flags in der CLI-Hilfeausgabe angezeigt wird."
+              }
+            }
+          },
+          "global_flags": {
+            "$message": {
+              "msg": " GLOBALE FLAGS:",
+              "description": {
+                "msg": "Abschnittsüberschrift, die über der Liste globaler Flags in der CLI-Hilfeausgabe angezeigt wird."
+              }
+            }
+          },
+          "copyright": {
+            "$message": {
+              "msg": "Copyright ©",
+              "description": {
+                "msg": "Bezeichnung, die vor der Copyright-Zeile in der CLI-Hilfeausgabe angezeigt wird."
+              }
+            }
+          },
+          "license": {
+            "$message": {
+              "msg": "Lizenz: ",
+              "description": {
+                "msg": "Bezeichnung, die vor der Lizenzzeile in der CLI-Hilfeausgabe angezeigt wird."
+              }
+            }
+          },
+          "default": {
+            "$message": {
+              "msg": "Standard",
+              "description": {
+                "msg": "Wort, das den Standardwert eines Flags oder einer Einstellung in der CLI-Hilfeausgabe kennzeichnet."
+              }
+            }
+          }
+        },
+        "flags": {
+          "version": {
+            "$message": {
+              "msg": "Anwendungsversion ausgeben",
+              "description": {
+                "msg": "Hilfetext für das globale Flag --version."
+              }
+            }
+          },
+          "help": {
+            "$message": {
+              "msg": "Hilfe oder Hilfe für den Befehl anzeigen. [...befehl --help]",
+              "description": {
+                "msg": "Hilfetext für das globale Flag --help."
+              }
+            }
+          },
+          "show_exec": {
+            "$message": {
+              "msg": "das Flag -x gibt alle CLI-Befehle aus, während sie ausgeführt werden.",
+              "description": {
+                "msg": "Hilfetext für das globale Flag -x."
+              }
+            }
+          },
+          "system_debug": {
+            "$message": {
+              "msg": "System-Debug-Log-Level aktivieren (sehr ausführlich)",
+              "description": {
+                "msg": "Hilfetext für das globale Flag --system-debug."
+              }
+            }
+          },
+          "debug": {
+            "$message": {
+              "msg": "Debug-Log-Level aktivieren",
+              "description": {
+                "msg": "Hilfetext für das globale Flag --debug."
+              }
+            }
+          },
+          "verbose": {
+            "$message": {
+              "msg": "ausführliches Log-Level aktivieren",
+              "description": {
+                "msg": "Hilfetext für das globale Flag --verbose."
+              }
+            }
+          },
+          "x_prod": {
+            "$message": {
+              "msg": "NUR ENTWICKLUNG: App in Produktionsmodus zwingen, app_is_devel auf false setzen, wenn von Quelle ausgeführt.",
+              "description": {
+                "msg": "Hilfetext für das nur für die Entwicklung gedachte Flag --x-prod."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

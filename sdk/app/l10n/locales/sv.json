@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.app",
+  "locales": {
+    "sv": {
+      "notes": "sdk/app's own runtime log messages.",
+      "keys": {
+        "internal": {
+          "initializer": {
+            "initializing": {
+              "$message": {
+                "msg": "initialiserar",
+                "description": {
+                  "msg": "Felsökningsloggmeddelande som skickas när applikationens initierare börjar köras."
+                }
+              }
+            },
+            "initialization_completed": {
+              "$message": {
+                "msg": "initialisering slutförd",
+                "description": {
+                  "msg": "Felsökningsloggmeddelande som skickas när applikationens initiering är klar."
+                }
+              }
+            }
+          },
+          "application": {
+            "booting_application": {
+              "$message": {
+                "msg": "startar applikation",
+                "description": {
+                  "msg": "Felsökningsloggmeddelande som skickas när applikationen börjar starta."
+                }
+              }
+            },
+            "application_booted": {
+              "$message": {
+                "msg": "applikation startad",
+                "description": {
+                  "msg": "Felsökningsloggmeddelande som skickas när applikationen har startat klart."
+                }
+              }
+            },
+            "starting_application": {
+              "$message": {
+                "msg": "startar applikation",
+                "description": {
+                  "msg": "Felsökningsloggmeddelande som skickas när applikationen börjar köras."
+                }
+              }
+            },
+            "shutdown_complete": {
+              "$message": {
+                "msg": "avstängning slutförd",
+                "description": {
+                  "msg": "Felsökningsloggmeddelande som skickas när applikationens avstängning är klar."
+                }
+              }
+            }
+          }
+        },
+        "preparing_runtime": {
+          "$message": {
+            "msg": "förbereder körmiljö",
+            "description": {
+              "msg": "Felsökningsloggmeddelande som skickas strax innan applikationens körmiljö förbereds."
+            }
+          }
+        }
+      }
+    }
+  }
+}

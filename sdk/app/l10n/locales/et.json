@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.sdk.app",
+  "locales": {
+    "et": {
+      "notes": "sdk/app's own runtime log messages.",
+      "keys": {
+        "internal": {
+          "initializer": {
+            "initializing": {
+              "$message": {
+                "msg": "lähtestan",
+                "description": {
+                  "msg": "Silumislogi teade, mis väljastatakse, kui rakenduse initsialiseerija alustab tööd."
+                }
+              }
+            },
+            "initialization_completed": {
+              "$message": {
+                "msg": "lähtestamine lõpetatud",
+                "description": {
+                  "msg": "Silumislogi teade, mis väljastatakse, kui rakenduse initsialiseerimine on lõppenud."
+                }
+              }
+            }
+          },
+          "application": {
+            "booting_application": {
+              "$message": {
+                "msg": "rakenduse käivitamine",
+                "description": {
+                  "msg": "Silumislogi teade, mis väljastatakse, kui rakendus hakkab käivituma."
+                }
+              }
+            },
+            "application_booted": {
+              "$message": {
+                "msg": "rakendus käivitatud",
+                "description": {
+                  "msg": "Silumislogi teade, mis väljastatakse, kui rakendus on käivitumise lõpetanud."
+                }
+              }
+            },
+            "starting_application": {
+              "$message": {
+                "msg": "rakenduse alustamine",
+                "description": {
+                  "msg": "Silumislogi teade, mis väljastatakse, kui rakendus hakkab tööle."
+                }
+              }
+            },
+            "shutdown_complete": {
+              "$message": {
+                "msg": "sulgemine lõpetatud",
+                "description": {
+                  "msg": "Silumislogi teade, mis väljastatakse, kui rakenduse seiskamine on lõpetatud."
+                }
+              }
+            }
+          }
+        },
+        "preparing_runtime": {
+          "$message": {
+            "msg": "käituskeskkonna ettevalmistamine",
+            "description": {
+              "msg": "Silumislogi teade, mis väljastatakse vahetult enne rakenduse käitusaja ettevalmistamist."
+            }
+          }
+        }
+      }
+    }
+  }
+}

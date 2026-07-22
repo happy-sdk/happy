@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.vars.varflag",
+  "locales": {
+    "sv": {
+      "notes": "pkg/vars/varflag's own sentinel error messages.",
+      "keys": {
+        "invalid_arguments": {
+          "$message": {
+            "msg": "ogiltiga argument",
+            "description": {
+              "msg": "Felmeddelande för allmänt ogiltiga CLI-argument."
+            }
+          }
+        },
+        "invalid_command_or_args": {
+          "$message": {
+            "msg": "{name:s} accepterar inte kommando eller argument {arg:s}",
+            "description": {
+              "msg": "Felmeddelande som returneras när en flaggsamling ges ett kommando eller argument den inte accepterar.",
+              "args": {
+                "name": {
+                  "description": "flaggsamlingens eget namn."
+                },
+                "arg": {
+                  "description": "det avvisade kommando- eller argumentvärdet."
+                }
+              }
+            }
+          }
+        },
+        "flag": {
+          "$message": {
+            "msg": "flaggorfel",
+            "description": {
+              "msg": "Felmeddelande som returneras när en flagga inte kan initieras."
+            }
+          }
+        },
+        "flag_exists": {
+          "$message": {
+            "msg": "flaggan finns redan",
+            "description": {
+              "msg": "Felmeddelande som returneras när en flagga med samma namn redan finns."
+            }
+          }
+        },
+        "alias_shadow": {
+          "$message": {
+            "msg": "flaggalias skuggad",
+            "description": {
+              "msg": "Felmeddelande som returneras när ett flaggalias skuggas av en annan flagga."
+            }
+          }
+        },
+        "parse": {
+          "$message": {
+            "msg": "flaggtolkningsfel",
+            "description": {
+              "msg": "Felmeddelande för allmänna flaggtolkningsfel."
+            }
+          }
+        },
+        "missing_value": {
+          "$message": {
+            "msg": "flagvärde saknas",
+            "description": {
+              "msg": "Felmeddelande som returneras när en flaggas värde saknas i de tolkade argumenten."
+            }
+          }
+        },
+        "invalid_value": {
+          "$message": {
+            "msg": "ogiltigt flagvärde",
+            "description": {
+              "msg": "Felmeddelande som returneras när ett ogiltigt värde angavs för en flagga."
+            }
+          }
+        },
+        "flag_already_parsed": {
+          "$message": {
+            "msg": "flaggan är redan tolkad",
+            "description": {
+              "msg": "Felmeddelande som returneras när en flagga redan har tolkats."
+            }
+          }
+        },
+        "missing_required": {
+          "$message": {
+            "msg": "obligatorisk flagga saknas",
+            "description": {
+              "msg": "Felmeddelande som returneras när en obligatorisk flagga saknas i argumentuppsättningen."
+            }
+          }
+        },
+        "missing_options": {
+          "$message": {
+            "msg": "alternativ saknas",
+            "description": {
+              "msg": "Felmeddelande som returneras när tolkaren för en alternativflagga inte hittar några alternativ."
+            }
+          }
+        },
+        "no_named_flag": {
+          "$message": {
+            "msg": "ingen sådan flagga",
+            "description": {
+              "msg": "Felmeddelande som returneras när en flaggsökning inte hittar någon flagga med det namnet."
+            }
+          }
+        }
+      }
+    }
+  }
+}

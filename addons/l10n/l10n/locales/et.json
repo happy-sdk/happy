@@ -1,0 +1,171 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.addons.l10n",
+  "locales": {
+    "et": {
+      "notes": "The l10n addon's own l10n report/list/translate command help text and flag descriptions.",
+      "keys": {
+        "category": {
+          "$message": {
+            "msg": "Lokaliseerimine",
+            "description": {
+              "msg": "Kategooria silt, mida kuvatakse CLI abiväljundis, rühmitades l10n käsu koos teiste sama liiki käskudega."
+            }
+          }
+        },
+        "description": {
+          "$message": {
+            "msg": "Halda rakenduse tõlkeid",
+            "description": {
+              "msg": "L10n käsu üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+            }
+          }
+        },
+        "info": {
+          "$message": {
+            "msg": "See käsk võimaldab teil hallata ja tõlkida rakenduse stringe.",
+            "description": {
+              "msg": "Pikem abitekst, mida kuvatakse l10n käsu enda kohta (nt --help kaudu)."
+            }
+          }
+        },
+        "report": {
+          "description": {
+            "$message": {
+              "msg": "Näita tõlkestaatuse aruannet",
+              "description": {
+                "msg": "Alamkäsu l10n report üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+              }
+            }
+          },
+          "flag_threshold": {
+            "$message": {
+              "msg": "Välju koodiga 1, kui mõnel keelel on protsent alla läve",
+              "description": {
+                "msg": "Abitekst alamkäsu report lipu --threshold jaoks."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Näita aruannet ainult kindla keele jaoks",
+              "description": {
+                "msg": "Abitekst alamkäsu report lipu --lang jaoks."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Kaasa aruandesse sõltuvuste tõlked (vaikimisi kuvatakse ainult praeguse projekti enda tõlked).",
+              "description": {
+                "msg": "Abitekst alamkäsu report lipu --with-deps jaoks."
+              }
+            }
+          }
+        },
+        "list": {
+          "description": {
+            "$message": {
+              "msg": "Näita kõiki tõlkevõtmeid",
+              "description": {
+                "msg": "Alamkäsu l10n list üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Näita loendit ainult kindla keele jaoks",
+              "description": {
+                "msg": "Abitekst alamkäsu list lipu --lang jaoks."
+              }
+            }
+          },
+          "flag_missing": {
+            "$message": {
+              "msg": "Näita ainult võtmeid, millel puuduvad tõlked",
+              "description": {
+                "msg": "Abitekst alamkäsu list lipu --missing jaoks."
+              }
+            }
+          },
+          "flag_json": {
+            "$message": {
+              "msg": "Väljasta JSON vastus tabeli asemel",
+              "description": {
+                "msg": "Abitekst alamkäsu list lipu --json jaoks."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Kaasa loendisse sõltuvuste tõlked (vaikimisi kuvatakse ainult praeguse projekti enda tõlked).",
+              "description": {
+                "msg": "Abitekst alamkäsu list lipu --with-deps jaoks."
+              }
+            }
+          }
+        },
+        "translate": {
+          "description": {
+            "$message": {
+              "msg": "Tõlgi puuduvad tõlkevõtmed",
+              "description": {
+                "msg": "Alamkäsu l10n translate üherealine kirjeldus, mida kuvatakse CLI abiloendites."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Tõlgi võtmeid ainult kindla keele jaoks.",
+              "description": {
+                "msg": "Abitekst alamkäsu translate lipu --lang jaoks."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Kaasa sõltuvuste tõlkevõtmed puuduvate tõlgete küsimisel (vaikimisi küsitakse ainult praeguse projekti enda võtmeid).",
+              "description": {
+                "msg": "Abitekst alamkäsu translate lipu --with-deps jaoks."
+              }
+            }
+          }
+        },
+        "generate": {
+          "description": {
+            "$message": {
+              "msg": "Genereeri tõlkevõtmetele tüübitud Go juurdepääsufunktsioonid",
+              "description": {
+                "msg": "l10n generate alamkäsu üherealine kirjeldus CLI abiloendites."
+              }
+            }
+          },
+          "flag_bundle": {
+            "$message": {
+              "msg": "Genereeri juurdepääsufunktsioonid kindlale komplektile (vaikimisi rakenduse enda mooduli komplekt).",
+              "description": {
+                "msg": "Abitekst alamkäsu generate lipu --bundle jaoks."
+              }
+            }
+          },
+          "flag_out": {
+            "$message": {
+              "msg": "Kirjuta genereeritud Go fail sellesse asukohta (vaikimisi stdout).",
+              "description": {
+                "msg": "Abitekst alamkäsu generate lipu --out jaoks."
+              }
+            }
+          },
+          "flag_package": {
+            "$message": {
+              "msg": "Genereeritud Go faili paketi nimi.",
+              "description": {
+                "msg": "Abitekst alamkäsu generate lipu --package jaoks."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

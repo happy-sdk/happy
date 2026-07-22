@@ -1,0 +1,171 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.addons.l10n",
+  "locales": {
+    "fr": {
+      "notes": "The l10n addon's own l10n report/list/translate command help text and flag descriptions.",
+      "keys": {
+        "category": {
+          "$message": {
+            "msg": "Localisation",
+            "description": {
+              "msg": "Étiquette de catégorie affichée dans la sortie d'aide de la CLI, regroupant la commande l10n avec d'autres commandes du même type."
+            }
+          }
+        },
+        "description": {
+          "$message": {
+            "msg": "Gérer les traductions de l'application",
+            "description": {
+              "msg": "Description en une ligne de la commande l10n affichée dans les listes d'aide de la CLI."
+            }
+          }
+        },
+        "info": {
+          "$message": {
+            "msg": "Cette commande vous permet de gérer et traduire les chaînes de l'application.",
+            "description": {
+              "msg": "Texte d'aide plus long affiché pour la commande l10n elle-même (par ex. via --help)."
+            }
+          }
+        },
+        "report": {
+          "description": {
+            "$message": {
+              "msg": "Afficher le rapport d'état des traductions",
+              "description": {
+                "msg": "Description en une ligne de la sous-commande l10n report affichée dans les listes d'aide de la CLI."
+              }
+            }
+          },
+          "flag_threshold": {
+            "$message": {
+              "msg": "Quitter avec le code 1 si une langue a un pourcentage inférieur au seuil",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --threshold de la sous-commande report."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Afficher le rapport pour une langue spécifique uniquement",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --lang de la sous-commande report."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Inclure les traductions des dépendances dans le rapport (par défaut, seules les traductions propres au projet actuel sont affichées).",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --with-deps de la sous-commande report."
+              }
+            }
+          }
+        },
+        "list": {
+          "description": {
+            "$message": {
+              "msg": "Lister toutes les clés de traduction",
+              "description": {
+                "msg": "Description en une ligne de la sous-commande l10n list affichée dans les listes d'aide de la CLI."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Afficher la liste pour une langue spécifique uniquement",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --lang de la sous-commande list."
+              }
+            }
+          },
+          "flag_missing": {
+            "$message": {
+              "msg": "Afficher uniquement les clés avec des traductions manquantes",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --missing de la sous-commande list."
+              }
+            }
+          },
+          "flag_json": {
+            "$message": {
+              "msg": "Sortir une réponse JSON au lieu d'un tableau",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --json de la sous-commande list."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Inclure les traductions des dépendances dans la liste (par défaut, seules les traductions propres au projet actuel sont affichées).",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --with-deps de la sous-commande list."
+              }
+            }
+          }
+        },
+        "translate": {
+          "description": {
+            "$message": {
+              "msg": "Traduire les clés de traduction manquantes",
+              "description": {
+                "msg": "Description en une ligne de la sous-commande l10n translate affichée dans les listes d'aide de la CLI."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Traduire les clés pour une langue spécifique uniquement.",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --lang de la sous-commande translate."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Inclure les clés de traduction des dépendances lors de la demande des traductions manquantes (par défaut, seules les clés propres au projet actuel sont demandées).",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --with-deps de la sous-commande translate."
+              }
+            }
+          }
+        },
+        "generate": {
+          "description": {
+            "$message": {
+              "msg": "Générer des accesseurs Go typés pour les clés de traduction",
+              "description": {
+                "msg": "Description sur une ligne de la sous-commande l10n generate affichée dans l'aide CLI."
+              }
+            }
+          },
+          "flag_bundle": {
+            "$message": {
+              "msg": "Générer les accesseurs pour un bundle spécifique (par défaut, le bundle du module de l'application).",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --bundle de la sous-commande generate."
+              }
+            }
+          },
+          "flag_out": {
+            "$message": {
+              "msg": "Écrire le fichier Go généré dans ce chemin (par défaut, la sortie standard).",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --out de la sous-commande generate."
+              }
+            }
+          },
+          "flag_package": {
+            "$message": {
+              "msg": "Nom du package pour le fichier Go généré.",
+              "description": {
+                "msg": "Texte d'aide pour le drapeau --package de la sous-commande generate."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

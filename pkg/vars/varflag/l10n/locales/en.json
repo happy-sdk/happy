@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "bundle": "com.github.happy-sdk.happy.pkg.vars.varflag",
+  "locales": {
+    "en": {
+      "notes": "pkg/vars/varflag's own sentinel error messages.",
+      "keys": {
+        "invalid_arguments": {
+          "$message": {
+            "msg": "invalid arguments",
+            "description": {
+              "msg": "Error message for invalid CLI arguments in general."
+            }
+          }
+        },
+        "invalid_command_or_args": {
+          "$message": {
+            "msg": "{name:s} does not accept command or argument {arg:s}",
+            "description": {
+              "msg": "Error message returned when a flag set is given a command or argument it doesn't accept.",
+              "args": {
+                "name": {
+                  "description": "the flag set's own name."
+                },
+                "arg": {
+                  "description": "the offending command or argument token that isn't accepted."
+                }
+              }
+            }
+          }
+        },
+        "flag": {
+          "$message": {
+            "msg": "flag error",
+            "description": {
+              "msg": "Error message returned when a flag fails to initialize."
+            }
+          }
+        },
+        "flag_exists": {
+          "$message": {
+            "msg": "flag already exists",
+            "description": {
+              "msg": "Error message returned when a flag with the same name already exists."
+            }
+          }
+        },
+        "alias_shadow": {
+          "$message": {
+            "msg": "flag alias shadowed",
+            "description": {
+              "msg": "Error message returned when a flag alias is shadowed by another flag."
+            }
+          }
+        },
+        "parse": {
+          "$message": {
+            "msg": "flag parse error",
+            "description": {
+              "msg": "Error message returned for general flag parsing failures."
+            }
+          }
+        },
+        "missing_value": {
+          "$message": {
+            "msg": "missing value for flag",
+            "description": {
+              "msg": "Error message returned when a flag's value is missing from the parsed arguments."
+            }
+          }
+        },
+        "invalid_value": {
+          "$message": {
+            "msg": "invalid value for flag",
+            "description": {
+              "msg": "Error message returned when an invalid value was provided for a flag."
+            }
+          }
+        },
+        "flag_already_parsed": {
+          "$message": {
+            "msg": "flag is already parsed",
+            "description": {
+              "msg": "Error message returned when a flag has already been parsed."
+            }
+          }
+        },
+        "missing_required": {
+          "$message": {
+            "msg": "missing required flag",
+            "description": {
+              "msg": "Error message returned when a required flag is missing from the argument set."
+            }
+          }
+        },
+        "missing_options": {
+          "$message": {
+            "msg": "missing options",
+            "description": {
+              "msg": "Error message returned when an option flag's parser finds no options."
+            }
+          }
+        },
+        "no_named_flag": {
+          "$message": {
+            "msg": "no such flag",
+            "description": {
+              "msg": "Error message returned when a flag lookup can't find a flag with that name."
+            }
+          }
+        }
+      }
+    }
+  }
+}
