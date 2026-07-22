@@ -12,8 +12,8 @@ github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0 h1:V0rIJf/gqYUdkYxjhggeC
 github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0/go.mod h1:neqQCJrkhJjB/rWJLEtZAXu9aGp8DX7JsKQFN0xSAJI=
 github.com/happy-sdk/happy/pkg/fsutils v1.100.0 h1:RFVg4ySJWRpI5u/3Tq7AZc+doqLxtZrE034FLETMFtc=
 github.com/happy-sdk/happy/pkg/fsutils v1.100.0/go.mod h1:ODKNrURFZX4XZ6qLy+azvbanX5eqCPja+3wTW6jv1fE=
-github.com/happy-sdk/happy/pkg/i18n v1.100.0 h1:IJll1ZfJRJOO5IvG/D3LyXy6ClKB9T1lFXgILujeRDs=
-github.com/happy-sdk/happy/pkg/i18n v1.100.0/go.mod h1:JKYai+GKz4q92ck7nZeoh/KM+jq3RJDNfCSXbSGef0U=
+github.com/happy-sdk/happy/pkg/i18n v1.200.0 h1:fueqevZefW9ul51YQbjlKDcfMqnRJk7/tYj/G8BLU/M=
+github.com/happy-sdk/happy/pkg/i18n v1.200.0/go.mod h1:JKYai+GKz4q92ck7nZeoh/KM+jq3RJDNfCSXbSGef0U=
 github.com/happy-sdk/happy/pkg/logging v1.100.0 h1:HdR7LoR4qTApmmgImZ/FWhGPVfp3KICwOHCcziQZroc=
 github.com/happy-sdk/happy/pkg/logging v1.100.0/go.mod h1:pCvK2tgbkdkKmowesJUExfLKlSAM25n/srSHjMtndbs=
 github.com/happy-sdk/happy/pkg/networking v1.100.0 h1:mmquYXN4fYLmbA0D1Ihy0jLYJ2wkySyFbGIzrEBrNUg=
@@ -32,8 +32,8 @@ github.com/happy-sdk/happy/pkg/strings/textfmt v1.100.0 h1:D/ngP/WWWmEKJ27OEjyFt
 github.com/happy-sdk/happy/pkg/strings/textfmt v1.100.0/go.mod h1:1kGZzkDZWbITebFSg45cQDjMPCEvQhXOAX9+OrzcmsA=
 github.com/happy-sdk/happy/pkg/tui v1.100.0 h1:oMBXZfNi+BWq0FNJWH1a0ZXhcinviSLOW6UGL1w/OOI=
 github.com/happy-sdk/happy/pkg/tui v1.100.0/go.mod h1:xmaqbJ9ig3L1naEQ268TAN5nns9KU0up151ZQoPGRr4=
-github.com/happy-sdk/happy/pkg/vars v1.100.0 h1:hXQTNLvrkcnEB6eyzPieY+8exwVDL8zP7+vE2u9kpDo=
-github.com/happy-sdk/happy/pkg/vars v1.100.0/go.mod h1:NJV/yArn2YcHEfVf4CLaX/cy5vGYQ3+miQEXCF9OLms=
+github.com/happy-sdk/happy/pkg/vars v1.200.0 h1:TiyJAgGv4/i13kYvwFqKIqOBitPiaU84MLMuUrf3hRg=
+github.com/happy-sdk/happy/pkg/vars v1.200.0/go.mod h1:QnFHaaK5mU3iQdgaBdgysVSXDlgu9VH8yLc8NGggJ6M=
 github.com/happy-sdk/happy/pkg/version v1.100.0 h1:UkhdhQ/DJlg1tK4D8SVuiEa006CGRM863iwlS7ohfFw=
 github.com/happy-sdk/happy/pkg/version v1.100.0/go.mod h1:TV+zAsDzyEdJlGusuDqHCk5P6q0LTx6naNL7Hjm+jrI=
 github.com/happy-sdk/happy/tools/happyvet v1.100.0 h1:6w8zuowyCp8G0tDn4EApGH21InlmHp+8U4OqIiSi6cw=
