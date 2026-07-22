@@ -3,8 +3,9 @@ module github.com/happy-sdk/happy/cmd/happyctl
 go 1.27rc2
 
 require (
-	github.com/happy-sdk/happy v1.100.0
-	github.com/happy-sdk/happy/addons/devel v1.100.0
+	github.com/happy-sdk/happy v1.200.0
+	github.com/happy-sdk/happy/addons/devel v1.101.0
+	github.com/happy-sdk/happy/addons/l10n v0.1.0
 	github.com/happy-sdk/happy/pkg/branding v1.100.0
 	github.com/happy-sdk/happy/pkg/strings/textfmt v1.100.0
 	github.com/happy-sdk/happy/pkg/version v1.100.0
@@ -41,7 +42,7 @@ require (
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/fsutils v1.100.0 // indirect
-	github.com/happy-sdk/happy/pkg/i18n v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/i18n v1.200.0 // indirect
 	github.com/happy-sdk/happy/pkg/logging v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/networking v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/options v1.100.0 // indirect
@@ -50,7 +51,7 @@ require (
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/strings/slug v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/tui v1.100.0 // indirect
-	github.com/happy-sdk/happy/pkg/vars v1.100.0 // indirect
+	github.com/happy-sdk/happy/pkg/vars v1.200.0 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
