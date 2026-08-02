@@ -22,6 +22,7 @@ type Config struct {
 	// "ignore" list in .happy.yaml.
 	Ignore settings.StringSlice `key:"ignore,save"`
 
+	Agent        AgentConfig        `key:"agent"`
 	Changelog    ChangelogConfig    `key:"changelog"`
 	Git          gitutils.Config    `key:"git"`
 	Linter       LinterConfig       `key:"linter"`
@@ -31,6 +32,39 @@ type Config struct {
 }
 
 func (c *Config) Blueprint() (*settings.Blueprint, error) {
+	return settings.New(c)
+}
+
+// AgentConfig points at the files a repository uses to describe itself to
+// coding agents. It deliberately carries nothing but a toggle and paths:
+// preferences are flattened to map[string]string before validation, so a
+// nested list of skill or tool definitions cannot be expressed in this schema
+// at all. The structured definitions live in the files these keys point at and
+// are parsed by whatever consumes them, not here.
+//
+// See https://github.com/happy-sdk/.github/blob/main/spec/agent-manifest.md
+type AgentConfig struct {
+	Enabled settings.Bool `key:"enabled,save" default:"false"`
+	// Instructions is a Markdown file of repository-specific agent
+	// instructions, overriding any workspace-wide equivalent.
+	Instructions settings.String `key:"instructions,save" default:".happy/AGENTS.md"`
+	// Skills is a directory of <name>/SKILL.md procedures.
+	Skills settings.String `key:"skills,save" default:".happy/skills"`
+	// MCP declares the tools the repository exposes.
+	MCP settings.String `key:"mcp,save" default:".happy/mcp.yaml"`
+}
+
+// Blueprint sets Enabled to true unless a saved preference already overrode it -
+// settings.Bool fields may only declare a "false" struct-tag default, so "on by
+// default" has to be established here in code instead, the same way
+// ReleaserVerifyConfig.Blueprint does.
+//
+// On by default because the presence of the files above is already the opt-in
+// signal: a repository that ships none of them contributes nothing regardless.
+// The toggle exists so a repository that does ship them can still withhold
+// them.
+func (c *AgentConfig) Blueprint() (*settings.Blueprint, error) {
+	c.Enabled = true
 	return settings.New(c)
 }
 
