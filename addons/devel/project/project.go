@@ -109,7 +109,17 @@ func Detect(dir string) (info DirInfo, found bool, err error) {
 //	found: true if a project root is detected; false otherwise.
 //	err:   any error encountered resolving wd to an absolute path.
 //
-// The search ascends parent directories until it reaches the filesystem root.
+// The search ascends parent directories until it reaches the filesystem root,
+// preferring the outermost match so that a directory inside a monorepo resolves
+// to the monorepo root rather than to itself.
+//
+// A Git repository root stops that ascent. A repository checked out inside
+// another repository - as with the happy-sdk workspace, which holds each
+// repository under a gitignored src/ directory of an outer repository - is a
+// separate project, not a subdirectory of the outer one. Without this boundary
+// every project under such a root resolves to the outer repository, and its own
+// .happy.yaml is never read. Module directories within a monorepo are not
+// repository roots, so monorepo detection is unaffected.
 func FindProjectDir(wd string) (dir string, found bool, err error) {
 	dir, err = filepath.Abs(wd)
 	if err != nil {
@@ -118,10 +128,12 @@ func FindProjectDir(wd string) (dir string, found bool, err error) {
 
 	for {
 		if IsProjectDir(dir, true) {
-			if pdir, found, err := FindProjectDir(filepath.Dir(dir)); err != nil {
-				return pdir, found, err
-			} else if found {
-				return pdir, true, nil
+			if !gitutils.IsRepository(dir) {
+				if pdir, found, err := FindProjectDir(filepath.Dir(dir)); err != nil {
+					return pdir, found, err
+				} else if found {
+					return pdir, true, nil
+				}
 			}
 			return dir, true, nil
 		}
