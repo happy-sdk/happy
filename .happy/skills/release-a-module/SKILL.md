@@ -128,14 +128,14 @@ If you reach for one of these, say why in the release notes.
 
 ## Failure modes
 
-**`releasing is disabled`, or `info` shows the wrong `dir.path`** - in released
-`happyctl` builds (through `cmd/happyctl v1.200.0`) project detection ascends past
-a nested git repository, so when this repository sits under a workspace root that
-is itself a git repository (`happy-sdk/.github` + `src/`), `happyctl` resolves the
-*workspace* as the project and never reads this repository's `.happy.yaml`. Fixed
-in main. **Check `dir.path` in step 1 before releasing.** If it is not this
-repository's root, stop - do not pass `--dirty` or any skip flag to force past it.
-See the project root detection section in `.happy/AGENTS.md`.
+**`releasing is disabled`, or `info` shows the wrong `dir.path`** - `happyctl`
+resolved a different project root than you expect, so it is reading someone
+else's `.happy.yaml` or none at all. With a binary older than
+`cmd/happyctl v1.200.1` this happens whenever the repository sits inside another
+git repository, such as under the workspace's `src/`. **Check `dir.path` in
+step 1 before releasing.** If it is not this repository's root, stop - do not
+pass `--dirty` or any skip flag to force past it. See the project root detection
+section in `.happy/AGENTS.md`.
 
 **`settings: profile: preferences provided key(…) not found`** - someone added an
 unknown key to `.happy.yaml`. The schema is strict; every `happyctl` command fails

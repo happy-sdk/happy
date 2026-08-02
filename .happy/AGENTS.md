@@ -89,8 +89,8 @@ is unaffected. `TestFindProjectDirStopsAtNestedRepositoryRoot` and
 outermost-match logic exists for. Change any of it and all three should be
 consulted.
 
-Released `happyctl` builds up to and including `cmd/happyctl v1.200.0` predate the
-fix, so an installed binary still misbehaves in a nested checkout.
+Shipped in `addons/devel v1.102.0` / `cmd/happyctl v1.200.1`; older installed
+binaries still misbehave in a nested checkout.
 
 ## settings vs options vs vars
 
