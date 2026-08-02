@@ -164,6 +164,32 @@
               }
             }
           }
+        },
+        "tui": {
+          "description": {
+            "$message": {
+              "msg": "Käynnistä interaktiivinen käännöseditori",
+              "description": {
+                "msg": "One-line description of the l10n tui subcommand shown in CLI help listings."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Avaa editori tietyllä alussa valitulla kielellä",
+              "description": {
+                "msg": "Help text for the tui subcommand's --lang flag."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Sisällytä riippuvuuksien käännösavaimet editoriin (oletuksena näytetään vain nykyisen projektin omat avaimet).",
+              "description": {
+                "msg": "Help text for the tui subcommand's --with-deps flag."
+              }
+            }
+          }
         }
       }
     }

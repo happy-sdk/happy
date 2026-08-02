@@ -32,6 +32,7 @@ type CommandConfig struct {
 	WithoutList      bool
 	WithoutTranslate bool
 	WithoutGenerate  bool
+	WithoutTUI       bool
 }
 
 func DefaultCommandConfig() CommandConfig {
@@ -44,6 +45,7 @@ func DefaultCommandConfig() CommandConfig {
 		WithoutList:      false,
 		WithoutTranslate: false,
 		WithoutGenerate:  false,
+		WithoutTUI:       false,
 	}
 }
 
@@ -122,6 +124,9 @@ func Command(cnf CommandConfig) *command.Command {
 	})
 
 	var subcmds []*command.Command
+	if !cnf.WithoutTUI {
+		subcmds = append(subcmds, l10nTUI())
+	}
 	if !cnf.WithoutReport {
 		subcmds = append(subcmds, l10nReport())
 	}

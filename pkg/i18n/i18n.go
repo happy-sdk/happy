@@ -549,6 +549,40 @@ func GetMessageArgTypes(lang language.Tag, key string) (types map[string]ArgType
 	return mngr.messageArgTypes(lang, key)
 }
 
+// GetMessage returns the rich *Message registered for (lang, key), for
+// translation tooling (e.g. addons/l10n) that wants schema-level detail -
+// fragments and their forms, the translator-facing description, and each
+// documented arg's own description - beyond what GetMessageArgTypes
+// derives. ok is false when nothing is registered for (lang, key), or when
+// what's registered there is a plain string or legacy x/text
+// catalog.Message rather than a genuine *Message: callers that only need
+// arg types regardless of which of those a key actually is should use
+// GetMessageArgTypes instead, which handles all three uniformly. Never
+// consulted by the T/TL render path.
+func GetMessage(lang language.Tag, key string) (msg *Message, ok bool) {
+	return mngr.message(lang, key)
+}
+
+// GetKeyBundle reports the schema version 2 bundle key belongs to - the
+// same authoritative ownership T/TL's own fallback cascade uses internally
+// (see the package doc comment's rendering cascade), not a heuristic
+// derived from the key's own shape. Pair it with GetBundleSourceLanguage
+// or GetBundleNote, which both take a bundle rather than a key. ok is
+// false for a legacy (schema version 1) or unregistered key, which has no
+// owning bundle at all.
+func GetKeyBundle(key string) (bundle string, ok bool) {
+	return mngr.keyBundle(key)
+}
+
+// GetBundleNote returns bundle's translator note for lang (see
+// pkg/i18n/schema/v2's KeyLocaleNotes) - free-text guidance left in that
+// locale's own translation file, e.g. context a literal string alone
+// wouldn't convey. ok is false if bundle has no note for lang at all -
+// most bundle/locale pairs won't, since notes are optional.
+func GetBundleNote(bundle string, lang language.Tag) (note string, ok bool) {
+	return mngr.bundleNote(bundle, lang)
+}
+
 // ParseLanguage parses langStr as a BCP 47 language tag and matches it
 // against the supported languages (see GetLanguages), returning the
 // closest supported match. It never errors: an empty or unparseable

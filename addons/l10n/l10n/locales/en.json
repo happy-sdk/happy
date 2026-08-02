@@ -164,6 +164,40 @@
               }
             }
           }
+        },
+        "tui": {
+          "description": {
+            "$message": {
+              "msg": "Launch the interactive translation editor",
+              "description": {
+                "msg": "One-line description of the l10n tui subcommand shown in CLI help listings."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Open the editor with a specific language selected initially",
+              "description": {
+                "msg": "Help text for the tui subcommand's --lang flag."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Include dependency translation keys in the editor (by default, only the current project's own keys are shown).",
+              "description": {
+                "msg": "Help text for the tui subcommand's --with-deps flag."
+              }
+            }
+          },
+          "not_translated": {
+            "$message": {
+              "msg": "Test key to check if translated is working",
+              "description": {
+                "msg": "Just a test key to check if translation is working."
+              }
+            }
+          }
         }
       }
     }

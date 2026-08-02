@@ -249,95 +249,178 @@ func readLine() (string, error) {
 // updateTranslation saves a translation to the appropriate JSON file based on whether
 // the key belongs to the application or a dependency. App translations are saved to
 // <lang>.json files, while dependency translations are saved to dependencies.json.
+// It is a thin, CLI-facing wrapper around saveTranslation: the only thing it adds is
+// the "Translation saved to ..." stdout message the interactive prompts have always
+// printed. Callers that must not write to stdout (the TUI, whose alt-screen renderer
+// a stray fmt.Printf would corrupt) call saveTranslation directly instead.
 func updateTranslation(sess *session.Context, lang language.Tag, key, value string) error {
-	// Find the module root directory where translation files are stored
+	path, err := saveTranslation(sess, lang, key, value)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Translation saved to %s\n", path)
+	return nil
+}
+
+// saveTranslation resolves key against the current session (module root,
+// dependency-vs-application ownership, and - for application keys - the
+// project's configured file layout), writes the translation to the right
+// JSON file on disk, and registers it with the i18n package so it's
+// reflected immediately (see pkg/i18n.RegisterTranslation). It is the
+// shared core behind both updateTranslation (the CLI prompts) and the TUI's
+// translate view - unlike updateTranslation it never prints and never
+// wraps a lower-level error, so a caller driving a Bubble Tea program can
+// turn a failure into an inline status message instead of corrupting the
+// alt-screen renderer with stray stdout output.
+func saveTranslation(sess *session.Context, lang language.Tag, key, value string) (path string, err error) {
 	moduleRoot, err := findModuleRoot(sess)
 	if err != nil {
-		return fmt.Errorf("failed to find module root: %w", err)
+		return "", fmt.Errorf("failed to find module root: %w", err)
 	}
+	l10nDir := filepath.Join(moduleRoot, "l10n")
 
-	// Determine if this key belongs to a dependency or the application
 	isDep, err := isDependencyKey(sess, key)
 	if err != nil {
-		return fmt.Errorf("failed to check if key is dependency: %w", err)
+		return "", fmt.Errorf("failed to check if key is dependency: %w", err)
 	}
 
-	var jsonPath string
-	var jsonKey string
-
 	if isDep {
-		// Dependency translations are stored in a single dependencies.json file
-		// Structure: { "rootKey": { "lang": { "key": "value" } } }
-		jsonPath = filepath.Join(moduleRoot, "l10n", "dependencies.json")
-
 		// Extract the root key (package identifier) from the full translation key
 		// Example: "com.github.happy-sdk.happy.sdk.cli.flags.version"
 		//          -> root key: "com.github.happy-sdk.happy.sdk.cli"
 		rootKey := extractRootKey(key)
-
-		// Construct the nested JSON path: rootKey.lang.keyWithoutRoot
-		// This creates the structure: dependencies[rootKey][lang][keyWithoutRoot] = value
 		keyWithoutRoot := strings.TrimPrefix(key, rootKey+".")
-		jsonKey = rootKey + "." + lang.String() + "." + keyWithoutRoot
+		path, err = writeDependencyTranslation(l10nDir, rootKey, lang, keyWithoutRoot, value)
 	} else {
-		// Application translations are stored in language-specific JSON files
-		// Structure: { "key": "value" } (flat or nested based on key structure)
-		jsonPath = filepath.Join(moduleRoot, "l10n", lang.String()+".json")
-
 		// Get the app's module identifier prefix to remove from the key
-		prefix, err := getAppModulePrefix(sess)
-		if err != nil {
-			return fmt.Errorf("failed to get app module prefix: %w", err)
+		prefix, perr := getAppModulePrefix(sess)
+		if perr != nil {
+			return "", fmt.Errorf("failed to get app module prefix: %w", perr)
 		}
-
 		// Remove the module prefix to get the relative key path
 		// Example: prefix = "com.github.happy-sdk.banctl"
 		//          key = "com.github.happy-sdk.banctl.help.description"
 		//          jsonKey = "help.description"
 		if !strings.HasPrefix(key, prefix) {
-			return fmt.Errorf("key %q does not start with app module prefix %q", key, prefix)
+			return "", fmt.Errorf("key %q does not start with app module prefix %q", key, prefix)
 		}
-		jsonKey = strings.TrimPrefix(key, prefix+".")
-	}
+		jsonKey := strings.TrimPrefix(key, prefix+".")
 
-	// Ensure the l10n directory exists in the module root
-	l10nDir := filepath.Dir(jsonPath)
-	if err := os.MkdirAll(l10nDir, 0755); err != nil {
-		return fmt.Errorf("failed to create l10n directory: %w", err)
-	}
-
-	// Read existing JSON file or initialize empty map if file doesn't exist
-	var translations map[string]any
-	if data, err := os.ReadFile(jsonPath); err == nil {
-		if err := json.Unmarshal(data, &translations); err != nil {
-			return fmt.Errorf("failed to parse JSON file: %w", err)
+		cnf, cerr := loadL10nFileConfig(moduleRoot)
+		if cerr != nil {
+			return "", cerr
 		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("failed to read JSON file: %w", err)
-	} else {
-		translations = make(map[string]any)
+		path, err = writeAppTranslation(l10nDir, cnf, lang, jsonKey, value)
 	}
-
-	// Set the nested value in the translations map using dot-separated key path
-	setNestedValue(translations, jsonKey, value)
-
-	// Marshal the updated translations back to JSON with indentation
-	updatedData, err := json.Marshal(translations, jsontext.WithIndent("  "))
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
-	}
-
-	// Write the updated JSON back to the file
-	if err := os.WriteFile(jsonPath, updatedData, 0644); err != nil {
-		return fmt.Errorf("failed to write JSON file: %w", err)
+		return "", err
 	}
 
 	// Register the translation in the i18n system (allows overwriting existing keys)
 	if err := i18n.RegisterTranslation(lang, key, value); err != nil {
-		return fmt.Errorf("failed to register translation: %w", err)
+		return "", fmt.Errorf("failed to register translation: %w", err)
 	}
 
-	fmt.Printf("Translation saved to %s\n", jsonPath)
+	return path, nil
+}
+
+// writeAppTranslation persists a single application key/value pair to disk
+// under l10nDir according to cnf's configured layout, and returns the path
+// written to. It always reads the file's current contents before writing -
+// never a blind overwrite - so that concurrent keys already saved to the
+// same file survive. That matters most for layoutUnified, where every
+// language shares one file: overwriting it wholesale on each save would
+// clobber every other language's translations saved earlier in the same
+// file. For layoutPerLang each language already has its own file, so the
+// read-modify-write is mostly about preserving sibling keys within that
+// one language rather than sibling languages.
+func writeAppTranslation(l10nDir string, cnf l10nFileConfig, lang language.Tag, jsonKey, value string) (string, error) {
+	if err := os.MkdirAll(l10nDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create l10n directory: %w", err)
+	}
+	path := cnf.appFilePath(l10nDir, lang)
+
+	translations, err := readJSONMap(path)
+	if err != nil {
+		return "", err
+	}
+
+	if cnf.isUnified() {
+		// Every language's keys live side by side in this one file, nested
+		// one level deeper under their own language tag.
+		langKey := lang.String()
+		langMap, ok := translations[langKey].(map[string]any)
+		if !ok {
+			langMap = make(map[string]any)
+		}
+		setNestedValue(langMap, jsonKey, value)
+		translations[langKey] = langMap
+	} else {
+		setNestedValue(translations, jsonKey, value)
+	}
+
+	if err := writeJSONMap(path, translations); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// writeDependencyTranslation persists a single dependency key/value pair
+// to l10nDir's dependencies.json, whose path and nested shape
+// (rootKey -> lang -> keyWithoutRoot -> value) are fixed regardless of the
+// app's own l10nFileConfig layout - dependencies.json is never split
+// per-language or renamed. Like writeAppTranslation, this always
+// read-modifies-writes the file so other root keys/languages already
+// saved there survive.
+func writeDependencyTranslation(l10nDir string, rootKey string, lang language.Tag, keyWithoutRoot, value string) (string, error) {
+	if err := os.MkdirAll(l10nDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create l10n directory: %w", err)
+	}
+	path := filepath.Join(l10nDir, "dependencies.json")
+
+	translations, err := readJSONMap(path)
+	if err != nil {
+		return "", err
+	}
+
+	// Construct the nested JSON path: rootKey.lang.keyWithoutRoot
+	// This creates the structure: dependencies[rootKey][lang][keyWithoutRoot] = value
+	jsonKey := rootKey + "." + lang.String() + "." + keyWithoutRoot
+	setNestedValue(translations, jsonKey, value)
+
+	if err := writeJSONMap(path, translations); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// readJSONMap reads and parses path as a JSON object, returning an empty
+// map (not an error) if the file doesn't exist yet - the common case for
+// the very first translation saved to a given file.
+func readJSONMap(path string) (map[string]any, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return make(map[string]any), nil
+		}
+		return nil, fmt.Errorf("failed to read JSON file: %w", err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON file: %w", err)
+	}
+	return m, nil
+}
+
+// writeJSONMap marshals m as indented JSON and writes it to path.
+func writeJSONMap(path string, m map[string]any) error {
+	data, err := json.Marshal(m, jsontext.WithIndent("  "))
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("failed to write JSON file: %w", err)
+	}
 	return nil
 }
 

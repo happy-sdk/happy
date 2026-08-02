@@ -164,6 +164,32 @@
               }
             }
           }
+        },
+        "tui": {
+          "description": {
+            "$message": {
+              "msg": "Interaktiven Übersetzungseditor starten",
+              "description": {
+                "msg": "One-line description of the l10n tui subcommand shown in CLI help listings."
+              }
+            }
+          },
+          "flag_lang": {
+            "$message": {
+              "msg": "Editor mit einer anfangs ausgewählten Sprache öffnen",
+              "description": {
+                "msg": "Help text for the tui subcommand's --lang flag."
+              }
+            }
+          },
+          "flag_with_deps": {
+            "$message": {
+              "msg": "Abhängigkeits-Übersetzungsschlüssel im Editor einbeziehen (standardmäßig werden nur die eigenen Schlüssel des aktuellen Projekts angezeigt).",
+              "description": {
+                "msg": "Help text for the tui subcommand's --with-deps flag."
+              }
+            }
+          }
         }
       }
     }

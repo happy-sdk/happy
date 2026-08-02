@@ -11,7 +11,7 @@ func TestDefaultCommandConfig(t *testing.T) {
 	if cnf.Name != "l10n" {
 		t.Errorf("Name = %q, want %q", cnf.Name, "l10n")
 	}
-	if cnf.WithoutReport || cnf.WithoutList || cnf.WithoutTranslate {
+	if cnf.WithoutReport || cnf.WithoutList || cnf.WithoutTranslate || cnf.WithoutGenerate || cnf.WithoutTUI {
 		t.Error("expected all subcommands to be enabled by default")
 	}
 }
@@ -34,10 +34,14 @@ func TestCommandWithoutSubcommands(t *testing.T) {
 		{"without report", func(c *CommandConfig) { c.WithoutReport = true }},
 		{"without list", func(c *CommandConfig) { c.WithoutList = true }},
 		{"without translate", func(c *CommandConfig) { c.WithoutTranslate = true }},
+		{"without generate", func(c *CommandConfig) { c.WithoutGenerate = true }},
+		{"without tui", func(c *CommandConfig) { c.WithoutTUI = true }},
 		{"without all", func(c *CommandConfig) {
 			c.WithoutReport = true
 			c.WithoutList = true
 			c.WithoutTranslate = true
+			c.WithoutGenerate = true
+			c.WithoutTUI = true
 		}},
 	}
 	for _, tt := range tests {
@@ -69,6 +73,18 @@ func TestSubcommandConstructors(t *testing.T) {
 		cmd := l10nTranslate()
 		if err := cmd.Err(); err != nil {
 			t.Fatalf("l10nTranslate() returned error: %v", err)
+		}
+	})
+	t.Run("l10nGenerate", func(t *testing.T) {
+		cmd := l10nGenerate()
+		if err := cmd.Err(); err != nil {
+			t.Fatalf("l10nGenerate() returned error: %v", err)
+		}
+	})
+	t.Run("l10nTUI", func(t *testing.T) {
+		cmd := l10nTUI()
+		if err := cmd.Err(); err != nil {
+			t.Fatalf("l10nTUI() returned error: %v", err)
 		}
 	})
 }

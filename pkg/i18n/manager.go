@@ -204,6 +204,49 @@ func (m *manager) messageArgTypes(lang language.Tag, key string) (map[string]Arg
 	}
 }
 
+// message returns the rich *Message registered for (lang, key), if that's
+// what's actually registered there - unlike messageArgTypes, which derives
+// the same arg-type info uniformly whether a key is a *Message or a plain
+// string, this reports false for anything other than a genuine *Message,
+// since a plain string or legacy catalog.Message has no fragments/
+// description for a caller to inspect. Intended for translation tooling
+// (see addons/l10n) wanting schema-level detail, never the render path.
+func (m *manager) message(lang language.Tag, key string) (*Message, bool) {
+	m.mu.RLock()
+	dict := m.dictionaries[lang]
+	var v any
+	var ok bool
+	if dict != nil {
+		v, ok = dict[key]
+	}
+	m.mu.RUnlock()
+	if !ok {
+		return nil, false
+	}
+	msg, ok := v.(*Message)
+	return msg, ok
+}
+
+// keyBundle reports the schema version 2 bundle key belongs to (see
+// owningBundle) and whether it belongs to one at all - false for a legacy
+// (schema version 1) or unregistered key.
+func (m *manager) keyBundle(key string) (bundle string, ok bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	bundle = m.owningBundle(key)
+	return bundle, bundle != ""
+}
+
+// bundleNote returns bundle's translator note for lang (see
+// schema/v2.KeyLocaleNotes) and whether it has one at all - most
+// bundle/locale pairs won't, since notes are optional.
+func (m *manager) bundleNote(bundle string, lang language.Tag) (note string, ok bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	note, ok = m.bundleNotes[bundle][lang]
+	return note, ok
+}
+
 func (m *manager) reload() []InitIssue {
 	m.mu.RLock()
 	if !m.initialized {

@@ -879,6 +879,74 @@ func TestRegisterTranslations_V2DocumentUsesItsOwnLocalesAndBundle(t *testing.T)
 	testutils.Equal(t, language.English, source)
 }
 
+func TestGetKeyBundle_AndGetBundleNote(t *testing.T) {
+	Initialize(language.English)
+	err := RegisterTranslations(language.Und, map[string]any{
+		"version": float64(2),
+		"bundle":  "schematest.notesbundle",
+		"locales": map[string]any{
+			"en": map[string]any{"keys": map[string]any{"greeting": "hello"}},
+			"de": map[string]any{
+				"keys":  map[string]any{"greeting": "hallo"},
+				"notes": "use the formal Sie form throughout",
+			},
+		},
+	})
+	testutils.NoError(t, err)
+
+	bundle, ok := GetKeyBundle("schematest.notesbundle.greeting")
+	testutils.Assert(t, ok, "expected the key's owning bundle to be known")
+	testutils.Equal(t, "schematest.notesbundle", bundle)
+
+	// A key under the bundle's own prefix that was never actually
+	// registered still resolves to the bundle - GetKeyBundle answers "which
+	// bundle would own this key", not "is this exact key registered".
+	bundle, ok = GetKeyBundle("schematest.notesbundle.no_such_key")
+	testutils.Assert(t, ok, "expected the bundle prefix match to still apply")
+	testutils.Equal(t, "schematest.notesbundle", bundle)
+
+	_, ok = GetKeyBundle("schematest.completely_unrelated.key")
+	testutils.Assert(t, !ok, "expected no owning bundle for a key under no registered bundle at all")
+
+	note, ok := GetBundleNote("schematest.notesbundle", language.German)
+	testutils.Assert(t, ok, "expected a German translator note to be present")
+	testutils.Equal(t, "use the formal Sie form throughout", note)
+
+	_, ok = GetBundleNote("schematest.notesbundle", language.English)
+	testutils.Assert(t, !ok, "expected no note for English - none was given")
+
+	_, ok = GetBundleNote("schematest.no_such_bundle", language.German)
+	testutils.Assert(t, !ok, "expected no note for a bundle that was never registered")
+}
+
+func TestGetMessage(t *testing.T) {
+	Initialize(language.English)
+	msg := NewMessage("{count_p}").WithFragment("count_p", "count", map[string]string{
+		"one":   "{count:d} item",
+		"other": "{count:d} items",
+	}).WithDescription("shown in the cart summary", map[string]MessageArgDescription{
+		"count": {Description: "number of items in the cart"},
+	})
+	testutils.NoError(t, RegisterTranslation(language.English, "test.message.get_message", msg))
+
+	got, ok := GetMessage(language.English, "test.message.get_message")
+	testutils.Assert(t, ok, "expected a *Message to be returned")
+	testutils.Equal(t, "{count_p}", got.Msg)
+	testutils.NotNil(t, got.Description)
+	testutils.Equal(t, "shown in the cart summary", got.Description.Msg)
+	testutils.Equal(t, "number of items in the cart", got.Description.Args["count"].Description)
+	frag, ok := got.Fragments["count_p"]
+	testutils.Assert(t, ok, "expected the count_p fragment to be present")
+	testutils.Equal(t, "{count:d} item", frag.Forms["one"])
+
+	testutils.NoError(t, RegisterTranslation(language.English, "test.message.plain_string", "just a string"))
+	_, ok = GetMessage(language.English, "test.message.plain_string")
+	testutils.Assert(t, !ok, "expected ok=false for a plain string, not a *Message")
+
+	_, ok = GetMessage(language.English, "test.message.never_registered")
+	testutils.Assert(t, !ok, "expected ok=false for an unregistered key")
+}
+
 // TestReload_DetectsKeyTypoInNonSourceLocale is a regression test for a
 // real gap the maintainer found: schema validation only checks that a
 // key's *shape* is well-formed (lowercase a-z/0-9/_), not whether it
