@@ -1,0 +1,103 @@
+# Tools this repository exposes to the Happy SDK workspace MCP server.
+#
+# Contract: https://github.com/happy-sdk/.github/blob/main/spec/agent-manifest.md
+# Tools are served as happy__<name>. Everything here is read-only or test-only by
+# design; nothing that tags, pushes, or publishes belongs in this file.
+
+version: "1"
+namespace: happy
+description: >
+  Happy SDK framework monorepo - ~28 independently versioned Go modules behind a
+  single go.work.
+
+tools:
+  - name: info
+    title: Resolved project configuration
+    description: >
+      Print the resolved .happy.yaml configuration and project state: config
+      schema keys with their values, defaults, and whether each is explicitly
+      set. Use before adding or changing any configuration key, since the schema
+      is strict and an unknown key breaks every happyctl command.
+    exec:
+      command: ["go", "run", "./cmd/happyctl", "info"]
+      cwd: "."
+      timeout: 3m
+    output: text
+
+  - name: modules
+    title: List Go modules
+    description: >
+      List the Go modules in the monorepo. Use when reasoning about module
+      layout, tag prefixes, or which module owns a package.
+    exec:
+      command: ["go", "list", "-m"]
+      cwd: "."
+      timeout: 2m
+    output: text
+
+  - name: test_module
+    title: Test one module
+    description: >
+      Run go test with the race detector for a single module. Required because
+      go.work spans every module but ./... never crosses a nested go.mod
+      boundary - testing from the repository root silently tests only the root
+      module.
+    input:
+      type: object
+      required: [module]
+      properties:
+        module:
+          type: string
+          description: >
+            Module directory relative to the repository root, e.g. "pkg/vars",
+            "lib/taskrunner", or "." for the root module.
+        run:
+          type: string
+          description: Optional -run regexp selecting individual tests.
+    exec:
+      command: ["go", "test", "-race", "-timeout", "2m", "./..."]
+      cwd: "{{ .module }}"
+      args:
+        - if: "{{ .run }}"
+          add: ["-run", "{{ .run }}"]
+      timeout: 5m
+    output: text
+
+  - name: vet
+    title: Run happyvet
+    description: >
+      Run the happyvet analyzer over a module. Flags logging.Logger calls that
+      break slog's alternating key/value convention - a non-string key, or a
+      trailing key with no value.
+    input:
+      type: object
+      required: [module]
+      properties:
+        module:
+          type: string
+          description: Module directory relative to the repository root.
+    exec:
+      command: ["go", "tool", "happyvet", "./..."]
+      cwd: "{{ .module }}"
+      timeout: 3m
+    output: text
+
+  - name: l10n_report
+    title: Translation coverage report
+    description: >
+      Report translation coverage across locale bundles. CI fails below 95%, so
+      run this after adding or changing any user-facing string.
+    input:
+      type: object
+      properties:
+        threshold:
+          type: integer
+          description: Coverage percentage to require. CI uses 95.
+    exec:
+      command: ["go", "run", "./cmd/happyctl", "l10n", "report"]
+      cwd: "."
+      args:
+        - if: "{{ .threshold }}"
+          add: ["-t", "{{ .threshold }}"]
+      timeout: 3m
+    output: text
