@@ -4,6 +4,7 @@ use (
 	.
 	./addons/devel
 	./addons/l10n
+	./addons/mcp
 	./cmd/happyctl
 	./lib/changelog
 	./lib/scm/gitutils

@@ -1,0 +1,4 @@
+github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0 h1:V0rIJf/gqYUdkYxjhggeCJypXK15K5hxyXUl+02CWwE=
+github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0/go.mod h1:neqQCJrkhJjB/rWJLEtZAXu9aGp8DX7JsKQFN0xSAJI=
+github.com/modelcontextprotocol/go-sdk v1.7.0 h1:yqjY2dsbKAC0LSuWZVBMrHgiG8ukXv6NRo0JiALay44=
+github.com/modelcontextprotocol/go-sdk v1.7.0/go.mod h1:dL7u98E/zjJTGzEq+j30jQ8K2k1mb6LeAH4inEcSGts=
