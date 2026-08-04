@@ -7,25 +7,29 @@ require (
 	charm.land/bubbletea/v2 v2.0.8
 	charm.land/lipgloss/v2 v2.0.5
 	github.com/goccy/go-yaml v1.19.2
-	github.com/happy-sdk/happy v1.201.0
+	github.com/happy-sdk/happy v1.202.0
 	github.com/happy-sdk/happy/lib/changelog v1.100.0
-	github.com/happy-sdk/happy/lib/scm/gitutils v1.100.2
+	github.com/happy-sdk/happy/lib/scm/gitutils v1.101.0
 	github.com/happy-sdk/happy/lib/taskrunner v1.100.0
+	github.com/happy-sdk/happy/lib/workspace v0.1.0
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.100.0
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0
 	github.com/happy-sdk/happy/pkg/fsutils v1.100.0
 	github.com/happy-sdk/happy/pkg/logging v1.100.0
-	github.com/happy-sdk/happy/pkg/settings v1.100.1
+	github.com/happy-sdk/happy/pkg/settings v1.100.2
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.100.0
-	github.com/happy-sdk/happy/pkg/vars v1.200.0
+	github.com/happy-sdk/happy/pkg/strings/textfmt v1.100.0
+	github.com/happy-sdk/happy/pkg/vars v1.200.1
 	github.com/happy-sdk/happy/pkg/version v1.100.0
 	golang.org/x/mod v0.38.0
+	golang.org/x/term v0.45.0
 )
 
 require (
 	codeberg.org/go-pdf/fpdf v0.12.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
+	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260703014108-f5a850f9c2b7 // indirect
@@ -60,6 +64,5 @@ require (
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 )
