@@ -4,7 +4,7 @@ go 1.27rc2
 
 require (
 	github.com/goccy/go-yaml v1.19.2
-	github.com/happy-sdk/happy v1.202.0
+	github.com/happy-sdk/happy v1.202.1
 	github.com/happy-sdk/happy/lib/workspace v0.1.0
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0
 	github.com/happy-sdk/happy/pkg/logging v1.100.0
@@ -17,9 +17,9 @@ require (
 	github.com/happy-sdk/happy/pkg/bitutils v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/i18n v1.200.1 // indirect
 	github.com/happy-sdk/happy/pkg/networking v1.100.0 // indirect
-	github.com/happy-sdk/happy/pkg/options v1.100.1 // indirect
+	github.com/happy-sdk/happy/pkg/options v1.100.2 // indirect
 	github.com/happy-sdk/happy/pkg/scheduling/cron v1.100.0 // indirect
-	github.com/happy-sdk/happy/pkg/settings v1.100.2 // indirect
+	github.com/happy-sdk/happy/pkg/settings v1.100.3 // indirect
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/strings/slug v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/vars v1.200.1 // indirect
