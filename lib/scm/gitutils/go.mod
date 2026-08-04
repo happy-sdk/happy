@@ -4,8 +4,8 @@ go 1.27rc2
 
 require (
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
-	github.com/happy-sdk/happy v1.202.0
-	github.com/happy-sdk/happy/pkg/settings v1.100.2
+	github.com/happy-sdk/happy v1.202.1
+	github.com/happy-sdk/happy/pkg/settings v1.100.3
 )
 
 require (
@@ -19,7 +19,7 @@ require (
 	github.com/happy-sdk/happy/pkg/i18n v1.200.1 // indirect
 	github.com/happy-sdk/happy/pkg/logging v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/networking v1.100.0 // indirect
-	github.com/happy-sdk/happy/pkg/options v1.100.1 // indirect
+	github.com/happy-sdk/happy/pkg/options v1.100.2 // indirect
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/strings/slug v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/vars v1.200.1 // indirect
