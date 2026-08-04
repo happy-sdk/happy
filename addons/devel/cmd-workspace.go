@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
+	"github.com/happy-sdk/happy/addons/devel/pkg/views"
 	"github.com/happy-sdk/happy/lib/scm/gitutils"
 	"github.com/happy-sdk/happy/lib/workspace"
 	"github.com/happy-sdk/happy/pkg/strings/textfmt"
@@ -17,6 +19,7 @@ import (
 	"github.com/happy-sdk/happy/sdk/cli"
 	"github.com/happy-sdk/happy/sdk/cli/command"
 	"github.com/happy-sdk/happy/sdk/session"
+	"golang.org/x/term"
 )
 
 // workspaceCommand is the command tree for creating and maintaining a
@@ -60,6 +63,7 @@ func cmdWorkspaceInit() *command.Command {
 			cli.NewStringFlag("instructions", "", "Path to the workspace agent instructions"),
 			cli.NewBoolFlag("no-entrypoint", false, "Do not generate agent entrypoint files"),
 			cli.NewBoolFlag("clone", false, "Clone the declared repositories"),
+			cli.NewBoolFlag("yes", false, "Do not prompt; use flags and defaults", "y"),
 		).
 		Do(func(sess *session.Context, args action.Args) error {
 			root, err := initRoot(sess, args)
@@ -67,22 +71,49 @@ func cmdWorkspaceInit() *command.Command {
 				return err
 			}
 
-			cnf := workspace.Default()
-			cnf.Org.Name = args.Flag("org").String()
-			cnf.Org.Remote = args.Flag("remote").String()
-			cnf.Layout.Repos = args.Flag("repos-dir").String()
-			cnf.Layout.Scratch = args.Flag("scratch").String()
-			if args.Flag("no-scratch").Var().Bool() {
-				cnf.Layout.Scratch = ""
+			answers := views.WorkspaceAnswers{
+				Root:         root,
+				Org:          args.Flag("org").String(),
+				Remote:       args.Flag("remote").String(),
+				Repos:        args.Flag("repos").String(),
+				ReposDir:     args.Flag("repos-dir").String(),
+				Scratch:      args.Flag("scratch").String(),
+				Instructions: args.Flag("instructions").String(),
+				Clone:        args.Flag("clone").Var().Bool(),
 			}
-			cnf.Agents.Instructions = args.Flag("instructions").String()
+			if args.Flag("no-scratch").Var().Bool() {
+				answers.Scratch = ""
+			}
+
+			// The wizard only fills in the flags, so everything it can do is
+			// also scriptable. It is skipped without a terminal, which is how
+			// this runs in CI and from other tools.
+			if !args.Flag("yes").Var().Bool() && interactive() {
+				wizard, err := runWorkspaceWizard(answers)
+				if err != nil {
+					return err
+				}
+				if wizard.Cancelled {
+					fmt.Println("Cancelled; nothing was created.")
+					return nil
+				}
+				answers = wizard.Answers
+				root = answers.Root
+			}
+
+			cnf := workspace.Default()
+			cnf.Org.Name = answers.Org
+			cnf.Org.Remote = answers.Remote
+			cnf.Layout.Repos = answers.ReposDir
+			cnf.Layout.Scratch = answers.Scratch
+			cnf.Agents.Instructions = answers.Instructions
 			if args.Flag("no-entrypoint").Var().Bool() {
 				// Explicitly empty, not omitted: omitted means "use the
 				// default", which is the opposite of what was asked for.
 				cnf.Agents.Entrypoints = []string{}
 			}
 
-			for _, name := range splitList(args.Flag("repos").String()) {
+			for _, name := range splitList(answers.Repos) {
 				cnf.Repos = append(cnf.Repos, workspace.Repo{Name: name})
 			}
 
@@ -106,7 +137,7 @@ func cmdWorkspaceInit() *command.Command {
 				fmt.Printf("  %-9s %s\n", e.Status, e.Path)
 			}
 
-			if args.Flag("clone").Var().Bool() {
+			if answers.Clone {
 				if err := cloneMissing(sess, ws); err != nil {
 					return err
 				}
@@ -317,4 +348,23 @@ func splitList(s string) []string {
 		}
 	}
 	return out
+}
+
+// interactive reports whether there is a terminal to prompt on. Without one -
+// in CI, or when another tool drives happyctl - the wizard must not run, since
+// it would block forever on input that is never coming.
+func interactive() bool {
+	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
+}
+
+func runWorkspaceWizard(seed views.WorkspaceAnswers) (views.WorkspaceWizard, error) {
+	model, err := tea.NewProgram(views.NewWorkspaceWizard(seed)).Run()
+	if err != nil {
+		return views.WorkspaceWizard{}, err
+	}
+	wizard, ok := model.(views.WorkspaceWizard)
+	if !ok {
+		return views.WorkspaceWizard{}, fmt.Errorf("%w: unexpected wizard result", Error)
+	}
+	return wizard, nil
 }
