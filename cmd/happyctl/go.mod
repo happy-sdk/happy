@@ -3,10 +3,10 @@ module github.com/happy-sdk/happy/cmd/happyctl
 go 1.27rc2
 
 require (
-	github.com/happy-sdk/happy v1.202.0
-	github.com/happy-sdk/happy/addons/devel v1.103.0
-	github.com/happy-sdk/happy/addons/l10n v0.1.2
-	github.com/happy-sdk/happy/addons/mcp v0.1.0
+	github.com/happy-sdk/happy v1.202.1
+	github.com/happy-sdk/happy/addons/devel v1.103.1
+	github.com/happy-sdk/happy/addons/l10n v0.1.3
+	github.com/happy-sdk/happy/addons/mcp v0.1.1
 	github.com/happy-sdk/happy/pkg/branding v1.100.0
 	github.com/happy-sdk/happy/pkg/strings/textfmt v1.100.0
 	github.com/happy-sdk/happy/pkg/version v1.100.0
@@ -49,9 +49,9 @@ require (
 	github.com/happy-sdk/happy/pkg/i18n v1.200.1 // indirect
 	github.com/happy-sdk/happy/pkg/logging v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/networking v1.100.0 // indirect
-	github.com/happy-sdk/happy/pkg/options v1.100.1 // indirect
+	github.com/happy-sdk/happy/pkg/options v1.100.2 // indirect
 	github.com/happy-sdk/happy/pkg/scheduling/cron v1.100.0 // indirect
-	github.com/happy-sdk/happy/pkg/settings v1.100.2 // indirect
+	github.com/happy-sdk/happy/pkg/settings v1.100.3 // indirect
 	github.com/happy-sdk/happy/pkg/strings/bexp v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/strings/slug v1.100.0 // indirect
 	github.com/happy-sdk/happy/pkg/tui v1.100.0 // indirect
