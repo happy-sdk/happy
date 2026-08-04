@@ -20,12 +20,28 @@ import (
 	tr "github.com/happy-sdk/happy/lib/taskrunner"
 	"github.com/happy-sdk/happy/pkg/version"
 	"github.com/happy-sdk/happy/sdk/session"
+	"golang.org/x/term"
 )
 
 func (prj *Project) Release(sess *session.Context, allowDirty, skipRemoteChecks bool) (err error) {
 
 	if !prj.Config().Get("releaser.enabled").Value().Bool() {
 		return errors.New("releasing is disabled")
+	}
+
+	// Releasing is interactive: the pipeline stops at a terminal prompt to
+	// confirm what will be published. Refuse up front when there is nothing to
+	// prompt on, rather than discovering it partway through - the confirmation
+	// comes after lint, test, and the "prepare release" commit, so failing
+	// there leaves a stray commit behind for someone to clean up.
+	//
+	// This also keeps automation out: a release tags and pushes, and a
+	// published tag is effectively permanent because module proxies cache it
+	// immediately. It is a maintainer's decision, taken at a terminal.
+	if !interactiveTerminal() {
+		return fmt.Errorf("%w: releasing requires an interactive terminal; "+
+			"it stops to confirm what will be published, and a published tag cannot be taken back. "+
+			"Run it yourself from a terminal", Error)
 	}
 	releaser := tr.New("release")
 
@@ -496,4 +512,10 @@ func (prj *Project) writePackageChangelogs(gomodules []*gomodule.Package) tr.Res
 		return tr.Skip("no changelogs to write")
 	}
 	return tr.Success(fmt.Sprintf("%d package changelog(s) saved", len(written))).WithDesc(strings.Join(written, ", "))
+}
+
+// interactiveTerminal reports whether there is a terminal to prompt on. Both
+// ends matter: the confirmation is drawn on stdout and answered on stdin.
+func interactiveTerminal() bool {
+	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }

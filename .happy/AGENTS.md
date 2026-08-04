@@ -157,8 +157,20 @@ for maintaining bundles; CI fails below 95% coverage.
 
 ## Releasing
 
-`go run ./cmd/happyctl release` runs lint → test → commit → tag → push → verify.
-Flags: `--dirty`, `--skip-lint`, `--skip-tests`, `--skip-remote-checks`.
+**Never run `happyctl release`.** It is a maintainer's command, run by hand at a
+terminal - not something to do on request, and not something to do "with
+confirmation". The pipeline stops at an interactive prompt showing what would be
+published, and the command refuses to start without a terminal. Prepare the
+repository, report what you verified and the versions you expect, then stop.
+
+The guard fails fast, before any work: the confirmation sits after lint, test
+and the `prepare release` commit, so failing at the prompt instead would leave a
+stray commit behind. Underneath that, a release tags and pushes, and module
+proxies cache a published tag immediately - it is fixed by releasing again,
+never by deleting.
+
+The pipeline runs lint → test → commit → confirm → tag → push → verify. Flags:
+`--dirty`, `--skip-lint`, `--skip-tests`, `--skip-remote-checks`.
 
 Version policy is **hundred-block**, configured as
 `releaser.bump: {kind: minor, strategy: hundred}`: a breaking change or Go version
