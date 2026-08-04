@@ -11,9 +11,9 @@ require (
 	github.com/happy-sdk/happy/pkg/i18n v1.200.1
 	github.com/happy-sdk/happy/pkg/logging v1.100.0
 	github.com/happy-sdk/happy/pkg/networking v1.100.0
-	github.com/happy-sdk/happy/pkg/options v1.100.1
+	github.com/happy-sdk/happy/pkg/options v1.100.2
 	github.com/happy-sdk/happy/pkg/scheduling/cron v1.100.0
-	github.com/happy-sdk/happy/pkg/settings v1.100.2
+	github.com/happy-sdk/happy/pkg/settings v1.100.3
 	github.com/happy-sdk/happy/pkg/strings/slug v1.100.0
 	github.com/happy-sdk/happy/pkg/strings/textfmt v1.100.0
 	github.com/happy-sdk/happy/pkg/tui v1.100.0
