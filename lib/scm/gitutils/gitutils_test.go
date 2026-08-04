@@ -6,7 +6,9 @@ package gitutils
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	git "github.com/go-git/go-git/v6"
@@ -112,4 +114,33 @@ func TestNewIgnoreMatcher(t *testing.T) {
 	if m.Match([]string{"main.go"}, false) {
 		t.Error("expected main.go to not be matched")
 	}
+}
+
+func TestClone(t *testing.T) {
+	t.Run("runs git clone into the destination", func(t *testing.T) {
+		var got []string
+		withFakeExecRun(t, func(cmd *exec.Cmd) error {
+			got = cmd.Args
+			return nil
+		})
+
+		dir := filepath.Join(t.TempDir(), "nested", "repo")
+		if err := Clone(nil, "git@example.com:acme/repo.git", dir); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := []string{"git", "clone", "git@example.com:acme/repo.git", dir}
+		if !slices.Equal(got, want) {
+			t.Fatalf("args = %v, want %v", got, want)
+		}
+		// The parent is created so callers need not prepare the destination.
+		if fi, err := os.Stat(filepath.Dir(dir)); err != nil || !fi.IsDir() {
+			t.Fatalf("parent directory not created: %v", err)
+		}
+	})
+
+	t.Run("rejects an empty remote", func(t *testing.T) {
+		if err := Clone(nil, "", t.TempDir()); err == nil {
+			t.Fatal("expected an error for an empty remote")
+		}
+	})
 }

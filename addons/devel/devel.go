@@ -37,6 +37,7 @@ func Addon(s Settings) *addon.Addon {
 		}).
 		WithSettings(&s).
 		ProvideAPI(api).
+		ProvideCommands(workspaceCommand()).
 		OnRegister(func(sess session.Register) error {
 			return nil
 		})

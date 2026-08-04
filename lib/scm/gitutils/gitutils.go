@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -215,6 +216,26 @@ func Commit(sess *session.Context, wd string, arg []string, commitMsg string) er
 		return fmt.Errorf("%w: commit: %w", Error, err)
 	}
 
+	return nil
+}
+
+// Clone clones remote into dir, which must not already exist as a non-empty
+// directory. The parent is created if needed, so a caller need not prepare the
+// destination.
+//
+// Cloning is a network operation with side effects on disk, so it belongs
+// behind an explicit command rather than anything that runs implicitly.
+func Clone(sess *session.Context, remote, dir string) error {
+	if remote == "" {
+		return fmt.Errorf("%w: clone: no remote", Error)
+	}
+	if err := os.MkdirAll(filepath.Dir(dir), 0o755); err != nil {
+		return fmt.Errorf("%w: clone: %w", Error, err)
+	}
+	gitClone := exec.Command("git", "clone", remote, dir)
+	if err := execRun(sess, gitClone); err != nil {
+		return fmt.Errorf("%w: clone %s: %w", Error, remote, err)
+	}
 	return nil
 }
 
