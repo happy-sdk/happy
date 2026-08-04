@@ -8,13 +8,13 @@ require (
 	charm.land/lipgloss/v2 v2.0.5
 	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/goccy/go-yaml v1.19.2
-	github.com/happy-sdk/happy v1.202.0
+	github.com/happy-sdk/happy v1.202.1
 	github.com/happy-sdk/happy/pkg/devel/goutils v1.100.0
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0
 	github.com/happy-sdk/happy/pkg/i18n v1.200.1
 	github.com/happy-sdk/happy/pkg/networking v1.100.0
-	github.com/happy-sdk/happy/pkg/options v1.100.1
-	github.com/happy-sdk/happy/pkg/settings v1.100.2
+	github.com/happy-sdk/happy/pkg/options v1.100.2
+	github.com/happy-sdk/happy/pkg/settings v1.100.3
 	github.com/happy-sdk/happy/pkg/strings/textfmt v1.100.0
 	github.com/happy-sdk/happy/pkg/vars v1.200.1
 	golang.org/x/mod v0.38.0
