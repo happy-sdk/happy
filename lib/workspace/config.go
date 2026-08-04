@@ -39,6 +39,7 @@ type Config struct {
 	Version string `yaml:"version"`
 	Org     Org    `yaml:"org,omitempty"`
 	Layout  Layout `yaml:"layout,omitempty"`
+	Agents  Agents `yaml:"agents,omitempty"`
 	// Repos are the repositories this workspace expects. It is optional and
 	// advisory: checkouts present on disk are discovered whether or not they
 	// are listed, and listing one that is absent is what lets clone and doctor
@@ -53,6 +54,45 @@ type Org struct {
 	// Remote is a template containing {repo}, e.g.
 	// git@github.com:happy-sdk/{repo}.git
 	Remote string `yaml:"remote,omitempty"`
+}
+
+// Agents is how coding agents find their way around the workspace.
+//
+// The split matters: Instructions is the source of truth and normally lives
+// inside a cloned repository, where it is reviewed and versioned. Entrypoints
+// are small generated files at the workspace root, for tools that discover
+// instructions by filename rather than by reading this marker.
+//
+// A generated entrypoint describes only the workspace's structure - never the
+// organization's conventions. Structure is stable; content is not, and a
+// generated copy of someone else's guidance is a copy that drifts.
+type Agents struct {
+	// Instructions is the workspace's agent instructions, relative to the
+	// workspace root, e.g. "src/org/AGENTS.md". Tools that understand this
+	// marker read it directly.
+	Instructions string `yaml:"instructions,omitempty"`
+	// Entrypoints are files generated at the workspace root pointing at
+	// Instructions. Defaults to DefaultEntrypoints when omitted; an explicitly
+	// empty list generates none.
+	//
+	// It is a list, and configurable, so that a developer whose tool looks for
+	// a different filename can add one locally without the workspace format
+	// endorsing any particular vendor. The default is the cross-vendor
+	// convention.
+	Entrypoints []string `yaml:"entrypoints,omitempty"`
+}
+
+// DefaultEntrypoints is generated at the workspace root when the marker does
+// not say otherwise.
+var DefaultEntrypoints = []string{"AGENTS.md"}
+
+// entrypoints resolves the configured list, distinguishing an omitted list
+// (use the default) from an explicitly empty one (generate nothing).
+func (a Agents) entrypoints() []string {
+	if a.Entrypoints == nil {
+		return DefaultEntrypoints
+	}
+	return a.Entrypoints
 }
 
 // Layout is where things live inside the workspace, relative to its root.
@@ -126,6 +166,16 @@ func (c Config) Validate() error {
 	if c.Org.Remote != "" && !strings.Contains(c.Org.Remote, RepoPlaceholder) {
 		return fmt.Errorf("%w: org.remote %q must contain %s", ErrConfig, c.Org.Remote, RepoPlaceholder)
 	}
+	if c.Agents.Instructions != "" {
+		if err := validRelPath("agents.instructions", c.Agents.Instructions); err != nil {
+			return err
+		}
+	}
+	for i, e := range c.Agents.Entrypoints {
+		if err := validRelPath(fmt.Sprintf("agents.entrypoints[%d]", i), e); err != nil {
+			return err
+		}
+	}
 
 	seenName := make(map[string]bool, len(c.Repos))
 	seenDir := make(map[string]bool, len(c.Repos))
@@ -188,15 +238,26 @@ func (c Config) Repo(name string) (Repo, bool) {
 // validRelDir rejects anything that would place a workspace directory outside
 // the workspace root.
 func validRelDir(field, dir string) error {
-	if dir == "" {
+	if err := validRelPath(field, dir); err != nil {
+		return err
+	}
+	if filepath.Clean(dir) == "." {
+		return fmt.Errorf("%w: %s %q must stay inside the workspace root", ErrConfig, field, dir)
+	}
+	return nil
+}
+
+// validRelPath rejects anything that would resolve outside the workspace root.
+func validRelPath(field, path string) error {
+	if path == "" {
 		return fmt.Errorf("%w: %s must not be empty", ErrConfig, field)
 	}
-	if filepath.IsAbs(dir) {
-		return fmt.Errorf("%w: %s %q must be relative to the workspace root", ErrConfig, field, dir)
+	if filepath.IsAbs(path) {
+		return fmt.Errorf("%w: %s %q must be relative to the workspace root", ErrConfig, field, path)
 	}
-	clean := filepath.Clean(dir)
-	if clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) || clean == "." {
-		return fmt.Errorf("%w: %s %q must stay inside the workspace root", ErrConfig, field, dir)
+	clean := filepath.Clean(filepath.FromSlash(path))
+	if clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("%w: %s %q must stay inside the workspace root", ErrConfig, field, path)
 	}
 	return nil
 }

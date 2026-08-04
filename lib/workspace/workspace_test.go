@@ -320,3 +320,140 @@ func isDir(path string) bool {
 	fi, err := os.Stat(path)
 	return err == nil && fi.IsDir()
 }
+
+// Omitted entrypoints default; an explicitly empty list generates none. YAML
+// distinguishes the two as nil versus empty, which is what makes "generate
+// nothing" expressible at all.
+func TestEntrypointDefaulting(t *testing.T) {
+	t.Run("omitted uses the default", func(t *testing.T) {
+		ws, err := Load(marked(t, "version: \"1\"\n"))
+		testutils.NoError(t, err)
+		testutils.Equal(t, 1, len(ws.Config.Agents.entrypoints()))
+		testutils.Equal(t, "AGENTS.md", ws.Config.Agents.entrypoints()[0])
+	})
+
+	t.Run("explicitly empty generates none", func(t *testing.T) {
+		ws, err := Load(marked(t, "version: \"1\"\nagents:\n  entrypoints: []\n"))
+		testutils.NoError(t, err)
+		testutils.Equal(t, 0, len(ws.Config.Agents.entrypoints()))
+
+		results, err := ws.EnsureEntrypoints()
+		testutils.NoError(t, err)
+		testutils.Equal(t, 0, len(results))
+		testutils.Assert(t, !isFile(filepath.Join(ws.Root, "AGENTS.md")),
+			"nothing must be generated when entrypoints is empty")
+	})
+
+	// The list is configurable so a developer whose tool looks for another
+	// filename can add one locally, without the format endorsing a vendor.
+	t.Run("custom names", func(t *testing.T) {
+		ws, err := Load(marked(t, "version: \"1\"\nagents:\n  entrypoints: [AGENTS.md, docs/AGENTS.md]\n"))
+		testutils.NoError(t, err)
+
+		results, err := ws.EnsureEntrypoints()
+		testutils.NoError(t, err)
+		testutils.Equal(t, 2, len(results))
+		testutils.Assert(t, isFile(filepath.Join(ws.Root, "AGENTS.md")), "root entrypoint missing")
+		testutils.Assert(t, isFile(filepath.Join(ws.Root, "docs", "AGENTS.md")),
+			"nested entrypoint missing; parent directories must be created")
+	})
+}
+
+// The workspace is not version controlled, so anything already at an
+// entrypoint path belongs to whoever works here and cannot be recovered if
+// clobbered.
+func TestEnsureEntrypointsNeverOverwrites(t *testing.T) {
+	root := marked(t, "version: \"1\"\n")
+	write(t, filepath.Join(root, "AGENTS.md"), "my own notes\n")
+
+	ws, err := Load(root)
+	testutils.NoError(t, err)
+
+	results, err := ws.EnsureEntrypoints()
+	testutils.NoError(t, err)
+	testutils.Equal(t, 1, len(results))
+	testutils.Equal(t, EntrypointKept, results[0].Status)
+
+	got, err := os.ReadFile(filepath.Join(root, "AGENTS.md"))
+	testutils.NoError(t, err)
+	testutils.Equal(t, "my own notes\n", string(got))
+}
+
+func TestEnsureEntrypointsReportsWritten(t *testing.T) {
+	ws, err := Load(marked(t, "version: \"1\"\n"))
+	testutils.NoError(t, err)
+
+	results, err := ws.EnsureEntrypoints()
+	testutils.NoError(t, err)
+	testutils.Equal(t, 1, len(results))
+	testutils.Equal(t, EntrypointWritten, results[0].Status)
+	testutils.Equal(t, "AGENTS.md", results[0].Path)
+}
+
+// The generated pointer must describe structure and where the real
+// instructions are - never the organization's own conventions, which live in a
+// repository and would go stale here.
+func TestEntrypointContent(t *testing.T) {
+	ws, err := Load(marked(t, `
+version: "1"
+layout:
+  repos: repositories
+  scratch: notes
+agents:
+  instructions: repositories/org/AGENTS.md
+`))
+	testutils.NoError(t, err)
+
+	body := ws.EntrypointContent()
+	for _, want := range []string{
+		"repositories/",              // the configured layout, not a hardcoded src/
+		"notes/",                     // the configured scratch name
+		"repositories/org/AGENTS.md", // where the authority lives
+		"happyctl workspace sync",    // how to recover when it is absent
+		".happy/",                    // per-repository context
+		FileName,                     // what marks this directory
+	} {
+		testutils.Assert(t, strings.Contains(body, want),
+			"generated entrypoint does not mention %q", want)
+	}
+}
+
+// It has to be useful before the repository holding the instructions is
+// cloned, which is the normal state right after init.
+func TestEntrypointContentWithoutInstructions(t *testing.T) {
+	ws, err := Load(marked(t, "version: \"1\"\n"))
+	testutils.NoError(t, err)
+
+	body := ws.EntrypointContent()
+	testutils.Assert(t, strings.Contains(body, "agents.instructions"),
+		"a workspace with no instructions must say how to declare one")
+}
+
+func TestHasInstructions(t *testing.T) {
+	root := marked(t, "version: \"1\"\nagents:\n  instructions: src/org/AGENTS.md\n")
+	ws, err := Load(root)
+	testutils.NoError(t, err)
+
+	testutils.Assert(t, !ws.HasInstructions(),
+		"absent instructions are normal before the repository is cloned")
+
+	write(t, filepath.Join(root, "src", "org", "AGENTS.md"), "# org\n")
+	testutils.Assert(t, ws.HasInstructions(), "expected instructions to be found once present")
+	testutils.Equal(t, filepath.Join(root, "src", "org", "AGENTS.md"), ws.InstructionsPath())
+}
+
+func TestAgentsPathsMustStayInsideRoot(t *testing.T) {
+	for _, marker := range []string{
+		"version: \"1\"\nagents:\n  instructions: ../outside/AGENTS.md\n",
+		"version: \"1\"\nagents:\n  entrypoints: [../outside.md]\n",
+		"version: \"1\"\nagents:\n  instructions: /etc/AGENTS.md\n",
+	} {
+		_, err := Load(marked(t, marker))
+		testutils.Assert(t, errors.Is(err, ErrConfig), "expected ErrConfig for %q, got %v", marker, err)
+	}
+}
+
+func isFile(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.Mode().IsRegular()
+}
