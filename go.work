@@ -9,6 +9,7 @@ use (
 	./lib/scm/gitutils
 	./lib/tail
 	./lib/taskrunner
+	./lib/workspace
 	./pkg/bitutils
 	./pkg/branding
 	./pkg/bytesize
