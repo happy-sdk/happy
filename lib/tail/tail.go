@@ -123,6 +123,7 @@ package tail
 import (
 	"bufio"
 	"context"
+	"errors"
 	"io"
 	"iter"
 	"os"
@@ -238,7 +239,18 @@ var (
 	}
 	resolveAbsPath = filepath.Abs
 	openFile       = func(name string) (tailFile, error) {
-		return os.Open(name)
+		f, err := os.Open(name)
+		if err != nil {
+			return nil, err
+		}
+		// A directory opens, seeks to its end and can be watched on Linux and
+		// macOS, so tailing one would wait for events forever; Windows refuses
+		// it by itself. Refuse it here, the same on every OS.
+		if info, err := f.Stat(); err == nil && info.IsDir() {
+			_ = f.Close()
+			return nil, &os.PathError{Op: "tail", Path: name, Err: errors.New("is a directory")}
+		}
+		return f, nil
 	}
 )
 
