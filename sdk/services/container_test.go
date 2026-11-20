@@ -5,6 +5,7 @@
 package services
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -105,5 +106,53 @@ func TestForceShutdownNotLockedDoesNotPanic(t *testing.T) {
 
 	if err := c.ForceShutdown(sess, nil); err != nil {
 		t.Errorf("ForceShutdown returned error: %v", err)
+	}
+}
+
+// TestServiceIsNotRunningUntilItsStartSucceeded is a regression test: Start
+// marked the service running before its start action ran, so a loader polling
+// the service while the action was slow saw it running, finished without an
+// error, and the failure that followed went unnoticed.
+func TestServiceIsNotRunningUntilItsStartSucceeded(t *testing.T) {
+	sess, _, cleanup, err := session.CreateTestSession(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+	addr, err := address.FromModule("test.local", "slow-start")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entered, release := make(chan struct{}), make(chan struct{})
+	svc := New(service.Config{})
+	svc.OnStart(func(*session.Context) error {
+		close(entered)
+		<-release
+		return errors.New("port taken")
+	})
+	c, err := NewContainer(sess, addr, svc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Info() takes the container lock Start holds; the loader reads the same
+	// pointer through the session.
+	info := c.Info()
+	done := make(chan error, 1)
+	go func() { done <- c.Start(sess.Context(), sess) }()
+	<-entered
+	if info.Running() {
+		t.Error("running while the start action is still in progress")
+	}
+	if !info.Starting() {
+		t.Error("not starting while the start action is in progress")
+	}
+	close(release)
+	if err := <-done; err == nil {
+		t.Fatal("Start should return the start action's error")
+	}
+	if info.Running() || info.Starting() || !info.Failed() {
+		t.Errorf("after a failed start: running=%v starting=%v failed=%v", info.Running(), info.Starting(), info.Failed())
 	}
 }

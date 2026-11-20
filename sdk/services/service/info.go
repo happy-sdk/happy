@@ -18,6 +18,7 @@ type Info struct {
 	slug          string
 	addr          *address.Address
 	running       bool
+	starting      bool
 	errs          map[time.Time]error
 	startedAt     time.Time
 	stoppedAt     time.Time
@@ -43,6 +44,14 @@ func (s *Info) Running() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.running
+}
+
+// Starting reports whether the start action is running. A service is Running
+// only once it has started successfully.
+func (s *Info) Starting() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.starting
 }
 
 func (s *Info) Name() string {
@@ -98,9 +107,16 @@ func (s *Info) LoaderTimeout() time.Duration {
 	return s.loaderTimeout
 }
 
+func (s *Info) markStarting() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.starting = true
+}
+
 func (s *Info) started() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.starting = false
 	s.running = true
 	s.startedAt = time.Now().UTC()
 }
@@ -108,6 +124,7 @@ func (s *Info) started() {
 func (s *Info) stopped() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.starting = false
 	s.running = false
 	s.stoppedAt = time.Now().UTC()
 }
@@ -129,6 +146,15 @@ func AddError(s *Info, err error) {
 		return
 	}
 	s.addErr(err)
+}
+
+// MarkStarting records that the start action began; MarkStarted follows when
+// it succeeded, MarkStopped when it failed.
+func MarkStarting(s *Info) {
+	if s == nil {
+		return
+	}
+	s.markStarting()
 }
 
 func MarkStarted(s *Info) {

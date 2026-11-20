@@ -226,7 +226,7 @@ func (e *Engine) Stop(sess *session.Context) error {
 				continue
 			}
 		}
-		if !rsvc.Info().Running() {
+		if !rsvc.Info().Running() && !rsvc.Info().Starting() {
 			sess.Log().Log(sess.Context(), logging.LevelHappy.Level(), fmt.Sprintf("service already stopped %s", rsvc.Info().Slug()))
 			continue
 		}
@@ -690,7 +690,7 @@ func (e *Engine) serviceStart(sess *session.Context, svcurl string) {
 		)
 		return
 	}
-	if svcc.Info().Running() {
+	if svcc.Info().Running() || svcc.Info().Starting() {
 
 		sess.Log().Warn(
 			"failed to start service, service already running",

@@ -159,7 +159,7 @@ func (c *Container) Settings() service.Config {
 }
 
 func (c *Container) Start(ectx context.Context, sess *session.Context) (err error) {
-	service.MarkStarted(c.info)
+	service.MarkStarting(c.info)
 	c.rlock("starting service")
 	retries := c.retries
 	if c.svc.settings.RetryOnError && c.svc.settings.MaxRetries > 0 && c.retries > 0 {
@@ -212,6 +212,9 @@ func (c *Container) Start(ectx context.Context, sess *session.Context) (err erro
 	}
 
 	c.ctx, c.cancel = context.WithCancelCause(ectx) // with engine context
+	// Running only now: a service whose start action failed must never look
+	// started to a loader polling it.
+	service.MarkStarted(c.info)
 
 	payload := new(vars.Map)
 
