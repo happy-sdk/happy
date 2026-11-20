@@ -4,7 +4,7 @@ go 1.27rc2
 
 require (
 	github.com/goccy/go-yaml v1.19.2
-	github.com/happy-sdk/happy v1.202.1
+	github.com/happy-sdk/happy v1.202.2
 	github.com/happy-sdk/happy/lib/workspace v0.1.0
 	github.com/happy-sdk/happy/pkg/devel/testutils v1.100.0
 	github.com/happy-sdk/happy/pkg/logging v1.100.0
